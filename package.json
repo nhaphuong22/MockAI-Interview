@@ -1,0 +1,18 @@
+{
+  "name": "mockai-interview-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root management for AI Mock Interview Platform",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "install-all": "npm install  npm install --prefix frontend && npm install --prefix backend",
+    "migrate": "npm run migrate --prefix backend && npm run seed --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
