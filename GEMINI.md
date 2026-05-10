@@ -94,9 +94,30 @@ Sử dụng các lệnh sau để kích hoạt quy trình tác chiến chuyên s
 - **/update-docs**: Đồng bộ tài liệu với mã nguồn.
 - **/visually**: Trực quan hóa logic & kiến trúc.
 
-## Hướng dẫn tùy chỉnh
+## 🚀 Hướng dẫn tùy chỉnh: Dự án MockAI-Interview
 
-Thêm các hướng dẫn cụ thể cho dự án của bạn tại đây.
+Dự án MockAI-Interview là một nền tảng phỏng vấn AI cao cấp (Premium). Mọi hành động của Agent trong dự án này PHẢI tuân thủ các quy tắc sau:
+
+### 1. Kiến trúc & Công nghệ (Tech Stack)
+- **Frontend**: React 19, Vite, Tailwind CSS v4, Zustand (Client State), TanStack Query (Server State), Framer Motion, Three.js.
+- **Backend**: Node.js, Express, PostgreSQL, Knex.js.
+- **Bảo mật**: JWT (JSON Web Token), Bcryptjs.
+
+### 2. Tiêu chuẩn Thiết kế (Frontend & Design)
+- **Luôn kích hoạt** tư duy của `[/frontend-developer]` và `[/frontend-design]` khi làm việc với UI.
+- **Thẩm mỹ (Premium Design)**: Giao diện phải toát lên vẻ sang trọng, chuyên nghiệp. Sử dụng Glassmorphism có chừng mực, shadow đa tầng (layered shadows), typography hiện đại (Inter, Outfit), và micro-animations tinh tế.
+- **Psychology-driven**: Mọi nút bấm, màu sắc, khoảng cách (spacing theo 8-point grid) phải có chủ đích UX rõ ràng. Không dùng màu mặc định (plain red/blue), phải dùng curated colors.
+
+### 3. Quy tắc Code (Coding Rules)
+- **Phân tách State**: Tuyệt đối không dùng Zustand để lưu Server Data (danh sách user, lịch sử phỏng vấn...). Việc đó là của TanStack Query. Zustand chỉ dùng cho UI State (Modal, Theme) và Auth Token.
+- **Routing & Bảo mật**: Mọi endpoint nhạy cảm ở Backend phải có Middleware check JWT. Mọi trang nội bộ ở Frontend phải được bọc bởi `<ProtectedRoute>`.
+- **API Flow**: Frontend luôn gọi API thông qua `axiosClient.js` (đã cấu hình sẵn Interceptor gắn token tự động).
+
+### 4. Lộ trình sắp tới (Upcoming Modules)
+Agent cần nắm rõ bối cảnh để thiết kế database và UI cho phù hợp:
+1. **Module CV**: Parser CV (PDF/Docx), trích xuất kỹ năng.
+2. **Module Phỏng vấn**: Tích hợp Voice-to-Text và Text-to-Voice (WebRTC/Socket), phỏng vấn realtime với AI.
+3. **Module Đánh giá**: Xây dựng Radar Chart đánh giá năng lực ứng viên.
 
 ---
-*Được tạo bởi Antigravity IDE*
+*Cập nhật lần cuối: Theo tiến độ Scaffolding & Auth Module.*
