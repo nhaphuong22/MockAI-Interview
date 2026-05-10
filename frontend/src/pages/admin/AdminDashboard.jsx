@@ -8,7 +8,9 @@ import {
   Bell,
   Search
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '../../utils/cn';
+import useAuthStore from '../../store/useAuthStore';
 
 const menuItems = [
   { icon: <BarChart2 size={20} />, label: 'Dashboard', active: true },
@@ -18,6 +20,14 @@ const menuItems = [
 ];
 
 export default function AdminDashboard() {
+  const { logout, user } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 font-sans">
       
@@ -47,7 +57,10 @@ export default function AdminDashboard() {
         </div>
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all font-medium">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all font-medium"
+          >
             <LogOut size={20} />
             Sign Out
           </button>
@@ -74,11 +87,11 @@ export default function AdminDashboard() {
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-800">
               <div className="text-right hidden md:block">
-                <p className="text-sm font-bold text-gray-900 dark:text-white">System Admin</p>
-                <p className="text-xs text-gray-500">admin@mockai.com</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{user?.full_name || 'System Admin'}</p>
+                <p className="text-xs text-gray-500">{user?.email || 'admin@mockai.com'}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-white font-bold">
-                A
+                {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'A'}
               </div>
             </div>
           </div>
