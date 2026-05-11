@@ -47,7 +47,7 @@ export default function Features() {
             viewport={{ once: true }}
             className="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4"
           >
-            A Complete Interview Ecosystem
+            A Complete Career Ecosystem
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -56,7 +56,7 @@ export default function Features() {
             transition={{ delay: 0.1 }}
             className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto"
           >
-            Five dedicated modules designed to take you from CV preparation to final assessment.
+            End-to-end support modules designed to guide you through every stage of your job search.
           </motion.p>
         </div>
 

@@ -1,6 +1,6 @@
 # 🤖 MockAI-Interview
 
-MockAI-Interview là nền tảng luyện tập phỏng vấn với AI, hỗ trợ upload CV, phỏng vấn giọng nói thực tế và nhận đánh giá chi tiết qua biểu đồ radar. Dự án được xây dựng với kiến trúc hiện đại, hiệu năng cao và giao diện Premium.
+MockAI-Interview là nền tảng hỗ trợ việc làm toàn diện (Job Support Platform) tích hợp AI, hỗ trợ tối ưu CV, luyện tập phỏng vấn giọng nói thực tế và nhận đánh giá năng lực chi tiết. Dự án được xây dựng với kiến trúc hiện đại, hiệu năng cao và giao diện Premium nhằm mang lại lộ trình sự nghiệp vững chắc cho người dùng.
 
 ## 🚀 Công nghệ sử dụng
 

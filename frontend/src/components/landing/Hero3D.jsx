@@ -48,9 +48,9 @@ export default function Hero3D() {
           transition={{ duration: 0.8 }}
           className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6"
         >
-          Master Your Next <br />
+          Elevate Your <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-            Tech Interview
+            Career Journey
           </span>
         </motion.h1>
         
@@ -60,8 +60,7 @@ export default function Hero3D() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="mt-4 max-w-2xl text-xl text-gray-600 dark:text-gray-300 mx-auto mb-10"
         >
-          Upload your CV, experience realistic AI voice interviews, and receive detailed radar-chart assessments. 
-          Your journey to top tech companies starts here.
+          The all-in-one AI platform to optimize your CV, practice realistic interviews, and land your dream job at top tech companies.
         </motion.p>
         
         <motion.div 

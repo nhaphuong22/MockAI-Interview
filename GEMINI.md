@@ -96,7 +96,7 @@ Sử dụng các lệnh sau để kích hoạt quy trình tác chiến chuyên s
 
 ## 🚀 Hướng dẫn tùy chỉnh: Dự án MockAI-Interview
 
-Dự án MockAI-Interview là một nền tảng phỏng vấn AI cao cấp (Premium). Mọi hành động của Agent trong dự án này PHẢI tuân thủ các quy tắc sau:
+Dự án MockAI-Interview là một nền tảng hỗ trợ việc làm toàn diện (Job Support Platform) tích hợp AI cao cấp (Premium). Mọi hành động của Agent trong dự án này PHẢI tuân thủ các quy tắc sau:
 
 ### 1. Kiến trúc & Công nghệ (Tech Stack)
 - **Frontend**: React 19, Vite, Tailwind CSS v4, Zustand (Client State), TanStack Query (Server State), Framer Motion, Three.js.
