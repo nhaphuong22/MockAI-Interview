@@ -8,6 +8,7 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "migrate": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:rollback --all",
     "seed": "knex seed:run",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

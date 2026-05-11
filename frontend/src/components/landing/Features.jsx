@@ -6,32 +6,32 @@ import { cn } from '../../utils/cn';
 const features = [
   {
     icon: <FileText className="w-6 h-6" />,
-    title: "CV Processing",
-    description: "Upload your CV and JD. Our ATS-like AI will analyze gaps, suggest Action Verbs, and optimize your profile before the interview.",
+    title: "AI CV Analysis",
+    description: "Upload your CV and get instant scoring and suggestions based on target job requirements. Optimized for ATS.",
     color: "from-blue-500 to-cyan-400"
   },
   {
     icon: <Mic className="w-6 h-6" />,
-    title: "AI Voice Engine",
-    description: "Real-time voice interviews with Llama-3. Choose between Friendly or Pressure HR styles for a highly realistic simulation.",
+    title: "Voice Practice",
+    description: "Real-time voice interviews focusing on small talk, greetings, and common behavioral questions to build confidence.",
     color: "from-primary to-secondary"
   },
   {
-    icon: <Code className="w-6 h-6" />,
-    title: "Technical Sandbox",
-    description: "Integrated Mini IDE with syntax highlighting. The AI analyzes your code logic and algorithm choices on the fly.",
+    icon: <BarChart className="w-6 h-6" />,
+    title: "Knowledge Testing",
+    description: "AI-driven knowledge assessment tailored to your CV and specific job requirements to test your domain expertise.",
     color: "from-emerald-500 to-teal-400"
   },
   {
-    icon: <BarChart className="w-6 h-6" />,
-    title: "Assessment & Report",
-    description: "Get a comprehensive 5-axis Radar Chart evaluation and a personalized learning path exported as a detailed PDF.",
+    icon: <LayoutDashboard className="w-6 h-6" />,
+    title: "HR Portal",
+    description: "Dedicated dashboard for HR to post jobs, view candidate rankings, and access detailed CV evaluations.",
     color: "from-orange-500 to-amber-400"
   },
   {
-    icon: <LayoutDashboard className="w-6 h-6" />,
-    title: "Admin Analytics",
-    description: "Deep insights into candidate trends, system usage, and an auto-generating Question Bank powered by AI.",
+    icon: <Code className="w-6 h-6" />, // Keeping icon but changing content to Admin
+    title: "System Management",
+    description: "Advanced admin hub for managing users, monitoring interview sessions, and analyzing global market trends.",
     color: "from-pink-500 to-rose-400"
   }
 ];

@@ -8,7 +8,7 @@ export async function up(knex) {
     table.string('email').notNullable().unique();
     table.string('password_hash').notNullable();
     table.string('full_name');
-    table.string('role').defaultTo('USER'); // USER, INSTRUCTOR, ADMIN
+    table.string('role').notNullable().defaultTo('USER'); // USER, HR, ADMIN
     table.timestamps(true, true); // created_at, updated_at
   });
 }

@@ -29,6 +29,29 @@ export async function seed(knex) {
       role: 'USER',
       created_at: new Date(),
       updated_at: new Date()
+    },
+    {
+      id: 3,
+      email: 'hr@mockai.com',
+      password_hash: password_hash,
+      full_name: 'HR Manager',
+      role: 'HR',
+      created_at: new Date(),
+      updated_at: new Date()
+    }
+  ]);
+
+  // Insert sample Job
+  await knex('jobs').insert([
+    {
+      id: 1,
+      hr_id: 3,
+      title: 'Frontend Developer (React)',
+      description: 'We are looking for a passionate Frontend Developer...',
+      requirements: 'ReactJS, Tailwind CSS, JavaScript ES6+',
+      status: 'OPEN',
+      created_at: new Date(),
+      updated_at: new Date()
     }
   ]);
 };

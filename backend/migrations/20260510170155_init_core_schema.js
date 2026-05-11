@@ -3,30 +3,42 @@
  * @returns { Promise<void> }
  */
 export async function up(knex) {
-  // Bảng CVs
+  // 1. Bảng Jobs (Dành cho Module của Khánh & Sang)
+  await knex.schema.createTable('jobs', (table) => {
+    table.increments('id').primary();
+    table.integer('hr_id').unsigned().references('id').inTable('users').onDelete('CASCADE');
+    table.string('title').notNullable();
+    table.text('description');
+    table.text('requirements'); // AI dùng cái này để đặt câu hỏi kiến thức
+    table.string('status').defaultTo('OPEN'); // OPEN, CLOSED
+    table.timestamps(true, true);
+  });
+
+  // 2. Bảng CVs (Dành cho Module của Huy & Khánh)
   await knex.schema.createTable('cvs', (table) => {
     table.increments('id').primary();
     table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE');
     table.string('file_url');
     table.text('parsed_text');
     table.integer('ats_score');
-    table.jsonb('missing_keywords');
+    table.text('ai_feedback'); // Nhận xét tổng quan và gợi ý chỉnh sửa
     table.timestamps(true, true);
   });
 
-  // Bảng Interviews (Phiên phỏng vấn)
+  // 3. Bảng Interviews (Dành cho Module của Quân & Phương)
   await knex.schema.createTable('interviews', (table) => {
     table.increments('id').primary();
     table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE');
     table.integer('cv_id').unsigned().references('id').inTable('cvs').onDelete('SET NULL');
+    table.integer('job_id').unsigned().references('id').inTable('jobs').onDelete('SET NULL');
+    table.string('type').notNullable().defaultTo('PRACTICE'); // PRACTICE (Phương), REAL (Quân)
     table.string('status').defaultTo('PENDING'); // PENDING, IN_PROGRESS, COMPLETED
-    table.string('hr_style').defaultTo('FRIENDLY'); // FRIENDLY, PRESSURE
     table.timestamp('started_at');
     table.timestamp('ended_at');
     table.timestamps(true, true);
   });
 
-  // Bảng Interview Messages (Transcript)
+  // 4. Bảng Interview Messages (Transcript hội thoại)
   await knex.schema.createTable('interview_messages', (table) => {
     table.increments('id').primary();
     table.integer('interview_id').unsigned().references('id').inTable('interviews').onDelete('CASCADE');
@@ -35,38 +47,23 @@ export async function up(knex) {
     table.timestamps(true, true);
   });
 
-  // Bảng Code Submissions (Khánh's Module)
-  await knex.schema.createTable('code_submissions', (table) => {
-    table.increments('id').primary();
-    table.integer('interview_id').unsigned().references('id').inTable('interviews').onDelete('CASCADE');
-    table.string('language').notNullable();
-    table.text('code').notNullable();
-    table.boolean('is_correct');
-    table.text('ai_analysis');
-    table.timestamps(true, true);
-  });
-
-  // Bảng Assessments (Huy's Module)
+  // 5. Bảng Assessments (Dành cho Module của Huy & Phương)
   await knex.schema.createTable('assessments', (table) => {
     table.increments('id').primary();
-    table.integer('interview_id').unsigned().references('id').inTable('interviews').onDelete('CASCADE').unique(); // 1 bài phỏng vấn 1 đánh giá
-    table.integer('professional_score');
-    table.integer('logic_score');
-    table.integer('confidence_score');
-    table.integer('problem_solving_score');
-    table.integer('culture_fit_score');
+    table.integer('interview_id').unsigned().references('id').inTable('interviews').onDelete('CASCADE').unique();
+    table.integer('overall_score');
     table.text('feedback_summary');
-    table.jsonb('learning_path');
+    table.jsonb('learning_path'); // Lộ trình luyện tập AI gợi ý
     table.timestamps(true, true);
   });
 
-  // Bảng Question Bank (Admin Module)
+  // 6. Bảng Question Bank (Dành cho Module của Sang)
   await knex.schema.createTable('question_bank', (table) => {
     table.increments('id').primary();
-    table.string('category').notNullable(); // VD: ReactJS, NodeJS, Behavioral
+    table.integer('job_id').unsigned().references('id').inTable('jobs').onDelete('CASCADE'); // Câu hỏi mẫu theo Job
+    table.string('category'); // Kỹ năng chuyên môn, Câu hỏi tình huống...
     table.text('content').notNullable();
     table.text('expected_answer');
-    table.integer('created_by').unsigned().references('id').inTable('users').onDelete('SET NULL');
     table.timestamps(true, true);
   });
 }
@@ -78,8 +75,9 @@ export async function up(knex) {
 export async function down(knex) {
   await knex.schema.dropTableIfExists('question_bank');
   await knex.schema.dropTableIfExists('assessments');
-  await knex.schema.dropTableIfExists('code_submissions');
+  await knex.schema.dropTableIfExists('code_submissions'); // Thêm dòng này để xóa bảng cũ
   await knex.schema.dropTableIfExists('interview_messages');
   await knex.schema.dropTableIfExists('interviews');
   await knex.schema.dropTableIfExists('cvs');
+  await knex.schema.dropTableIfExists('jobs');
 }
