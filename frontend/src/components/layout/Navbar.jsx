@@ -4,6 +4,7 @@ import { Bot, LogIn, LayoutDashboard, LogOut } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import useAuthStore from '../../store/useAuthStore';
 import LoginModal from '../auth/LoginModal';
+import ShinyText from '../ui/ShinyText';
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -24,8 +25,21 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center gap-2">
             <Bot className="w-8 h-8 text-primary" />
-            <span className="font-bold text-xl tracking-tight text-gray-900 dark:text-white">
-              MockAI<span className="text-primary">Interview</span>
+            <span className="font-bold text-xl tracking-tight">
+              <ShinyText
+                text="MockAI"
+                color="#ffffff"
+                shineColor="#007ffb"
+                speed={3}
+                className="font-bold"
+              />
+              <ShinyText
+                text="Interview"
+                color="#007ffb"
+                shineColor="#ffffff"
+                speed={3}
+                className="font-bold"
+              />
             </span>
           </Link>
           
