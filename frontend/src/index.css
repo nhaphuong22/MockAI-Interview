@@ -2,8 +2,8 @@
 
 @theme {
   --font-sans: "Inter", "Roboto", system-ui, sans-serif;
-  --color-primary: #aa3bff;
-  --color-secondary: #c084fc;
+  --color-primary: #0ea5e9;
+  --color-secondary: #38bdf8;
 }
 
 @layer base {

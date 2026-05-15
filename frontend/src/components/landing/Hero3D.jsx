@@ -17,7 +17,7 @@ function AnimatedSphere() {
   return (
     <Sphere ref={sphereRef} visible args={[1, 100, 200]} scale={2}>
       <MeshDistortMaterial
-        color="#aa3bff"
+        color="#0ea5e9"
         attach="material"
         distort={0.4}
         speed={2}
@@ -69,7 +69,7 @@ export default function Hero3D() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="flex justify-center gap-4 pointer-events-auto"
         >
-          <button className="px-8 py-4 bg-primary text-white rounded-full font-bold text-lg hover:bg-secondary transition-all shadow-[0_0_20px_rgba(170,59,255,0.4)] hover:shadow-[0_0_30px_rgba(170,59,255,0.6)]">
+          <button className="px-8 py-4 bg-primary text-white rounded-full font-bold text-lg hover:bg-secondary transition-all shadow-[0_0_20px_rgba(14,165,233,0.4)] hover:shadow-[0_0_30px_rgba(14,165,233,0.6)]">
             Start Free Interview
           </button>
           <button className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-full font-bold text-lg border border-gray-200 dark:border-gray-700 hover:border-primary dark:hover:border-primary transition-colors">

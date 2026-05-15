@@ -105,6 +105,7 @@ Dự án MockAI-Interview là một nền tảng hỗ trợ việc làm toàn di
 
 ### 2. Tiêu chuẩn Thiết kế (Frontend & Design)
 - **Luôn kích hoạt** tư duy của `[/frontend-developer]` và `[/frontend-design]` khi làm việc với UI.
+- **Màu chủ đạo (Primary Color)**: **Xanh nước biển (Ocean Blue)**. Primary: `#0ea5e9`, Secondary: `#38bdf8`. Mọi component, gradient, shadow, hover state PHẢI sử dụng bảng màu này. Cấm dùng màu tím (purple) hoặc violet làm màu chủ đạo.
 - **Thẩm mỹ (Premium Design)**: Giao diện phải toát lên vẻ sang trọng, chuyên nghiệp. Sử dụng Glassmorphism có chừng mực, shadow đa tầng (layered shadows), typography hiện đại (Inter, Outfit), và micro-animations tinh tế.
 - **Psychology-driven**: Mọi nút bấm, màu sắc, khoảng cách (spacing theo 8-point grid) phải có chủ đích UX rõ ràng. Không dùng màu mặc định (plain red/blue), phải dùng curated colors.
 
@@ -119,5 +120,10 @@ Agent cần nắm rõ bối cảnh để thiết kế database và UI cho phù h
 2. **Module Phỏng vấn**: Tích hợp Voice-to-Text và Text-to-Voice (WebRTC/Socket), phỏng vấn realtime với AI.
 3. **Module Đánh giá**: Xây dựng Radar Chart đánh giá năng lực ứng viên.
 
+### 5. Quyết định Kiến trúc (Architecture Decisions)
+- **AI Interview Questions**: AI tự generate câu hỏi phỏng vấn dựa trên CV + JD context. KHÔNG dùng question_bank cứng. Bảng `question_bank` đã bị xóa.
+- **Messaging/Chat**: Sử dụng **Socket.io** cho real-time messaging giữa HR và Candidate. Bảng `conversations` + `messages` đã sẵn sàng.
+- **Module Thanh toán**: Chưa cần implement. Bảng `packages` + `transactions` đã tạo sẵn nhưng sẽ triển khai sau.
+
 ---
-*Cập nhật lần cuối: Theo tiến độ Scaffolding & Auth Module.*
+*Cập nhật lần cuối: 15/05/2026 — Database Expansion hoàn tất (31 bảng).*
