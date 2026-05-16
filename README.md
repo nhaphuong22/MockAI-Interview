@@ -72,14 +72,20 @@ npm run dev
 - **Frontend:** http://localhost:3000
 - **Backend:** http://localhost:5000
 
+### 🚪 Cổng Đăng nhập (Login Portals)
+- **Ứng viên (Candidate):** [http://localhost:3000/login](http://localhost:3000/login)
+- **Nhà Tuyển Dụng (Recruiter):** [http://localhost:3000/hr](http://localhost:3000/hr)
+- **Quản trị viên (Administrator):** [http://localhost:3000/admin](http://localhost:3000/admin)
+
 ## 🔑 Tài khoản mẫu (Demo Accounts)
 
 Sau khi chạy lệnh `npm run migrate`, bạn có thể đăng nhập bằng các tài khoản sau:
 
-| Vai trò   | Email              | Mật khẩu |
-| :-------- | :----------------- | :------- |
-| **Admin** | `admin@mockai.com` | `123456` |
-| **User**  | `user@mockai.com`  | `123456` |
+| Vai trò | Email | Mật khẩu |
+| :--- | :--- | :--- |
+| **Quản trị viên** | `admin@mockai.com` | `123456` |
+| **Ứng viên** | `user@mockai.com` | `123456` |
+| **Nhà Tuyển Dụng** | `recruiter@mockai.com` | `123456` |
 
 ## 📁 Cấu trúc thư mục
 
