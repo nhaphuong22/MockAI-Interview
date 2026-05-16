@@ -13,10 +13,24 @@ glob: "**/*.{py,js,ts,go,rs,sql,php,java,dockerfile,tf,yaml,yml}"
 
 1. **Tech Stack**: Bắt buộc sử dụng Node.js và Express.js.
 2. **Architecture**: Đảm bảo tuân thủ nghiêm ngặt mô hình **MVC (Model - View - Controller)**. Đối với API, cấu trúc sẽ là **Router -> Controller -> Service -> Model (Repository)**. Không viết logic lộn xộn trong file route.
-3. **API Standards**:
+3. **Directory Structure**: Bắt buộc tuân thủ cấu trúc thư mục sau:
+   - `backend/server.js`: Entry point của ứng dụng.
+   - `backend/src/app.js`: Cấu hình Express, Middlewares và Routes.
+   - `backend/src/auth/`: Xử lý xác thực (JWT, Login, Register).
+   - `backend/src/config/`: Lưu trữ file cấu hình (DB, Env, API keys).
+   - `backend/src/controllers/`: Tiếp nhận request và điều hướng logic.
+   - `backend/src/core/`: Xử lý logic cốt lõi, AI engine, Global Middleware.
+   - `backend/src/data/`: Chứa dữ liệu tĩnh, constants.
+   - `backend/src/db/`: Khởi tạo và quản lý kết nối database.
+   - `backend/src/helper/`: Các hàm tiện ích hỗ trợ nhỏ.
+   - `backend/src/models/`: Định nghĩa Database Models/Schemas (Knex).
+   - `backend/src/routes/`: Định nghĩa các API endpoints.
+   - `backend/src/services/`: Chứa logic nghiệp vụ xử lý chính (Business logic).
+   - `backend/src/ultils/`: Các công cụ tiện ích dùng chung hệ thống.
+4. **API Standards**:
    - RESTful: `GET /resources`, `POST /resources`.
    - Response: `{ success: true, data: any, error: null }`.
-4. **AI Integration**: Quản lý tốt các integration với mô hình AI (`whisper-node`, `node-llama-cpp`) và tối ưu performance.
+5. **AI Integration**: Quản lý tốt các integration với mô hình AI (`whisper-node`, `node-llama-cpp`) và tối ưu performance.
 
 ---
 

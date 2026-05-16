@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # CODE-QUALITY.MD - Engineering Excellence
 
 > **Mục tiêu**: Đảm bảo mã nguồn luôn đạt chất lượng "Production-Grade" ngay từ dòng code đầu tiên.
