@@ -1,48 +1,23 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import db from '../config/db.js';
+import { loginUser } from '../services/authService.js';
+import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, error: 'Email and password are required' });
+      return sendError(res, 400, 'Email and password are required');
     }
 
-    // Find user
-    const user = await db('users').where({ email }).first();
-    if (!user) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
+    const result = await loginUser(email, password);
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-
-    // Generate JWT
-    const secret = process.env.JWT_SECRET || 'supersecretmockai2026';
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      secret,
-      { expiresIn: '1d' }
-    );
-
-    // Return user info (excluding password) and token
-    const { password_hash, ...userInfo } = user;
-    
-    return res.json({
-      success: true,
-      data: {
-        user: userInfo,
-        token
-      }
-    });
+    return sendResponse(res, 200, result);
 
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error.message === 'Invalid credentials') {
+      return sendError(res, 401, 'Invalid credentials');
+    }
+    console.error('Login controller error:', error);
+    return sendError(res, 500, 'Internal server error');
   }
 };
