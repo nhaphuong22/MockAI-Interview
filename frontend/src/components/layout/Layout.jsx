@@ -8,16 +8,11 @@ import { AuthModal } from "../auth/AuthModal";
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('isAuthenticated') === 'true');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
 
-  useEffect(() => {
-    const auth = localStorage.getItem('isAuthenticated');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
-    }
-  }, [location.pathname]);
+
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');

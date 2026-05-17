@@ -1,4 +1,4 @@
-import { Search, Heart, MessageCircle, Bookmark, PenSquare, TrendingUp, User } from "lucide-react";
+import { Search, Heart, MessageCircle, Bookmark, PenSquare, TrendingUp, User, Eye } from "lucide-react";
 import { useState } from "react";
 
 const categories = [

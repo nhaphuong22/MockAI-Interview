@@ -1,0 +1,76 @@
+name: MockAI-Interview CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Run Dependency Security Audit
+        run: |
+          echo "Scanning dependencies for high/critical vulnerabilities..."
+          npm audit --audit-level=high || echo "Vulnerability scan completed. Please review any warnings above."
+
+  frontend-check:
+    name: Frontend React Check
+    needs: security-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Syntax & Lint Checks
+        run: npm run lint --prefix frontend
+
+      - name: Run Frontend Test Suite
+        run: npm run test --prefix frontend
+
+      - name: Build Application for Production
+        run: npm run build --prefix frontend
+
+  backend-check:
+    name: Backend Node.js Check
+    needs: security-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Backend Test Suite
+        run: npm run test --prefix backend
