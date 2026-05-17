@@ -16,7 +16,7 @@ export async function seed(knex) {
       id: 1,
       email: 'admin@mockai.com',
       password_hash: password_hash,
-      full_name: 'System Admin',
+      full_name: 'Quản trị viên Hệ thống',
       role: 'ADMIN',
       created_at: new Date(),
       updated_at: new Date()
@@ -25,29 +25,32 @@ export async function seed(knex) {
       id: 2,
       email: 'user@mockai.com',
       password_hash: password_hash,
-      full_name: 'Test Candidate',
+      full_name: 'Ứng viên Thử nghiệm',
       role: 'USER',
       created_at: new Date(),
       updated_at: new Date()
     },
     {
       id: 3,
-      email: 'hr@mockai.com',
+      email: 'recruiter@mockai.com',
       password_hash: password_hash,
-      full_name: 'HR Manager',
+      full_name: 'Nhà Tuyển Dụng MockAI',
       role: 'HR',
       created_at: new Date(),
       updated_at: new Date()
     }
   ]);
 
+  // Đảm bảo xóa jobs cũ trước khi chèn mới để tránh lỗi khóa chính nếu chạy lại seed
+  await knex('jobs').del();
+  
   // Insert sample Job
   await knex('jobs').insert([
     {
       id: 1,
       hr_id: 3,
       title: 'Frontend Developer (React)',
-      description: 'We are looking for a passionate Frontend Developer...',
+      description: 'Chúng tôi đang tìm kiếm một Frontend Developer đam mê React...',
       requirements: 'ReactJS, Tailwind CSS, JavaScript ES6+',
       status: 'OPEN',
       created_at: new Date(),

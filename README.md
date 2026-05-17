@@ -76,10 +76,11 @@ npm run dev
 
 Sau khi chạy lệnh `npm run migrate`, bạn có thể đăng nhập bằng các tài khoản sau:
 
-| Vai trò   | Email              | Mật khẩu |
-| :-------- | :----------------- | :------- |
-| **Admin** | `admin@mockai.com` | `123456` |
-| **User**  | `user@mockai.com`  | `123456` |
+| Vai trò | Email | Mật khẩu |
+| :--- | :--- | :--- |
+| **Quản trị viên** | `admin@mockai.com` | `123456` |
+| **Ứng viên** | `user@mockai.com` | `123456` |
+| **Nhà Tuyển Dụng** | `recruiter@mockai.com` | `123456` |
 
 ## 📁 Cấu trúc thư mục
 
