@@ -72,11 +72,6 @@ npm run dev
 - **Frontend:** http://localhost:3000
 - **Backend:** http://localhost:5000
 
-### 🚪 Cổng Đăng nhập (Login Portals)
-- **Ứng viên (Candidate):** [http://localhost:3000/login](http://localhost:3000/login)
-- **Nhà Tuyển Dụng (Recruiter):** [http://localhost:3000/hr](http://localhost:3000/hr)
-- **Quản trị viên (Administrator):** [http://localhost:3000/admin](http://localhost:3000/admin)
-
 ## 🔑 Tài khoản mẫu (Demo Accounts)
 
 Sau khi chạy lệnh `npm run migrate`, bạn có thể đăng nhập bằng các tài khoản sau:
