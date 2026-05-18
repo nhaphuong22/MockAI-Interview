@@ -51,13 +51,13 @@ jobs:
         run: pnpm install --ignore-scripts
 
       - name: Run Syntax & Lint Checks
-        run: pnpm run lint --prefix frontend
+        run: pnpm -C frontend run lint
 
       - name: Run Frontend Test Suite
-        run: pnpm run test --prefix frontend
+        run: pnpm -C frontend run test
 
       - name: Build Application for Production
-        run: pnpm run build --prefix frontend
+        run: pnpm -C frontend run build
 
   backend-check:
     name: Backend Node.js Check
@@ -82,5 +82,5 @@ jobs:
         run: pnpm install --ignore-scripts
 
       - name: Run Backend Test Suite
-        run: pnpm run test --prefix backend
+        run: pnpm -C backend run test
 

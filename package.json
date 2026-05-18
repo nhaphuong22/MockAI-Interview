@@ -8,13 +8,13 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"pnpm run dev --prefix backend\" \"pnpm run dev --prefix frontend\"",
+    "dev": "concurrently \"pnpm -C backend run dev\" \"pnpm -C frontend run dev\"",
     "install-all": "pnpm install",
-    "migrate": "pnpm run migrate --prefix backend && pnpm run seed --prefix backend",
-    "migrate:rollback": "pnpm run migrate:rollback --prefix backend",
-    "build": "pnpm run build --prefix frontend",
-    "lint": "pnpm run lint --prefix frontend",
-    "test": "pnpm run test --prefix backend && pnpm run test --prefix frontend"
+    "migrate": "pnpm -C backend run migrate && pnpm -C backend run seed",
+    "migrate:rollback": "pnpm -C backend run migrate:rollback",
+    "build": "pnpm -C frontend run build",
+    "lint": "pnpm -C frontend run lint",
+    "test": "pnpm -C backend run test && pnpm -C frontend run test"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
