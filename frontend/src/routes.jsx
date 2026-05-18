@@ -1,7 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
-import { Login } from "./pages/shared/Login";
-import { Register } from "./pages/shared/Register";
 import { Payment } from "./pages/shared/Payment";
 import { PaymentSuccess } from "./pages/shared/PaymentSuccess";
 
@@ -31,35 +29,17 @@ import { CompanySettings } from "./pages/recruiter/CompanySettings";
 import { RecruiterNotifications } from "./pages/recruiter/HRNotifications";
 
 // Administrator Pages (Quản trị viên)
-import { AdminDashboard } from "./pages/administrator/AdminDashboard";
-import { ManageUsers } from "./pages/administrator/ManageUsers";
-import { ManageCompanies } from "./pages/administrator/ManageCompanies";
-import { ManageJobPosts } from "./pages/administrator/ManageJobPosts";
-import { ManageBlog } from "./pages/administrator/ManageBlog";
-import { ManagePayments } from "./pages/administrator/ManagePayments";
-import { AdminAnalytics } from "./pages/administrator/AdminAnalytics";
-import { AISettings } from "./pages/administrator/AISettings";
-import { SystemSettings } from "./pages/administrator/SystemSettings";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { ManageUsers } from "./pages/admin/ManageUsers";
+import { ManageCompanies } from "./pages/admin/ManageCompanies";
+import { ManageJobPosts } from "./pages/admin/ManageJobPosts";
+import { ManageBlog } from "./pages/admin/ManageBlog";
+import { ManagePayments } from "./pages/admin/ManagePayments";
+import { AdminAnalytics } from "./pages/admin/AdminAnalytics";
+import { AISettings } from "./pages/admin/AISettings";
+import { SystemSettings } from "./pages/admin/SystemSettings";
 
 export const router = createBrowserRouter([
-  // Tách biệt các link đăng nhập
-  {
-    path: "/login",
-    Component: Login,
-  },
-  {
-    path: "/register",
-    Component: Register,
-  },
-  {
-    path: "/hr",
-    Component: Login, // HR/Recruiter Login
-  },
-  {
-    path: "/admin",
-    Component: Login, // Admin Login
-  },
-
   // Candidate Routes (Trang chủ)
   {
     path: "/",

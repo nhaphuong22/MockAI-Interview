@@ -1,10 +1,25 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
+import { AuthModal } from "../auth/AuthModal";
 
 export function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('isAuthenticated') === 'true');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState("login");
+
+
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    setIsAuthenticated(false);
+    navigate('/');
+  };
+
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   const isRecruiter = location.pathname.startsWith('/hr');
@@ -16,9 +31,9 @@ export function Layout() {
   const administratorBase = "/admin/dashboard";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50">
+      <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full bg-gradient-to-r from-[#0ea5e9]/10 via-white/40 to-[#38bdf8]/10 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(14,165,233,0.06)] rounded-full px-6 transition-all duration-500 hover:from-[#0ea5e9]/15 hover:via-white/50 hover:to-[#38bdf8]/15 hover:border-white/70 hover:shadow-[0_12px_40px_0_rgba(14,165,233,0.12)]">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-8">
               <Link to={isRecruiter ? recruiterBase : isAdministrator ? administratorBase : "/"} className="flex items-center gap-2">
@@ -85,23 +100,25 @@ export function Layout() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Link to={isRecruiter ? `${recruiterBase}/notifications` : isAdministrator ? `${administratorBase}/notifications` : "/notifications"}>
-                <div className="relative group">
-                  <Bell className="w-5 h-5 text-gray-500 cursor-pointer group-hover:text-[#0ea5e9] transition-colors" />
-                  <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
-                </div>
-              </Link>
-
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
-                  <button className="flex items-center gap-2 hover:opacity-80 transition-opacity outline-none">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-sm">
-                      <User className="w-5 h-5 text-white" />
+              {isAuthenticated ? (
+                <>
+                  <Link to={isRecruiter ? `${recruiterBase}/notifications` : isAdministrator ? `${administratorBase}/notifications` : "/notifications"}>
+                    <div className="relative group">
+                      <Bell className="w-5 h-5 text-gray-500 cursor-pointer group-hover:text-[#0ea5e9] transition-colors" />
+                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
                     </div>
-                  </button>
-                </DropdownMenu.Trigger>
+                  </Link>
 
-                <DropdownMenu.Portal>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger asChild>
+                      <button className="flex items-center gap-2 hover:opacity-80 transition-opacity outline-none">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-sm">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                      </button>
+                    </DropdownMenu.Trigger>
+
+                    <DropdownMenu.Portal>
                   <DropdownMenu.Content
                     className="min-w-[200px] bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 z-50 animate-in fade-in zoom-in-95"
                     sideOffset={5}
@@ -141,27 +158,52 @@ export function Layout() {
                     <DropdownMenu.Separator className="h-px bg-gray-100 my-1.5" />
 
                     <DropdownMenu.Item asChild>
-                      <Link
-                        to="/login"
-                        className="flex items-center gap-3 px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 cursor-pointer outline-none transition-colors"
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 cursor-pointer outline-none transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>Đăng Xuất</span>
-                      </Link>
+                      </button>
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
                 </DropdownMenu.Portal>
               </DropdownMenu.Root>
+                </>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => { setAuthMode("login"); setAuthModalOpen(true); }} 
+                    className="text-sm font-bold text-gray-700 hover:text-[#0ea5e9] transition-colors px-4 py-2 cursor-pointer"
+                  >
+                    Đăng Nhập
+                  </button>
+                  <button 
+                    onClick={() => { setAuthMode("register"); setAuthModalOpen(true); }} 
+                    className="text-sm font-bold text-white bg-[#0ea5e9] hover:bg-[#0284c7] transition-all duration-300 px-5 py-2 rounded-xl shadow-[0_4px_14px_0_rgba(14,165,233,0.39)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.23)] hover:-translate-y-0.5 cursor-pointer"
+                  >
+                    Đăng Ký
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="min-h-[calc(100vh-64px)]">
+      <main className={`min-h-[calc(100vh-64px)] ${location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28'}`}>
         <Outlet />
       </main>
 
       {isCandidate && <AIChatWidget />}
+      
+      {/* Cửa sổ Đăng nhập / Đăng ký */}
+      <AuthModal 
+        isOpen={authModalOpen} 
+        onOpenChange={setAuthModalOpen} 
+        initialMode={authMode}
+        onLoginSuccess={() => setIsAuthenticated(true)}
+      />
     </div>
   );
 }

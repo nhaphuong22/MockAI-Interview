@@ -71,11 +71,7 @@ npm run dev
 
 - **Frontend:** http://localhost:3000
 - **Backend:** http://localhost:5000
-
-### 🚪 Cổng Đăng nhập (Login Portals)
-- **Ứng viên (Candidate):** [http://localhost:3000/login](http://localhost:3000/login)
-- **Nhà Tuyển Dụng (Recruiter):** [http://localhost:3000/hr](http://localhost:3000/hr)
-- **Quản trị viên (Administrator):** [http://localhost:3000/admin](http://localhost:3000/admin)
+- **Swagger UI:** http://localhost:5000/api-doc
 
 ## 🔑 Tài khoản mẫu (Demo Accounts)
 
