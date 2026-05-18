@@ -8,13 +8,13 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
-    "install-all": "npm install && npm install --prefix frontend && npm install --prefix backend",
-    "migrate": "npm run migrate --prefix backend && npm run seed --prefix backend",
-    "migrate:rollback": "npm run migrate:rollback --prefix backend",
-    "build": "npm run build --prefix frontend",
-    "lint": "npm run lint --prefix frontend",
-    "test": "npm run test --prefix backend && npm run test --prefix frontend"
+    "dev": "concurrently \"pnpm run dev --prefix backend\" \"pnpm run dev --prefix frontend\"",
+    "install-all": "pnpm install",
+    "migrate": "pnpm run migrate --prefix backend && pnpm run seed --prefix backend",
+    "migrate:rollback": "pnpm run migrate:rollback --prefix backend",
+    "build": "pnpm run build --prefix frontend",
+    "lint": "pnpm run lint --prefix frontend",
+    "test": "pnpm run test --prefix backend && pnpm run test --prefix frontend"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
