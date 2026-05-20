@@ -15,6 +15,10 @@ MockAI-Interview là nền tảng hỗ trợ việc làm toàn diện (Job Suppo
 
 ## 🛠 Hướng dẫn Setup & Chạy dự án
 
+```bash
+npm install -g pnpm
+```
+
 ### 1. Clone dự án và cài đặt Library
 
 ```bash
@@ -23,7 +27,7 @@ git clone https://github.com/nhaphuong22/MockAI-Interview.git
 cd MockAI-Interview
 
 # Cài đặt tất cả dependencies (Root, FE, BE)
-npm install
+npm run install-all
 ```
 
 ### 2. Cấu hình Biến môi trường (Environment Variables)
