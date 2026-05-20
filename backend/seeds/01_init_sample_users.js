@@ -5,19 +5,20 @@ import bcrypt from 'bcryptjs';
  * @returns { Promise<void> } 
  */
 export async function seed(knex) {
-  // Deletes ALL existing entries
+  // Deletes user_roles first, then users to respect foreign keys
+  await knex('user_roles').del();
   await knex('users').del();
   
   const salt = await bcrypt.genSalt(10);
   const password_hash = await bcrypt.hash('123456', salt);
 
+  // Insert users without string role column
   await knex('users').insert([
     {
       id: 1,
       email: 'admin@mockai.com',
       password_hash: password_hash,
       full_name: 'Quản trị viên Hệ thống',
-      role: 'ADMIN',
       created_at: new Date(),
       updated_at: new Date()
     },
@@ -26,7 +27,6 @@ export async function seed(knex) {
       email: 'user@mockai.com',
       password_hash: password_hash,
       full_name: 'Ứng viên Thử nghiệm',
-      role: 'USER',
       created_at: new Date(),
       updated_at: new Date()
     },
@@ -35,10 +35,23 @@ export async function seed(knex) {
       email: 'recruiter@mockai.com',
       password_hash: password_hash,
       full_name: 'Nhà Tuyển Dụng MockAI',
-      role: 'HR',
       created_at: new Date(),
       updated_at: new Date()
     }
+  ]);
+
+  // Query role ids to insert correct mappings
+  const dbRoles = await knex('roles').select('id', 'name');
+  const roleMap = dbRoles.reduce((acc, curr) => {
+    acc[curr.name] = curr.id;
+    return acc;
+  }, {});
+
+  // Link users to roles in user_roles table
+  await knex('user_roles').insert([
+    { user_id: 1, role_id: roleMap['ADMIN'], created_at: new Date(), updated_at: new Date() },
+    { user_id: 2, role_id: roleMap['USER'], created_at: new Date(), updated_at: new Date() },
+    { user_id: 3, role_id: roleMap['HR'], created_at: new Date(), updated_at: new Date() }
   ]);
 
   // Đảm bảo xóa jobs cũ trước khi chèn mới để tránh lỗi khóa chính nếu chạy lại seed
