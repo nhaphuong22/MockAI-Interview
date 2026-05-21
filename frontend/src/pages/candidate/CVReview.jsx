@@ -1,6 +1,7 @@
-import { Upload, FileText, CheckCircle2, AlertTriangle, Sparkles, Download, Eye } from "lucide-react";
-import { useState } from "react";
-import * as Progress from "@radix-ui/react-progress";
+import React, { useState } from "react";
+import { CVUploadArea } from "./components/CVUploadArea";
+import { CVAnalysisLoading } from "./components/CVAnalysisLoading";
+import { CVAnalysisResult } from "./components/CVAnalysisResult";
 
 export function CVReview() {
   const [hasCV, setHasCV] = useState(false);
@@ -38,6 +39,11 @@ export function CVReview() {
     }, 3000);
   };
 
+  const handleReupload = () => {
+    setHasCV(false);
+    setShowResults(false);
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,138 +54,19 @@ export function CVReview() {
           </p>
         </div>
 
-        {!hasCV && (
-          <div className="bg-white rounded-2xl p-12 shadow-sm border-2 border-dashed border-gray-300 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-[#f0f9ff] rounded-2xl flex items-center justify-center">
-              <Upload className="w-10 h-10 text-[#0ea5e9]" />
-            </div>
-            <h2 className="text-2xl mb-3">Upload CV của bạn</h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Hỗ trợ file PDF, DOC, DOCX. Kích thước tối đa 5MB.
-              AI sẽ phân tích và đưa ra đánh giá chi tiết.
-            </p>
-            <button
-              onClick={handleUpload}
-              disabled={isAnalyzing}
-              className="px-8 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
-            >
-              {isAnalyzing ? "Đang phân tích..." : "Chọn File CV"}
-            </button>
-            <p className="text-sm text-gray-500 mt-4">
-              Thông tin CV của bạn được bảo mật tuyệt đối
-            </p>
-          </div>
+        {!hasCV && !isAnalyzing && (
+          <CVUploadArea onUpload={handleUpload} isAnalyzing={isAnalyzing} />
         )}
 
         {isAnalyzing && (
-          <div className="bg-white rounded-2xl p-12 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-[#f0f9ff] rounded-full flex items-center justify-center animate-pulse">
-              <Sparkles className="w-10 h-10 text-[#0ea5e9]" />
-            </div>
-            <h2 className="text-2xl mb-3">AI đang phân tích CV...</h2>
-            <p className="text-gray-600 mb-6">Vui lòng đợi trong giây lát</p>
-            <Progress.Root className="h-2 bg-gray-200 rounded-full overflow-hidden max-w-md mx-auto">
-              <Progress.Indicator
-                className="h-full bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] transition-all duration-500"
-                style={{ width: "60%" }}
-              />
-            </Progress.Root>
-          </div>
+          <CVAnalysisLoading />
         )}
 
-        {showResults && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl p-8 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl mb-2">Điểm Tổng Quan</h2>
-                  <p className="opacity-90">CV của bạn được đánh giá</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-6xl mb-2">{aiResults.overallScore}</div>
-                  <div className="text-xl opacity-90">/100</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-xl mb-4 flex items-center gap-2">
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
-                  <span>Điểm Mạnh</span>
-                </h3>
-                <ul className="space-y-3">
-                  {aiResults.strengths.map((strength, index) => (
-                    <li key={index} className="flex items-start gap-2 text-gray-700">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
-                      <span>{strength}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-xl mb-4 flex items-center gap-2">
-                  <AlertTriangle className="w-6 h-6 text-sky-600" />
-                  <span>Cần Cải Thiện</span>
-                </h3>
-                <ul className="space-y-3">
-                  {aiResults.improvements.map((improvement, index) => (
-                    <li key={index} className="flex items-start gap-2 text-gray-700">
-                      <div className="w-2 h-2 bg-sky-500 rounded-full mt-2 flex-shrink-0" />
-                      <span>{improvement}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-xl mb-6">Đánh Giá Chi Tiết Từng Mục</h3>
-              <div className="space-y-6">
-                {aiResults.sections.map((section, index) => (
-                  <div key={index}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold">{section.name}</span>
-                      <span className="text-[#0ea5e9] font-semibold">{section.score}%</span>
-                    </div>
-                    <Progress.Root className="h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
-                      <Progress.Indicator
-                        className={`h-full transition-all ${
-                          section.score >= 85 ? "bg-green-500" : section.score >= 70 ? "bg-sky-500" : "bg-red-500"
-                        }`}
-                        style={{ width: `${section.score}%` }}
-                      />
-                    </Progress.Root>
-                    <p className="text-sm text-gray-600">{section.feedback}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                <Download className="w-5 h-5" />
-                <span>Tải Báo Cáo PDF</span>
-              </button>
-              <button className="flex-1 py-3 border-2 border-[#0ea5e9] text-[#0ea5e9] rounded-xl hover:bg-[#f0f9ff] transition-all flex items-center justify-center gap-2">
-                <Eye className="w-5 h-5" />
-                <span>Xem CV Mẫu</span>
-              </button>
-              <button
-                onClick={() => {
-                  setHasCV(false);
-                  setShowResults(false);
-                }}
-                className="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] transition-all flex items-center justify-center gap-2"
-              >
-                <FileText className="w-5 h-5" />
-                <span>Upload CV Khác</span>
-              </button>
-            </div>
-          </div>
+        {showResults && !isAnalyzing && (
+          <CVAnalysisResult aiResults={aiResults} onReupload={handleReupload} />
         )}
       </div>
     </div>
   );
 }
+export default CVReview;
