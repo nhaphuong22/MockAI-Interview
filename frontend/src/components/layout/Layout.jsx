@@ -60,6 +60,9 @@ export function Layout() {
                     <Link to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       AI CV
                     </Link>
+                    <Link to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                      Practice
+                    </Link>
                   </>
                 )}
 

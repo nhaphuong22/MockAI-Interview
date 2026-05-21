@@ -1,0 +1,97 @@
+import { Bookmark, MapPin, DollarSign, Briefcase } from "lucide-react";
+
+/**
+ * JobDetailView Component
+ * Renders detailed description and metadata of a selected job listing
+ */
+export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
+  return (
+    <div className="w-1/2 border-l border-gray-200 bg-white overflow-y-auto h-full flex flex-col">
+      {/* Sticky top actions bar */}
+      <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-200 p-6 z-10">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-3xl shrink-0 text-white">
+            {job.logo}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1 truncate">{job.title}</h2>
+            <p className="text-lg text-gray-600 font-medium">{job.company}</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white font-bold rounded-xl hover:shadow-lg transition-all hover:scale-[1.01]">
+            Nộp Đơn Ngay
+          </button>
+          <button 
+            onClick={() => onToggleBookmark(job.id)}
+            className="px-4 py-3 border-2 border-gray-200 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] text-gray-400 hover:text-[#0ea5e9] transition-all"
+          >
+            <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-[#0ea5e9] text-[#0ea5e9]" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Main details body */}
+      <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+        <div>
+          <h3 className="font-bold text-gray-900 mb-3 uppercase text-xs tracking-wider text-gray-400">Thông Tin Chung</h3>
+          <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Mức lương</p>
+              <p className="font-bold text-[#0ea5e9]">{job.salary}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Kinh nghiệm</p>
+              <p className="font-bold text-gray-800">{job.experience}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Hình thức</p>
+              <p className="font-bold text-gray-800">{job.type}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Địa điểm</p>
+              <p className="font-bold text-gray-800">{job.location}</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-bold text-gray-900 mb-3 uppercase text-xs tracking-wider text-gray-400">Mô Tả Công Việc</h3>
+          <div className="text-gray-700 text-sm leading-relaxed space-y-3">
+            <p>
+              Chúng tôi đang tìm kiếm một {job.title} để gia nhập đội ngũ phát triển
+              sản phẩm. Bạn sẽ làm việc với các công nghệ hiện đại và tham gia vào các dự án
+              thú vị của chúng tôi.
+            </p>
+            <ul className="list-disc list-inside space-y-1.5 ml-2">
+              <li>Phát triển và duy trì các tính năng mới trên các sản phẩm cốt lõi.</li>
+              <li>Làm việc chặt chẽ với team thiết kế và backend để đảm bảo chất lượng.</li>
+              <li>Tham gia code review và liên tục cập nhật/áp dụng các tiêu chuẩn chất lượng.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-bold text-gray-900 mb-3 uppercase text-xs tracking-wider text-gray-400">Yêu Cầu Công Việc</h3>
+          <ul className="list-disc list-inside space-y-1.5 text-gray-700 text-sm ml-2">
+            <li>Kinh nghiệm làm việc từ {job.experience}.</li>
+            <li>Thành thạo các công nghệ chính: {job.tags.join(", ")}.</li>
+            <li>Kỹ năng giao tiếp tốt, tư duy phản biện.</li>
+            <li>Tinh thần trách nhiệm và khả năng phối hợp đội nhóm tốt.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="font-bold text-gray-900 mb-3 uppercase text-xs tracking-wider text-gray-400">Phúc Lợi</h3>
+          <ul className="list-disc list-inside space-y-1.5 text-gray-700 text-sm ml-2">
+            <li>Lương thưởng cạnh tranh dựa trên năng lực cá nhân.</li>
+            <li>Đóng bảo hiểm đầy đủ (BHXH, BHYT) theo quy định của nhà nước.</li>
+            <li>Chính sách làm việc linh hoạt, có hỗ trợ thiết bị.</li>
+            <li>Môi trường năng động, chuyên nghiệp và có cơ hội thăng tiến cao.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
