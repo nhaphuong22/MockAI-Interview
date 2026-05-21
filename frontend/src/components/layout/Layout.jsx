@@ -4,19 +4,19 @@ import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, Pi
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
+import { useAuthStore } from "../../store/useAuthStore";
 
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('isAuthenticated') === 'true');
+  const { isAuthenticated, logout } = useAuthStore();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
 
 
 
   const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    setIsAuthenticated(false);
+    logout();
     navigate('/');
   };
 
@@ -202,7 +202,6 @@ export function Layout() {
         isOpen={authModalOpen} 
         onOpenChange={setAuthModalOpen} 
         initialMode={authMode}
-        onLoginSuccess={() => setIsAuthenticated(true)}
       />
     </div>
   );

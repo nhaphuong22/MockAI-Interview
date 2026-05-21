@@ -1,6 +1,8 @@
 import { MapPin, Mail, Phone, Linkedin, Github, Globe, Edit, Download, Share2, Award, Briefcase, GraduationCap, Star } from "lucide-react";
 import * as Progress from "@radix-ui/react-progress";
 import * as Tabs from "@radix-ui/react-tabs";
+import { useAuthStore } from "../../store/useAuthStore";
+import { Link } from "react-router-dom";
 
 const skills = [
   { name: "React", level: 90, category: "Frontend" },
@@ -49,6 +51,25 @@ const achievements = [
 ];
 
 export function Profile() {
+  const { user } = useAuthStore();
+
+  const calculateCompleteness = () => {
+    if (!user) return 0;
+    const fields = [
+      user.full_name || user.fullName,
+      user.email,
+      user.phone,
+      user.address,
+      user.bio,
+      user.avatar_url || user.avatarUrl
+    ];
+    const completedFields = fields.filter(field => field && field.trim() !== "").length;
+    return Math.round((completedFields / fields.length) * 100);
+  };
+
+  const completeness = calculateCompleteness();
+  const avatarUrl = user?.avatar_url || user?.avatarUrl;
+
   return (
     <div className="bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,37 +80,43 @@ export function Profile() {
 
           <div className="px-8 pb-8">
             <div className="flex flex-col md:flex-row gap-6 -mt-20 relative">
-              <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] ring-4 ring-white flex items-center justify-center text-6xl flex-shrink-0">
-                👨‍💻
+              <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] ring-4 ring-white flex items-center justify-center text-6xl flex-shrink-0 overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  "👨‍💻"
+                )}
               </div>
 
               <div className="flex-1 pt-24 md:pt-0 md:mt-20">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
                   <div>
-                    <h1 className="text-3xl mb-2">Nguyễn Văn A</h1>
-                    <p className="text-xl text-gray-600 mb-2">Senior Frontend Developer</p>
+                    <h1 className="text-3xl mb-2">{user?.full_name || user?.fullName || "Chưa cập nhật tên"}</h1>
+                    <p className="text-lg text-gray-600 mb-2 font-medium">
+                      {user?.role === "HR" ? "Recruiter" : "Candidate Member"}
+                    </p>
                     <div className="flex flex-wrap items-center gap-4 text-gray-600">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
-                        <span>Hà Nội, Việt Nam</span>
+                        <span>{user?.address || "Chưa cập nhật địa chỉ"}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Mail className="w-4 h-4" />
-                        <span>nguyenvana@example.com</span>
+                        <span>{user?.email || "Chưa cập nhật email"}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Phone className="w-4 h-4" />
-                        <span>0912345678</span>
+                        <span>{user?.phone || "Chưa cập nhật SĐT"}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex gap-3">
-                    <button className="px-4 py-2 border-2 border-gray-300 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] hover:text-[#0ea5e9] transition-all flex items-center gap-2">
+                    <Link to="/settings" className="px-4 py-2 border-2 border-gray-300 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] hover:text-[#0ea5e9] transition-all flex items-center gap-2 text-sm font-semibold">
                       <Edit className="w-4 h-4" />
                       <span>Chỉnh Sửa</span>
-                    </button>
-                    <button className="px-4 py-2 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2">
+                    </Link>
+                    <button className="px-4 py-2 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 text-sm font-semibold">
                       <Download className="w-4 h-4" />
                       <span>Tải CV</span>
                     </button>
@@ -102,12 +129,12 @@ export function Profile() {
                 <div className="bg-[#f0f9ff] rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-700">Hoàn thiện hồ sơ</span>
-                    <span className="text-sm font-semibold text-[#0ea5e9]">85%</span>
+                    <span className="text-sm font-semibold text-[#0ea5e9]">{completeness}%</span>
                   </div>
                   <Progress.Root className="h-2 bg-white rounded-full overflow-hidden">
                     <Progress.Indicator
                       className="h-full bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] transition-all"
-                      style={{ width: "85%" }}
+                      style={{ width: `${completeness}%` }}
                     />
                   </Progress.Root>
                 </div>
@@ -150,10 +177,8 @@ export function Profile() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Về Tôi</h3>
-                    <p className="text-gray-700 leading-relaxed">
-                      Tôi là một Senior Frontend Developer với hơn 5 năm kinh nghiệm phát triển ứng dụng web
-                      hiện đại. Đam mê công nghệ và luôn cập nhật những xu hướng mới nhất trong lĩnh vực
-                      frontend development. Có kinh nghiệm làm việc với các công ty startup và tập đoàn lớn.
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {user?.bio || "Chưa cập nhật phần tự giới thiệu. Hãy vào mục Cài đặt để thêm thông tin giới thiệu bản thân của bạn."}
                     </p>
                   </div>
 
