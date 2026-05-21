@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Mic, 
   Settings, 
@@ -40,7 +40,70 @@ export function MicrophoneSetup({ onProceed, isSubmitting = false }) {
   const streamForRecordingRef = useRef(null);
 
   // Request microphone permissions and list devices
-  const requestPermission = async (deviceId = "") => {
+  // Stop all active tracks to release device
+  const stopAllAudioTracks = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (streamForRecordingRef.current) {
+      streamForRecordingRef.current.getTracks().forEach(track => track.stop());
+      streamForRecordingRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  }, []);
+
+  // Initialize Audio Context & Analyser for real-time visualizer
+  const initAudioVisualizer = useCallback((stream) => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+
+      source.connect(analyser);
+      analyser.fftSize = 256;
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      const updateVolume = () => {
+        if (!analyserRef.current) return;
+        
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        // Calculate average volume level
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / bufferLength;
+        
+        // Scale to 0-100 percentage range with high sensitivity for voice
+        const percentage = Math.min(Math.round((average / 128) * 100), 100);
+        setAudioLevel(percentage);
+        
+        animationFrameRef.current = requestAnimationFrame(updateVolume);
+      };
+
+      updateVolume();
+
+    } catch (e) {
+      console.error("Failed to initialize audio context for visualizer", e);
+    }
+  }, []);
+
+  // Request microphone permissions and list devices
+  const requestPermission = useCallback(async (deviceId = "") => {
     try {
       setErrorMessage("");
       
@@ -82,69 +145,7 @@ export function MicrophoneSetup({ onProceed, isSubmitting = false }) {
         setErrorMessage("Không tìm thấy thiết bị Microphone hoạt động. Hãy kiểm tra lại kết nối.");
       }
     }
-  };
-
-  // Stop all active tracks to release device
-  const stopAllAudioTracks = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (streamForRecordingRef.current) {
-      streamForRecordingRef.current.getTracks().forEach(track => track.stop());
-      streamForRecordingRef.current = null;
-    }
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-  };
-
-  // Initialize Audio Context & Analyser for real-time visualizer
-  const initAudioVisualizer = (stream) => {
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const audioContext = new AudioContext();
-      const analyser = audioContext.createAnalyser();
-      const source = audioContext.createMediaStreamSource(stream);
-
-      source.connect(analyser);
-      analyser.fftSize = 256;
-      
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
-
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-
-      const updateVolume = () => {
-        if (!analyserRef.current) return;
-        
-        analyserRef.current.getByteFrequencyData(dataArray);
-        
-        // Calculate average volume level
-        let sum = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          sum += dataArray[i];
-        }
-        const average = sum / bufferLength;
-        
-        // Scale to 0-100 percentage range with high sensitivity for voice
-        const percentage = Math.min(Math.round((average / 128) * 100), 100);
-        setAudioLevel(percentage);
-        
-        animationFrameRef.current = requestAnimationFrame(updateVolume);
-      };
-
-      updateVolume();
-
-    } catch (e) {
-      console.error("Failed to initialize audio context for visualizer", e);
-    }
-  };
+  }, [stopAllAudioTracks, initAudioVisualizer]);
 
   // Switch microphone device when user selects from dropdown
   const handleDeviceChange = async (e) => {
@@ -219,14 +220,17 @@ export function MicrophoneSetup({ onProceed, isSubmitting = false }) {
   };
 
   useEffect(() => {
-    // Initial permission request
-    requestPermission();
+    // Initial permission request - using setTimeout to avoid calling setState synchronously in effect
+    const timer = setTimeout(() => {
+      requestPermission();
+    }, 0);
 
     return () => {
+      clearTimeout(timer);
       stopAllAudioTracks();
       stopTestAudio();
     };
-  }, []);
+  }, [requestPermission, stopAllAudioTracks]);
 
   return (
     <div className="max-w-xl w-full mx-auto bg-white/95 backdrop-blur-md border border-gray-100 rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-all duration-300">
@@ -319,9 +323,9 @@ export function MicrophoneSetup({ onProceed, isSubmitting = false }) {
                           : "bg-gray-200"
                       }`}
                       style={{
-                        // Add organic layout for active mic visualizer
+                        // Add organic layout for active mic visualizer (using stable pseudo-random factor to avoid Math.random purity error)
                         height: isActive 
-                          ? `${Math.max(15, Math.min(100, (audioLevel * (0.5 + Math.random() * 0.5))))}%` 
+                          ? `${Math.max(15, Math.min(100, (audioLevel * (0.5 + ((index * 93) % 50) / 100))))}%` 
                           : "15%"
                       }}
                     />
