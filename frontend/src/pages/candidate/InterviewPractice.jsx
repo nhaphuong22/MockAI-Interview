@@ -1,5 +1,7 @@
 import { Play, Mic, Video, Sparkles, MessageCircle, BarChart3, Clock, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { MicrophoneSetup } from "../../components/ai/MicrophoneSetup";
+import { createVoiceSessionApi } from "../../api/voiceSession";
 
 const mockQuestions = [
   "Hãy giới thiệu về bản thân bạn",
@@ -32,11 +34,43 @@ export function InterviewPractice() {
   const [mode, setMode] = useState("select");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [interviewType, setInterviewType] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const startInterview = (type) => {
     setInterviewType(type);
-    setMode("practicing");
+    if (type === "voice") {
+      setMode("setup");
+    } else {
+      setMode("practicing");
+    }
   };
+
+  const handleProceedVoice = async () => {
+    setIsSubmitting(true);
+    try {
+      // Register voice session with sample interview_id 1
+      const response = await createVoiceSessionApi(1);
+      console.log("Voice session registered successfully:", response.data);
+      setMode("practicing");
+    } catch (error) {
+      console.error("Error registering voice session:", error);
+      // Fallback so candidate can still practice even if API fails
+      setMode("practicing");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (mode === "setup") {
+    return (
+      <div className="bg-gray-50 min-h-screen py-16 px-4 flex items-center justify-center">
+        <MicrophoneSetup 
+          onProceed={handleProceedVoice} 
+          isSubmitting={isSubmitting} 
+        />
+      </div>
+    );
+  }
 
   if (mode === "practicing") {
     return (
