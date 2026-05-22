@@ -4,8 +4,6 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 
 ## 🛠 Ngăn Xếp Công Nghệ (Tech Stack)
 
-- **Frontend:** React 19, Vite, Tailwind CSS v4, Zustand (UI State), TanStack Query (Server State), Framer Motion, Three.js.
-- **Backend:** Node.js, Express.js.
 - **Database:** PostgreSQL (Knex.js).
 - **AI & ML:**
   - `whisper-node` (Speech-to-Text)
