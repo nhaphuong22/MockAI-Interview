@@ -9,9 +9,11 @@ import { useAuthStore } from "../../store/useAuthStore";
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, logout, user } = useAuthStore();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
+
+  const avatarUrl = user?.avatar_url || user?.avatarUrl || "";
 
 
 
@@ -59,6 +61,9 @@ export function Layout() {
                     </Link>
                     <Link to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       AI CV
+                    </Link>
+                    <Link to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                      Practice
                     </Link>
                   </>
                 )}
@@ -112,8 +117,12 @@ export function Layout() {
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger asChild>
                       <button className="flex items-center gap-2 hover:opacity-80 transition-opacity outline-none">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-sm">
-                          <User className="w-5 h-5 text-white" />
+                        <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-sm border border-white/50">
+                          {avatarUrl ? (
+                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-5 h-5 text-white" />
+                          )}
                         </div>
                       </button>
                     </DropdownMenu.Trigger>
