@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Search, 
   Filter, 
@@ -16,49 +16,90 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminSidebar } from "./AdminSidebar";
-import { mockUsers as initialUsers } from "./mockAdminData";
+import { getAllUsers, updateUser, toggleUserStatus } from "../../api/userApi";
 
 export function ManageUsers() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+  
+  // Phân trang & Trạng thái tải
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Modals state
   const [selectedUser, setSelectedUser] = useState(null);
   const [banConfirmUser, setBanConfirmUser] = useState(null);
 
-  // Toggle user status
-  const handleToggleStatus = (userId) => {
-    setUsers(prev => prev.map(user => {
-      if (user.id === userId) {
-        const newStatus = user.status === "Active" ? "Banned" : "Active";
-        return { ...user, status: newStatus };
-      }
-      return user;
-    }));
-    setBanConfirmUser(null);
+  // Tải danh sách người dùng từ API
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await getAllUsers({
+        page: currentPage,
+        limit: 8,
+        search: searchTerm,
+        role: roleFilter,
+        status: statusFilter
+      });
+      setUsers(res.users);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.totalItems);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách người dùng:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Change user role
-  const handleChangeRole = (userId, newRole) => {
-    setUsers(prev => prev.map(user => {
-      if (user.id === userId) {
-        return { ...user, role: newRole };
+  // Tự động tải lại danh sách khi thay đổi trang, tìm kiếm hoặc bộ lọc
+  useEffect(() => {
+    fetchUsers();
+  }, [currentPage, roleFilter, statusFilter]);
+
+  // Debounce tìm kiếm để không spam request liên tục khi gõ phím
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setCurrentPage(1);
+      fetchUsers();
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  // Khóa / Kích hoạt tài khoản thông qua API
+  const handleToggleStatus = async (userId) => {
+    try {
+      await toggleUserStatus(userId);
+      setBanConfirmUser(null);
+      // Cập nhật thông tin nhanh trên modal chi tiết nếu đang mở
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser(prev => ({
+          ...prev,
+          status: prev.status === "Active" ? "Banned" : "Active"
+        }));
       }
-      return user;
-    }));
+      fetchUsers();
+    } catch (error) {
+      console.error("Lỗi thay đổi trạng thái user:", error);
+      alert(error.response?.data?.message || "Không thể cập nhật trạng thái tài khoản");
+    }
   };
 
-  // Filtered users
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === "All" || user.role === roleFilter;
-    const matchesStatus = statusFilter === "All" || user.status === statusFilter;
-    
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  // Thay đổi vai trò thông qua API
+  const handleChangeRole = async (userId, newRole) => {
+    try {
+      await updateUser(userId, { role: newRole });
+      fetchUsers();
+    } catch (error) {
+      console.error("Lỗi gán quyền user:", error);
+      alert(error.response?.data?.message || "Không thể cập nhật vai trò người dùng");
+    }
+  };
+
 
   return (
     <div className="flex bg-slate-50 min-h-[calc(100vh-64px)]">
@@ -131,8 +172,15 @@ export function ManageUsers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700 text-sm">
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-12">
+                      <div className="inline-block w-6 h-6 border-2 border-[#0ea5e9] border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-xs text-slate-400 mt-2 font-medium">Đang tải danh sách thành viên...</p>
+                    </td>
+                  </tr>
+                ) : users.length > 0 ? (
+                  users.map((user) => (
                     <tr key={user.id} className="hover:bg-slate-50/40 transition-colors">
                       {/* Name & Avatar */}
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -155,7 +203,7 @@ export function ManageUsers() {
                             ? "bg-amber-50 text-amber-700 border border-amber-100" 
                             : "bg-sky-50 text-[#0ea5e9] border border-sky-100"
                         }`}>
-                          {user.role === "Recruiter" ? "Nhà Tuyển Dụng" : "Ứng Viên"}
+                          {user.role === "Recruiter" ? "Nhà Tuyển Dụng" : user.role === "Admin" ? "Quản Trị Viên" : "Ứng Viên"}
                         </span>
                       </td>
                       {/* Join Date */}
@@ -225,6 +273,44 @@ export function ManageUsers() {
               </tbody>
             </table>
           </div>
+
+          {/* Thanh Phân Trang (Pagination Controls) */}
+          {!isLoading && totalPages > 1 && (
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4 text-xs font-semibold text-slate-500">
+              <div>
+                Hiển thị trang <span className="text-slate-800 font-bold">{currentPage}</span> / <span className="text-slate-800 font-bold">{totalPages}</span> (Tổng số <span className="text-[#0ea5e9] font-bold">{totalItems}</span> thành viên)
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+                >
+                  Trước
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    className={`w-8 h-8 rounded-xl transition-all active:scale-95 flex items-center justify-center font-bold ${
+                      currentPage === p 
+                        ? "bg-[#0ea5e9] text-white shadow-sm shadow-sky-100" 
+                        : "bg-white border border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Selected User Detail Modal */}
