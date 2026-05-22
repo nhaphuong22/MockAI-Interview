@@ -5,12 +5,9 @@ import {
   UserCheck, 
   UserX, 
   UserMinus, 
-  Shield, 
   Calendar, 
   Award, 
   PhoneCall, 
-  ChevronRight,
-  MoreVertical,
   X,
   CreditCard
 } from "lucide-react";
@@ -24,51 +21,68 @@ export function ManageUsers() {
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   
+  // Trạng thái Debounce tìm kiếm
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+
   // Phân trang & Trạng thái tải
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Trạng thái để kích hoạt tải lại danh sách
+  const [refetchKey, setRefetchKey] = useState(0);
+
   // Modals state
   const [selectedUser, setSelectedUser] = useState(null);
   const [banConfirmUser, setBanConfirmUser] = useState(null);
 
-  // Tải danh sách người dùng từ API
-  const fetchUsers = async () => {
-    setIsLoading(true);
-    try {
-      const res = await getAllUsers({
-        page: currentPage,
-        limit: 8,
-        search: searchTerm,
-        role: roleFilter,
-        status: statusFilter
-      });
-      setUsers(res.users);
-      setTotalPages(res.pagination.totalPages);
-      setTotalItems(res.pagination.totalItems);
-    } catch (error) {
-      console.error("Lỗi khi tải danh sách người dùng:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Tự động tải lại danh sách khi thay đổi trang, tìm kiếm hoặc bộ lọc
-  useEffect(() => {
-    fetchUsers();
-  }, [currentPage, roleFilter, statusFilter]);
+  const triggerRefetch = () => setRefetchKey(prev => prev + 1);
 
   // Debounce tìm kiếm để không spam request liên tục khi gõ phím
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      setCurrentPage(1);
-      fetchUsers();
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1); // Reset về trang 1 khi từ khóa tìm kiếm thay đổi
     }, 400);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
+
+  // Tự động tải lại danh sách người dùng từ API
+  useEffect(() => {
+    let active = true;
+
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      try {
+        const res = await getAllUsers({
+          page: currentPage,
+          limit: 8,
+          search: debouncedSearch,
+          role: roleFilter,
+          status: statusFilter
+        });
+        if (active) {
+          setUsers(res.users);
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách người dùng:", error);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchUsers();
+
+    return () => {
+      active = false;
+    };
+  }, [currentPage, debouncedSearch, roleFilter, statusFilter, refetchKey]);
 
   // Khóa / Kích hoạt tài khoản thông qua API
   const handleToggleStatus = async (userId) => {
@@ -82,7 +96,7 @@ export function ManageUsers() {
           status: prev.status === "Active" ? "Banned" : "Active"
         }));
       }
-      fetchUsers();
+      triggerRefetch();
     } catch (error) {
       console.error("Lỗi thay đổi trạng thái user:", error);
       alert(error.response?.data?.message || "Không thể cập nhật trạng thái tài khoản");
@@ -93,12 +107,13 @@ export function ManageUsers() {
   const handleChangeRole = async (userId, newRole) => {
     try {
       await updateUser(userId, { role: newRole });
-      fetchUsers();
+      triggerRefetch();
     } catch (error) {
       console.error("Lỗi gán quyền user:", error);
       alert(error.response?.data?.message || "Không thể cập nhật vai trò người dùng");
     }
   };
+
 
 
   return (
