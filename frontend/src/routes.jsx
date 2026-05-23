@@ -62,12 +62,13 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Recruiter Dashboard (Sau đăng nhập tại /hr)
+  // Recruiter Routes
   {
-    path: "/hr/dashboard",
+    path: "/recruiter",
     Component: Layout,
     children: [
       { index: true, Component: HRDashboard },
+      { path: "dashboard", Component: HRDashboard },
       { path: "post-job", Component: PostJob },
       { path: "manage-jobs", Component: ManageJobs },
       { path: "applications", Component: ManageApplications },
