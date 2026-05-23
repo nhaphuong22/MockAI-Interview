@@ -1,5 +1,8 @@
-import { Search, Heart, MessageCircle, Bookmark, PenSquare, TrendingUp, User, Eye } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
+import { Search } from "lucide-react";
+import { CommunityLeftSidebar } from "./components/CommunityLeftSidebar";
+import { CommunityRightSidebar } from "./components/CommunityRightSidebar";
+import { PostCard } from "./components/PostCard";
 
 const categories = [
   { id: "all", name: "Tất Cả Bài Viết", active: true },
@@ -76,6 +79,7 @@ const trendingTags = ["#RemoteWork", "#AI", "#Startup", "#CareerGrowth", "#Netwo
 export function Community() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [likedPosts, setLikedPosts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const toggleLike = (postId) => {
     setLikedPosts((prev) =>
@@ -83,48 +87,43 @@ export function Community() {
     );
   };
 
+  const handleWritePost = () => {
+    alert("Tính năng đăng bài viết mới đang được phát triển!");
+  };
+
+  // Filter posts by category and search query
+  const filteredPosts = posts.filter(post => {
+    const matchesCategory = selectedCategory === "all" || 
+      post.tags.some(tag => tag.toLowerCase() === selectedCategory || 
+                            (selectedCategory === "cv" && tag.toLowerCase() === "cv") ||
+                            (selectedCategory === "interview" && tag.toLowerCase() === "phỏng vấn") ||
+                            (selectedCategory === "career" && tag.toLowerCase() === "sự nghiệp") ||
+                            (selectedCategory === "tech" && tag.toLowerCase() === "tech") ||
+                            (selectedCategory === "salary" && tag.toLowerCase() === "lương")
+      );
+
+    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesCategory && matchesSearch;
+  });
+
   return (
     <div className="bg-gray-50/50 py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Sidebar */}
           <aside className="lg:col-span-3">
-            <div className="bg-white rounded-3xl p-6 shadow-xl shadow-gray-200/20 border border-gray-100 sticky top-24">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">Danh Mục</h3>
-              <div className="space-y-1.5">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`w-full text-left px-5 py-3 rounded-2xl font-bold text-sm transition-all ${
-                      selectedCategory === category.id
-                        ? "bg-[#0ea5e9] text-white shadow-lg shadow-sky-100"
-                        : "hover:bg-sky-50 text-gray-600 hover:text-[#0ea5e9]"
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-10 pt-8 border-t border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Thành viên tích cực</h3>
-                <div className="space-y-4">
-                  {topContributors.map((contributor, index) => (
-                    <div key={index} className="flex items-center gap-4 group cursor-pointer">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-xl shadow-sm group-hover:scale-105 transition-transform">
-                        {contributor.avatar}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-gray-900 truncate group-hover:text-[#0ea5e9] transition-colors">{contributor.name}</div>
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{contributor.posts} bài viết</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <CommunityLeftSidebar 
+              categories={categories}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              topContributors={topContributors}
+            />
           </aside>
 
+          {/* Main Feed */}
           <main className="lg:col-span-6">
             <div className="mb-8">
               <div className="relative">
@@ -132,146 +131,41 @@ export function Community() {
                 <input
                   type="text"
                   placeholder="Tìm kiếm bài viết, tác giả..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-3xl shadow-xl shadow-gray-200/30 focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-8">
-              {posts.map((post) => (
-                <article
-                  key={post.id}
-                  className={`bg-white rounded-3xl overflow-hidden shadow-xl shadow-gray-200/30 border border-gray-50 hover:border-sky-100 transition-all group ${
-                    post.featured ? "ring-2 ring-sky-100" : ""
-                  }`}
-                >
-                  {post.featured && (
-                    <div className="bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] px-6 py-2.5">
-                      <div className="flex items-center gap-2 text-white text-[10px] font-bold uppercase tracking-widest">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                        <span>Bài Viết Nổi Bật</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="p-8">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-2xl shadow-sm">
-                        {post.avatar}
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-gray-900">{post.author}</div>
-                        <div className="text-xs font-medium text-gray-500">{post.readTime}</div>
-                      </div>
-                    </div>
-
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-[#0ea5e9] cursor-pointer transition-colors leading-tight">
-                      {post.title}
-                    </h2>
-
-                    <p className="text-gray-600 mb-6 line-clamp-2 leading-relaxed">
-                      {post.excerpt}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 mb-8">
-                      {post.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-3 py-1 bg-sky-50 text-[#0ea5e9] rounded-lg text-[10px] font-bold uppercase"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center justify-between pt-6 border-t border-gray-50">
-                      <div className="flex items-center gap-8">
-                        <button
-                          onClick={() => toggleLike(post.id)}
-                          className="flex items-center gap-2 text-gray-500 hover:text-[#0ea5e9] transition-all group/btn"
-                        >
-                          <div className={`p-2 rounded-xl transition-colors ${likedPosts.includes(post.id) ? "bg-sky-50" : "group-hover/btn:bg-sky-50"}`}>
-                            <Heart
-                              className={`w-5 h-5 ${
-                                likedPosts.includes(post.id)
-                                  ? "fill-[#0ea5e9] text-[#0ea5e9]"
-                                  : "group-hover/btn:scale-110"
-                              }`}
-                            />
-                          </div>
-                          <span className="font-bold text-sm">{post.likes + (likedPosts.includes(post.id) ? 1 : 0)}</span>
-                        </button>
-
-                        <button className="flex items-center gap-2 text-gray-500 hover:text-[#0ea5e9] transition-all group/btn">
-                          <div className="p-2 rounded-xl group-hover/btn:bg-sky-50 transition-colors">
-                            <MessageCircle className="w-5 h-5" />
-                          </div>
-                          <span className="font-bold text-sm">{post.comments}</span>
-                        </button>
-                      </div>
-
-                      <button className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all">
-                        <Bookmark className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
+              {filteredPosts.length > 0 ? (
+                filteredPosts.map((post) => (
+                  <PostCard 
+                    key={post.id}
+                    post={post}
+                    isLiked={likedPosts.includes(post.id)}
+                    onToggleLike={toggleLike}
+                  />
+                ))
+              ) : (
+                <div className="bg-white rounded-3xl p-12 text-center shadow-xl shadow-gray-200/30 border border-gray-50">
+                  <p className="text-gray-500 font-medium">Không tìm thấy bài viết nào phù hợp.</p>
+                </div>
+              )}
             </div>
           </main>
 
+          {/* Right Sidebar */}
           <aside className="lg:col-span-3">
-            <div className="sticky top-24 space-y-8">
-              <div className="bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl p-8 text-white shadow-xl shadow-sky-100 overflow-hidden relative group">
-                <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-                <h3 className="text-2xl font-bold mb-3 relative z-10">Chia Sẻ Câu Chuyện</h3>
-                <p className="text-sm opacity-90 mb-6 relative z-10 leading-relaxed font-medium">
-                  Trở thành contributor và giúp đỡ 200,000+ thành viên trong cộng đồng
-                </p>
-                <button className="w-full py-4 bg-white text-[#0ea5e9] font-bold rounded-2xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 relative z-10 active:scale-[0.98]">
-                  <PenSquare className="w-5 h-5" />
-                  <span>Viết Bài Mới</span>
-                </button>
-              </div>
-
-              <div className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/20 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Trending Tags</h3>
-                <div className="flex flex-wrap gap-2">
-                  {trendingTags.map((tag) => (
-                    <button
-                      key={tag}
-                      className="px-4 py-2 bg-gray-50 hover:bg-sky-50 text-gray-600 hover:text-[#0ea5e9] rounded-2xl text-xs font-bold transition-all border border-transparent hover:border-sky-100"
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/20 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-6 uppercase tracking-widest text-[10px]">Tiêu điểm tuần</h3>
-                <div className="space-y-6">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex gap-4 group cursor-pointer">
-                      <div className="w-10 h-10 bg-sky-50 text-[#0ea5e9] rounded-2xl flex items-center justify-center font-bold flex-shrink-0 group-hover:bg-[#0ea5e9] group-hover:text-white transition-all">
-                        {i}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-700 line-clamp-2 group-hover:text-[#0ea5e9] transition-colors leading-snug">
-                          Cách Đàm Phán Lương Hiệu Quả Cho Vị Trí Senior {i}
-                        </p>
-                        <p className="text-[10px] font-bold text-gray-400 mt-2 flex items-center gap-1 uppercase tracking-wider">
-                          <Eye className="w-3 h-3" /> 2.4k lượt đọc
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <CommunityRightSidebar 
+              trendingTags={trendingTags}
+              onWritePost={handleWritePost}
+            />
           </aside>
         </div>
       </div>
     </div>
   );
 }
+export default Community;

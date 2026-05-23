@@ -2,59 +2,209 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X, Mail, Lock, Eye, EyeOff, Briefcase, User, Building, Check } from "lucide-react";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import * as Progress from "@radix-ui/react-progress";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { loginApi, registerApi, loginGoogleApi } from "../../api/auth";
+import { useAuthStore } from "../../store/useAuthStore";
 
 export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLoginSuccess }) {
   const navigate = useNavigate();
   const [mode, setMode] = useState(initialMode); // "login" | "register"
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   
   // Login State
   const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   
   // Register State
   const [regStep, setRegStep] = useState(1);
+  const [fullName, setFullName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState(null); // "jobseeker" | "recruiter"
 
-  const handleLogin = (e) => {
+  const handleGoogleCredentialResponse = async (response) => {
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      const res = await loginGoogleApi(response.credential);
+      if (res.success && res.data) {
+        const { token, user } = res.data;
+        localStorage.setItem("token", token);
+        localStorage.setItem("isAuthenticated", "true");
+        
+        // Update Zustand store
+        useAuthStore.getState().setAuth(user);
+
+        let redirectPath = "/";
+        const userRoleName = user.role ? user.role.toUpperCase() : "USER";
+        if (userRoleName === "ADMIN") {
+          redirectPath = "/admin/dashboard";
+        } else if (userRoleName === "HR") {
+          redirectPath = "/hr/dashboard";
+        }
+        
+        onOpenChange(false);
+        if (onLoginSuccess) onLoginSuccess();
+        navigate(redirectPath);
+      } else {
+        setErrorMsg(res.error || "Đăng nhập Google thất bại.");
+      }
+    } catch (error) {
+      console.error("Google auth error:", error);
+      setErrorMsg(error.response?.data?.error || "Không thể đăng nhập bằng Google.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let checkInterval;
+    const initializeGoogleBtn = () => {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '67427310564-h2j7k0dauv68et015nfc5r2kgt5vgfpo.apps.googleusercontent.com',
+          callback: handleGoogleCredentialResponse,
+        });
+        
+        const btnContainer = document.getElementById("google-signin-btn");
+        if (btnContainer) {
+          window.google.accounts.id.renderButton(
+            btnContainer,
+            { 
+              theme: "outline", 
+              size: "large", 
+              width: btnContainer.clientWidth || 320,
+              text: "signin_with",
+              shape: "rectangular"
+            }
+          );
+        }
+        clearInterval(checkInterval);
+      }
+    };
+
+    // Try immediately
+    initializeGoogleBtn();
+    
+    // Check periodically in case script is still loading
+    checkInterval = setInterval(initializeGoogleBtn, 300);
+
+    return () => {
+      clearInterval(checkInterval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, mode, regStep]);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      localStorage.setItem("isAuthenticated", "true");
-      let redirectPath = "/";
-      if (loginEmail.toLowerCase().includes("admin")) {
-        redirectPath = "/admin/dashboard";
-      } else if (loginEmail.toLowerCase().includes("hr") || loginEmail.toLowerCase().includes("recruiter")) {
-        redirectPath = "/hr/dashboard";
+    setErrorMsg("");
+    try {
+      const res = await loginApi(loginEmail, loginPassword);
+      if (res.success && res.data) {
+        const { token, user } = res.data;
+        localStorage.setItem("token", token);
+        localStorage.setItem("isAuthenticated", "true");
+        
+        // Update Zustand store
+        useAuthStore.getState().setAuth(user);
+
+        let redirectPath = "/";
+        const userRoleName = user.role ? user.role.toUpperCase() : "USER";
+        if (userRoleName === "ADMIN") {
+          redirectPath = "/admin/dashboard";
+        } else if (userRoleName === "HR") {
+          redirectPath = "/hr/dashboard";
+        }
+        
+        onOpenChange(false);
+        if (onLoginSuccess) onLoginSuccess();
+        navigate(redirectPath);
+      } else {
+        setErrorMsg(res.error || "Đăng nhập thất bại. Vui lòng thử lại.");
       }
-      onOpenChange(false);
+    } catch (error) {
+      console.error("Login error:", error);
+      setErrorMsg(error.response?.data?.error || "Sai email hoặc mật khẩu.");
+    } finally {
       setLoading(false);
-      if (onLoginSuccess) onLoginSuccess();
-      navigate(redirectPath);
-    }, 1000);
+    }
   };
 
   const handleRegisterNext = (e) => {
     e.preventDefault();
+    setErrorMsg("");
+    if (regPassword !== confirmPassword) {
+      setErrorMsg("Mật khẩu xác nhận không khớp.");
+      return;
+    }
     setRegStep(2);
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setErrorMsg("");
+    try {
+      const res = await registerApi({
+        email: regEmail,
+        password: regPassword,
+        fullName: fullName,
+        role: role // "jobseeker" | "recruiter"
+      });
+      
+      if (res.success && res.data) {
+        // Automatically login after successful registration
+        const { token, user } = res.data;
+        localStorage.setItem("token", token);
+        localStorage.setItem("isAuthenticated", "true");
+
+        // Update Zustand store
+        useAuthStore.getState().setAuth(user);
+
+        let redirectPath = "/";
+        const userRoleName = user.role ? user.role.toUpperCase() : "USER";
+        if (userRoleName === "ADMIN") {
+          redirectPath = "/admin/dashboard";
+        } else if (userRoleName === "HR") {
+          redirectPath = "/hr/dashboard";
+        }
+
+        onOpenChange(false);
+        if (onLoginSuccess) onLoginSuccess();
+        navigate(redirectPath);
+        
+        // Reset form state for future
+        setRegStep(1);
+        setFullName("");
+        setRegEmail("");
+        setRegPassword("");
+        setConfirmPassword("");
+        setRole(null);
+      } else {
+        setErrorMsg(res.error || "Đăng ký thất bại.");
+      }
+    } catch (error) {
+      console.error("Register error:", error);
+      setErrorMsg(error.response?.data?.error || "Email đã tồn tại hoặc dữ liệu không hợp lệ.");
+    } finally {
       setLoading(false);
-      setMode("login");
-      setRegStep(1); // reset for future
-    }, 1000);
+    }
   };
 
-  // Kế thừa style modal animate-in fade-in từ tailwind
+  const switchMode = (newMode) => {
+    setMode(newMode);
+    setErrorMsg("");
+  };
+
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -79,6 +229,13 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
               {mode === "login" ? "Đăng nhập để tiếp tục hành trình của bạn" : "Bắt đầu hành trình sự nghiệp cùng AI"}
             </p>
           </div>
+
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="text-red-600 text-xs font-semibold bg-red-50 p-3 rounded-xl border border-red-100 mb-4 animate-in fade-in duration-200">
+              {errorMsg}
+            </div>
+          )}
 
           {/* Form Content */}
           {mode === "login" && (
@@ -105,6 +262,8 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                   <input
                     type={showLoginPassword ? "text" : "password"}
                     placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
                     className="w-full pl-10 pr-10 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm [&::-ms-reveal]:hidden [&::-webkit-contacts-auto-fill-button]:hidden"
                     required
                   />
@@ -142,14 +301,21 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
               >
                 {loading ? "Đang xử lý..." : "Đăng Nhập"}
               </button>
-              
-              <p className="text-[11px] text-gray-400 text-center mt-3 font-medium">
-                *Mẹo: Dùng email có chữ "admin" hoặc "hr" để vào các dashboard tương ứng.
-              </p>
 
-              <div className="text-center mt-6 text-[13px] text-gray-500 font-medium">
+              <div className="relative my-4 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-150"></div>
+                </div>
+                <span className="relative bg-white px-3 text-xs text-gray-400 font-semibold uppercase tracking-wider">Hoặc</span>
+              </div>
+
+              <div className="w-full flex justify-center mb-4">
+                <div id="google-signin-btn" className="w-full min-h-[40px] flex justify-center"></div>
+              </div>
+              
+              <div className="text-center mt-4 text-[13px] text-gray-500 font-medium">
                 Chưa có tài khoản?{" "}
-                <button type="button" onClick={() => setMode("register")} className="text-[#0ea5e9] font-bold hover:underline ml-1">
+                <button type="button" onClick={() => switchMode("register")} className="text-[#0ea5e9] font-bold hover:underline ml-1">
                   Đăng ký miễn phí
                 </button>
               </div>
@@ -177,14 +343,28 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                     <label className="block text-sm font-medium mb-1.5 text-gray-700">Họ và tên</label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input type="text" placeholder="Nguyễn Văn A" required className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
+                      <input
+                        type="text"
+                        placeholder="Nguyễn Văn A"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm"
+                      />
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-gray-700">Email</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input type="email" placeholder="name@example.com" required className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
+                      <input
+                        type="email"
+                        placeholder="name@example.com"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm"
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -212,9 +392,14 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                         <input
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
                           required
                           className="w-full pl-9 pr-8 py-2.5 border-2 border-gray-100 rounded-xl text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all [&::-ms-reveal]:hidden"
                         />
+                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -222,6 +407,17 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                   <button type="submit" className="w-full py-3 bg-[#0ea5e9] text-white font-bold rounded-xl hover:bg-[#0284c7] hover:shadow-lg transition-all mt-6 shadow-md shadow-sky-100 active:scale-[0.98]">
                     Tiếp tục
                   </button>
+
+                  <div className="relative my-4 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-150"></div>
+                    </div>
+                    <span className="relative bg-white px-3 text-xs text-gray-400 font-semibold uppercase tracking-wider">Hoặc</span>
+                  </div>
+
+                  <div className="w-full flex justify-center">
+                    <div id="google-signin-btn" className="w-full min-h-[40px] flex justify-center"></div>
+                  </div>
                 </form>
               ) : (
                 <form onSubmit={handleRegister} className="space-y-4">
@@ -267,7 +463,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
 
               <div className="text-center mt-6 text-[13px] text-gray-500 font-medium">
                 Đã có tài khoản?{" "}
-                <button type="button" onClick={() => setMode("login")} className="text-[#0ea5e9] font-bold hover:underline ml-1">
+                <button type="button" onClick={() => switchMode("login")} className="text-[#0ea5e9] font-bold hover:underline ml-1">
                   Đăng nhập
                 </button>
               </div>
