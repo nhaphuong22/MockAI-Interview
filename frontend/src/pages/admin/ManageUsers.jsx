@@ -14,8 +14,10 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminSidebar } from "./AdminSidebar";
 import { getAllUsers, updateUser, toggleUserStatus } from "../../api/userApi";
+import { useAuthStore } from "../../store/useAuthStore";
 
 export function ManageUsers() {
+  const { user: currentUser } = useAuthStore();
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
@@ -260,16 +262,18 @@ export function ManageUsers() {
                           {user.status === "Active" ? (
                             <button 
                               onClick={() => setBanConfirmUser(user)}
-                              className="text-rose-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-                              title="Khóa Tài Khoản"
+                              disabled={currentUser && currentUser.id === user.id}
+                              className="text-rose-400 hover:text-rose-600 disabled:opacity-30 disabled:hover:bg-transparent p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                              title={currentUser && currentUser.id === user.id ? "Bạn không thể tự khóa chính mình" : "Khóa Tài Khoản"}
                             >
                               <UserX className="w-4 h-4" />
                             </button>
                           ) : (
                             <button 
                               onClick={() => handleToggleStatus(user.id)}
-                              className="text-emerald-400 hover:text-emerald-600 p-1.5 rounded-lg hover:bg-emerald-50 transition-colors"
-                              title="Kích Hoạt Tài Khoản"
+                              disabled={currentUser && currentUser.id === user.id}
+                              className="text-emerald-400 hover:text-emerald-600 disabled:opacity-30 disabled:hover:bg-transparent p-1.5 rounded-lg hover:bg-emerald-50 transition-colors"
+                              title={currentUser && currentUser.id === user.id ? "Bạn không thể tự khóa chính mình" : "Kích Hoạt Tài Khoản"}
                             >
                               <UserCheck className="w-4 h-4" />
                             </button>
@@ -436,11 +440,13 @@ export function ManageUsers() {
                         setSelectedUser(prev => ({ ...prev, status: "Active" }));
                       }
                     }}
-                    className={`text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95 ${
+                    disabled={currentUser && currentUser.id === selectedUser.id}
+                    className={`text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent ${
                       selectedUser.status === "Active" 
                         ? "bg-rose-50 hover:bg-rose-100 text-rose-600" 
                         : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
                     }`}
+                    title={currentUser && currentUser.id === selectedUser.id ? "Bạn không thể tự khóa chính mình" : ""}
                   >
                     {selectedUser.status === "Active" ? "Khóa Tài Khoản" : "Kích Hoạt"}
                   </button>
