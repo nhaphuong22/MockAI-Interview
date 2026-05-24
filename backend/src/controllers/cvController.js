@@ -12,13 +12,21 @@ export const uploadCV = async (req, res) => {
     }
 
     const data = await pdfParse(req.file.buffer);
+    const extractedText = data.text.trim();
+
+    // CV thông thường rất hiếm khi vượt quá 20.000 ký tự (khoảng 3000-4000 từ).
+    // Nếu vượt quá mức này, khả năng cao đây là tài liệu/báo cáo khoa học.
+    if (extractedText.length > 20000) {
+      return res.status(400).json({ 
+        message: 'File PDF chứa lượng văn bản quá lớn, không giống một CV thông thường. Vui lòng tải lên CV ngắn gọn hơn!' 
+      });
+    }
     
-    // data.text chứa nội dung text thô của PDF
     // data.numpages chứa số trang
     return res.status(200).json({
       message: 'Bóc tách CV thành công.',
       data: {
-        text: data.text.trim(),
+        text: extractedText,
         pages: data.numpages,
         info: data.info,
       }
