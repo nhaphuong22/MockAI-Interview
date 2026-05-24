@@ -1,48 +1,63 @@
 import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { cvApi } from "../../api/cvApi";
 import { CVUploadArea } from "./components/CVUploadArea";
 import { CVAnalysisLoading } from "./components/CVAnalysisLoading";
 import { CVAnalysisResult } from "./components/CVAnalysisResult";
 
 export function CVReview() {
   const [hasCV, setHasCV] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [cvText, setCvText] = useState("");
+  const [aiResults, setAiResults] = useState(null);
 
-  const aiResults = {
-    overallScore: 85,
-    sections: [
-      { name: "Thông tin cá nhân", score: 95, feedback: "Đầy đủ và chuyên nghiệp" },
-      { name: "Kinh nghiệm làm việc", score: 90, feedback: "Mô tả chi tiết, có số liệu cụ thể" },
-      { name: "Kỹ năng", score: 80, feedback: "Nên bổ sung thêm kỹ năng mềm" },
-      { name: "Học vấn", score: 85, feedback: "Tốt, có thể thêm các khóa học online" },
-      { name: "Định dạng", score: 75, feedback: "Cần tối ưu ATS, sử dụng font chuẩn" },
-    ],
-    strengths: [
-      "Kinh nghiệm làm việc phong phú với 5 năm trong lĩnh vực Frontend",
-      "Có các dự án cụ thể với metrics đo lường được",
-      "Kỹ năng kỹ thuật đa dạng và phù hợp với thị trường",
-    ],
-    improvements: [
-      "Thêm summary statement ở đầu CV để thu hút recruiter",
-      "Bổ sung thêm kỹ năng mềm (teamwork, leadership)",
-      "Tối ưu keywords cho ATS (thêm technical terms phổ biến)",
-      "Cân nhắc giảm độ dài xuống 1-2 trang",
-    ],
-  };
-
-  const handleUpload = () => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setHasCV(true);
+  const scoreMutation = useMutation({
+    mutationFn: (data) => cvApi.scoreCV(data.cvText, data.jobDescription),
+    onSuccess: (res) => {
+      // res from interceptor is { message, data }
+      setAiResults(res.data);
       setShowResults(true);
-    }, 3000);
+    },
+    onError: (error) => {
+      console.error('Lỗi khi chấm điểm CV:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Chấm điểm CV thất bại!';
+      alert(errorMessage);
+    }
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: (file) => cvApi.uploadCV(file),
+    onSuccess: (res) => {
+      // res is from axios interceptor which already returns response.data
+      const text = res.data?.text || '';
+      console.log('CV Text Extracted:', text.substring(0, 100) + '...');
+      setCvText(text);
+      setHasCV(true);
+      
+      // Auto trigger scoreCV without job description (Đánh giá tổng quan)
+      scoreMutation.mutate({ cvText: text, jobDescription: "" });
+    },
+    onError: (error) => {
+      console.error('Lỗi khi tải CV:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Tải lên CV thất bại!';
+      alert(errorMessage);
+    }
+  });
+
+  const handleUpload = (file) => {
+    uploadMutation.mutate(file);
   };
 
   const handleReupload = () => {
     setHasCV(false);
     setShowResults(false);
+    setAiResults(null);
+    setCvText("");
+    uploadMutation.reset();
+    scoreMutation.reset();
   };
+
+  const isAnalyzing = uploadMutation.isPending || scoreMutation.isPending;
 
   return (
     <div className="bg-gray-50 min-h-screen py-8">
@@ -50,7 +65,7 @@ export function CVReview() {
         <div className="mb-8">
           <h1 className="text-3xl mb-2">AI Chấm Điểm CV</h1>
           <p className="text-gray-600">
-            Upload CV của bạn để nhận phân tích chi tiết và gợi ý cải thiện từ AI
+            Upload CV của bạn để nhận phân tích chi tiết và gợi ý cải thiện tổng quan từ AI
           </p>
         </div>
 
@@ -62,7 +77,7 @@ export function CVReview() {
           <CVAnalysisLoading />
         )}
 
-        {showResults && !isAnalyzing && (
+        {showResults && !isAnalyzing && aiResults && (
           <CVAnalysisResult aiResults={aiResults} onReupload={handleReupload} />
         )}
       </div>

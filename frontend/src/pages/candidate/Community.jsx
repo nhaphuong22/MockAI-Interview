@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { CommunityLeftSidebar } from "./components/CommunityLeftSidebar";
 import { CommunityRightSidebar } from "./components/CommunityRightSidebar";
 import { PostCard } from "./components/PostCard";
+import { WriteBlogModal } from "./components/WriteBlogModal";
 
 const categories = [
   { id: "all", name: "Tất Cả Bài Viết", active: true },
@@ -81,6 +82,8 @@ export function Community() {
   const [likedPosts, setLikedPosts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+
   const toggleLike = (postId) => {
     setLikedPosts((prev) =>
       prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]
@@ -88,7 +91,7 @@ export function Community() {
   };
 
   const handleWritePost = () => {
-    alert("Tính năng đăng bài viết mới đang được phát triển!");
+    setIsWriteModalOpen(true);
   };
 
   // Filter posts by category and search query
@@ -165,6 +168,11 @@ export function Community() {
           </aside>
         </div>
       </div>
+
+      <WriteBlogModal 
+        isOpen={isWriteModalOpen} 
+        onOpenChange={setIsWriteModalOpen} 
+      />
     </div>
   );
 }
