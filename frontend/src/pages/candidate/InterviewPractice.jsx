@@ -47,13 +47,6 @@ export function InterviewPractice() {
   const [interviewId, setInterviewId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Custom configuration state
-  const [config, setConfig] = useState({
-    position: "",
-    skills: "",
-    level: "JUNIOR"
-  });
-
   const startInterview = (type) => {
     setInterviewType(type);
     setMode("info-input");
@@ -61,7 +54,6 @@ export function InterviewPractice() {
 
   const handleProceedInfo = async (info) => {
     setIsSubmitting(true);
-    setConfig(info);
     try {
       // Call backend to initialize the interview and retrieve custom generated questions
       const response = await initInterviewApi({
@@ -164,6 +156,7 @@ export function InterviewPractice() {
   if (mode === "practicing") {
     return (
       <InterviewSession
+        key={currentQuestion}
         interviewType={interviewType}
         currentQuestion={currentQuestion}
         questions={questions}
@@ -172,6 +165,7 @@ export function InterviewPractice() {
       />
     );
   }
+
 
   // 4. Post-interview feedback display
   if (mode === "feedback") {

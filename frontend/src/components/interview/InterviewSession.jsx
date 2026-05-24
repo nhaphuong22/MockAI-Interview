@@ -18,6 +18,9 @@ export function InterviewSession({
   const isTextMode = interviewType === "text";
   const questionText = questions[currentQuestion] || "";
 
+  // Text mode state
+  const [textAnswer, setTextAnswer] = useState("");
+
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -37,33 +40,6 @@ export function InterviewSession({
 
   // Timer state
   const [seconds, setSeconds] = useState(0);
-
-  useEffect(() => {
-    // Reset state for new question
-    setRealtimeTranscript("");
-    setFinalAnswer("");
-    setHasRecorded(false);
-    setIsRecording(false);
-    setIsTranscribing(false);
-    setAudioLevel(0);
-    stopAudioEngine();
-  }, [currentQuestion]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSeconds(prev => prev + 1);
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-      stopAudioEngine();
-    };
-  }, []);
-
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, "0");
-    const s = (secs % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  };
 
   const stopAudioEngine = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -85,6 +61,22 @@ export function InterviewSession({
       recognitionRef.current.stop();
       recognitionRef.current = null;
     }
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds(prev => prev + 1);
+    }, 1000);
+    return () => {
+      clearInterval(timer);
+      stopAudioEngine();
+    };
+  }, []);
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
   };
 
   const startRecording = async () => {
@@ -164,12 +156,9 @@ export function InterviewSession({
         recognition.lang = "vi-VN"; // default to Vietnamese, supports English too
 
         recognition.onresult = (event) => {
-          let interimTranscript = "";
           for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
               setRealtimeTranscript(prev => prev + event.results[i][0].transcript + " ");
-            } else {
-              interimTranscript += event.results[i][0].transcript;
             }
           }
         };
@@ -247,7 +236,10 @@ export function InterviewSession({
                 className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:ring-2 focus:ring-[#0ea5e9]/10 focus:outline-none resize-none text-gray-700 transition-all"
                 rows={6}
                 autoFocus
+                value={textAnswer}
+                onChange={(e) => setTextAnswer(e.target.value)}
               />
+
               <div className="flex items-center justify-between mt-4">
                 <div className="text-xs text-gray-500">
                   <span className="text-[#0ea5e9] font-bold">Gợi ý:</span> Sử dụng phương pháp STAR để cấu trúc câu trả lời của bạn.
