@@ -181,7 +181,7 @@ export const createUser = async (req, res) => {
 
     // Thực hiện transaction để đảm bảo toàn vẹn dữ liệu ở cả bảng users và user_roles
     const newUser = await db.transaction(async (trx) => {
-      // 1. Thêm vào bảng users
+      // 1. Thêm vào bảng users (Không chèn cột 'role' đã bị xóa ở DB mới)
       const [insertedUser] = await trx('users')
         .insert({
           email,
@@ -189,7 +189,6 @@ export const createUser = async (req, res) => {
           full_name,
           phone,
           address,
-          role: dbRoleName, // Đồng bộ trường role cũ
           is_active: true,
           email_verified: true,
           created_at: new Date(),
@@ -247,7 +246,7 @@ export const updateUser = async (req, res) => {
     const dbRoleName = role ? mapRoleToDb(role) : null;
 
     await db.transaction(async (trx) => {
-      // 1. Cập nhật bảng users
+      // 1. Cập nhật bảng users (Không cập nhật cột 'role' đã bị xóa ở DB mới)
       const updateData = {
         updated_at: new Date()
       };
@@ -256,7 +255,6 @@ export const updateUser = async (req, res) => {
       if (bio !== undefined) updateData.bio = bio;
       if (address !== undefined) updateData.address = address;
       if (dateOfBirth !== undefined) updateData.date_of_birth = dateOfBirth ? new Date(dateOfBirth) : null;
-      if (dbRoleName) updateData.role = dbRoleName; // Đồng bộ hóa trường role cũ
 
       await trx('users').where({ id }).update(updateData);
 
@@ -295,6 +293,11 @@ export const updateUser = async (req, res) => {
 export const toggleUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Ngăn chặn admin tự khóa chính mình
+    if (parseInt(id) === req.user.id) {
+      return res.status(400).json({ message: 'Bạn không thể tự khóa hoặc vô hiệu hóa tài khoản quản trị viên hiện tại của mình!' });
+    }
 
     const user = await db('users').where({ id }).first();
     if (!user) {
