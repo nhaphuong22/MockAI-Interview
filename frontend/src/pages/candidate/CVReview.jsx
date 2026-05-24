@@ -22,6 +22,7 @@ export function CVReview() {
       console.error('Lỗi khi chấm điểm CV:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Chấm điểm CV thất bại!';
       alert(errorMessage);
+      setHasCV(false);
     }
   });
 
