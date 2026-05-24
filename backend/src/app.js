@@ -21,6 +21,9 @@ app.use(express.urlencoded({ extended: true }));
 // Phục vụ thư mục uploads như là file tĩnh
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Serve static uploads
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // Swagger Integration
 setupSwagger(app);
 
@@ -28,3 +31,4 @@ setupSwagger(app);
 app.use('/api', apiRoutes);
 
 export default app;
+
