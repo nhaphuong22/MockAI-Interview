@@ -20,7 +20,10 @@ export function CVReview() {
     },
     onError: (error) => {
       console.error('Lỗi khi chấm điểm CV:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Chấm điểm CV thất bại!';
+      let errorMessage = error.response?.data?.message || error.message || 'Chấm điểm CV thất bại!';
+      if (error.response?.status === 413) {
+        errorMessage = 'File CV của bạn chứa dung lượng văn bản quá lớn, vui lòng rút gọn lại để hệ thống xử lý tốt nhất.';
+      }
       alert(errorMessage);
       setHasCV(false);
     }
