@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { MicrophoneSetup } from "../../components/ai/MicrophoneSetup";
 import { InterviewSelection } from "../../components/interview/InterviewSelection";
+import { InterviewInfoInput } from "../../components/interview/InterviewInfoInput";
 import { InterviewSession } from "../../components/interview/InterviewSession";
 import { InterviewFeedback } from "../../components/interview/InterviewFeedback";
 import { createVoiceSessionApi } from "../../api/voiceSession";
+import { initInterviewApi } from "../../api/interviewApi";
 
-const mockQuestions = [
+const defaultQuestions = [
   "Hãy giới thiệu về bản thân bạn",
   "Tại sao bạn muốn làm việc ở vị trí này?",
   "Điểm mạnh và điểm yếu của bạn là gì?",
@@ -19,7 +21,7 @@ const previousSessions = [
     date: "2026-05-10",
     position: "Senior Frontend Developer",
     score: 88,
-    questions: 10,
+    questions: 5,
     duration: "15 phút",
   },
   {
@@ -27,7 +29,7 @@ const previousSessions = [
     date: "2026-05-08",
     position: "Full Stack Developer",
     score: 82,
-    questions: 10,
+    questions: 5,
     duration: "14 phút",
   },
 ];
@@ -35,33 +37,72 @@ const previousSessions = [
 /**
  * InterviewPractice Page
  * Root container for candidate interview practice flows.
- * Manages mode state switching: select -> setup (if voice) -> practicing -> feedback.
+ * Manages mode state switching: select -> info-input -> setup (if voice) -> practicing -> feedback.
  */
 export function InterviewPractice() {
-  const [mode, setMode] = useState("select"); // modes: select, setup, practicing, feedback
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [mode, setMode] = useState("select"); // modes: select, info-input, setup, practicing, feedback
   const [interviewType, setInterviewType] = useState(null); // type: text or voice
+  const [questions, setQuestions] = useState(defaultQuestions);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [interviewId, setInterviewId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const startInterview = (type) => {
     setInterviewType(type);
-    if (type === "voice") {
-      setMode("setup");
-    } else {
-      setMode("practicing");
+    setMode("info-input");
+  };
+
+  const handleProceedInfo = async (info) => {
+    setIsSubmitting(true);
+    try {
+      // Call backend to initialize the interview and retrieve custom generated questions
+      const response = await initInterviewApi({
+        customPosition: info.position,
+        customSkills: info.skills,
+        experienceLevel: info.level,
+        type: "PRACTICE"
+      });
+
+      const interviewData = response.data;
+      setInterviewId(interviewData.id);
+
+      if (interviewData.questions && interviewData.questions.length > 0) {
+        const questionTexts = interviewData.questions.map(q => q.question_text);
+        setQuestions(questionTexts);
+      } else {
+        setQuestions(defaultQuestions);
+      }
+
+      if (interviewType === "voice") {
+        setMode("setup");
+      } else {
+        setMode("practicing");
+      }
+    } catch (error) {
+      console.error("Error initializing interview:", error);
+      // Fallback in case of API failure so the user can still practice
+      setQuestions(defaultQuestions);
+      if (interviewType === "voice") {
+        setMode("setup");
+      } else {
+        setMode("practicing");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleProceedVoice = async () => {
     setIsSubmitting(true);
     try {
-      // Register voice session with sample interview_id 1
-      const response = await createVoiceSessionApi(1);
+      // Register voice session with the dynamically created interview ID
+      const targetId = interviewId || 1;
+      const response = await createVoiceSessionApi(targetId);
       console.log("Voice session registered successfully:", response.data);
       setMode("practicing");
     } catch (error) {
       console.error("Error registering voice session:", error);
-      // Fallback so candidate can still practice even if API fails
+      // Fallback
       setMode("practicing");
     } finally {
       setIsSubmitting(false);
@@ -69,7 +110,7 @@ export function InterviewPractice() {
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestion < mockQuestions.length - 1) {
+    if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       setMode("feedback");
@@ -83,9 +124,23 @@ export function InterviewPractice() {
   const handleRetry = () => {
     setMode("select");
     setCurrentQuestion(0);
+    setInterviewId(null);
   };
 
-  // 1. Setup UI for microphone device tests
+  // 1. Info Input Configuration Form
+  if (mode === "info-input") {
+    return (
+      <div className="bg-gray-50 min-h-screen py-16 px-4 flex items-center justify-center">
+        <InterviewInfoInput
+          onProceed={handleProceedInfo}
+          onBack={() => setMode("select")}
+          isSubmitting={isSubmitting}
+        />
+      </div>
+    );
+  }
+
+  // 2. Setup UI for microphone device tests
   if (mode === "setup") {
     return (
       <div className="bg-gray-50 min-h-screen py-16 px-4 flex items-center justify-center">
@@ -97,30 +152,32 @@ export function InterviewPractice() {
     );
   }
 
-  // 2. Active practice session (either text input or voice recording)
+  // 3. Active practice session (either text input or voice recording)
   if (mode === "practicing") {
     return (
       <InterviewSession
+        key={currentQuestion}
         interviewType={interviewType}
         currentQuestion={currentQuestion}
-        questions={mockQuestions}
+        questions={questions}
         onNext={handleNextQuestion}
         onCancel={handleCancelInterview}
       />
     );
   }
 
-  // 3. Post-interview feedback display
+
+  // 4. Post-interview feedback display
   if (mode === "feedback") {
     return (
       <InterviewFeedback 
-        questions={mockQuestions} 
+        questions={questions} 
         onRetry={handleRetry} 
       />
     );
   }
 
-  // 4. Initial landing view: Select mode and review history
+  // 5. Initial landing view: Select mode and review history
   return (
     <InterviewSelection 
       onStartInterview={startInterview} 
@@ -128,3 +185,4 @@ export function InterviewPractice() {
     />
   );
 }
+
