@@ -15,8 +15,8 @@ const app = express();
 
 // Middlewares
 app.use(cors());
-app.use(express.json({ limit: '500kb' }));
-app.use(express.urlencoded({ limit: '500kb', extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Phục vụ thư mục uploads như là file tĩnh
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
