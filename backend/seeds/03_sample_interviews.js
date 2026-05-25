@@ -41,4 +41,9 @@ export async function seed(knex) {
       updated_at: new Date()
     }
   ]);
+
+  // Reset sequences to prevent duplicate key errors in auto-increment
+  await knex.raw("SELECT setval('cvs_id_seq', (SELECT MAX(id) FROM cvs))");
+  await knex.raw("SELECT setval('interviews_id_seq', (SELECT MAX(id) FROM interviews))");
 };
+
