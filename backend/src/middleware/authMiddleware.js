@@ -9,7 +9,11 @@ export const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
 
   if (!token) {
-    return sendError(res, 401, 'Access token is required');
+    // TẠM THỜI BYPASS CHO MỤC ĐÍCH TEST GIAO DIỆN (Sẽ xóa sau khi có Auth Flow)
+    console.warn("⚠️ Bypass Auth: Không có token, sử dụng Mock User ID=1");
+    req.user = { id: 1, role: 'candidate' };
+    return next();
+    // return sendError(res, 401, 'Access token is required');
   }
 
   try {
