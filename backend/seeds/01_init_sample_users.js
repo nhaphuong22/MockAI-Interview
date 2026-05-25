@@ -70,4 +70,9 @@ export async function seed(knex) {
       updated_at: new Date()
     }
   ]);
+
+  // Reset sequences to prevent duplicate key errors in auto-increment
+  await knex.raw("SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))");
+  await knex.raw("SELECT setval('jobs_id_seq', (SELECT MAX(id) FROM jobs))");
 };
+

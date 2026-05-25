@@ -5,7 +5,7 @@ import { axiosClient } from "./axiosClient";
  * @param {Object} params - { page, limit, search, role, status }
  */
 export const getAllUsers = (params) => {
-  return axiosClient.get("/api/users", { params });
+  return axiosClient.get("/users", { params });
 };
 
 /**
@@ -13,7 +13,7 @@ export const getAllUsers = (params) => {
  * @param {number|string} id - ID người dùng
  */
 export const getUserById = (id) => {
-  return axiosClient.get(`/api/users/${id}`);
+  return axiosClient.get(`/users/${id}`);
 };
 
 /**
@@ -21,7 +21,7 @@ export const getUserById = (id) => {
  * @param {Object} data - { email, password, full_name, role, phone, address }
  */
 export const createUser = (data) => {
-  return axiosClient.post("/api/users", data);
+  return axiosClient.post("/users", data);
 };
 
 /**
@@ -30,7 +30,7 @@ export const createUser = (data) => {
  * @param {Object} data - { name, phone, bio, address, dateOfBirth, role }
  */
 export const updateUser = (id, data) => {
-  return axiosClient.put(`/api/users/${id}`, data);
+  return axiosClient.put(`/users/${id}`, data);
 };
 
 /**
@@ -38,7 +38,7 @@ export const updateUser = (id, data) => {
  * @param {number|string} id - ID người dùng
  */
 export const toggleUserStatus = (id) => {
-  return axiosClient.patch(`/api/users/${id}/status`);
+  return axiosClient.patch(`/users/${id}/status`);
 };
 
 /**
@@ -46,5 +46,5 @@ export const toggleUserStatus = (id) => {
  * @param {number|string} id - ID người dùng
  */
 export const deleteUser = (id) => {
-  return axiosClient.delete(`/api/users/${id}`);
+  return axiosClient.delete(`/users/${id}`);
 };

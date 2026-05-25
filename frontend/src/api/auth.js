@@ -7,7 +7,7 @@ import { axiosClient } from "./axiosClient";
  * @returns {Promise<{success: boolean, data: {user: object, token: string}}>}
  */
 export const loginApi = async (email, password) => {
-  return axiosClient.post("/api/auth/login", { email, password });
+  return axiosClient.post("/auth/login", { email, password });
 };
 
 /**
@@ -20,7 +20,7 @@ export const loginApi = async (email, password) => {
  * @returns {Promise<{success: boolean, data: {user: object, token: string}}>}
  */
 export const registerApi = async (data) => {
-  return axiosClient.post("/api/auth/register", data);
+  return axiosClient.post("/auth/register", data);
 };
 
 /**
@@ -29,7 +29,7 @@ export const registerApi = async (data) => {
  * @returns {Promise<{success: boolean, data: {user: object, token: string}}>}
  */
 export const loginGoogleApi = async (idToken) => {
-  return axiosClient.post("/api/auth/google", { idToken });
+  return axiosClient.post("/auth/google", { idToken });
 };
 
 /**
@@ -43,7 +43,7 @@ export const loginGoogleApi = async (idToken) => {
  * @returns {Promise<{success: boolean, data: object}>}
  */
 export const updateProfileApi = async (data) => {
-  return axiosClient.put("/api/auth/profile", data);
+  return axiosClient.put("/auth/profile", data);
 };
 
 
