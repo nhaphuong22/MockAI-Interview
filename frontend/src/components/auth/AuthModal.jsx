@@ -46,7 +46,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         if (userRoleName === "ADMIN") {
           redirectPath = "/admin/dashboard";
         } else if (userRoleName === "HR") {
-          redirectPath = "/hr/dashboard";
+          redirectPath = "/recruiter/dashboard";
         }
         
         onOpenChange(false);
@@ -122,7 +122,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         if (userRoleName === "ADMIN") {
           redirectPath = "/admin/dashboard";
         } else if (userRoleName === "HR") {
-          redirectPath = "/hr/dashboard";
+          redirectPath = "/recruiter/dashboard";
         }
         
         onOpenChange(false);
@@ -175,7 +175,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         if (userRoleName === "ADMIN") {
           redirectPath = "/admin/dashboard";
         } else if (userRoleName === "HR") {
-          redirectPath = "/hr/dashboard";
+          redirectPath = "/recruiter/dashboard";
         }
 
         onOpenChange(false);

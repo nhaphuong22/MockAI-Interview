@@ -29,7 +29,7 @@ export function Layout() {
   const isCandidate = !isRecruiter && !isAdministrator;
 
   // Xác định base path cho từng role
-  const recruiterBase = "/hr/dashboard";
+  const recruiterBase = "/recruiter/dashboard";
   const administratorBase = "/admin/dashboard";
 
   return (
