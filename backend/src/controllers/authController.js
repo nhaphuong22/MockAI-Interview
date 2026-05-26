@@ -10,6 +10,8 @@ import {
   changePassword,
 } from '../services/authService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
+import { v2 as cloudinary } from 'cloudinary';
+import fs from 'fs';
 
 // ─── Register ──────────────────────────────────────────────────────────────────
 
@@ -245,7 +247,23 @@ export const uploadAvatarController = async (req, res) => {
     if (!req.file) {
       return sendError(res, 400, 'Vui lòng chọn một ảnh để tải lên');
     }
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+    // Configure Cloudinary (automatically picks up CLOUDINARY_URL from env)
+    cloudinary.config();
+
+    // Upload local file to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'avatars',
+    });
+
+    // Delete temporary local file
+    try {
+      await fs.promises.unlink(req.file.path);
+    } catch (unlinkError) {
+      console.error('Failed to delete temporary local avatar file:', unlinkError);
+    }
+
+    const avatarUrl = uploadResult.secure_url;
     return sendResponse(res, 200, { avatarUrl });
   } catch (error) {
     console.error('Upload avatar controller error:', error);
