@@ -6,7 +6,20 @@ import { sendResponse, sendError } from '../ultils/responseHelper.js';
  */
 export const createNewJob = async (req, res) => {
   try {
-    const { title, description, requirements, status, detailed_requirements } = req.body;
+    const { 
+      title, 
+      description, 
+      requirements, 
+      status, 
+      experience_level,
+      salary_min,
+      salary_max,
+      salary_currency,
+      is_salary_visible,
+      vacancy_count,
+      deadline,
+      detailed_requirements 
+    } = req.body;
     const hrId = req.user.id;
 
     // 1. Kiểm tra validation cơ bản cho job title
@@ -18,6 +31,34 @@ export const createNewJob = async (req, res) => {
     const VALID_STATUSES = ['OPEN', 'CLOSED'];
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
       return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN hoặc CLOSED.');
+    }
+
+    // Validation bổ sung cho các trường số liệu
+    let parsedSalaryMin = null;
+    if (salary_min !== undefined && salary_min !== null && salary_min !== '') {
+      parsedSalaryMin = parseInt(salary_min);
+      if (isNaN(parsedSalaryMin) || parsedSalaryMin < 0) {
+        return sendError(res, 400, 'Mức lương tối thiểu (salary_min) phải là số nguyên dương.');
+      }
+    }
+
+    let parsedSalaryMax = null;
+    if (salary_max !== undefined && salary_max !== null && salary_max !== '') {
+      parsedSalaryMax = parseInt(salary_max);
+      if (isNaN(parsedSalaryMax) || parsedSalaryMax < 0) {
+        return sendError(res, 400, 'Mức lương tối đa (salary_max) phải là số nguyên dương.');
+      }
+      if (parsedSalaryMin !== null && parsedSalaryMax < parsedSalaryMin) {
+        return sendError(res, 400, 'Mức lương tối đa không được nhỏ hơn mức lương tối thiểu.');
+      }
+    }
+
+    let parsedVacancyCount = 1;
+    if (vacancy_count !== undefined && vacancy_count !== null && vacancy_count !== '') {
+      parsedVacancyCount = parseInt(vacancy_count);
+      if (isNaN(parsedVacancyCount) || parsedVacancyCount <= 0) {
+        return sendError(res, 400, 'Số lượng tuyển dụng (vacancy_count) phải là số nguyên lớn hơn 0.');
+      }
     }
 
     // 3. Kiểm tra validation cho detailed_requirements nếu có
@@ -44,8 +85,16 @@ export const createNewJob = async (req, res) => {
       description,
       requirements,
       status,
+      experienceLevel: experience_level || null,
+      salaryMin: parsedSalaryMin,
+      salaryMax: parsedSalaryMax,
+      salaryCurrency: salary_currency || 'VND',
+      isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
+      vacancyCount: parsedVacancyCount,
+      deadline: deadline || null,
       detailedRequirements: detailed_requirements || []
     });
+
 
     return sendResponse(res, 201, result);
   } catch (error) {
