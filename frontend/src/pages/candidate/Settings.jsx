@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import { User, Lock, Bell, CreditCard, Shield, Globe } from "lucide-react";
+import { User, Lock, Bell, CreditCard, Shield, Globe, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import { AccountSettings } from "./components/AccountSettings";
 import { PlaceholderSettings } from "./components/PlaceholderSettings";
+import { SecuritySettings } from "./components/SecuritySettings";
 
 export function Settings() {
   const { user, setAuth, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("account");
 
   const menuItems = [
@@ -27,14 +30,25 @@ export function Settings() {
 
   const activeMenu = menuItems.find(item => item.id === activeTab);
   const fullName = user?.full_name || user?.fullName || "";
-  const avatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
+    ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
+    : rawAvatarUrl;
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Cài đặt hệ thống</h1>
-          <p className="text-lg text-gray-600 font-medium">Tùy chỉnh trải nghiệm MockAI theo cách của bạn</p>
+        <div className="mb-10 flex items-center gap-4">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100 hover:bg-sky-50 hover:text-[#0ea5e9] transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Cài đặt hệ thống</h1>
+            <p className="text-lg text-gray-600 font-medium">Tùy chỉnh trải nghiệm MockAI theo cách của bạn</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -57,6 +71,8 @@ export function Settings() {
                   user={user} 
                   onUpdateUser={handleUpdateUser} 
                 />
+              ) : activeTab === "security" ? (
+                <SecuritySettings />
               ) : (
                 <PlaceholderSettings 
                   title={activeMenu ? activeMenu.title : ""} 

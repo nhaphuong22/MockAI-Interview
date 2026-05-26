@@ -72,7 +72,10 @@ export function Profile() {
   };
 
   const completeness = calculateCompleteness();
-  const avatarUrl = user?.avatar_url || user?.avatarUrl;
+  const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
+    ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
+    : rawAvatarUrl;
 
   return (
     <div className="bg-gray-50 py-8">

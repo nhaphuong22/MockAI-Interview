@@ -55,7 +55,13 @@ export const createNewJob = async (req, res) => {
       }
     }
 
-    // 2. Kiểm tra validation cho detailed_requirements nếu có
+    // 2. Kiểm tra validation cho status nếu có
+    const VALID_STATUSES = ['OPEN', 'CLOSED'];
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN hoặc CLOSED.');
+    }
+
+    // 3. Kiểm tra validation cho detailed_requirements nếu có
     if (detailed_requirements !== undefined) {
       if (!Array.isArray(detailed_requirements)) {
         return sendError(res, 400, 'Yêu cầu chi tiết (detailed_requirements) phải là một mảng.');
@@ -72,7 +78,7 @@ export const createNewJob = async (req, res) => {
       }
     }
 
-    // 3. Gọi service tạo job
+    // 4. Gọi service tạo job
     const result = await createJob({
       hrId,
       title: title.trim(),

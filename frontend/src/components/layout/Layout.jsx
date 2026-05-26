@@ -13,7 +13,10 @@ export function Layout() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
 
-  const avatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
+    ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
+    : rawAvatarUrl;
 
 
 
