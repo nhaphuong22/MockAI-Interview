@@ -6,7 +6,7 @@ import { axiosClient } from "./axiosClient";
  * @returns {Promise<{success: boolean, data: object}>}
  */
 export const createVoiceSessionApi = async (interviewId) => {
-  return axiosClient.post("/api/voice-sessions", { interviewId });
+  return axiosClient.post("/voice-sessions", { interviewId });
 };
 
 /**
@@ -22,7 +22,7 @@ export const transcribeAudioApi = async (audioBlob, draftTranscript = "") => {
     formData.append("transcript", draftTranscript);
   }
 
-  return axiosClient.post("/api/voice-sessions/transcribe", formData, {
+  return axiosClient.post("/voice-sessions/transcribe", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
