@@ -2,6 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
 import { Payment } from "./pages/shared/Payment";
 import { PaymentSuccess } from "./pages/shared/PaymentSuccess";
+import { VerifyEmail } from "./pages/shared/VerifyEmail";
+import { ResetPassword } from "./pages/shared/ResetPassword";
 
 // Candidate Pages (Ứng viên)
 import { Home } from "./pages/candidate/Home";
@@ -95,4 +97,8 @@ export const router = createBrowserRouter([
       { path: "system-settings", Component: SystemSettings },
     ],
   },
+
+  // Auth standalone pages (no Layout wrapper)
+  { path: "/verify-email", Component: VerifyEmail },
+  { path: "/reset-password", Component: ResetPassword },
 ]);
