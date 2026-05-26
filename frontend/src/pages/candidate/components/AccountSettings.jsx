@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { User, Phone, Mail, MapPin, Globe, AlignLeft } from "lucide-react";
-import { updateProfileApi } from "../../../api/auth";
+import { updateProfileApi, uploadAvatarApi } from "../../../api/auth";
+import { Camera, Loader2 } from "lucide-react";
 
 export function AccountSettings({ user, onUpdateUser }) {
   // Form states
@@ -12,7 +13,41 @@ export function AccountSettings({ user, onUpdateUser }) {
 
   // Loading & Message states
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setMessage({ type: "error", text: "Vui lòng chọn một file ảnh hợp lệ." });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setMessage({ type: "", text: "" });
+    try {
+      const response = await uploadAvatarApi(file);
+      if (response.success && response.data?.avatarUrl) {
+        // Construct full URL if necessary or keep relative
+        // Example: response.data.avatarUrl is "/uploads/avatars/file.jpg"
+        const fullUrl = import.meta.env.VITE_API_URL 
+          ? import.meta.env.VITE_API_URL.replace("/api", "") + response.data.avatarUrl
+          : "http://localhost:5000" + response.data.avatarUrl;
+        
+        setAvatarUrl(fullUrl);
+        setMessage({ type: "success", text: "Tải ảnh lên thành công! Bấm Lưu thay đổi để hoàn tất." });
+      } else {
+        setMessage({ type: "error", text: response.message || "Tải ảnh thất bại!" });
+      }
+    } catch (error) {
+      console.error("Upload avatar error:", error);
+      setMessage({ type: "error", text: error.response?.data?.message || "Lỗi khi tải ảnh lên!" });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     setIsSubmitting(true);
@@ -115,16 +150,40 @@ export function AccountSettings({ user, onUpdateUser }) {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Đường dẫn ảnh đại diện (Avatar URL)</label>
-          <div className="relative">
-            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input 
-              type="text" 
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://example.com/avatar.png"
-              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100"
-            />
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Ảnh đại diện</label>
+          <div className="flex items-center gap-6">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-3xl bg-gray-100 overflow-hidden border-2 border-dashed border-gray-300 flex items-center justify-center">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8 text-gray-400" />
+                )}
+              </div>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                {isUploadingAvatar ? <Loader2 className="w-6 h-6 animate-spin" /> : <Camera className="w-6 h-6" />}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleAvatarChange} 
+                  className="hidden" 
+                  disabled={isUploadingAvatar}
+                />
+              </label>
+            </div>
+            <div className="flex-1">
+              <div className="relative">
+                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input 
+                  type="text" 
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder="Hoặc dán URL ảnh vào đây..."
+                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-2 font-medium">Bạn có thể tải ảnh lên từ máy tính hoặc dán đường dẫn ảnh.</p>
+            </div>
           </div>
         </div>
 
