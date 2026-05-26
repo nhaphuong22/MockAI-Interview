@@ -36,3 +36,7 @@ logs/
 # OS files
 Thumbs.db
 desktop.ini
+
+# Local Uploads
+backend/uploads/
+uploads/
