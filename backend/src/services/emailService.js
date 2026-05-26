@@ -39,8 +39,8 @@ const sendMail = async (mailOptions) => {
     } catch (err) {
       console.error('\n========== [EmailService] ERROR — Gửi email thất bại ==========');
       console.error('Chi tiết lỗi:', err.message);
-      console.error('Lưu ý: Có thể do tài khoản Mailtrap hết dung lượng (quota giới hạn)');
-      console.error('hoặc mạng của bạn đang chặn cổng SMTP (Port 2525/587).');
+      console.error('Lưu ý: Vui lòng kiểm tra lại cấu hình Gmail và Mật khẩu ứng dụng (App Password) trong .env');
+      console.error('hoặc kết nối mạng/cổng SMTP (Port 465/587) đang bị chặn.');
       console.error('Hệ thống tự động in thông tin email ra terminal để phát triển (DEV):');
       console.error(`  Gửi đến: ${mailOptions.to}`);
       console.error(`  Tiêu đề: ${mailOptions.subject}`);

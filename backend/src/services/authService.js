@@ -289,7 +289,9 @@ export const loginGoogleUser = async (idToken) => {
 
   const email = payload.email;
   const fullName = payload.name || email.split('@')[0];
-  const avatarUrl = payload.picture;
+  const avatarUrl = payload.picture
+    ? payload.picture.replace(/=s\d+(-c)?$/, '=s384-c')
+    : null;
 
   // 3. Find user in database
   let user = await db('users').where({ email }).first();
