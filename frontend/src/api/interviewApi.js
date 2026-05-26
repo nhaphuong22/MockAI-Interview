@@ -11,5 +11,5 @@ import { axiosClient } from "./axiosClient";
  * @returns {Promise<object>} The created interview session with generated questions
  */
 export const initInterviewApi = async (data) => {
-  return axiosClient.post("/api/interviews/init", data);
+  return axiosClient.post("/interviews/init", data);
 };

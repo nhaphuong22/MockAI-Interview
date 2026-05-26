@@ -18,6 +18,13 @@ export const createJob = async ({
   description = '',
   requirements = '',
   status = 'OPEN',
+  experienceLevel = null,
+  salaryMin = null,
+  salaryMax = null,
+  salaryCurrency = 'VND',
+  isSalaryVisible = true,
+  vacancyCount = 1,
+  deadline = null,
   detailedRequirements = []
 }) => {
   return await db.transaction(async (trx) => {
@@ -29,10 +36,18 @@ export const createJob = async ({
         description: description || null,
         requirements: requirements || null,
         status: status || 'OPEN',
+        experience_level: experienceLevel || null,
+        salary_min: salaryMin || null,
+        salary_max: salaryMax || null,
+        salary_currency: salaryCurrency || 'VND',
+        is_salary_visible: isSalaryVisible,
+        vacancy_count: vacancyCount,
+        deadline: deadline || null,
         created_at: new Date(),
         updated_at: new Date()
       })
       .returning('*');
+
 
     let insertedRequirements = [];
 
