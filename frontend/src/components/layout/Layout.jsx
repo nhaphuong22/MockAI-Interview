@@ -119,7 +119,7 @@ export function Layout() {
                       <button className="flex items-center gap-2 hover:opacity-80 transition-opacity outline-none">
                         <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-sm border border-white/50">
                           {avatarUrl ? (
-                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
                             <User className="w-5 h-5 text-white" />
                           )}
