@@ -130,7 +130,7 @@ export function InterviewPractice() {
   // 1. Info Input Configuration Form
   if (mode === "info-input") {
     return (
-      <div className="bg-gray-50 min-h-screen py-16 px-4 flex items-center justify-center">
+      <div className="dark:bg-[#0a0f1c] bg-gray-50 min-h-screen py-16 px-4 flex items-center justify-center transition-colors duration-500">
         <InterviewInfoInput
           onProceed={handleProceedInfo}
           onBack={() => setMode("select")}
@@ -143,7 +143,7 @@ export function InterviewPractice() {
   // 2. Setup UI for microphone device tests
   if (mode === "setup") {
     return (
-      <div className="bg-gray-50 min-h-screen py-16 px-4 flex items-center justify-center">
+      <div className="dark:bg-[#0a0f1c] bg-gray-50 min-h-screen py-16 px-4 flex items-center justify-center transition-colors duration-500">
         <MicrophoneSetup 
           onProceed={handleProceedVoice} 
           isSubmitting={isSubmitting} 

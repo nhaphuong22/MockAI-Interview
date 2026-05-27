@@ -5,8 +5,8 @@ export function ProfileSidebar() {
   return (
     <div className="space-y-6">
       {/* AI Score Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="font-semibold mb-4">AI Score</h3>
+      <div className="dark:bg-[#0f172a] bg-white rounded-2xl shadow-sm border dark:border-white/10 border-gray-100 p-6">
+        <h3 className="font-semibold dark:text-white mb-4">AI Score</h3>
         <div className="relative w-32 h-32 mx-auto mb-4">
           <svg className="w-32 h-32 transform -rotate-90">
             <circle
@@ -38,11 +38,11 @@ export function ProfileSidebar() {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-3xl text-[#0ea5e9]">88</div>
-              <div className="text-xs text-gray-600">/ 100</div>
+              <div className="text-xs dark:text-slate-400 text-gray-600">/ 100</div>
             </div>
           </div>
         </div>
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm dark:text-slate-400 text-gray-600">
           Hồ sơ của bạn có độ phù hợp cao với các công ty công nghệ
         </p>
       </div>
@@ -61,14 +61,14 @@ export function ProfileSidebar() {
       </div>
 
       {/* Quick Actions Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="font-semibold mb-4">Quick Actions</h3>
+      <div className="dark:bg-[#0f172a] bg-white rounded-2xl shadow-sm border dark:border-white/10 border-gray-100 p-6">
+        <h3 className="font-semibold dark:text-white mb-4">Quick Actions</h3>
         <div className="space-y-3">
-          <button className="w-full px-4 py-3 bg-[#f0f9ff] text-[#0ea5e9] rounded-xl hover:bg-[#0ea5e9] hover:text-white transition-all flex items-center gap-2">
+          <button className="w-full px-4 py-3 dark:bg-[#1e293b] bg-[#f0f9ff] text-[#0ea5e9] rounded-xl hover:bg-[#0ea5e9] hover:text-white transition-all flex items-center gap-2">
             <Briefcase className="w-5 h-5" />
             <span>AI Phỏng Vấn Thử</span>
           </button>
-          <button className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] hover:text-[#0ea5e9] transition-all flex items-center gap-2">
+          <button className="w-full px-4 py-3 border-2 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] hover:bg-[#f0f9ff] hover:text-[#0ea5e9] dark:hover:text-[#0ea5e9] transition-all flex items-center gap-2">
             <GraduationCap className="w-5 h-5" />
             <span>Khóa Học Đề Xuất</span>
           </button>

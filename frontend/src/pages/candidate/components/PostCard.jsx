@@ -4,8 +4,8 @@ import { TrendingUp, Heart, MessageCircle, Bookmark } from "lucide-react";
 export function PostCard({ post, isLiked, onToggleLike }) {
   return (
     <article
-      className={`bg-white rounded-3xl overflow-hidden shadow-xl shadow-gray-200/30 border border-gray-50 hover:border-sky-100 transition-all group ${
-        post.featured ? "ring-2 ring-sky-100" : ""
+      className={`dark:bg-[#0a0f1c]/50 bg-white rounded-3xl overflow-hidden shadow-xl shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-50 hover:border-sky-100 dark:hover:border-[#0ea5e9]/50 transition-all group ${
+        post.featured ? "ring-2 dark:ring-[#0ea5e9]/30 ring-sky-100" : ""
       }`}
     >
       {post.featured && (
@@ -23,16 +23,16 @@ export function PostCard({ post, isLiked, onToggleLike }) {
             {post.avatar}
           </div>
           <div>
-            <div className="text-sm font-bold text-gray-900">{post.author}</div>
-            <div className="text-xs font-medium text-gray-500">{post.readTime}</div>
+            <div className="text-sm font-bold dark:text-slate-200 text-gray-900">{post.author}</div>
+            <div className="text-xs font-medium dark:text-slate-400 text-gray-500">{post.readTime}</div>
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-[#0ea5e9] cursor-pointer transition-colors leading-tight">
+        <h2 className="text-2xl font-bold dark:text-white text-gray-900 mb-4 group-hover:text-[#0ea5e9] cursor-pointer transition-colors leading-tight">
           {post.title}
         </h2>
 
-        <p className="text-gray-600 mb-6 line-clamp-2 leading-relaxed">
+        <p className="dark:text-slate-300 text-gray-600 mb-6 line-clamp-2 leading-relaxed">
           {post.excerpt}
         </p>
 
@@ -40,20 +40,20 @@ export function PostCard({ post, isLiked, onToggleLike }) {
           {post.tags.map((tag) => (
             <span
               key={tag}
-              className="px-3 py-1 bg-sky-50 text-[#0ea5e9] rounded-lg text-[10px] font-bold uppercase"
+              className="px-3 py-1 dark:bg-sky-900/30 bg-sky-50 text-[#0ea5e9] rounded-lg text-[10px] font-bold uppercase"
             >
               {tag}
             </span>
           ))}
         </div>
 
-        <div className="flex items-center justify-between pt-6 border-t border-gray-50">
+        <div className="flex items-center justify-between pt-6 border-t dark:border-white/10 border-gray-50">
           <div className="flex items-center gap-8">
             <button
               onClick={() => onToggleLike(post.id)}
-              className="flex items-center gap-2 text-gray-500 hover:text-[#0ea5e9] transition-all group/btn"
+              className="flex items-center gap-2 dark:text-slate-400 text-gray-500 hover:text-[#0ea5e9] transition-all group/btn"
             >
-              <div className={`p-2 rounded-xl transition-colors ${isLiked ? "bg-sky-50" : "group-hover/btn:bg-sky-50"}`}>
+              <div className={`p-2 rounded-xl transition-colors ${isLiked ? "dark:bg-sky-900/30 bg-sky-50" : "dark:group-hover/btn:bg-sky-900/30 group-hover/btn:bg-sky-50"}`}>
                 <Heart
                   className={`w-5 h-5 ${
                     isLiked
@@ -67,15 +67,15 @@ export function PostCard({ post, isLiked, onToggleLike }) {
               </span>
             </button>
 
-            <button className="flex items-center gap-2 text-gray-500 hover:text-[#0ea5e9] transition-all group/btn">
-              <div className="p-2 rounded-xl group-hover/btn:bg-sky-50 transition-colors">
+            <button className="flex items-center gap-2 dark:text-slate-400 text-gray-500 hover:text-[#0ea5e9] transition-all group/btn">
+              <div className="p-2 rounded-xl dark:group-hover/btn:bg-sky-900/30 group-hover/btn:bg-sky-50 transition-colors">
                 <MessageCircle className="w-5 h-5" />
               </div>
               <span className="font-bold text-sm">{post.comments}</span>
             </button>
           </div>
 
-          <button className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all">
+          <button className="p-2 dark:text-slate-500 text-gray-400 hover:text-[#0ea5e9] dark:hover:bg-sky-900/30 hover:bg-sky-50 rounded-xl transition-all">
             <Bookmark className="w-5 h-5" />
           </button>
         </div>

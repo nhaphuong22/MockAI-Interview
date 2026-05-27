@@ -15,7 +15,7 @@ export function MicrophoneSelector({ devices, selectedDevice, onChange, disabled
           value={selectedDevice}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-700 text-sm focus:border-[#0ea5e9] focus:outline-none appearance-none cursor-pointer transition-colors disabled:opacity-60"
+          className="w-full dark:bg-[#1e293b] dark:border-white/10 dark:text-white bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-700 text-sm focus:border-[#0ea5e9] focus:outline-none appearance-none cursor-pointer transition-colors disabled:opacity-60"
         >
           {devices.length === 0 ? (
             <option value="">Đang tải thiết bị...</option>
@@ -27,7 +27,7 @@ export function MicrophoneSelector({ devices, selectedDevice, onChange, disabled
             ))
           )}
         </select>
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none dark:text-slate-500 text-gray-400">
           <Mic className="w-4 h-4" />
         </div>
       </div>
