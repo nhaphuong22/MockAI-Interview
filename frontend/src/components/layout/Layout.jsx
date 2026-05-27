@@ -1,15 +1,18 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart } from "lucide-react";
+import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useThemeStore } from "../../store/useThemeStore";
+import { GlobalBackground } from "./GlobalBackground";
 
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
 
@@ -36,16 +39,17 @@ export function Layout() {
   const administratorBase = "/admin/dashboard";
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark text-white' : 'bg-slate-50 text-gray-900'}`}>
+      {isCandidate && <GlobalBackground />}
       <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="w-full bg-gradient-to-r from-[#0ea5e9]/10 via-white/40 to-[#38bdf8]/10 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(14,165,233,0.06)] rounded-full px-6 transition-all duration-500 hover:from-[#0ea5e9]/15 hover:via-white/50 hover:to-[#38bdf8]/15 hover:border-white/70 hover:shadow-[0_12px_40px_0_rgba(14,165,233,0.12)]">
+        <div className="w-full bg-gradient-to-r from-[#0ea5e9]/10 via-white/40 dark:via-[#0a0f1c]/40 to-[#38bdf8]/10 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-[0_8px_32px_0_rgba(14,165,233,0.06)] rounded-full px-6 transition-all duration-500 hover:from-[#0ea5e9]/15 hover:via-white/50 dark:hover:via-[#0a0f1c]/60 hover:to-[#38bdf8]/15 hover:border-white/70 dark:hover:border-white/20 hover:shadow-[0_12px_40px_0_rgba(14,165,233,0.12)]">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-8">
               <Link to={isRecruiter ? recruiterBase : isAdministrator ? administratorBase : "/"} className="flex items-center gap-2">
                 <div className="bg-[#0ea5e9] p-1.5 rounded-lg">
                   <Briefcase className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-900 tracking-tight">MockAI</span>
+                <span className={`text-xl font-bold tracking-tight ${isCandidate && theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>MockAI</span>
                 {isRecruiter && <span className="text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full ml-1 uppercase">Nhà Tuyển Dụng</span>}
                 {isAdministrator && <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full ml-1 uppercase">Quản trị viên</span>}
               </Link>
@@ -53,19 +57,19 @@ export function Layout() {
               <nav className="hidden md:flex items-center gap-6">
                 {isCandidate && (
                   <>
-                    <Link to="/jobs" className={`text-sm font-medium transition-colors ${isActive('/jobs') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    <Link to="/jobs" className={`text-sm font-medium transition-colors ${isActive('/jobs') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Tìm Việc
                     </Link>
-                    <Link to="/applications" className={`text-sm font-medium transition-colors ${isActive('/applications') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    <Link to="/applications" className={`text-sm font-medium transition-colors ${isActive('/applications') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Ứng Tuyển
                     </Link>
-                    <Link to="/community" className={`text-sm font-medium transition-colors ${isActive('/community') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    <Link to="/community" className={`text-sm font-medium transition-colors ${isActive('/community') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Cộng Đồng
                     </Link>
-                    <Link to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    <Link to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       AI CV
                     </Link>
-                    <Link to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    <Link to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Practice
                     </Link>
                   </>
@@ -108,11 +112,24 @@ export function Layout() {
             </div>
 
             <div className="flex items-center gap-4">
+              {isCandidate && (
+                <button 
+                  onClick={toggleTheme}
+                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                  title={theme === 'dark' ? "Chuyển sang nền sáng" : "Chuyển sang nền tối"}
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="w-5 h-5 text-amber-400" />
+                  ) : (
+                    <Moon className="w-5 h-5 text-slate-600" />
+                  )}
+                </button>
+              )}
               {isAuthenticated ? (
                 <>
                   <Link to={isRecruiter ? `${recruiterBase}/notifications` : isAdministrator ? `${administratorBase}/notifications` : "/notifications"}>
                     <div className="relative group">
-                      <Bell className="w-5 h-5 text-gray-500 cursor-pointer group-hover:text-[#0ea5e9] transition-colors" />
+                      <Bell className={`w-5 h-5 cursor-pointer transition-colors ${isCandidate && theme === 'dark' ? 'text-slate-300 group-hover:text-[#0ea5e9]' : 'text-gray-500 group-hover:text-[#0ea5e9]'}`} />
                       <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
                     </div>
                   </Link>
@@ -186,7 +203,7 @@ export function Layout() {
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => { setAuthMode("login"); setAuthModalOpen(true); }} 
-                    className="text-sm font-bold text-gray-700 hover:text-[#0ea5e9] transition-colors px-4 py-2 cursor-pointer"
+                    className={`text-sm font-bold transition-colors px-4 py-2 cursor-pointer ${isCandidate && theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-700 hover:text-[#0ea5e9]'}`}
                   >
                     Đăng Nhập
                   </button>

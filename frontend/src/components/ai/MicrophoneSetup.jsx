@@ -49,16 +49,16 @@ export function MicrophoneSetup({ onProceed, isSubmitting = false }) {
   };
 
   return (
-    <div className="max-w-xl w-full mx-auto bg-white/95 backdrop-blur-md border border-gray-100 rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-all duration-300">
+    <div className="max-w-xl w-full mx-auto dark:bg-[#0f172a]/95 bg-white/95 backdrop-blur-md border dark:border-white/10 border-gray-100 rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-all duration-300">
       {/* Decorative top gradient bar */}
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8]" />
 
       <div className="text-center mb-6">
-        <div className="w-16 h-16 mx-auto mb-4 bg-sky-50 rounded-2xl flex items-center justify-center border border-sky-100 text-[#0ea5e9]">
+        <div className="w-16 h-16 mx-auto mb-4 dark:bg-[#1e293b] dark:border-white/5 bg-sky-50 rounded-2xl flex items-center justify-center border border-sky-100 text-[#0ea5e9]">
           <Settings className="w-8 h-8 animate-spin" style={{ animationDuration: '6s' }} />
         </div>
-        <h2 className="text-2xl font-bold text-gray-800">Kiểm Tra Thiết Bị</h2>
-        <p className="text-sm text-gray-500 mt-1">Đảm bảo giọng nói của bạn rõ ràng trước khi vào phỏng vấn</p>
+        <h2 className="text-2xl font-bold dark:text-white text-gray-800">Kiểm Tra Thiết Bị</h2>
+        <p className="text-sm dark:text-slate-400 text-gray-500 mt-1">Đảm bảo giọng nói của bạn rõ ràng trước khi vào phỏng vấn</p>
       </div>
 
       {errorMessage && (
@@ -79,7 +79,7 @@ export function MicrophoneSetup({ onProceed, isSubmitting = false }) {
 
       {!permissionGranted && !errorMessage && (
         <div className="text-center py-6">
-          <p className="text-gray-600 mb-4">Vui lòng cấp quyền truy cập microphone để hệ thống ghi âm câu trả lời phỏng vấn.</p>
+          <p className="dark:text-slate-400 text-gray-600 mb-4">Vui lòng cấp quyền truy cập microphone để hệ thống ghi âm câu trả lời phỏng vấn.</p>
           <button
             onClick={() => requestPermission()}
             className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white font-semibold rounded-xl hover:shadow-lg transition-all hover:scale-[1.02] flex items-center gap-2 mx-auto"
@@ -120,7 +120,7 @@ export function MicrophoneSetup({ onProceed, isSubmitting = false }) {
             <button
               type="button"
               onClick={() => requestPermission(selectedDevice)}
-              className="p-3 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-xl border border-gray-150 transition-colors"
+              className="p-3 dark:bg-[#1e293b] dark:text-slate-300 dark:border-white/10 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-xl border border-gray-200 transition-colors"
               title="Làm mới mic"
               disabled={isSubmitting || isRecordingTest || isPlayingTest}
             >
