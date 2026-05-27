@@ -44,7 +44,9 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
   // Reset form when modal opens/mode changes
   useEffect(() => {
     if (isOpen) {
-      setMode(initialMode);
+      setTimeout(() => {
+        setMode(initialMode);
+      }, 0);
     }
   }, [isOpen, initialMode]);
 

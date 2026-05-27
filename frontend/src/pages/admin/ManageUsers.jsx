@@ -206,6 +206,7 @@ export function ManageUsers() {
                             src={user.avatar} 
                             alt={user.name} 
                             className="w-10 h-10 rounded-full border border-slate-100 object-cover"
+                            referrerPolicy="no-referrer"
                           />
                           <div>
                             <h4 className="font-bold text-slate-800 text-xs">{user.name}</h4>
@@ -366,6 +367,7 @@ export function ManageUsers() {
                     src={selectedUser.avatar} 
                     alt={selectedUser.name} 
                     className="w-16 h-16 rounded-2xl border border-slate-100 object-cover"
+                    referrerPolicy="no-referrer"
                   />
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">{selectedUser.name}</h3>

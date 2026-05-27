@@ -31,10 +31,13 @@ export function AccountSettings({ user, onUpdateUser }) {
       const response = await uploadAvatarApi(file);
       if (response.success && response.data?.avatarUrl) {
         // Construct full URL if necessary or keep relative
-        // Example: response.data.avatarUrl is "/uploads/avatars/file.jpg"
-        const fullUrl = import.meta.env.VITE_API_URL 
-          ? import.meta.env.VITE_API_URL.replace("/api", "") + response.data.avatarUrl
-          : "http://localhost:5000" + response.data.avatarUrl;
+        // Example: response.data.avatarUrl is "/uploads/avatars/file.jpg" or a Cloudinary URL
+        const url = response.data.avatarUrl;
+        const fullUrl = url.startsWith("http://") || url.startsWith("https://")
+          ? url
+          : (import.meta.env.VITE_API_URL 
+              ? import.meta.env.VITE_API_URL.replace("/api", "") + url
+              : "http://localhost:5000" + url);
         
         setAvatarUrl(fullUrl);
         setMessage({ type: "success", text: "Tải ảnh lên thành công! Bấm Lưu thay đổi để hoàn tất." });
@@ -153,23 +156,39 @@ export function AccountSettings({ user, onUpdateUser }) {
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Ảnh đại diện</label>
           <div className="flex items-center gap-6">
             <div className="relative group">
-              <div className="w-24 h-24 rounded-3xl bg-gray-100 overflow-hidden border-2 border-dashed border-gray-300 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-3xl bg-gray-100 overflow-hidden border-2 border-dashed border-gray-300 flex items-center justify-center relative">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  <img 
+                    src={avatarUrl} 
+                    alt="Avatar" 
+                    className={`w-full h-full object-cover transition-all duration-300 ${
+                      isUploadingAvatar ? "blur-[2px] opacity-40" : ""
+                    }`}
+                  />
                 ) : (
                   <User className="w-8 h-8 text-gray-400" />
                 )}
+
+                {/* Uploading indicator overlay */}
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex flex-col items-center justify-center gap-1">
+                    <Loader2 className="w-6 h-6 text-[#0ea5e9] animate-spin" />
+                    <span className="text-[9px] font-bold text-[#0ea5e9] tracking-wider uppercase">Tải lên...</span>
+                  </div>
+                )}
               </div>
-              <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                {isUploadingAvatar ? <Loader2 className="w-6 h-6 animate-spin" /> : <Camera className="w-6 h-6" />}
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleAvatarChange} 
-                  className="hidden" 
-                  disabled={isUploadingAvatar}
-                />
-              </label>
+
+              {!isUploadingAvatar && (
+                <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer">
+                  <Camera className="w-6 h-6" />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleAvatarChange} 
+                    className="hidden" 
+                  />
+                </label>
+              )}
             </div>
             <div className="flex-1">
               <div className="relative">

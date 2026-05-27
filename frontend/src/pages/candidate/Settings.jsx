@@ -30,7 +30,10 @@ export function Settings() {
 
   const activeMenu = menuItems.find(item => item.id === activeTab);
   const fullName = user?.full_name || user?.fullName || "";
-  const avatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
+    ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
+    : rawAvatarUrl;
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-10">

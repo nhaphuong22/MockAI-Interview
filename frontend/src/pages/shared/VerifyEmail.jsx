@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
 import { verifyEmailApi, resendVerificationApi } from "../../api/auth";
@@ -11,17 +11,13 @@ export function VerifyEmail() {
   const token = searchParams.get("token");
   const email = searchParams.get("email");
 
-  const [status, setStatus] = useState("loading"); // "loading" | "success" | "error"
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState(() => token ? "loading" : "error"); // "loading" | "success" | "error"
+  const [message, setMessage] = useState(() => token ? "" : "Liên kết xác thực không hợp lệ. Vui lòng kiểm tra lại email của bạn.");
   const [resendEmail, setResendEmail] = useState("");
   const [resendStatus, setResendStatus] = useState(""); // "" | "sending" | "sent" | "error"
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setMessage("Liên kết xác thực không hợp lệ. Vui lòng kiểm tra lại email của bạn.");
-      return;
-    }
+    if (!token) return;
 
     if (verifiedTokens.has(token)) return;
     verifiedTokens.add(token);
@@ -43,7 +39,7 @@ export function VerifyEmail() {
     };
 
     verify();
-  }, [token]);
+  }, [token, email]);
 
   const handleResend = async (e) => {
     e.preventDefault();

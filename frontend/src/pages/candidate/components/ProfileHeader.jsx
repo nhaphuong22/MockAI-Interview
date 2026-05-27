@@ -14,7 +14,7 @@ export function ProfileHeader({ user, completeness, avatarUrl }) {
         <div className="flex flex-col md:flex-row gap-6 -mt-20 relative">
           <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] ring-4 ring-white flex items-center justify-center text-6xl flex-shrink-0 overflow-hidden">
             {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
               "👨‍💻"
             )}
