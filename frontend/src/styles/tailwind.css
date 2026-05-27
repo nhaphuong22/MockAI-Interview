@@ -3,55 +3,45 @@
 @source '../**/*.{js,ts,jsx,tsx}';
 
 @import 'tw-animate-css';
-}
-}
 
-;
+@theme {
+  --animate-glitch: glitch 3s infinite;
+  --animate-scanline: scanline 8s linear infinite;
 
---keyframes-glitch: {
-  0% {
-    clip-path: inset(20% 0 80% 0);
-    transform: translate(-2px, 2px);
-    filter: hue-rotate(90deg);
+  --keyframes-glitch: {
+    0% {
+      clip-path: inset(20% 0 80% 0);
+      transform: translate(-2px, 2px);
+      filter: hue-rotate(90deg);
+    }
+    5% {
+      clip-path: inset(50% 0 10% 0);
+      transform: translate(2px, -2px);
+      filter: hue-rotate(-90deg);
+    }
+    10% {
+      clip-path: inset(80% 0 5% 0);
+      transform: translate(-2px, 0);
+      filter: hue-rotate(180deg);
+    }
+    15% {
+      clip-path: inset(10% 0 60% 0);
+      transform: translate(2px, 2px);
+      filter: hue-rotate(0deg);
+    }
+    20%, 100% {
+      clip-path: inset(0 0 0 0);
+      transform: translate(0);
+      filter: hue-rotate(0deg);
+    }
   }
 
-  5% {
-    clip-path: inset(50% 0 10% 0);
-    transform: translate(2px, -2px);
-    filter: hue-rotate(-90deg);
+  --keyframes-scanline: {
+    0% {
+      transform: translateY(-100vh);
+    }
+    100% {
+      transform: translateY(100vh);
+    }
   }
-
-  10% {
-    clip-path: inset(80% 0 5% 0);
-    transform: translate(-2px, 0);
-    filter: hue-rotate(180deg);
-  }
-
-  15% {
-    clip-path: inset(10% 0 60% 0);
-    transform: translate(2px, 2px);
-    filter: hue-rotate(0deg);
-  }
-
-  20%,
-  100% {
-    clip-path: inset(0 0 0 0);
-    transform: translate(0);
-    filter: hue-rotate(0deg);
-  }
-}
-
-;
-
---keyframes-scanline: {
-  0% {
-    transform: translateY(-100vh);
-  }
-
-  100% {
-    transform: translateY(100vh);
-  }
-}
-
-;
 }
