@@ -8,7 +8,6 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  ArrowUpRight,
   ShieldCheck,
   Check,
   X
@@ -44,7 +43,7 @@ export function AdminDashboard() {
     mockJobPosts.filter(j => j.status === "Pending")
   );
 
-  const handleVerifyCompany = (companyId, name) => {
+  const handleVerifyCompany = (companyId, _name) => {
     setPendingCompanies(prev => prev.filter(c => c.id !== companyId));
     confetti({
       particleCount: 100,

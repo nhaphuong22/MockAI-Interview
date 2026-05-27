@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { jobApi } from "../../api/jobApi";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Briefcase, Plus, Trash2, CheckCircle, AlertCircle, Info, ArrowLeft, 
-  Award, Users, Calendar, DollarSign, Eye, EyeOff, FileText, Check 
+  Award, Users, Calendar, DollarSign, EyeOff, FileText 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -38,7 +38,7 @@ export function PostJob() {
   // Mutation đăng tin tuyển dụng
   const postJobMutation = useMutation({
     mutationFn: (data) => jobApi.createJob(data),
-    onSuccess: (res) => {
+    onSuccess: (_res) => {
       setShowSuccessToast(true);
       setTimeout(() => {
         setShowSuccessToast(false);

@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useRef } from "react";
-import { CheckCircle2, AlertTriangle, Download, Eye, FileText, Sparkles, ChevronDown, Zap, Target, Cpu } from "lucide-react";
-import * as Progress from "@radix-ui/react-progress";
+import { useEffect, useState, useRef } from "react";
+import { CheckCircle2, AlertTriangle, Download, Eye, FileText, ChevronDown, Zap, Target, Cpu } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import confetti from "canvas-confetti";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Float, MeshDistortMaterial, Sphere } from '@react-three/drei';
+import { OrbitControls, Float } from '@react-three/drei';
 
 const SpotlightCard = ({ children, className = "" }) => {
   const divRef = useRef(null);
@@ -194,7 +193,7 @@ const CustomRadarTick = ({ payload, x, y, textAnchor }) => {
   );
 };
 
-export function CVAnalysisResult({ aiResults, onReupload }) {
+export function CVAnalysisResult({ aiResults, onReupload: _onReupload }) {
   const [openSectionIndex, setOpenSectionIndex] = useState(0);
 
   useEffect(() => {

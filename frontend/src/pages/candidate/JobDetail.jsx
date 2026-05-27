@@ -3,7 +3,7 @@ import { MapPin, DollarSign, Briefcase, Clock, Building, Users, Award, ChevronRi
 import { useState } from "react";
 
 export function JobDetail() {
-  const { id } = useParams();
+  const { id: _id } = useParams();
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   const job = {

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { cvApi } from "../../api/cvApi";
 import { CVUploadArea } from "./components/CVUploadArea";
@@ -30,7 +30,7 @@ function DataUniverse(props) {
 export function CVReview() {
   const [hasCV, setHasCV] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [cvText, setCvText] = useState("");
+  const [_cvText, setCvText] = useState("");
   const [aiResults, setAiResults] = useState(null);
 
   const scoreMutation = useMutation({

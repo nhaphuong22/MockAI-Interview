@@ -1,16 +1,11 @@
 import { useState } from "react";
 import { 
   Search, 
-  CreditCard, 
-  DollarSign, 
   Percent, 
   Trash2, 
   Plus, 
   CheckCircle, 
   XCircle,
-  FileText,
-  Calendar,
-  Layers,
   Edit2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,7 +14,7 @@ import { mockTransactions as initialTxns } from "./mockAdminData";
 
 export function ManagePayments() {
   const [activeTab, setActiveTab] = useState("transactions");
-  const [txns, setTxns] = useState(initialTxns);
+  const [txns] = useState(initialTxns);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Pricing Packages state
