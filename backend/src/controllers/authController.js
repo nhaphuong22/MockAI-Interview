@@ -114,7 +114,7 @@ export const verifyEmailController = async (req, res) => {
     console.log('[VerifyEmailController] Verification successful for token:', trimmedToken, 'email:', email);
     return sendResponse(res, 200, result);
   } catch (error) {
-    console.error('[VerifyEmailController] Error verifying token:', req.body?.token, 'Error:', error.message);
+    console.error('[VerifyEmailController] Error verifying token:', token, 'Error:', error.message);
     if (
       error.message === 'Incorrect verification token' ||
       error.message === 'Expired verification token' ||

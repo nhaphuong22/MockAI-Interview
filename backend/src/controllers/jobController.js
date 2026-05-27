@@ -61,6 +61,7 @@ export const createNewJob = async (req, res) => {
       }
     }
 
+
     // 3. Kiểm tra validation cho detailed_requirements nếu có
     if (detailed_requirements !== undefined) {
       if (!Array.isArray(detailed_requirements)) {
