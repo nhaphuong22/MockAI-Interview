@@ -27,6 +27,12 @@ export const createNewJob = async (req, res) => {
       return sendError(res, 400, 'Tiêu đề tin tuyển dụng (title) là bắt buộc và không được để trống.');
     }
 
+    // 2. Kiểm tra validation cho status nếu có
+    const VALID_STATUSES = ['OPEN', 'CLOSED'];
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN hoặc CLOSED.');
+    }
+
     // Validation bổ sung cho các trường số liệu
     let parsedSalaryMin = null;
     if (salary_min !== undefined && salary_min !== null && salary_min !== '') {
@@ -55,11 +61,6 @@ export const createNewJob = async (req, res) => {
       }
     }
 
-    // 2. Kiểm tra validation cho status nếu có
-    const VALID_STATUSES = ['OPEN', 'CLOSED'];
-    if (status !== undefined && !VALID_STATUSES.includes(status)) {
-      return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN hoặc CLOSED.');
-    }
 
     // 3. Kiểm tra validation cho detailed_requirements nếu có
     if (detailed_requirements !== undefined) {
