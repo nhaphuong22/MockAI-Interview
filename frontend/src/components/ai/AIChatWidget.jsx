@@ -78,7 +78,7 @@ export function AIChatWidget() {
               height: isMinimized ? "64px" : "500px",
             }}
             exit={{ opacity: 0, y: 100, scale: 0.9 }}
-            className="w-[380px] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col transition-all duration-300"
+            className="w-[380px] bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col transition-all duration-300"
           >
             <div className="bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] p-4 flex items-center justify-between text-white">
               <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ export function AIChatWidget() {
               <>
                 <div 
                   ref={scrollRef}
-                  className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50"
+                  className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-[#0a0f1c]"
                 >
                   {messages.map((msg) => (
                     <div
@@ -122,14 +122,14 @@ export function AIChatWidget() {
                     >
                       <div className={`flex gap-2 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${
-                          msg.role === "user" ? "bg-white text-gray-400" : "bg-[#0ea5e9] text-white"
+                          msg.role === "user" ? "bg-white dark:bg-white/5 text-gray-400 dark:text-slate-400" : "bg-[#0ea5e9] text-white"
                         }`}>
                           {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                         </div>
                         <div className={`p-3 rounded-2xl text-sm shadow-sm ${
                           msg.role === "user" 
                             ? "bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-tr-none" 
-                            : "bg-white text-gray-700 border border-gray-100 rounded-tl-none"
+                            : "bg-white dark:bg-[#1e293b] text-gray-700 dark:text-slate-300 border border-gray-100 dark:border-white/5 rounded-tl-none"
                         }`}>
                           {msg.content}
                           <div className={`text-[10px] mt-1 opacity-60 ${msg.role === "user" ? "text-right" : "text-left"}`}>
@@ -145,17 +145,17 @@ export function AIChatWidget() {
                         <div className="w-8 h-8 rounded-full bg-[#0ea5e9] text-white flex items-center justify-center">
                           <Bot className="w-4 h-4" />
                         </div>
-                        <div className="bg-white border border-gray-100 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
-                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce"></div>
-                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                        <div className="bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-white/5 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
+                          <div className="w-1.5 h-1.5 bg-gray-300 dark:bg-slate-500 rounded-full animate-bounce"></div>
+                          <div className="w-1.5 h-1.5 bg-gray-300 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                          <div className="w-1.5 h-1.5 bg-gray-300 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="p-4 bg-white border-t border-gray-100">
+                <div className="p-4 bg-white dark:bg-[#0f172a] border-t border-gray-100 dark:border-white/10">
                   <div className="flex gap-2 relative">
                     <input
                       type="text"
@@ -163,7 +163,7 @@ export function AIChatWidget() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && handleSend()}
                       placeholder="Nhập tin nhắn..."
-                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all pr-12"
+                      className="flex-1 bg-gray-50 dark:bg-[#0a0f1c] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm dark:text-white dark:placeholder-slate-400 focus:border-[#0ea5e9] dark:focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 dark:focus:ring-sky-500/20 focus:outline-none transition-all pr-12"
                     />
                     <button
                       onClick={handleSend}
@@ -173,7 +173,7 @@ export function AIChatWidget() {
                       <Send className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="mt-2 text-[10px] text-center text-gray-400">
+                  <div className="mt-2 text-[10px] text-center text-gray-400 dark:text-slate-500">
                     Sức mạnh bởi <span className="text-[#0ea5e9] font-bold">MockAI Intelligence</span>
                   </div>
                 </div>

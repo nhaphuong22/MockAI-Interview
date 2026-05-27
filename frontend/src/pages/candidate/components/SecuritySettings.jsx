@@ -63,15 +63,15 @@ export function SecuritySettings() {
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Mật khẩu & Bảo mật</h2>
-      <p className="text-sm text-gray-500 mb-8">Cập nhật mật khẩu để bảo vệ tài khoản của bạn.</p>
+      <h2 className="text-2xl font-bold dark:text-white text-gray-900 mb-2">Mật khẩu & Bảo mật</h2>
+      <p className="text-sm dark:text-slate-400 text-gray-500 mb-8">Cập nhật mật khẩu để bảo vệ tài khoản của bạn.</p>
 
       {/* Status message */}
       {message.text && (
         <div className={`flex items-start gap-3 p-4 rounded-2xl mb-6 font-semibold text-sm ${
           message.type === "success"
-            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-            : "bg-rose-50 text-rose-600 border border-rose-100"
+            ? "dark:bg-emerald-500/10 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 border-emerald-100"
+            : "dark:bg-rose-500/10 bg-rose-50 text-rose-600 dark:border-rose-500/20 border-rose-100"
         }`}>
           {message.type === "success"
             ? <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
@@ -84,23 +84,23 @@ export function SecuritySettings() {
       <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">
         {/* Current Password */}
         <div>
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          <label className="block text-xs font-bold dark:text-slate-400 text-gray-400 uppercase tracking-widest mb-3">
             Mật khẩu hiện tại
           </label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 dark:text-slate-400 text-gray-400" />
             <input
               type={showCurrent ? "text" : "password"}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Nhập mật khẩu hiện tại"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 dark:bg-[#1e293b] bg-gray-50 rounded-2xl focus:bg-white dark:focus:bg-[#0f172a] focus:border-[#0ea5e9] dark:focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border dark:border-white/10 border-gray-100 dark:text-white text-slate-900 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
               onClick={() => setShowCurrent(!showCurrent)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 dark:text-slate-400 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
             >
               {showCurrent ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -108,27 +108,27 @@ export function SecuritySettings() {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-100" />
+        <div className="border-t dark:border-white/10 border-gray-100" />
 
         {/* New Password */}
         <div>
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          <label className="block text-xs font-bold dark:text-slate-400 text-gray-400 uppercase tracking-widest mb-3">
             Mật khẩu mới
           </label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 dark:text-slate-400 text-gray-400" />
             <input
               type={showNew ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Tối thiểu 6 ký tự"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 dark:bg-[#1e293b] bg-gray-50 rounded-2xl focus:bg-white dark:focus:bg-[#0f172a] focus:border-[#0ea5e9] dark:focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border dark:border-white/10 border-gray-100 dark:text-white text-slate-900 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
               onClick={() => setShowNew(!showNew)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 dark:text-slate-400 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
             >
               {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -141,7 +141,7 @@ export function SecuritySettings() {
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= strength.score ? strength.color : "bg-gray-100"}`}
+                    className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= strength.score ? strength.color : "dark:bg-slate-700 bg-gray-100"}`}
                   />
                 ))}
               </div>
@@ -161,23 +161,23 @@ export function SecuritySettings() {
 
         {/* Confirm New Password */}
         <div>
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          <label className="block text-xs font-bold dark:text-slate-400 text-gray-400 uppercase tracking-widest mb-3">
             Xác nhận mật khẩu mới
           </label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 dark:text-slate-400 text-gray-400" />
             <input
               type={showConfirm ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Nhập lại mật khẩu mới"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 dark:bg-[#1e293b] bg-gray-50 rounded-2xl focus:bg-white dark:focus:bg-[#0f172a] focus:border-[#0ea5e9] dark:focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border dark:border-white/10 border-gray-100 dark:text-white text-slate-900 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 dark:text-slate-400 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
             >
               {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -191,9 +191,9 @@ export function SecuritySettings() {
         </div>
 
         {/* Security Tips */}
-        <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4">
-          <p className="text-xs font-bold text-sky-700 mb-2">💡 Gợi ý tạo mật khẩu mạnh:</p>
-          <ul className="text-xs text-sky-600 space-y-1 list-disc list-inside">
+        <div className="dark:bg-[#0ea5e9]/10 bg-sky-50 border dark:border-[#0ea5e9]/20 border-sky-100 rounded-2xl p-4">
+          <p className="text-xs font-bold dark:text-sky-400 text-sky-700 mb-2">💡 Gợi ý tạo mật khẩu mạnh:</p>
+          <ul className="text-xs dark:text-sky-300 text-sky-600 space-y-1 list-disc list-inside">
             <li>Ít nhất 10 ký tự</li>
             <li>Kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt</li>
             <li>Không dùng thông tin cá nhân như ngày sinh, tên</li>

@@ -10,7 +10,7 @@ const notificationsData = [
     time: "2 giờ trước",
     isRead: false,
     icon: CheckCircle2,
-    color: "text-green-600 bg-green-50",
+    color: "text-green-600 bg-green-50 dark:bg-green-500/10 dark:text-green-400",
   },
   {
     id: 2,
@@ -20,7 +20,7 @@ const notificationsData = [
     time: "5 giờ trước",
     isRead: false,
     icon: MessageCircle,
-    color: "text-blue-600 bg-blue-50",
+    color: "text-blue-600 bg-blue-50 dark:bg-blue-500/10 dark:text-blue-400",
   },
   {
     id: 3,
@@ -30,7 +30,7 @@ const notificationsData = [
     time: "1 ngày trước",
     isRead: true,
     icon: Briefcase,
-    color: "text-purple-600 bg-purple-50",
+    color: "text-purple-600 bg-purple-50 dark:bg-purple-500/10 dark:text-purple-400",
   },
   {
     id: 4,
@@ -40,7 +40,7 @@ const notificationsData = [
     time: "2 ngày trước",
     isRead: true,
     icon: Star,
-    color: "text-yellow-600 bg-yellow-50",
+    color: "text-yellow-600 bg-yellow-50 dark:bg-yellow-500/10 dark:text-yellow-400",
   },
 ];
 
@@ -60,12 +60,12 @@ export function Notifications() {
   };
 
   return (
-    <div className="bg-gray-50/50 min-h-screen py-10">
+    <div className="bg-slate-50 dark:bg-[#0a0f1c] min-h-screen py-10 transition-colors duration-500">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Thông Báo</h1>
-            <p className="text-lg text-gray-600 font-medium">Cập nhật những tin tức và cơ hội mới nhất dành cho bạn</p>
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Thông Báo</h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400 font-medium">Cập nhật những tin tức và cơ hội mới nhất dành cho bạn</p>
           </div>
           <button 
             onClick={markAllRead}
@@ -81,8 +81,8 @@ export function Notifications() {
             return (
               <div
                 key={notification.id}
-                className={`group bg-white rounded-3xl p-6 shadow-xl shadow-gray-200/20 border transition-all flex gap-6 relative overflow-hidden ${
-                  notification.isRead ? "border-gray-50 opacity-80" : "border-sky-100 ring-1 ring-sky-50"
+                className={`group bg-white dark:bg-[#0f172a] rounded-3xl p-6 shadow-xl shadow-slate-200/20 dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border transition-all flex gap-6 relative overflow-hidden ${
+                  notification.isRead ? "border-slate-100 dark:border-white/10 opacity-80" : "border-sky-100 dark:border-sky-500/30 ring-1 ring-sky-50 dark:ring-sky-500/20"
                 }`}
               >
                 {!notification.isRead && (
@@ -95,12 +95,12 @@ export function Notifications() {
 
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className={`text-lg font-bold ${notification.isRead ? "text-gray-700" : "text-gray-900"}`}>
+                    <h3 className={`text-lg font-bold ${notification.isRead ? "text-slate-700 dark:text-slate-400" : "text-slate-900 dark:text-white"}`}>
                       {notification.title}
                     </h3>
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{notification.time}</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{notification.time}</span>
                   </div>
-                  <p className="text-gray-600 leading-relaxed font-medium mb-4">{notification.content}</p>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium mb-4">{notification.content}</p>
                   
                   <div className="flex items-center gap-4">
                     {!notification.isRead && (
@@ -113,7 +113,7 @@ export function Notifications() {
                     )}
                     <button 
                       onClick={() => deleteNotification(notification.id)}
-                      className="text-xs font-bold text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest"
+                      className="text-xs font-bold text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors uppercase tracking-widest"
                     >
                       Xóa
                     </button>
@@ -122,7 +122,7 @@ export function Notifications() {
 
                 <button 
                   onClick={() => deleteNotification(notification.id)}
-                  className="absolute top-6 right-6 p-2 text-gray-300 hover:text-red-500 bg-gray-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                  className="absolute top-6 right-6 p-2 text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 bg-slate-50 dark:bg-white/5 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -131,18 +131,18 @@ export function Notifications() {
           })}
 
           {notifications.length === 0 && (
-            <div className="text-center py-24 bg-white rounded-[40px] shadow-xl shadow-gray-200/20 border border-gray-50">
-              <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Bell className="w-10 h-10 text-gray-200" />
+            <div className="text-center py-24 bg-white dark:bg-[#0f172a] rounded-[40px] shadow-xl shadow-slate-200/20 dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-slate-100 dark:border-white/10">
+              <div className="w-24 h-24 bg-slate-50 dark:bg-[#0a0f1c] rounded-full flex items-center justify-center mx-auto mb-6">
+                <Bell className="w-10 h-10 text-slate-300 dark:text-slate-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Hộp thư trống</h3>
-              <p className="text-gray-500 font-medium max-w-xs mx-auto">Bạn không có thông báo nào mới vào lúc này.</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Hộp thư trống</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-medium max-w-xs mx-auto">Bạn không có thông báo nào mới vào lúc này.</p>
             </div>
           )}
         </div>
 
         <div className="mt-10 flex justify-center">
-          <button className="px-8 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-500 hover:text-[#0ea5e9] hover:border-sky-100 transition-all shadow-sm">
+          <button className="px-8 py-3 bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-[#0ea5e9] dark:hover:text-white hover:border-sky-100 dark:hover:border-white/20 transition-all shadow-sm dark:shadow-none">
             Xem thông báo cũ hơn
           </button>
         </div>
