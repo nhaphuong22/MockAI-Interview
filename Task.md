@@ -99,7 +99,7 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 *   **Huy (CV & Candidate Blog)**:
     *   *BE*: API gọi AI phân tích điểm yếu CV và API lấy chi tiết bài viết blog, tăng lượt xem.
     *   *FE*: Biểu đồ Radar CV và trang xem chi tiết bài đăng blog (Blog Detail) phía ứng viên.
-*   **Sang (Admin Module)**:
+*   **Sang (Admin Module)**: [Đã Hoàn Thành ✅]
     *   *BE*: API Admin ẩn/hiện tin tuyển dụng và API Admin duyệt/từ chối bài viết cộng đồng (`/api/admin/blogs/:id/review`).
     *   *FE*: Giao diện Admin duyệt tin tuyển dụng và giao diện Admin duyệt bài viết (`ManageBlog.jsx` có nút Duyệt/Từ chối).
 
