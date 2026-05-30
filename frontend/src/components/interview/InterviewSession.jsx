@@ -78,36 +78,6 @@ export function InterviewSession({
     }
   };
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSeconds(prev => prev + 1);
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-      stopAudioEngine();
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
-  // AI Speech Text-to-Speech triggers whenever a new question is rendered
-  useEffect(() => {
-    if (interviewType === "voice" && questionText) {
-      // Small timeout to give DOM time to settle and render
-      const timer = setTimeout(() => {
-        speakQuestion(questionText);
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [currentQuestion, questionText, interviewType]);
-
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, "0");
-    const s = (secs % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  };
-
   // Text-To-Speech function using native Web Speech Synthesis
   const speakQuestion = (text) => {
     if ('speechSynthesis' in window) {
@@ -181,6 +151,36 @@ export function InterviewSession({
     } else {
       console.warn("Speech Synthesis not supported natively in this browser.");
     }
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds(prev => prev + 1);
+    }, 1000);
+    return () => {
+      clearInterval(timer);
+      stopAudioEngine();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // AI Speech Text-to-Speech triggers whenever a new question is rendered
+  useEffect(() => {
+    if (interviewType === "voice" && questionText) {
+      // Small timeout to give DOM time to settle and render
+      const timer = setTimeout(() => {
+        speakQuestion(questionText);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [currentQuestion, questionText, interviewType]);
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
   };
 
   const startRecording = async () => {
