@@ -13,3 +13,13 @@ import { axiosClient } from "./axiosClient";
 export const initInterviewApi = async (data) => {
   return axiosClient.post("/interviews/init", data);
 };
+
+/**
+ * Submit candidate's answer for real-time grading and DB storage
+ * @param {number} questionId - The ID of the targeted interview question
+ * @param {string} answerText - Candidate's text answer
+ * @returns {Promise<object>} Graded answer object containing score and ai_feedback
+ */
+export const submitAnswerApi = async (questionId, answerText) => {
+  return axiosClient.post("/interviews/answers", { questionId, answerText });
+};

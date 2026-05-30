@@ -1,22 +1,34 @@
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Clock, Mic, MicOff, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 import { AudioVisualizer } from "../ai/AudioVisualizer";
-import { transcribeAudioApi } from "../../api/voiceSession";
+import { AiWaveform } from "../ai/AiWaveform";
+import { 
+  transcribeAudioApi, 
+  completeVoiceSessionApi, 
+  assessVoiceSessionApi 
+} from "../../api/voiceSession";
+import { submitAnswerApi } from "../../api/interviewApi";
 
 /**
  * InterviewSession Component
  * Manages active interview UI - either text entry or voice recording.
  * Integrates browser Web Speech API (transcription) and calls backend to save recordings.
+ * Equips AI voice speech (Text-to-Speech), premium vocal wave and packaging JSON results to Cloudinary.
  */
 export function InterviewSession({ 
   interviewType, 
   currentQuestion, 
   questions, 
   onNext, 
-  onCancel 
+  onCancel,
+  voiceSessionId,
+  aiVoice = "vi-VN-female",
+  onFinish
 }) {
   const isTextMode = interviewType === "text";
-  const questionText = questions[currentQuestion] || "";
+  const questionObj = questions[currentQuestion];
+  const questionText = typeof questionObj === "string" ? questionObj : (questionObj?.question_text || "");
+  const questionId = typeof questionObj === "string" ? null : (questionObj?.id || null);
 
   // Text mode state
   const [textAnswer, setTextAnswer] = useState("");
@@ -24,6 +36,8 @@ export function InterviewSession({
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false); // Cloudinary and assessment packaging state
   const [audioLevel, setAudioLevel] = useState(0);
   const [realtimeTranscript, setRealtimeTranscript] = useState("");
   const [finalAnswer, setFinalAnswer] = useState("");
@@ -37,6 +51,7 @@ export function InterviewSession({
   const animationFrameRef = useRef(null);
   const recognitionRef = useRef(null);
   const chunksRef = useRef([]);
+  const transcriptRef = useRef("");
 
   // Timer state
   const [seconds, setSeconds] = useState(0);
@@ -70,8 +85,22 @@ export function InterviewSession({
     return () => {
       clearInterval(timer);
       stopAudioEngine();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
+
+  // AI Speech Text-to-Speech triggers whenever a new question is rendered
+  useEffect(() => {
+    if (interviewType === "voice" && questionText) {
+      // Small timeout to give DOM time to settle and render
+      const timer = setTimeout(() => {
+        speakQuestion(questionText);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [currentQuestion, questionText, interviewType]);
 
   const formatTime = (secs) => {
     const m = Math.floor(secs / 60).toString().padStart(2, "0");
@@ -79,10 +108,86 @@ export function InterviewSession({
     return `${m}:${s}`;
   };
 
+  // Text-To-Speech function using native Web Speech Synthesis
+  const speakQuestion = (text) => {
+    if ('speechSynthesis' in window) {
+      // 1. Cancel any active vocal sound first
+      window.speechSynthesis.cancel();
+
+      // 2. Format utterance
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      const isEnglish = aiVoice.startsWith("en-US");
+      const isMale = aiVoice.includes("-male");
+      
+      utterance.lang = isEnglish ? "en-US" : "vi-VN";
+      utterance.rate = 0.95;
+      // Use pitch to clearly differentiate male/female even if system has only 1 voice
+      utterance.pitch = isMale ? 0.8 : 1.2;
+
+      // Dynamically match system SpeechSynthesis voice based on user selection
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        let matchingVoice = null;
+        
+        if (isEnglish) {
+          // English voice matching - Windows: David(M), Zira/Jenny(F); Mac: Samantha(F), Alex(M)
+          const enVoices = voices.filter(v => v.lang.startsWith("en"));
+          if (enVoices.length > 1) {
+            matchingVoice = enVoices.find(v => {
+              const n = v.name.toLowerCase();
+              return isMale
+                ? n.includes("david") || n.includes("mark") || n.includes("guy") || n.includes("alex")
+                : n.includes("zira") || n.includes("jenny") || n.includes("samantha") || n.includes("hazel");
+            });
+          }
+          if (!matchingVoice && enVoices.length > 0) matchingVoice = enVoices[0];
+        } else {
+          // Vietnamese voice matching - Windows: An(M), HoaiMy(F); other: may vary
+          const viVoices = voices.filter(v => v.lang.startsWith("vi"));
+          if (viVoices.length > 1) {
+            matchingVoice = viVoices.find(v => {
+              const n = v.name.toLowerCase();
+              return isMale
+                ? n.includes("an online") || n.includes("namminh") || n.includes("hung")
+                : n.includes("hoaimy") || n.includes("hoai") || n.includes("linh") || n.includes("thu");
+            });
+          }
+          if (!matchingVoice && viVoices.length > 0) matchingVoice = viVoices[0];
+        }
+
+        if (matchingVoice) {
+          utterance.voice = matchingVoice;
+        }
+      }
+
+      utterance.onstart = () => {
+        setIsAiSpeaking(true);
+        setIsRecording(false);
+        setHasRecorded(false);
+      };
+
+      utterance.onend = () => {
+        setIsAiSpeaking(false);
+      };
+
+      utterance.onerror = (err) => {
+        console.error("SpeechSynthesis error:", err);
+        setIsAiSpeaking(false);
+      };
+
+      // 3. Play voice
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn("Speech Synthesis not supported natively in this browser.");
+    }
+  };
+
   const startRecording = async () => {
     try {
       chunksRef.current = [];
       setRealtimeTranscript("");
+      transcriptRef.current = "";
       setFinalAnswer("");
 
       // 1. Get audio stream
@@ -131,16 +236,16 @@ export function InterviewSession({
         setIsTranscribing(true);
 
         try {
-          // Send audio to backend for transcription and saving
-          const response = await transcribeAudioApi(audioBlob, realtimeTranscript);
+          // Send audio to backend using latest ref value to avoid stale closures
+          const response = await transcribeAudioApi(audioBlob, transcriptRef.current);
           if (response && response.success) {
             setFinalAnswer(response.data.text);
           } else {
-            setFinalAnswer(realtimeTranscript || "Không nhận diện được âm thanh.");
+            setFinalAnswer(transcriptRef.current || "Không nhận diện được âm thanh.");
           }
         } catch (err) {
           console.error("Transcription API error:", err);
-          setFinalAnswer(realtimeTranscript || "Tôi có năng lực phù hợp và kỹ năng vững vàng cho vị trí này.");
+          setFinalAnswer(transcriptRef.current || "Lỗi nhận diện âm thanh. Vui lòng ghi âm lại hoặc tự nhập câu trả lời vào ô này.");
         } finally {
           setIsTranscribing(false);
           setHasRecorded(true);
@@ -153,13 +258,23 @@ export function InterviewSession({
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = "vi-VN"; // default to Vietnamese, supports English too
+        recognition.lang = "vi-VN"; 
 
         recognition.onresult = (event) => {
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
+          let finalTranscript = "";
+          let interimTranscript = "";
+          for (let i = 0; i < event.results.length; ++i) {
+            const segment = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
-              setRealtimeTranscript(prev => prev + event.results[i][0].transcript + " ");
+              finalTranscript += segment + " ";
+            } else {
+              interimTranscript += segment;
             }
+          }
+          const fullText = (finalTranscript + interimTranscript).trim();
+          if (fullText) {
+            setRealtimeTranscript(fullText);
+            transcriptRef.current = fullText;
           }
         };
 
@@ -182,9 +297,105 @@ export function InterviewSession({
     stopAudioEngine();
   };
 
-  const handleSaveAndNext = () => {
-    onNext();
+  // Triggers evaluation logic, calls backend API, packages results, and transitions to feedback
+  const handleFinalizeInterview = async () => {
+    setIsFinalizing(true);
+    stopAudioEngine();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    const targetSessionId = voiceSessionId || 1;
+
+    try {
+      // 1. Call Complete voice session API
+      await completeVoiceSessionApi(targetSessionId, seconds);
+      console.log("Voice session finalized with duration:", seconds);
+
+      // 2. Call Assessment API to package result JSON & upload to Cloudinary
+      const response = await assessVoiceSessionApi(targetSessionId);
+      console.log("Assessment completed. Cloudinary Result:", response.data);
+
+      // 3. Callback onFinish to parent page
+      if (onFinish && response && response.success) {
+        onFinish(response.data);
+      } else if (onFinish && response) {
+        onFinish(response);
+      } else {
+        // Fallback safety
+        onFinish(null);
+      }
+
+    } catch (error) {
+      console.error("Error finalizing voice session interview:", error);
+      alert(`Phân tích kết quả phỏng vấn thất bại: ${error.message || "Lỗi kết nối API hoặc Groq API Key chưa được thiết lập"}. Không thể tạo báo cáo phỏng vấn!`);
+      if (onFinish) {
+        onFinish(null);
+      }
+    } finally {
+      setIsFinalizing(false);
+    }
   };
+
+  const [isSavingAnswer, setIsSavingAnswer] = useState(false);
+
+  const handleSaveAndNext = async () => {
+    const answerToSave = isTextMode ? textAnswer : finalAnswer;
+    
+    if (questionId && answerToSave && answerToSave.trim().length > 0) {
+      setIsSavingAnswer(true);
+      try {
+        console.log(`Submitting answer for question ID ${questionId} to backend...`);
+        await submitAnswerApi(questionId, answerToSave.trim());
+      } catch (err) {
+        console.error("Failed to submit and grade answer:", err);
+      } finally {
+        setIsSavingAnswer(false);
+      }
+    }
+
+    // If it's the final question, trigger evaluation and Cloudinary upload
+    if (currentQuestion >= questions.length - 1) {
+      if (interviewType === "voice") {
+        handleFinalizeInterview();
+      } else {
+        onNext();
+      }
+    } else {
+      // Reset state variables for next question
+      setTextAnswer("");
+      setFinalAnswer("");
+      setRealtimeTranscript("");
+      setHasRecorded(false);
+      onNext();
+    }
+  };
+
+  const handleCancelBtn = () => {
+    if (interviewType === "voice") {
+      handleFinalizeInterview();
+    } else {
+      onCancel();
+    }
+  };
+
+  // Finalizing assessment packaging screen
+  if (isFinalizing) {
+    return (
+      <div className="bg-gray-900 min-h-screen flex flex-col items-center justify-center text-center p-8">
+        <div className="max-w-md w-full bg-slate-800/80 border border-sky-500/10 rounded-3xl p-8 shadow-2xl space-y-6 backdrop-blur-md">
+          <Loader2 className="w-16 h-16 text-[#0ea5e9] animate-spin mx-auto" />
+          <h2 className="text-2xl font-bold text-white leading-tight">AI Đang Phân Tích & Chấm Điểm</h2>
+          <p className="text-sm text-slate-300">
+            Hệ thống đang thu thập câu hỏi, câu trả lời, tiến hành tổng hợp kết quả phỏng vấn AI thành tệp tin JSON an toàn.
+          </p>
+          <div className="p-4 bg-slate-900/50 rounded-2xl border border-sky-500/5 text-xs text-sky-400 font-semibold animate-pulse">
+            Đang tải kết quả lên kho lưu trữ đám mây Cloudinary...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-900 min-h-screen flex flex-col">
@@ -196,7 +407,9 @@ export function InterviewSession({
           </div>
           <div>
             <div className="text-white font-semibold">AI Interview Coach</div>
-            <div className="text-sm text-gray-400">Đang phỏng vấn giọng nói</div>
+            <div className="text-sm text-gray-400">
+              {isTextMode ? "Đang phỏng vấn văn bản" : "Đang phỏng vấn giọng nói"}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-6">
@@ -207,7 +420,7 @@ export function InterviewSession({
           <div className="text-white font-medium text-sm">Câu {currentQuestion + 1}/{questions.length}</div>
           <div className="h-8 w-px bg-gray-700" />
           <button
-            onClick={onCancel}
+            onClick={handleCancelBtn}
             className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-all text-sm font-semibold hover:shadow-lg hover:shadow-rose-500/10"
           >
             Kết Thúc
@@ -224,7 +437,7 @@ export function InterviewSession({
             <div className="text-xs font-bold text-[#0ea5e9] tracking-widest uppercase mb-2">Câu Hỏi {currentQuestion + 1}</div>
             <h2 className="text-2xl md:text-3xl mb-4 font-bold text-gray-800 leading-snug">{questionText}</h2>
             <div className="inline-flex px-3 py-1.5 bg-sky-50 text-[#0ea5e9] rounded-full text-xs font-semibold border border-sky-100/50">
-              Câu hỏi chuyên môn
+              Câu hỏi phỏng vấn AI
             </div>
           </div>
 
@@ -245,10 +458,12 @@ export function InterviewSession({
                   <span className="text-[#0ea5e9] font-bold">Gợi ý:</span> Sử dụng phương pháp STAR để cấu trúc câu trả lời của bạn.
                 </div>
                 <button
-                  onClick={onNext}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg hover:shadow-sky-100 transition-all font-semibold"
+                  onClick={handleSaveAndNext}
+                  disabled={isSavingAnswer || !textAnswer.trim()}
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg hover:shadow-sky-100 transition-all font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  {currentQuestion < questions.length - 1 ? "Câu Tiếp Theo" : "Hoàn Thành"}
+                  {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{currentQuestion < questions.length - 1 ? "Câu Tiếp Theo" : "Hoàn Thành"}</span>
                 </button>
               </div>
             </div>
@@ -256,8 +471,15 @@ export function InterviewSession({
             /* ================= VOICE MODE ================= */
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 space-y-6">
               
+              {/* Case 0: AI is actively speaking TTS question */}
+              {isAiSpeaking && (
+                <div className="py-6 space-y-4">
+                  <AiWaveform />
+                </div>
+              )}
+
               {/* Case 1: Idle state (ready to record) */}
-              {!isRecording && !isTranscribing && !hasRecorded && (
+              {!isAiSpeaking && !isRecording && !isTranscribing && !hasRecorded && (
                 <div className="text-center py-6">
                   <button
                     onClick={startRecording}
@@ -266,12 +488,12 @@ export function InterviewSession({
                     <Mic className="w-10 h-10 group-hover:scale-110 transition-transform" />
                   </button>
                   <p className="text-lg font-bold text-gray-800">Nhấn để bắt đầu trả lời</p>
-                  <p className="text-sm text-gray-500 mt-1">AI sẽ bắt đầu ghi âm và nhận diện giọng nói của bạn</p>
+                  <p className="text-sm text-gray-500 mt-1">AI đã đọc xong. Sẵn sàng ghi âm giọng nói của bạn</p>
                 </div>
               )}
 
               {/* Case 2: Recording state */}
-              {isRecording && (
+              {!isAiSpeaking && isRecording && (
                 <div className="space-y-6">
                   <div className="text-center py-4">
                     <button
@@ -302,7 +524,7 @@ export function InterviewSession({
               )}
 
               {/* Case 3: Transcribing (loading state) */}
-              {isTranscribing && (
+              {!isAiSpeaking && isTranscribing && (
                 <div className="text-center py-10 space-y-4">
                   <Loader2 className="w-12 h-12 text-[#0ea5e9] animate-spin mx-auto" />
                   <p className="text-lg font-bold text-gray-800">AI đang phân tích câu trả lời...</p>
@@ -311,7 +533,7 @@ export function InterviewSession({
               )}
 
               {/* Case 4: Answer transcribing completed */}
-              {hasRecorded && !isTranscribing && (
+              {!isAiSpeaking && hasRecorded && !isTranscribing && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800">
                     <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
@@ -344,8 +566,10 @@ export function InterviewSession({
                     </button>
                     <button
                       onClick={handleSaveAndNext}
-                      className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                      disabled={isSavingAnswer || !finalAnswer.trim()}
+                      className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
                     >
+                      {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
                       <span>{currentQuestion < questions.length - 1 ? "Lưu & Tiếp Tục" : "Hoàn Thành"}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>

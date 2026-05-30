@@ -33,6 +33,7 @@ export function Layout() {
   const isRecruiter = location.pathname.startsWith('/hr');
   const isAdministrator = location.pathname.startsWith('/admin');
   const isCandidate = !isRecruiter && !isAdministrator;
+  const isInterviewPracticePage = location.pathname.toLowerCase().replace(/\/$/, "") === "/interview-practice";
 
   // Xác định base path cho từng role
   const recruiterBase = "/hr/dashboard";
@@ -41,7 +42,8 @@ export function Layout() {
   return (
     <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark text-white' : 'bg-slate-50 text-gray-900'}`}>
       {isCandidate && <GlobalBackground />}
-      <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {!isInterviewPracticePage && (
+        <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="w-full bg-gradient-to-r from-[#0ea5e9]/10 via-white/40 dark:via-[#0a0f1c]/40 to-[#38bdf8]/10 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-[0_8px_32px_0_rgba(14,165,233,0.06)] rounded-full px-6 transition-all duration-500 hover:from-[#0ea5e9]/15 hover:via-white/50 dark:hover:via-[#0a0f1c]/60 hover:to-[#38bdf8]/15 hover:border-white/70 dark:hover:border-white/20 hover:shadow-[0_12px_40px_0_rgba(14,165,233,0.12)]">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-8">
@@ -218,9 +220,10 @@ export function Layout() {
             </div>
           </div>
         </div>
-      </header>
+        </header>
+      )}
 
-      <main className={`min-h-[calc(100vh-64px)] ${location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28'}`}>
+      <main className={`min-h-[calc(100vh-64px)] ${isInterviewPracticePage ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28')}`}>
         <Outlet />
       </main>
 
