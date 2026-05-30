@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Sparkles, ArrowRight, ArrowLeft, Tag, Briefcase } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Sparkles, ArrowRight, ArrowLeft, Tag, Briefcase, FileCheck, Eye, X, Volume2, Play, Square } from "lucide-react";
+import { CVUploadArea } from "../../pages/candidate/components/CVUploadArea";
+import { cvApi } from "../../api/cvApi";
 
 const popularPositions = [
   "React Developer",
@@ -24,6 +26,76 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
   const [skillInput, setSkillInput] = useState("");
   const [skills, setSkills] = useState([]);
   const [level, setLevel] = useState("JUNIOR");
+  const [cvId, setCvId] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [previewUrl, setPreviewUrl] = useState(null); // stores the safe blob url of uploaded PDF file
+  const [aiVoice, setAiVoice] = useState("vi-VN-female");
+  const [isSamplePlaying, setIsSamplePlaying] = useState(null); // stores voice.id being previewed
+
+  // Preview a voice sample using Web Speech Synthesis
+  const handlePreviewVoice = useCallback((voiceId) => {
+    if (!('speechSynthesis' in window)) return;
+
+    // If already playing this voice, stop it
+    if (isSamplePlaying === voiceId) {
+      window.speechSynthesis.cancel();
+      setIsSamplePlaying(null);
+      return;
+    }
+
+    // Stop any current playback
+    window.speechSynthesis.cancel();
+
+    const isEnglish = voiceId.startsWith("en-US");
+    const isMale = voiceId.includes("-male");
+    const sampleText = isEnglish
+      ? "Hello! I am your AI interview assistant. Let's start practicing!"
+      : "Xin chào! Tôi là trợ lý phỏng vấn AI của bạn. Hãy bắt đầu luyện tập nhé!";
+
+    const utterance = new SpeechSynthesisUtterance(sampleText);
+    utterance.rate = 0.95;
+    utterance.lang = isEnglish ? "en-US" : "vi-VN";
+    // Use pitch to clearly differentiate male vs female even when system has only 1 voice
+    utterance.pitch = isMale ? 0.8 : 1.2;
+
+    // Match voice from available system voices
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      let matchingVoice = null;
+      if (isEnglish) {
+        const enVoices = voices.filter(v => v.lang.startsWith("en"));
+        if (enVoices.length > 1) {
+          matchingVoice = enVoices.find(v => {
+            const n = v.name.toLowerCase();
+            return isMale
+              ? n.includes("david") || n.includes("mark") || n.includes("guy") || n.includes("alex")
+              : n.includes("zira") || n.includes("jenny") || n.includes("samantha") || n.includes("hazel");
+          });
+        }
+        if (!matchingVoice && enVoices.length > 0) matchingVoice = enVoices[0];
+      } else {
+        const viVoices = voices.filter(v => v.lang.startsWith("vi"));
+        if (viVoices.length > 1) {
+          matchingVoice = viVoices.find(v => {
+            const n = v.name.toLowerCase();
+            return isMale
+              ? n.includes("an online") || n.includes("namminh") || n.includes("hung")
+              : n.includes("hoaimy") || n.includes("hoai") || n.includes("linh") || n.includes("thu");
+          });
+        }
+        if (!matchingVoice && viVoices.length > 0) matchingVoice = viVoices[0];
+      }
+      if (matchingVoice) utterance.voice = matchingVoice;
+    }
+
+    utterance.onstart = () => setIsSamplePlaying(voiceId);
+    utterance.onend = () => setIsSamplePlaying(null);
+    utterance.onerror = () => setIsSamplePlaying(null);
+
+    window.speechSynthesis.speak(utterance);
+  }, [isSamplePlaying]);
 
   const handleAddSkill = (e) => {
     e.preventDefault();
@@ -45,13 +117,79 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
     }
   };
 
+  const handleResetCV = () => {
+    setUploadSuccess(false);
+    setCvId(null);
+    setFileName("");
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+    sessionStorage.removeItem('temp_cv_text');
+  };
+
+  // Upload CV handler using drag-and-drop component
+  const handleUploadCV = async (file) => {
+    setIsAnalyzing(true);
+    setUploadSuccess(false);
+    setFileName(file.name);
+    
+    // Create a local blob url for instant high-performance PDF preview
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl); // Cleanup old URL object memory
+    }
+    const blobUrl = URL.createObjectURL(file);
+    setPreviewUrl(blobUrl);
+
+    try {
+      // 1. Call CV Upload API
+      const response = await cvApi.uploadCV(file);
+      console.log("CV uploaded and parsed successfully:", response);
+
+      // Save CV raw text to sessionStorage for lightweight practice flow
+      const extractedText = response.data?.text || response.text || "";
+      sessionStorage.setItem('temp_cv_text', extractedText);
+
+      // Extract CV ID if exists
+      const targetCvId = response.data?.id || response.id || null;
+      setCvId(targetCvId);
+      setUploadSuccess(true);
+
+      // 2. Proactively pre-fill form parameters
+      const parsedData = response.data || response;
+      if (parsedData.position || parsedData.cv_evaluations) {
+        const suggestedPos = parsedData.position || (parsedData.cv_skills && parsedData.cv_skills.length > 0 ? "Software Engineer" : "");
+        if (suggestedPos) setPosition(suggestedPos);
+      }
+
+      if (parsedData.cv_skills && Array.isArray(parsedData.cv_skills)) {
+        const extractedSkills = parsedData.cv_skills.map(s => s.skill_name);
+        if (extractedSkills.length > 0) {
+          setSkills(prev => {
+            const merged = [...new Set([...prev, ...extractedSkills])];
+            return merged.slice(0, 15); // Cap to 15 skills for clarity
+          });
+        }
+      }
+
+    } catch (err) {
+      console.error("Failed to upload and analyze CV:", err);
+      alert("Hệ thống gặp lỗi nhẹ khi phân tích CV. Vui lòng tự bổ sung thông tin vị trí và kỹ năng của bạn ở form phía dưới.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!position.trim()) return;
     onProceed({
       position: position.trim(),
       skills: skills.join(", "),
-      level
+      level,
+      cvId: cvId,
+      cvText: sessionStorage.getItem('temp_cv_text') || '', // Pass transient CV text directly to skip backend DB storage
+      aiVoice
     });
   };
 
@@ -64,8 +202,66 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
         <div className="w-16 h-16 mx-auto mb-4 dark:bg-[#1e293b] bg-sky-50 rounded-2xl flex items-center justify-center border dark:border-white/5 border-sky-100 text-[#0ea5e9]">
           <Sparkles className="w-8 h-8 animate-pulse text-[#0ea5e9]" />
         </div>
-        <h2 className="text-2xl font-bold dark:text-white text-gray-800">Cấu Hình Luyện Tập</h2>
-        <p className="text-sm dark:text-slate-400 text-gray-500 mt-1">Cung cấp kỹ năng và vị trí để AI chuẩn bị câu hỏi cá nhân hóa dành riêng cho bạn</p>
+        <h2 className="text-2xl font-bold dark:text-white text-gray-800">Cấu HÌnh Luyện Tập</h2>
+        <p className="text-sm dark:text-slate-400 text-gray-500 mt-1">
+          Kéo thả CV hoặc điền các thông tin để AI Qwen 3 chuẩn bị bộ câu hỏi cá nhân hóa cho bạn
+        </p>
+      </div>
+
+      <div className="mb-8">
+        {/* Render either the Drag-n-drop CVUploadArea OR direct PDF Preview if uploaded */}
+        {!uploadSuccess ? (
+          <CVUploadArea 
+            onUpload={handleUploadCV} 
+            isAnalyzing={isAnalyzing} 
+          />
+        ) : (
+          /* Premium Integrated PDF Preview Container replacing drag-n-drop block */
+          <div className="relative group dark:bg-[#0a0f1c]/60 bg-white/60 backdrop-blur-3xl rounded-3xl p-6 shadow-2xl border dark:border-white/10 border-gray-200 overflow-hidden flex flex-col animate-scaleIn">
+            {/* Ambient background glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#0ea5e9]/5 via-transparent to-[#38bdf8]/5 blur-2xl pointer-events-none" />
+            
+            {/* Preview Header */}
+            <div className="flex items-center justify-between mb-3.5 relative z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 dark:bg-emerald-500/10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-500">
+                  <FileCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold dark:text-slate-200 text-gray-800 block truncate max-w-[240px]">
+                    {fileName}
+                  </span>
+                  <span className="text-[9px] text-gray-400 font-semibold block">Tải lên thành công • Bộ nhớ tạm cục bộ</span>
+                </div>
+              </div>
+              <span className="text-[9px] bg-sky-50 dark:bg-sky-500/10 text-[#0ea5e9] px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">
+                Practice Draft
+              </span>
+            </div>
+
+            {/* Direct iframe PDF preview */}
+            <div className="w-full h-[360px] rounded-2xl overflow-hidden border border-gray-200 dark:border-white/5 bg-white relative z-10 shadow-inner">
+              <iframe
+                src={previewUrl}
+                className="w-full h-full border-0"
+                title="CV Practice Preview"
+              />
+            </div>
+
+            {/* Footer actions for the preview block: Reset / Reload CV */}
+            <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-200/50 dark:border-white/5 relative z-10">
+              <p className="text-[10px] text-gray-400 font-semibold italic">CV này chỉ dùng để sinh câu hỏi và sẽ không lưu trên Server</p>
+              <button
+                type="button"
+                onClick={handleResetCV}
+                className="px-4 py-2 dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-100 hover:bg-[#fef2f2] text-gray-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 rounded-xl text-xs font-bold border dark:border-white/5 border-gray-200 flex items-center gap-1.5 transition-all duration-200 hover:scale-[1.02]"
+              >
+                <X className="w-4 h-4 shrink-0" />
+                <span>Tải lại CV khác</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -175,6 +371,77 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
           </select>
         </div>
 
+        {/* 4. Voice Select - Premium Grid Mode with Preview */}
+        <div>
+          <label className="block text-sm font-semibold dark:text-slate-300 text-gray-700 mb-3 flex items-center gap-2">
+            <Volume2 className="w-4 h-4 text-[#0ea5e9]" />
+            Giọng nói của trợ lý AI (AI Voice)
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { id: "vi-VN-female", label: "Giọng Nữ Tiếng Việt", desc: "Giọng đọc truyền cảm, ấm áp", flag: "🇻🇳", gender: "female" },
+              { id: "vi-VN-male", label: "Giọng Nam Tiếng Việt", desc: "Giọng đọc rõ ràng, tự tin", flag: "🇻🇳", gender: "male" },
+              { id: "en-US-female", label: "Giọng Nữ Tiếng Anh", desc: "English Female Voice", flag: "🇺🇸", gender: "female" },
+              { id: "en-US-male", label: "Giọng Nam Tiếng Anh", desc: "English Male Voice", flag: "🇺🇸", gender: "male" }
+            ].map((voice) => (
+              <div
+                key={voice.id}
+                onClick={() => setAiVoice(voice.id)}
+                className={`relative overflow-hidden text-left p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.01] flex items-center justify-between cursor-pointer group ${
+                  aiVoice === voice.id
+                    ? "bg-[#0ea5e9]/10 border-[#0ea5e9] shadow-[0_4px_20px_rgba(14,165,233,0.15)] text-[#0ea5e9]"
+                    : "dark:bg-[#1e293b]/60 dark:border-white/5 dark:hover:border-white/20 dark:text-slate-200 bg-white border-gray-100 hover:border-gray-300 hover:shadow-md text-gray-700"
+                }`}
+              >
+                {/* Glow effect on active */}
+                {aiVoice === voice.id && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0ea5e9]/5 to-[#38bdf8]/5 opacity-50 blur-xl pointer-events-none" />
+                )}
+                
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
+                    aiVoice === voice.id
+                      ? "bg-[#0ea5e9] text-white"
+                      : "dark:bg-slate-800 dark:text-slate-300 bg-gray-50 text-gray-600 group-hover:bg-sky-50 group-hover:text-[#0ea5e9] transition-all"
+                  }`}>
+                    {voice.gender === "female" ? "👩‍💼" : "👨‍💼"}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold block">{voice.label}</span>
+                    <span className="text-[10px] dark:text-slate-400 text-gray-400 block mt-0.5">{voice.desc}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 relative z-10">
+                  {/* Preview Play/Stop Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent selecting voice when clicking play
+                      handlePreviewVoice(voice.id);
+                    }}
+                    title={isSamplePlaying === voice.id ? "Dừng nghe thử" : "Nghe thử giọng nói"}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 shrink-0 ${
+                      isSamplePlaying === voice.id
+                        ? "bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse"
+                        : aiVoice === voice.id
+                          ? "bg-[#0ea5e9] text-white hover:bg-[#0284c7] shadow-md shadow-sky-200"
+                          : "dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 bg-gray-100 text-gray-500 hover:bg-sky-100 hover:text-[#0ea5e9]"
+                    }`}
+                  >
+                    {isSamplePlaying === voice.id ? (
+                      <Square className="w-3.5 h-3.5" />
+                    ) : (
+                      <Play className="w-3.5 h-3.5 ml-0.5" />
+                    )}
+                  </button>
+                  <span className="text-lg shrink-0">{voice.flag}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Action Buttons */}
         <div className="pt-4 flex justify-between items-center gap-4">
           <button
@@ -195,6 +462,24 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
           </button>
         </div>
       </form>
+
+      {/* Inline styles for success and modal animations */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+      `}} />
     </div>
   );
 }

@@ -7,32 +7,7 @@ import { InterviewFeedback } from "../../components/interview/InterviewFeedback"
 import { createVoiceSessionApi } from "../../api/voiceSession";
 import { initInterviewApi } from "../../api/interviewApi";
 
-const defaultQuestions = [
-  "Hãy giới thiệu về bản thân bạn",
-  "Tại sao bạn muốn làm việc ở vị trí này?",
-  "Điểm mạnh và điểm yếu của bạn là gì?",
-  "Kể về một dự án bạn tự hào nhất",
-  "Bạn xử lý xung đột trong team như thế nào?",
-];
-
-const previousSessions = [
-  {
-    id: 1,
-    date: "2026-05-10",
-    position: "Senior Frontend Developer",
-    score: 88,
-    questions: 5,
-    duration: "15 phút",
-  },
-  {
-    id: 2,
-    date: "2026-05-08",
-    position: "Full Stack Developer",
-    score: 82,
-    questions: 5,
-    duration: "14 phút",
-  },
-];
+const previousSessions = [];
 
 /**
  * InterviewPractice Page
@@ -42,10 +17,13 @@ const previousSessions = [
 export function InterviewPractice() {
   const [mode, setMode] = useState("select"); // modes: select, info-input, setup, practicing, feedback
   const [interviewType, setInterviewType] = useState(null); // type: text or voice
-  const [questions, setQuestions] = useState(defaultQuestions);
+  const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [interviewId, setInterviewId] = useState(null);
+  const [voiceSessionId, setVoiceSessionId] = useState(null);
+  const [assessment, setAssessment] = useState(null); // stores Cloudinary JSON assessment data
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiVoice, setAiVoice] = useState("vi-VN-female");
 
   const startInterview = (type) => {
     setInterviewType(type);
@@ -54,12 +32,17 @@ export function InterviewPractice() {
 
   const handleProceedInfo = async (info) => {
     setIsSubmitting(true);
+    if (info.aiVoice) {
+      setAiVoice(info.aiVoice);
+    }
     try {
       // Call backend to initialize the interview and retrieve custom generated questions
       const response = await initInterviewApi({
         customPosition: info.position,
         customSkills: info.skills,
         experienceLevel: info.level,
+        cvId: info.cvId, // Truyền cvId động nếu có
+        cvText: info.cvText, // Truyền trực tiếp CV text bóc tách từ sessionStorage
         type: "PRACTICE"
       });
 
@@ -67,10 +50,9 @@ export function InterviewPractice() {
       setInterviewId(interviewData.id);
 
       if (interviewData.questions && interviewData.questions.length > 0) {
-        const questionTexts = interviewData.questions.map(q => q.question_text);
-        setQuestions(questionTexts);
+        setQuestions(interviewData.questions);
       } else {
-        setQuestions(defaultQuestions);
+        throw new Error("Không nhận được danh sách câu hỏi hợp lệ từ AI.");
       }
 
       if (interviewType === "voice") {
@@ -80,13 +62,8 @@ export function InterviewPractice() {
       }
     } catch (error) {
       console.error("Error initializing interview:", error);
-      // Fallback in case of API failure so the user can still practice
-      setQuestions(defaultQuestions);
-      if (interviewType === "voice") {
-        setMode("setup");
-      } else {
-        setMode("practicing");
-      }
+      alert(`Khởi tạo buổi phỏng vấn thất bại: ${error.message || "Lỗi hệ thống hoặc chưa cấu hình API Key Groq"}. Vui lòng thử lại.`);
+      setMode("select");
     } finally {
       setIsSubmitting(false);
     }
@@ -95,15 +72,27 @@ export function InterviewPractice() {
   const handleProceedVoice = async () => {
     setIsSubmitting(true);
     try {
+      if (!interviewId) {
+        throw new Error("Không tìm thấy thông tin phiên phỏng vấn để tạo Voice Session.");
+      }
       // Register voice session with the dynamically created interview ID
-      const targetId = interviewId || 1;
-      const response = await createVoiceSessionApi(targetId);
+      const response = await createVoiceSessionApi(interviewId);
       console.log("Voice session registered successfully:", response.data);
+      
+      // Store the voice session ID in state to track later
+      if (response && response.success && response.data) {
+        setVoiceSessionId(response.data.id);
+      } else if (response && response.data) {
+        setVoiceSessionId(response.data.id);
+      } else {
+        throw new Error("Dữ liệu Voice Session trả về không hợp lệ.");
+      }
+      
       setMode("practicing");
     } catch (error) {
       console.error("Error registering voice session:", error);
-      // Fallback
-      setMode("practicing");
+      alert(`Không thể đăng ký phiên thoại Voice Session: ${error.message || "Lỗi hệ thống"}`);
+      setMode("select");
     } finally {
       setIsSubmitting(false);
     }
@@ -125,6 +114,8 @@ export function InterviewPractice() {
     setMode("select");
     setCurrentQuestion(0);
     setInterviewId(null);
+    setVoiceSessionId(null);
+    setAssessment(null);
   };
 
   // 1. Info Input Configuration Form
@@ -162,10 +153,15 @@ export function InterviewPractice() {
         questions={questions}
         onNext={handleNextQuestion}
         onCancel={handleCancelInterview}
+        voiceSessionId={voiceSessionId}
+        aiVoice={aiVoice}
+        onFinish={(resultData) => {
+          setAssessment(resultData);
+          setMode("feedback");
+        }}
       />
     );
   }
-
 
   // 4. Post-interview feedback display
   if (mode === "feedback") {
@@ -173,6 +169,8 @@ export function InterviewPractice() {
       <InterviewFeedback 
         questions={questions} 
         onRetry={handleRetry} 
+        assessment={assessment}
+        voiceSessionId={voiceSessionId}
       />
     );
   }
@@ -185,4 +183,3 @@ export function InterviewPractice() {
     />
   );
 }
-

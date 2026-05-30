@@ -1,10 +1,11 @@
 import express from 'express';
-import { startInterviewSession } from '../controllers/interviewController.js';
+import { startInterviewSession, submitAnswer } from '../controllers/interviewController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Protected route to initialize an interview session
+// Protected routes for interview operations
 router.post('/init', authenticateToken, startInterviewSession);
+router.post('/answers', authenticateToken, submitAnswer);
 
 export default router;
