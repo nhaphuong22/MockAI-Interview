@@ -7,7 +7,7 @@ import {
   deleteBlog,
   getAnalytics
 } from '../controllers/adminController.js';
-import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 

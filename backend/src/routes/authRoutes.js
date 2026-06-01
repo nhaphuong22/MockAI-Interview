@@ -12,8 +12,8 @@ import {
   changePasswordController,
   uploadAvatarController,
 } from '../controllers/authController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
-import { uploadAvatar } from '../middleware/uploadMiddleware.js';
+import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 

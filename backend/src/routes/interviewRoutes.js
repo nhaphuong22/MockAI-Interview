@@ -1,6 +1,6 @@
 import express from 'express';
 import { startInterviewSession, submitAnswer } from '../controllers/interviewController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 

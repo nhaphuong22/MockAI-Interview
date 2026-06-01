@@ -6,8 +6,8 @@ import {
   completeVoiceSession,
   assessVoiceSession
 } from '../controllers/voiceSessionController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
-import { uploadAudio } from '../middleware/uploadMiddleware.js';
+import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { uploadAudio } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
