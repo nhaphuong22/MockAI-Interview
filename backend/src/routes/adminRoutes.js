@@ -4,7 +4,8 @@ import {
   updateJobApproval, 
   getBlogs, 
   reviewBlog, 
-  deleteBlog 
+  deleteBlog,
+  getAnalytics
 } from '../controllers/adminController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 
@@ -13,6 +14,8 @@ const router = express.Router();
 // Tất cả các tuyến đường dưới đây đều yêu cầu đăng nhập và có quyền ADMIN
 router.use(authenticateToken);
 router.use(requireRole(['ADMIN']));
+
+router.get('/analytics', getAnalytics);
 
 /**
  * Quản lý tin tuyển dụng (Jobs)
