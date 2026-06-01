@@ -7,7 +7,7 @@ import {
   toggleUserStatus, 
   deleteUser 
 } from '../controllers/userController.js';
-import { requireAuth, requireAdmin } from '../middlewares/authMiddleware.js';
+import { requireAuth, requireAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
