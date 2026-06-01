@@ -36,11 +36,6 @@ export function AdminAnalytics() {
   const [error, setError] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [activeTab, setActiveTab] = useState("growth"); // "growth" | "structure"
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
-
   const fetchAnalytics = async () => {
     setLoading(true);
     setError(null);
@@ -58,6 +53,12 @@ export function AdminAnalytics() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      fetchAnalytics();
+    });
+  }, []);
 
   const systemHealth = [
     { label: "Trạng thái API", value: "Hoạt động", icon: Server, color: "text-emerald-500 bg-emerald-50" },
