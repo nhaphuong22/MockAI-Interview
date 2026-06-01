@@ -43,3 +43,10 @@ export const reviewBlog = (id, status, rejectReason) => {
 export const deleteBlog = (id) => {
   return axiosClient.delete(`/admin/blogs/${id}`);
 };
+
+/**
+ * Lấy số liệu phân tích và tăng trưởng của toàn hệ thống
+ */
+export const getAdminAnalytics = () => {
+  return axiosClient.get("/admin/analytics");
+};
