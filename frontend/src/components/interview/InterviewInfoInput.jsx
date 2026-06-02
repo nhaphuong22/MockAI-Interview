@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Sparkles, ArrowRight, ArrowLeft, Tag, Briefcase, FileCheck, Eye, X, Volume2, Play, Square } from "lucide-react";
 import { CVUploadArea } from "../../pages/candidate/components/CVUploadArea";
 import { cvApi } from "../../api/cvApi";
+import { selectVoice, configureVoiceStyle, initVoices } from "../../utils/voiceEngine";
 
 const popularPositions = [
   "React Developer",
@@ -34,6 +35,20 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
   const [aiVoice, setAiVoice] = useState("vi-VN-female");
   const [isSamplePlaying, setIsSamplePlaying] = useState(null); // stores voice.id being previewed
 
+  // Kích hoạt nạp danh sách giọng nói của trình duyệt ngay khi mount
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      const handleVoicesChanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+      return () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+      };
+    }
+  }, []);
+
   // Preview a voice sample using Web Speech Synthesis
   const handlePreviewVoice = useCallback((voiceId) => {
     if (!('speechSynthesis' in window)) return;
@@ -55,40 +70,14 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
       : "Xin chào! Tôi là trợ lý phỏng vấn AI của bạn. Hãy bắt đầu luyện tập nhé!";
 
     const utterance = new SpeechSynthesisUtterance(sampleText);
-    utterance.rate = 0.95;
     utterance.lang = isEnglish ? "en-US" : "vi-VN";
-    // Use pitch to clearly differentiate male vs female even when system has only 1 voice
-    utterance.pitch = isMale ? 0.8 : 1.2;
 
-    // Match voice from available system voices
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      let matchingVoice = null;
-      if (isEnglish) {
-        const enVoices = voices.filter(v => v.lang.startsWith("en"));
-        if (enVoices.length > 1) {
-          matchingVoice = enVoices.find(v => {
-            const n = v.name.toLowerCase();
-            return isMale
-              ? n.includes("david") || n.includes("mark") || n.includes("guy") || n.includes("alex")
-              : n.includes("zira") || n.includes("jenny") || n.includes("samantha") || n.includes("hazel");
-          });
-        }
-        if (!matchingVoice && enVoices.length > 0) matchingVoice = enVoices[0];
-      } else {
-        const viVoices = voices.filter(v => v.lang.startsWith("vi"));
-        if (viVoices.length > 1) {
-          matchingVoice = viVoices.find(v => {
-            const n = v.name.toLowerCase();
-            return isMale
-              ? n.includes("an online") || n.includes("namminh") || n.includes("hung")
-              : n.includes("hoaimy") || n.includes("hoai") || n.includes("linh") || n.includes("thu");
-          });
-        }
-        if (!matchingVoice && viVoices.length > 0) matchingVoice = viVoices[0];
-      }
-      if (matchingVoice) utterance.voice = matchingVoice;
-    }
+    // Configure pitch/rate for clear male/female differentiation
+    configureVoiceStyle(utterance, isMale);
+
+    // Select the best matching voice using cross-exclusion engine
+    const matchingVoice = selectVoice(voiceId);
+    if (matchingVoice) utterance.voice = matchingVoice;
 
     utterance.onstart = () => setIsSamplePlaying(voiceId);
     utterance.onend = () => setIsSamplePlaying(null);

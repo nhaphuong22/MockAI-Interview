@@ -4,24 +4,54 @@ import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, Pi
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
+import { Toast } from "../ui/Toast";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { GlobalBackground } from "./GlobalBackground";
+import { useUiStore } from "../../store/useUiStore";
+import { useAuthGate } from "../../hooks/useAuthGate";
+
+// Protected Link Component
+const ProtectedLink = ({ to, children, className }) => {
+  const { isAuthenticated } = useAuthStore();
+  const { handleProtectedNav } = useAuthGate();
+  const navigate = useNavigate();
+
+  const handleClick = (e) => {
+    if (!isAuthenticated) {
+      handleProtectedNav(e, to, navigate);
+    }
+  };
+
+  return (
+    <Link to={to} onClick={handleClick} className={className}>
+      {children}
+    </Link>
+  );
+};
 
 export function Layout() {
+  const { 
+    hideNavbar, 
+    authModalOpen, 
+    authModalMode, 
+    authRedirectTo, 
+    closeAuthModal,
+    toastVisible,
+    toastMessage,
+    toastType,
+    hideToast,
+  } = useUiStore();
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState("login");
+  const { handleProtectedNav } = useAuthGate();
 
   const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || "";
   const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
     ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
     : rawAvatarUrl;
-
-
 
   const handleLogout = () => {
     logout();
@@ -42,7 +72,7 @@ export function Layout() {
   return (
     <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark text-white' : 'bg-slate-50 text-gray-900'}`}>
       {isCandidate && <GlobalBackground />}
-      {!isInterviewPracticePage && (
+      {!hideNavbar && (
         <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="w-full bg-gradient-to-r from-[#0ea5e9]/10 via-white/40 dark:via-[#0a0f1c]/40 to-[#38bdf8]/10 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-[0_8px_32px_0_rgba(14,165,233,0.06)] rounded-full px-6 transition-all duration-500 hover:from-[#0ea5e9]/15 hover:via-white/50 dark:hover:via-[#0a0f1c]/60 hover:to-[#38bdf8]/15 hover:border-white/70 dark:hover:border-white/20 hover:shadow-[0_12px_40px_0_rgba(14,165,233,0.12)]">
           <div className="flex items-center justify-between h-16">
@@ -59,21 +89,21 @@ export function Layout() {
               <nav className="hidden md:flex items-center gap-6">
                 {isCandidate && (
                   <>
-                    <Link to="/jobs" className={`text-sm font-medium transition-colors ${isActive('/jobs') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    <ProtectedLink to="/jobs" className={`text-sm font-medium transition-colors ${isActive('/jobs') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Tìm Việc
-                    </Link>
-                    <Link to="/applications" className={`text-sm font-medium transition-colors ${isActive('/applications') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    </ProtectedLink>
+                    <ProtectedLink to="/applications" className={`text-sm font-medium transition-colors ${isActive('/applications') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Ứng Tuyển
-                    </Link>
-                    <Link to="/community" className={`text-sm font-medium transition-colors ${isActive('/community') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    </ProtectedLink>
+                    <ProtectedLink to="/community" className={`text-sm font-medium transition-colors ${isActive('/community') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Cộng Đồng
-                    </Link>
-                    <Link to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    </ProtectedLink>
+                    <ProtectedLink to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       AI CV
-                    </Link>
-                    <Link to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    </ProtectedLink>
+                    <ProtectedLink to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Practice
-                    </Link>
+                    </ProtectedLink>
                   </>
                 )}
 
@@ -204,13 +234,17 @@ export function Layout() {
               ) : (
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={() => { setAuthMode("login"); setAuthModalOpen(true); }} 
+                    onClick={() => { 
+                      useUiStore.getState().openAuthModal({ mode: 'login' });
+                    }} 
                     className={`text-sm font-bold transition-colors px-4 py-2 cursor-pointer ${isCandidate && theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-700 hover:text-[#0ea5e9]'}`}
                   >
                     Đăng Nhập
                   </button>
                   <button 
-                    onClick={() => { setAuthMode("register"); setAuthModalOpen(true); }} 
+                    onClick={() => { 
+                      useUiStore.getState().openAuthModal({ mode: 'register' });
+                    }} 
                     className="text-sm font-bold text-white bg-[#0ea5e9] hover:bg-[#0284c7] transition-all duration-300 px-5 py-2 rounded-xl shadow-[0_4px_14px_0_rgba(14,165,233,0.39)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.23)] hover:-translate-y-0.5 cursor-pointer"
                   >
                     Đăng Ký
@@ -223,17 +257,28 @@ export function Layout() {
         </header>
       )}
 
-      <main className={`min-h-[calc(100vh-64px)] ${isInterviewPracticePage ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28')}`}>
+      <main className={`min-h-[calc(100vh-64px)] ${hideNavbar ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28')}`}>
         <Outlet />
       </main>
 
       {isCandidate && <AIChatWidget />}
       
+      {/* Toast Notification */}
+      <Toast 
+        message={toastMessage}
+        type={toastType}
+        isVisible={toastVisible}
+        onClose={hideToast}
+        duration={4000}
+        position="top-right"
+      />
+      
       {/* Cửa sổ Đăng nhập / Đăng ký */}
       <AuthModal 
         isOpen={authModalOpen} 
-        onOpenChange={setAuthModalOpen} 
-        initialMode={authMode}
+        onOpenChange={closeAuthModal} 
+        initialMode={authModalMode}
+        redirectTo={authRedirectTo}
       />
     </div>
   );

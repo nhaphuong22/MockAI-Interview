@@ -20,6 +20,10 @@ export const initInterviewApi = async (data) => {
  * @param {string} answerText - Candidate's text answer
  * @returns {Promise<object>} Graded answer object containing score and ai_feedback
  */
-export const submitAnswerApi = async (questionId, answerText) => {
-  return axiosClient.post("/interviews/answers", { questionId, answerText });
+export const submitAnswerApi = async (questionId, answerText, audioUrl = null) => {
+  return axiosClient.post("/interviews/answers", { questionId, answerText, audioUrl });
+};
+
+export const getInterviewHistoryApi = async () => {
+  return axiosClient.get("/interviews");
 };

@@ -1,7 +1,5 @@
-import { initInterviewSession } from '../services/interviewService.js';
+import { initInterviewSession, submitCandidateAnswer, getUserInterviews } from '../services/interviewService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
-import db from '../db/knex.js';
-import { evaluateCandidateAnswer } from '../services/groqService.js';
 
 /**
  * Handle POST /api/interviews/init
@@ -46,7 +44,7 @@ export const startInterviewSession = async (req, res) => {
  */
 export const submitAnswer = async (req, res) => {
   try {
-    const { questionId, answerText } = req.body;
+    const { questionId, answerText, audioUrl, audio_url } = req.body;
     
     if (!questionId) {
       return sendError(res, 400, 'questionId is required');
@@ -55,53 +53,9 @@ export const submitAnswer = async (req, res) => {
       return sendError(res, 400, 'answerText is required');
     }
 
-    // 1. Fetch targeted question details
-    const question = await db('interview_questions')
-      .where({ id: Number(questionId) })
-      .first();
+    const actualAudioUrl = audioUrl || audio_url || null;
 
-    if (!question) {
-      return sendError(res, 404, 'Interview question not found');
-    }
-
-    // 2. Perform AI evaluation using Groq Qwen 3 32B model
-    console.log('Evaluating candidate answer using Qwen 3 32B...');
-    const evaluation = await evaluateCandidateAnswer(
-      question.question_text,
-      question.expected_answer,
-      answerText.trim()
-    );
-
-    // 3. Persist to candidate_answers table
-    const existingAnswer = await db('candidate_answers')
-      .where({ interview_question_id: Number(questionId) })
-      .first();
-
-    let savedAnswer = null;
-    if (existingAnswer) {
-      const [updated] = await db('candidate_answers')
-        .where({ id: existingAnswer.id })
-        .update({
-          answer_text: answerText.trim(),
-          ai_feedback: evaluation.feedback,
-          score: evaluation.score,
-          updated_at: new Date()
-        })
-        .returning('*');
-      savedAnswer = updated;
-    } else {
-      const [inserted] = await db('candidate_answers')
-        .insert({
-          interview_question_id: Number(questionId),
-          answer_text: answerText.trim(),
-          ai_feedback: evaluation.feedback,
-          score: evaluation.score,
-          created_at: new Date(),
-          updated_at: new Date()
-        })
-        .returning('*');
-      savedAnswer = inserted;
-    }
+    const savedAnswer = await submitCandidateAnswer(questionId, answerText, actualAudioUrl);
 
     return sendResponse(res, 200, {
       message: 'Candidate answer saved and graded successfully',
@@ -109,7 +63,26 @@ export const submitAnswer = async (req, res) => {
     });
 
   } catch (error) {
+    if (error.message === 'Interview question not found') {
+      return sendError(res, 404, error.message);
+    }
     console.error('Submit answer error:', error);
     return sendError(res, 500, 'Failed to save and grade candidate answer');
   }
 };
+
+/**
+ * Handle GET /api/interviews
+ * Retrieve candidate's interview history
+ */
+export const getInterviewsHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const history = await getUserInterviews(userId);
+    return sendResponse(res, 200, history);
+  } catch (error) {
+    console.error('Get interview history error:', error);
+    return sendError(res, 500, 'Internal server error');
+  }
+};
+

@@ -1,13 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MicrophoneSetup } from "../../components/ai/MicrophoneSetup";
 import { InterviewSelection } from "../../components/interview/InterviewSelection";
 import { InterviewInfoInput } from "../../components/interview/InterviewInfoInput";
 import { InterviewSession } from "../../components/interview/InterviewSession";
 import { InterviewFeedback } from "../../components/interview/InterviewFeedback";
 import { createVoiceSessionApi } from "../../api/voiceSession";
-import { initInterviewApi } from "../../api/interviewApi";
-
-const previousSessions = [];
+import { initInterviewApi, getInterviewHistoryApi } from "../../api/interviewApi";
+import { useUiStore } from "../../store/useUiStore";
 
 /**
  * InterviewPractice Page
@@ -16,7 +15,7 @@ const previousSessions = [];
  */
 export function InterviewPractice() {
   const [mode, setMode] = useState("select"); // modes: select, info-input, setup, practicing, feedback
-  const [interviewType, setInterviewType] = useState(null); // type: text or voice
+  const [interviewType, setInterviewType] = useState("voice"); // type is always voice now
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [interviewId, setInterviewId] = useState(null);
@@ -24,9 +23,44 @@ export function InterviewPractice() {
   const [assessment, setAssessment] = useState(null); // stores Cloudinary JSON assessment data
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiVoice, setAiVoice] = useState("vi-VN-female");
+  const [historySessions, setHistorySessions] = useState([]);
 
-  const startInterview = (type) => {
-    setInterviewType(type);
+  const loadHistory = async () => {
+    try {
+      const response = await getInterviewHistoryApi();
+      if (response && response.data) {
+        setHistorySessions(response.data);
+      } else if (response) {
+        setHistorySessions(response);
+      }
+    } catch (error) {
+      console.error("Error loading interview history:", error);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadHistory();
+  }, []);
+
+  const { setHideNavbar } = useUiStore();
+
+  useEffect(() => {
+    // Hide navbar only during setup and practicing modes
+    if (mode === "setup" || mode === "practicing") {
+      setHideNavbar(true);
+    } else {
+      setHideNavbar(false);
+    }
+
+    // Restore navbar on unmount
+    return () => {
+      setHideNavbar(false);
+    };
+  }, [mode, setHideNavbar]);
+
+  const startInterview = () => {
+    setInterviewType("voice");
     setMode("info-input");
   };
 
@@ -55,11 +89,7 @@ export function InterviewPractice() {
         throw new Error("Không nhận được danh sách câu hỏi hợp lệ từ AI.");
       }
 
-      if (interviewType === "voice") {
-        setMode("setup");
-      } else {
-        setMode("practicing");
-      }
+      setMode("setup");
     } catch (error) {
       console.error("Error initializing interview:", error);
       alert(`Khởi tạo buổi phỏng vấn thất bại: ${error.message || "Lỗi hệ thống hoặc chưa cấu hình API Key Groq"}. Vui lòng thử lại.`);
@@ -116,6 +146,7 @@ export function InterviewPractice() {
     setInterviewId(null);
     setVoiceSessionId(null);
     setAssessment(null);
+    loadHistory(); // Tải lại lịch sử ngay sau khi hoàn thành hoặc bắt đầu lại
   };
 
   // 1. Info Input Configuration Form
@@ -179,7 +210,20 @@ export function InterviewPractice() {
   return (
     <InterviewSelection 
       onStartInterview={startInterview} 
-      previousSessions={previousSessions} 
+      previousSessions={historySessions} 
+      onViewDetail={(session) => {
+        setAssessment(session);
+        // Map các câu hỏi đã trả lời để hiển thị lại
+        if (session.qa_details && session.qa_details.length > 0) {
+          setQuestions(session.qa_details.map((q, idx) => ({
+            id: q.question_id || idx,
+            question_text: q.question,
+            expected_answer: ""
+          })));
+        }
+        setVoiceSessionId(session.id);
+        setMode("feedback");
+      }}
     />
   );
 }

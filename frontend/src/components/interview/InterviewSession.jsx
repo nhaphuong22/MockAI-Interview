@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Sparkles, Clock, Mic, MicOff, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 import { AudioVisualizer } from "../ai/AudioVisualizer";
 import { AiWaveform } from "../ai/AiWaveform";
+import { selectVoice, configureVoiceStyle, initVoices } from "../../utils/voiceEngine";
 import { 
   transcribeAudioApi, 
   completeVoiceSessionApi, 
@@ -41,6 +42,7 @@ export function InterviewSession({
   const [audioLevel, setAudioLevel] = useState(0);
   const [realtimeTranscript, setRealtimeTranscript] = useState("");
   const [finalAnswer, setFinalAnswer] = useState("");
+  const [currentAudioUrl, setCurrentAudioUrl] = useState("");
   const [hasRecorded, setHasRecorded] = useState(false);
 
   // Audio Context & Media Recorder Refs
@@ -91,45 +93,13 @@ export function InterviewSession({
       const isMale = aiVoice.includes("-male");
       
       utterance.lang = isEnglish ? "en-US" : "vi-VN";
-      utterance.rate = 0.95;
-      // Use pitch to clearly differentiate male/female even if system has only 1 voice
-      utterance.pitch = isMale ? 0.8 : 1.2;
 
-      // Dynamically match system SpeechSynthesis voice based on user selection
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        let matchingVoice = null;
-        
-        if (isEnglish) {
-          // English voice matching - Windows: David(M), Zira/Jenny(F); Mac: Samantha(F), Alex(M)
-          const enVoices = voices.filter(v => v.lang.startsWith("en"));
-          if (enVoices.length > 1) {
-            matchingVoice = enVoices.find(v => {
-              const n = v.name.toLowerCase();
-              return isMale
-                ? n.includes("david") || n.includes("mark") || n.includes("guy") || n.includes("alex")
-                : n.includes("zira") || n.includes("jenny") || n.includes("samantha") || n.includes("hazel");
-            });
-          }
-          if (!matchingVoice && enVoices.length > 0) matchingVoice = enVoices[0];
-        } else {
-          // Vietnamese voice matching - Windows: An(M), HoaiMy(F); other: may vary
-          const viVoices = voices.filter(v => v.lang.startsWith("vi"));
-          if (viVoices.length > 1) {
-            matchingVoice = viVoices.find(v => {
-              const n = v.name.toLowerCase();
-              return isMale
-                ? n.includes("an online") || n.includes("namminh") || n.includes("hung")
-                : n.includes("hoaimy") || n.includes("hoai") || n.includes("linh") || n.includes("thu");
-            });
-          }
-          if (!matchingVoice && viVoices.length > 0) matchingVoice = viVoices[0];
-        }
+      // Configure pitch/rate for clear male/female differentiation
+      configureVoiceStyle(utterance, isMale);
 
-        if (matchingVoice) {
-          utterance.voice = matchingVoice;
-        }
-      }
+      // Select the best matching voice using cross-exclusion engine
+      const matchingVoice = selectVoice(aiVoice);
+      if (matchingVoice) utterance.voice = matchingVoice;
 
       utterance.onstart = () => {
         setIsAiSpeaking(true);
@@ -152,6 +122,11 @@ export function InterviewSession({
       console.warn("Speech Synthesis not supported natively in this browser.");
     }
   };
+
+  // Initialize voice list using shared engine
+  useEffect(() => {
+    return initVoices();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -240,6 +215,7 @@ export function InterviewSession({
           const response = await transcribeAudioApi(audioBlob, transcriptRef.current);
           if (response && response.success) {
             setFinalAnswer(response.data.text);
+            setCurrentAudioUrl(response.data.audioUrl || "");
           } else {
             setFinalAnswer(transcriptRef.current || "Không nhận diện được âm thanh.");
           }
@@ -346,7 +322,7 @@ export function InterviewSession({
       setIsSavingAnswer(true);
       try {
         console.log(`Submitting answer for question ID ${questionId} to backend...`);
-        await submitAnswerApi(questionId, answerToSave.trim());
+        await submitAnswerApi(questionId, answerToSave.trim(), currentAudioUrl);
       } catch (err) {
         console.error("Failed to submit and grade answer:", err);
       } finally {
@@ -365,6 +341,7 @@ export function InterviewSession({
       // Reset state variables for next question
       setTextAnswer("");
       setFinalAnswer("");
+      setCurrentAudioUrl("");
       setRealtimeTranscript("");
       setHasRecorded(false);
       onNext();
