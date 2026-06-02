@@ -9,8 +9,63 @@ import {
   Award, 
   ClipboardCheck, 
   Download,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft,
+  Play,
+  Pause,
+  Volume2
 } from "lucide-react";
+
+// Mini Audio Player Component
+function AudioPlayerBtn({ audioUrl }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audio] = useState(() => {
+    const a = new Audio(audioUrl);
+    a.onended = () => setIsPlaying(false);
+    return a;
+  });
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+    } else {
+      audio.play().catch(err => console.error("Audio playback error:", err));
+      setIsPlaying(true);
+    }
+  };
+
+  // Stop when unmounted
+  useState(() => {
+    return () => {
+      audio.pause();
+    };
+  }, []);
+
+  return (
+    <button
+      onClick={togglePlay}
+      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all shadow-sm shrink-0 cursor-pointer ${
+        isPlaying
+          ? "bg-[#0ea5e9]/10 text-[#0ea5e9] border-[#0ea5e9]/30 dark:border-[#0ea5e9]/40 hover:bg-[#0ea5e9]/20"
+          : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:border-[#0ea5e9] hover:bg-[#f0f9ff] dark:hover:bg-slate-700/50"
+      }`}
+      title={isPlaying ? "Tạm dừng" : "Nghe lại câu trả lời thoại"}
+    >
+      {isPlaying ? (
+        <>
+          <Pause className="w-3.5 h-3.5 text-[#0ea5e9] animate-pulse" />
+          <span>Đang phát...</span>
+        </>
+      ) : (
+        <>
+          <Volume2 className="w-3.5 h-3.5 text-[#0ea5e9]" />
+          <span>Nghe giọng bạn</span>
+        </>
+      )}
+    </button>
+  );
+}
 
 /**
  * InterviewFeedback Component
@@ -84,7 +139,7 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
 
   // 2. Generate candidates score polygon coordinates
   const candidatePoints = skillKeys.map((item, idx) => {
-    const score = data.radar_skills[item.key] || 80;
+    const score = Math.max(0, data.radar_skills[item.key] ?? 80);
     const { x, y } = getCoordinates(idx, score / 100);
     return `${x},${y}`;
   }).join(" ");
@@ -97,7 +152,7 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
       x,
       y,
       label: item.label,
-      score: data.radar_skills[item.key] || 80
+      score: Math.max(0, data.radar_skills[item.key] ?? 80)
     };
   });
 
@@ -113,6 +168,17 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
     <div className="dark:bg-[#0a0f1c] bg-gray-50 min-h-screen py-12 px-4 transition-colors duration-500">
       <div className="max-w-5xl mx-auto space-y-10">
         
+        {/* Quay lại trang Practice chính */}
+        <div className="flex justify-start">
+          <button
+            onClick={onRetry}
+            className="group flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm font-extrabold text-[#0ea5e9] dark:text-[#38bdf8] hover:text-white bg-sky-50/60 hover:bg-gradient-to-r hover:from-[#0ea5e9] hover:to-[#38bdf8] dark:bg-slate-800/40 dark:hover:bg-gradient-to-r dark:hover:from-[#0ea5e9] dark:hover:to-[#38bdf8] rounded-xl transition-all duration-300 border border-sky-100/30 dark:border-slate-800 hover:border-transparent dark:hover:border-transparent hover:shadow-md hover:shadow-sky-500/10 active:scale-95 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span>Quay lại trang Practice</span>
+          </button>
+        </div>
+
         {/* Header section */}
         <div className="text-center space-y-3">
           <div className="w-16 h-16 mx-auto bg-gradient-to-tr from-[#0ea5e9] to-[#38bdf8] rounded-full flex items-center justify-center shadow-lg shadow-sky-500/20">
@@ -199,7 +265,7 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
 
                 {/* Candidate score dots */}
                 {skillKeys.map((item, idx) => {
-                  const score = data.radar_skills[item.key] || 80;
+                  const score = Math.max(0, data.radar_skills[item.key] ?? 80);
                   const { x, y } = getCoordinates(idx, score / 100);
                   return (
                     <circle
@@ -376,8 +442,13 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
                 </div>
 
                 {/* Candidate reply draft */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed">
-                  "{qa.answer}"
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    "{qa.answer}"
+                  </div>
+                  {qa.audioUrl && (
+                    <AudioPlayerBtn audioUrl={qa.audioUrl} />
+                  )}
                 </div>
 
                 {/* AI Review feedback text */}

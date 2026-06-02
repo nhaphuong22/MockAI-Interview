@@ -113,6 +113,13 @@ Dự án MockAI-Interview là một nền tảng hỗ trợ việc làm toàn di
 - **Phân tách State**: Tuyệt đối không dùng Zustand để lưu Server Data (danh sách user, lịch sử phỏng vấn...). Việc đó là của TanStack Query. Zustand chỉ dùng cho UI State (Modal, Theme) và Auth Token.
 - **Routing & Bảo mật**: Mọi endpoint nhạy cảm ở Backend phải có Middleware check JWT. Mọi trang nội bộ ở Frontend phải được bọc bởi `<ProtectedRoute>`.
 - **API Flow**: Frontend luôn gọi API thông qua `axiosClient.js` (đã cấu hình sẵn Interceptor gắn token tự động).
+- **Landing Page & Auth Gate (Bắt buộc)**:
+  - User **chưa đăng nhập** chỉ được xem **Landing Page** (trang chủ công khai).
+  - Khi user cố gắng truy cập bất kỳ tab/trang nào khác (Jobs, Community, Profile...), hệ thống PHẢI:
+    1. **Chặn navigation** (không chuyển trang).
+    2. **Hiển thị Toast Notification** (góc phải màn hình) với message: "Yêu cầu đăng nhập để dùng được tính năng này".
+    3. **KHÔNG tự động mở Auth Modal** - để user tự quyết định click nút Đăng Nhập/Đăng Ký.
+  - Áp dụng cho: Navbar links, Sidebar links, Direct URL access, Button CTAs.
 
 ### 4. Lộ trình sắp tới (Upcoming Modules)
 Agent cần nắm rõ bối cảnh để thiết kế database và UI cho phù hợp:

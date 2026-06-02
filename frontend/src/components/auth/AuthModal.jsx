@@ -10,7 +10,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 /**
  * AuthModal — handles: login | register | forgot-password | register-success
  */
-export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLoginSuccess }) {
+export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLoginSuccess, redirectTo = null }) {
   const navigate = useNavigate();
   const [mode, setMode] = useState(initialMode); // "login" | "register" | "forgot-password" | "register-success"
   const [loading, setLoading] = useState(false);
@@ -63,8 +63,14 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();
-        const role = user.role ? user.role.toUpperCase() : "USER";
-        navigate(role === "ADMIN" ? "/admin/dashboard" : role === "HR" ? "/hr/dashboard" : "/");
+        
+        // Handle redirect
+        if (redirectTo) {
+          navigate(redirectTo);
+        } else {
+          const role = user.role ? user.role.toUpperCase() : "USER";
+          navigate(role === "ADMIN" ? "/admin/dashboard" : role === "HR" ? "/hr/dashboard" : "/");
+        }
       } else {
         setErrorMsg(res.error || "Đăng nhập Google thất bại.");
       }
@@ -117,8 +123,14 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();
-        const userRole = user.role ? user.role.toUpperCase() : "USER";
-        navigate(userRole === "ADMIN" ? "/admin/dashboard" : userRole === "HR" ? "/hr/dashboard" : "/");
+        
+        // Handle redirect
+        if (redirectTo) {
+          navigate(redirectTo);
+        } else {
+          const userRole = user.role ? user.role.toUpperCase() : "USER";
+          navigate(userRole === "ADMIN" ? "/admin/dashboard" : userRole === "HR" ? "/hr/dashboard" : "/");
+        }
       } else {
         setErrorMsg(res.error || "Đăng nhập thất bại. Vui lòng thử lại.");
       }

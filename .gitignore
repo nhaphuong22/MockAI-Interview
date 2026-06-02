@@ -9,6 +9,8 @@ node_modules/
 *.swo
 .DS_Store
 
+.uploads/
+
 # Environment Variables
 .env
 .env.local

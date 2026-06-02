@@ -4,21 +4,8 @@
  * based on candidate's raw CV text, targeted position and skills.
  */
 
-/**
- * Clean markdown blocks and parse JSON safely
- */
-const safeParseJSON = (str) => {
-  let clean = str.trim();
-  if (clean.startsWith('```json')) {
-    clean = clean.slice(7);
-  } else if (clean.startsWith('```')) {
-    clean = clean.slice(3);
-  }
-  if (clean.endsWith('```')) {
-    clean = clean.slice(0, -3);
-  }
-  return JSON.parse(clean.trim());
-};
+import { safeParseJSON } from '../helper/jsonHelper.js';
+
 
 /**
  * Generate 5 dynamic, highly-customized interview questions using Qwen 3 32B on Groq
