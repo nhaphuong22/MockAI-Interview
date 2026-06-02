@@ -90,7 +90,7 @@ export function selectVoice(voiceId) {
   // For male: Pick a voice that is NOT identified as female (this is critical!)
   // This ensures even when keyword matching is imperfect, we get different voices.
 
-  let match = null;
+  let match;
 
   if (isMale) {
     // Priority 1: Online voice explicitly identified as male

@@ -11,6 +11,25 @@ import { GlobalBackground } from "./GlobalBackground";
 import { useUiStore } from "../../store/useUiStore";
 import { useAuthGate } from "../../hooks/useAuthGate";
 
+// Protected Link Component
+const ProtectedLink = ({ to, children, className }) => {
+  const { isAuthenticated } = useAuthStore();
+  const { handleProtectedNav } = useAuthGate();
+  const navigate = useNavigate();
+
+  const handleClick = (e) => {
+    if (!isAuthenticated) {
+      handleProtectedNav(e, to, navigate);
+    }
+  };
+
+  return (
+    <Link to={to} onClick={handleClick} className={className}>
+      {children}
+    </Link>
+  );
+};
+
 export function Layout() {
   const { 
     hideNavbar, 
@@ -34,8 +53,6 @@ export function Layout() {
     ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
     : rawAvatarUrl;
 
-
-
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -51,21 +68,6 @@ export function Layout() {
   // Xác định base path cho từng role
   const recruiterBase = "/hr/dashboard";
   const administratorBase = "/admin/dashboard";
-
-  // Protected Link Component
-  const ProtectedLink = ({ to, children, className }) => {
-    const handleClick = (e) => {
-      if (!isAuthenticated) {
-        handleProtectedNav(e, to, navigate);
-      }
-    };
-
-    return (
-      <Link to={to} onClick={handleClick} className={className}>
-        {children}
-      </Link>
-    );
-  };
 
   return (
     <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark text-white' : 'bg-slate-50 text-gray-900'}`}>
