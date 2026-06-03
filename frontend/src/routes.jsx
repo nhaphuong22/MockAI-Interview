@@ -23,6 +23,7 @@ import { Settings } from "./pages/candidate/Settings";
 // Recruiter Pages (Nhà Tuyển Dụng)
 import { HRDashboard } from "./pages/recruiter/HRDashboard";
 import { PostJob } from "./pages/recruiter/PostJob";
+import { EditJob } from "./pages/recruiter/EditJob";
 import { ManageJobs } from "./pages/recruiter/ManageJobs";
 import { ManageApplications } from "./pages/recruiter/ManageApplications";
 import { CandidateProfile } from "./pages/recruiter/CandidateProfile";
@@ -110,6 +111,18 @@ export const router = createBrowserRouter([
     path: "/hr/dashboard",
     Component: Layout,
     children: [
+
+      { index: true, Component: HRDashboard },
+      { path: "post-job", Component: PostJob },
+      { path: "edit-job/:id", Component: EditJob },
+      { path: "manage-jobs", Component: ManageJobs },
+      { path: "applications", Component: ManageApplications },
+      { path: "candidate/:id", Component: CandidateProfile },
+      { path: "company-profile", Component: CompanyProfile },
+      { path: "analytics", Component: RecruitmentAnalytics },
+      { path: "settings", Component: CompanySettings },
+      { path: "notifications", Component: RecruiterNotifications },
+
       { 
         index: true, 
         element: <ProtectedRoute requiredRole="hr"><HRDashboard /></ProtectedRoute>
@@ -146,6 +159,7 @@ export const router = createBrowserRouter([
         path: "notifications", 
         element: <ProtectedRoute requiredRole="hr"><RecruiterNotifications /></ProtectedRoute>
       },
+
     ],
   },
 
