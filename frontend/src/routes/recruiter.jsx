@@ -1,5 +1,6 @@
 import { HRDashboard } from "../pages/recruiter/HRDashboard";
 import { PostJob } from "../pages/recruiter/PostJob";
+import { EditJob } from "../pages/recruiter/EditJob";
 import { ManageJobs } from "../pages/recruiter/ManageJobs";
 import { ManageApplications } from "../pages/recruiter/ManageApplications";
 import { CandidateProfile } from "../pages/recruiter/CandidateProfile";
@@ -17,6 +18,10 @@ export const recruiterRoutes = [
   { 
     path: "post-job", 
     element: <ProtectedRoute requiredRole="hr"><PostJob /></ProtectedRoute>
+  },
+  { 
+    path: "edit-job/:id", 
+    element: <ProtectedRoute requiredRole="hr"><EditJob /></ProtectedRoute>
   },
   { 
     path: "manage-jobs", 

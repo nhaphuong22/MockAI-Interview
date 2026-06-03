@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { jobApi } from "../../api/jobApi";
 
-export function PostJob() {
+export function EditJob() {
+  const { id } = useParams();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -24,6 +25,67 @@ export function PostJob() {
   const [detailedRequirements, setDetailedRequirements] = useState([
     { requirement_text: "", is_mandatory: true }
   ]);
+
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
+
+  // Lấy dữ liệu công việc hiện tại
+  const { data: jobData, isLoading } = useQuery({
+    queryKey: ["job", id],
+    queryFn: () => jobApi.getJobById(id),
+    onSuccess: (res) => {
+      const job = res.data?.data || res.data;
+      if (job) {
+        setFormData({
+          title: job.title || "",
+          description: job.description || "",
+          requirements: job.requirements || "",
+          experienceLevel: job.experience_level || "JUNIOR",
+          salaryMin: job.salary_min || "",
+          salaryMax: job.salary_max || "",
+          salaryCurrency: job.salary_currency || "VND",
+          isSalaryVisible: job.is_salary_visible !== false,
+          vacancyCount: job.vacancy_count || 1,
+          deadline: job.deadline ? job.deadline.split('T')[0] : ""
+        });
+        
+        if (job.detailed_requirements && job.detailed_requirements.length > 0) {
+          setDetailedRequirements(job.detailed_requirements);
+        }
+      }
+    }
+  });
+
+  // Sử dụng useEffect để cập nhật state nếu onSuccess của useQuery không chạy kịp lúc (phiên bản RQ mới)
+  useEffect(() => {
+    if (jobData?.data) {
+      const job = jobData.data.data || jobData.data;
+      if (job) {
+        setFormData({
+          title: job.title || "",
+          description: job.description || "",
+          requirements: job.requirements || "",
+          experienceLevel: job.experience_level || "JUNIOR",
+          salaryMin: job.salary_min || "",
+          salaryMax: job.salary_max || "",
+          salaryCurrency: job.salary_currency || "VND",
+          isSalaryVisible: job.is_salary_visible !== false,
+          vacancyCount: job.vacancy_count || 1,
+          deadline: job.deadline ? job.deadline.split('T')[0] : ""
+        });
+        
+        if (job.detailed_requirements && job.detailed_requirements.length > 0) {
+          setDetailedRequirements(job.detailed_requirements);
+        }
+      }
+    }
+  }, [jobData]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -56,25 +118,16 @@ export function PostJob() {
     });
   };
 
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
-
-  const showToast = (message, type = "success") => {
-    setToast({ show: true, message, type });
-    setTimeout(() => {
-      setToast(prev => ({ ...prev, show: false }));
-    }, 3000);
-  };
-
   const mutation = useMutation({
-    mutationFn: (data) => jobApi.createJob(data),
+    mutationFn: (data) => jobApi.updateJob(id, data),
     onSuccess: () => {
-      showToast("Đăng tin tuyển dụng thành công!", "success");
+      showToast("Cập nhật tin tuyển dụng thành công!", "success");
       setTimeout(() => {
         navigate("/hr/dashboard/manage-jobs");
       }, 1500);
     },
     onError: (error) => {
-      console.error("Lỗi khi đăng tin tuyển dụng:", error);
+      console.error("Lỗi khi cập nhật tin tuyển dụng:", error);
       const errorMessage = error.response?.data?.message || "Đã xảy ra lỗi khi kết nối hệ thống.";
       showToast(errorMessage, "error");
     }
@@ -126,6 +179,14 @@ export function PostJob() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-slate-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8 font-inter relative">
       
@@ -167,8 +228,8 @@ export function PostJob() {
             <Briefcase className="w-8 h-8" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Đăng Tin Tuyển Dụng</h1>
-            <p className="text-slate-500 mt-1 text-sm font-medium">Tạo cơ hội nghề nghiệp mới và thiết lập tiêu chí đánh giá AI</p>
+            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Chỉnh Sửa Tin Tuyển Dụng</h1>
+            <p className="text-slate-500 mt-1 text-sm font-medium">Cập nhật thông tin và điều chỉnh các tiêu chí đánh giá AI</p>
           </div>
         </motion.div>
 
@@ -446,18 +507,15 @@ export function PostJob() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Đang xử lý...
+                    Đang lưu...
                   </>
                 ) : (
                   <>
                     <Briefcase className="w-5 h-5" />
-                    Xuất bản Tin Tuyển Dụng
+                    Lưu Thay Đổi
                   </>
                 )}
               </motion.button>
-              <p className="text-center text-xs text-slate-500 mt-4 font-medium">
-                Bằng việc đăng tin, bạn đồng ý với các điều khoản tuyển dụng của chúng tôi.
-              </p>
             </motion.div>
 
           </form>
@@ -466,4 +524,4 @@ export function PostJob() {
     </div>
   );
 }
-export default PostJob;
+export default EditJob;

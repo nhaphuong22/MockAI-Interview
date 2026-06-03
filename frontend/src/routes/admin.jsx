@@ -7,6 +7,7 @@ import { ManagePayments } from "../pages/admin/ManagePayments";
 import { AdminAnalytics } from "../pages/admin/AdminAnalytics";
 import { AISettings } from "../pages/admin/AISettings";
 import { SystemSettings } from "../pages/admin/SystemSettings";
+import { RolePermissions } from "../pages/admin/RolePermissions";
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 
 export const adminRoutes = [
@@ -45,5 +46,9 @@ export const adminRoutes = [
   { 
     path: "system-settings", 
     element: <ProtectedRoute requiredRole="admin"><SystemSettings /></ProtectedRoute>
+  },
+  { 
+    path: "permissions", 
+    element: <ProtectedRoute requiredRole="admin"><RolePermissions /></ProtectedRoute>
   },
 ];
