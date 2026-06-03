@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, FileText, Calendar, Eye, ChevronDown, Loader2, RefreshCw, AlertCircle, Sparkles, MessageSquare, CheckCircle, XCircle } from "lucide-react";
+import { User, FileText, Calendar, Eye, ChevronDown, Loader2, RefreshCw, AlertCircle, Sparkles, CheckCircle, XCircle } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { applicationApi } from "../../api/applicationApi";
 import { useAuthStore } from "../../store/useAuthStore";
-import { chatApi } from "../../api/chatApi";
-import { useChatStore } from "../../store/useChatStore";
 import { ReviewEmailModal } from "../../components/recruiter/ReviewEmailModal";
 import * as Dialog from "@radix-ui/react-dialog";
 
@@ -18,8 +16,6 @@ export function ManageApplications() {
   const [selectedJobId, setSelectedJobId] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedApplication, setSelectedApplication] = useState(null);
-
-  const openChatBox = useChatStore((state) => state.openChatBox);
 
   // Modal states
   const [modalStatus, setModalStatus] = useState("");
@@ -77,29 +73,6 @@ export function ManageApplications() {
     setModalStatus(app.status || "SUBMITTED");
     setModalHrTag(app.hr_tag || "POTENTIAL");
     setModalHrNotes(app.hr_notes || "");
-  };
-
-  const handleChatWithCandidate = async (app) => {
-    try {
-      const response = await chatApi.getOrCreateConversation({
-        receiverId: app.candidate_id,
-        applicationId: app.id,
-      });
-      const conv = response.data;
-      if (conv) {
-        const otherUser = {
-          id: app.candidate_id,
-          full_name: app.candidate_name,
-          email: app.candidate_email,
-          avatar_url: app.candidate_avatar,
-          role: "USER"
-        };
-        openChatBox(conv.id, otherUser, app.id);
-      }
-    } catch (error) {
-      console.error("Lỗi khởi tạo chat với ứng viên:", error);
-      alert("Không thể khởi tạo cuộc trò chuyện chat.");
-    }
   };
 
   // Open the Review Email Modal (Phase 5)
@@ -346,13 +319,6 @@ export function ManageApplications() {
                             title="Từ Chối & Gửi Email"
                           >
                             <XCircle className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleChatWithCandidate(app)}
-                            className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all"
-                            title="Nhắn tin với ứng viên"
-                          >
-                            <MessageSquare className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleOpenInspect(app)}
