@@ -67,6 +67,7 @@ export function EditJob() {
     if (jobData?.data) {
       const job = jobData.data.data || jobData.data;
       if (job) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData({
           title: job.title || "",
           description: job.description || "",
