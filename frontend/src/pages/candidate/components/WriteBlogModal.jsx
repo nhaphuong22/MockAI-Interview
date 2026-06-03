@@ -36,6 +36,28 @@ export function WriteBlogModal({ isOpen, onOpenChange }) {
     }
   });
 
+  const publishMutation = useMutation({
+    mutationFn: async (data) => {
+      const draftRes = await blogApi.createDraft(data);
+      const newBlogId = draftRes.data.id;
+      return blogApi.submitForReview(newBlogId);
+    },
+    onSuccess: () => {
+      alert("Gửi yêu cầu duyệt bài viết thành công!");
+      onOpenChange(false);
+      setTitle("");
+      setContent("");
+      setTags("");
+      setCategory("");
+      setCoverImageFile(null);
+      setCoverImagePreview("");
+    },
+    onError: (error) => {
+      console.error("Lỗi đăng bài:", error);
+      alert("Đã xảy ra lỗi khi đăng bài.");
+    }
+  });
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -72,6 +94,38 @@ export function WriteBlogModal({ isOpen, onOpenChange }) {
 
     const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
     draftMutation.mutate({ 
+      title, 
+      content, 
+      tags: tagsArray,
+      category,
+      cover_image_url
+    });
+  };
+
+  const handlePublish = async () => {
+    if (!title.trim() || !content.trim()) {
+      alert("Vui lòng nhập tiêu đề và nội dung.");
+      return;
+    }
+
+    let cover_image_url = null;
+
+    if (coverImageFile) {
+      setIsUploadingImage(true);
+      try {
+        const res = await blogApi.uploadCoverImage(coverImageFile);
+        cover_image_url = res.data.url;
+      } catch (error) {
+        console.error("Upload ảnh lỗi:", error);
+        alert("Lỗi khi tải lên ảnh bìa.");
+        setIsUploadingImage(false);
+        return;
+      }
+      setIsUploadingImage(false);
+    }
+
+    const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+    publishMutation.mutate({ 
       title, 
       content, 
       tags: tagsArray,
@@ -202,11 +256,22 @@ export function WriteBlogModal({ isOpen, onOpenChange }) {
               whileHover={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(14, 165, 233, 0.2)" }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSaveDraft}
-              disabled={draftMutation.isPending || isUploadingImage}
-              className="px-8 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+              disabled={draftMutation.isPending || publishMutation.isPending || isUploadingImage}
+              className="px-8 py-2.5 bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-slate-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-50 border border-gray-200 dark:border-white/10"
             >
               <Save className="w-5 h-5" />
               {isUploadingImage ? "Đang tải ảnh..." : (draftMutation.isPending ? "Đang lưu..." : "Lưu Bản Nháp")}
+            </motion.button>
+
+            <motion.button 
+              whileHover={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(14, 165, 233, 0.2)" }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handlePublish}
+              disabled={draftMutation.isPending || publishMutation.isPending || isUploadingImage}
+              className="px-8 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              <Upload className="w-5 h-5" />
+              {isUploadingImage ? "Đang tải ảnh..." : (publishMutation.isPending ? "Đang gửi..." : "Đăng bài")}
             </motion.button>
           </div>
         </Dialog.Content>
