@@ -4,7 +4,9 @@ import {
   fetchBlogsForApproval, 
   approveOrRejectBlog, 
   removeBlogByAdmin, 
-  generateDashboardAnalytics 
+  generateDashboardAnalytics,
+  fetchPermissionsMatrix,
+  updateRolePermissionsMatrix
 } from '../services/adminService.js';
 
 /**
@@ -125,5 +127,47 @@ export const getAnalytics = async (req, res) => {
   } catch (error) {
     console.error('Lỗi khi lấy dữ liệu phân tích hệ thống:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi lấy dữ liệu phân tích.' });
+  }
+};
+
+/**
+ * Lấy ma trận phân quyền toàn bộ hệ thống (roles × permissions)
+ */
+export const getPermissionsMatrix = async (req, res) => {
+  try {
+    const matrix = await fetchPermissionsMatrix();
+    return res.status(200).json({
+      success: true,
+      data: matrix
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy ma trận phân quyền:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi lấy ma trận phân quyền.' });
+  }
+};
+
+/**
+ * Cập nhật danh sách quyền hạn cho một role
+ */
+export const updatePermissionsMatrix = async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    const { permissionIds } = req.body; // Array of permission IDs
+
+    await updateRolePermissionsMatrix(parseInt(roleId), permissionIds);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cập nhật quyền hạn vai trò thành công.'
+    });
+  } catch (error) {
+    if (error.statusCode === 404) {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.statusCode === 400) {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Lỗi khi cập nhật quyền hạn vai trò:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi cập nhật quyền hạn.' });
   }
 };
