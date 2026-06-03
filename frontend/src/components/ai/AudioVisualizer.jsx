@@ -16,7 +16,7 @@ export function AudioVisualizer({ audioLevel }) {
         </span>
       </div>
       
-      <div className="h-10 bg-gray-50 rounded-xl flex items-center px-4 gap-1.5 border border-gray-100">
+      <div className="h-10 dark:bg-[#1e293b] dark:border-white/10 bg-gray-50 rounded-xl flex items-center px-4 gap-1.5 border border-gray-100">
         <Volume2 className="w-4 h-4 text-gray-400 shrink-0 mr-1" />
         <div className="flex-1 flex items-end justify-between h-6 gap-0.5">
           {Array.from({ length: 30 }).map((_, index) => {
@@ -27,7 +27,7 @@ export function AudioVisualizer({ audioLevel }) {
                 className={`flex-1 rounded-full transition-all duration-75 ${
                   isActive 
                     ? "bg-gradient-to-t from-[#0ea5e9] to-[#38bdf8]" 
-                    : "bg-gray-200"
+                    : "dark:bg-slate-700 bg-gray-200"
                 }`}
                 style={{
                   height: isActive 

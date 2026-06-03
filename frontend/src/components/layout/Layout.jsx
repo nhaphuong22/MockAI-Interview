@@ -1,21 +1,57 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart } from "lucide-react";
+import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
+import { Toast } from "../ui/Toast";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useThemeStore } from "../../store/useThemeStore";
+import { GlobalBackground } from "./GlobalBackground";
+import { useUiStore } from "../../store/useUiStore";
+import { useAuthGate } from "../../hooks/useAuthGate";
+
+// Protected Link Component
+const ProtectedLink = ({ to, children, className }) => {
+  const { isAuthenticated } = useAuthStore();
+  const { handleProtectedNav } = useAuthGate();
+  const navigate = useNavigate();
+
+  const handleClick = (e) => {
+    if (!isAuthenticated) {
+      handleProtectedNav(e, to, navigate);
+    }
+  };
+
+  return (
+    <Link to={to} onClick={handleClick} className={className}>
+      {children}
+    </Link>
+  );
+};
 
 export function Layout() {
+  const { 
+    hideNavbar, 
+    authModalOpen, 
+    authModalMode, 
+    authRedirectTo, 
+    closeAuthModal,
+    toastVisible,
+    toastMessage,
+    toastType,
+    hideToast,
+  } = useUiStore();
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuthStore();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState("login");
+  const { theme, toggleTheme } = useThemeStore();
+  const { handleProtectedNav } = useAuthGate();
 
-  const avatarUrl = user?.avatar_url || user?.avatarUrl || "";
-
-
+  const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
+    ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
+    : rawAvatarUrl;
 
   const handleLogout = () => {
     logout();
@@ -27,22 +63,25 @@ export function Layout() {
   const isRecruiter = location.pathname.startsWith('/hr');
   const isAdministrator = location.pathname.startsWith('/admin');
   const isCandidate = !isRecruiter && !isAdministrator;
+  const isInterviewPracticePage = location.pathname.toLowerCase().replace(/\/$/, "") === "/interview-practice";
 
   // Xác định base path cho từng role
   const recruiterBase = "/hr/dashboard";
   const administratorBase = "/admin/dashboard";
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="w-full bg-gradient-to-r from-[#0ea5e9]/10 via-white/40 to-[#38bdf8]/10 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(14,165,233,0.06)] rounded-full px-6 transition-all duration-500 hover:from-[#0ea5e9]/15 hover:via-white/50 hover:to-[#38bdf8]/15 hover:border-white/70 hover:shadow-[0_12px_40px_0_rgba(14,165,233,0.12)]">
+    <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark text-white' : 'bg-slate-50 text-gray-900'}`}>
+      {isCandidate && <GlobalBackground />}
+      {!hideNavbar && (
+        <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full bg-gradient-to-r from-[#0ea5e9]/10 via-white/40 dark:via-[#0a0f1c]/40 to-[#38bdf8]/10 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-[0_8px_32px_0_rgba(14,165,233,0.06)] rounded-full px-6 transition-all duration-500 hover:from-[#0ea5e9]/15 hover:via-white/50 dark:hover:via-[#0a0f1c]/60 hover:to-[#38bdf8]/15 hover:border-white/70 dark:hover:border-white/20 hover:shadow-[0_12px_40px_0_rgba(14,165,233,0.12)]">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-8">
               <Link to={isRecruiter ? recruiterBase : isAdministrator ? administratorBase : "/"} className="flex items-center gap-2">
                 <div className="bg-[#0ea5e9] p-1.5 rounded-lg">
                   <Briefcase className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-900 tracking-tight">MockAI</span>
+                <span className={`text-xl font-bold tracking-tight ${isCandidate && theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>MockAI</span>
                 {isRecruiter && <span className="text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full ml-1 uppercase">Nhà Tuyển Dụng</span>}
                 {isAdministrator && <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full ml-1 uppercase">Quản trị viên</span>}
               </Link>
@@ -50,21 +89,21 @@ export function Layout() {
               <nav className="hidden md:flex items-center gap-6">
                 {isCandidate && (
                   <>
-                    <Link to="/jobs" className={`text-sm font-medium transition-colors ${isActive('/jobs') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    <ProtectedLink to="/jobs" className={`text-sm font-medium transition-colors ${isActive('/jobs') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Tìm Việc
-                    </Link>
-                    <Link to="/applications" className={`text-sm font-medium transition-colors ${isActive('/applications') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    </ProtectedLink>
+                    <ProtectedLink to="/applications" className={`text-sm font-medium transition-colors ${isActive('/applications') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Ứng Tuyển
-                    </Link>
-                    <Link to="/community" className={`text-sm font-medium transition-colors ${isActive('/community') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    </ProtectedLink>
+                    <ProtectedLink to="/community" className={`text-sm font-medium transition-colors ${isActive('/community') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Cộng Đồng
-                    </Link>
-                    <Link to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    </ProtectedLink>
+                    <ProtectedLink to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       AI CV
-                    </Link>
-                    <Link to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                    </ProtectedLink>
+                    <ProtectedLink to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Practice
-                    </Link>
+                    </ProtectedLink>
                   </>
                 )}
 
@@ -105,11 +144,24 @@ export function Layout() {
             </div>
 
             <div className="flex items-center gap-4">
+              {isCandidate && (
+                <button 
+                  onClick={toggleTheme}
+                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                  title={theme === 'dark' ? "Chuyển sang nền sáng" : "Chuyển sang nền tối"}
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="w-5 h-5 text-amber-400" />
+                  ) : (
+                    <Moon className="w-5 h-5 text-slate-600" />
+                  )}
+                </button>
+              )}
               {isAuthenticated ? (
                 <>
                   <Link to={isRecruiter ? `${recruiterBase}/notifications` : isAdministrator ? `${administratorBase}/notifications` : "/notifications"}>
                     <div className="relative group">
-                      <Bell className="w-5 h-5 text-gray-500 cursor-pointer group-hover:text-[#0ea5e9] transition-colors" />
+                      <Bell className={`w-5 h-5 cursor-pointer transition-colors ${isCandidate && theme === 'dark' ? 'text-slate-300 group-hover:text-[#0ea5e9]' : 'text-gray-500 group-hover:text-[#0ea5e9]'}`} />
                       <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
                     </div>
                   </Link>
@@ -119,7 +171,7 @@ export function Layout() {
                       <button className="flex items-center gap-2 hover:opacity-80 transition-opacity outline-none">
                         <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-sm border border-white/50">
                           {avatarUrl ? (
-                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
                             <User className="w-5 h-5 text-white" />
                           )}
@@ -182,13 +234,17 @@ export function Layout() {
               ) : (
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={() => { setAuthMode("login"); setAuthModalOpen(true); }} 
-                    className="text-sm font-bold text-gray-700 hover:text-[#0ea5e9] transition-colors px-4 py-2 cursor-pointer"
+                    onClick={() => { 
+                      useUiStore.getState().openAuthModal({ mode: 'login' });
+                    }} 
+                    className={`text-sm font-bold transition-colors px-4 py-2 cursor-pointer ${isCandidate && theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-700 hover:text-[#0ea5e9]'}`}
                   >
                     Đăng Nhập
                   </button>
                   <button 
-                    onClick={() => { setAuthMode("register"); setAuthModalOpen(true); }} 
+                    onClick={() => { 
+                      useUiStore.getState().openAuthModal({ mode: 'register' });
+                    }} 
                     className="text-sm font-bold text-white bg-[#0ea5e9] hover:bg-[#0284c7] transition-all duration-300 px-5 py-2 rounded-xl shadow-[0_4px_14px_0_rgba(14,165,233,0.39)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.23)] hover:-translate-y-0.5 cursor-pointer"
                   >
                     Đăng Ký
@@ -198,19 +254,31 @@ export function Layout() {
             </div>
           </div>
         </div>
-      </header>
+        </header>
+      )}
 
-      <main className={`min-h-[calc(100vh-64px)] ${location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28'}`}>
+      <main className={`min-h-[calc(100vh-64px)] ${hideNavbar ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28')}`}>
         <Outlet />
       </main>
 
       {isCandidate && <AIChatWidget />}
       
+      {/* Toast Notification */}
+      <Toast 
+        message={toastMessage}
+        type={toastType}
+        isVisible={toastVisible}
+        onClose={hideToast}
+        duration={4000}
+        position="top-right"
+      />
+      
       {/* Cửa sổ Đăng nhập / Đăng ký */}
       <AuthModal 
         isOpen={authModalOpen} 
-        onOpenChange={setAuthModalOpen} 
-        initialMode={authMode}
+        onOpenChange={closeAuthModal} 
+        initialMode={authModalMode}
+        redirectTo={authRedirectTo}
       />
     </div>
   );

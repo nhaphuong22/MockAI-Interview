@@ -1,7 +1,5 @@
+import 'dotenv/config'; // Load env variables immediately before any other module is resolved
 import app from './src/app.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
@@ -19,3 +17,5 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
+
+// Trigger nodemon restart after ghost process killed
