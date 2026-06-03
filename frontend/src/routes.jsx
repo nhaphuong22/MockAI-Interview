@@ -41,6 +41,7 @@ import { ManagePayments } from "./pages/admin/ManagePayments";
 import { AdminAnalytics } from "./pages/admin/AdminAnalytics";
 import { AISettings } from "./pages/admin/AISettings";
 import { SystemSettings } from "./pages/admin/SystemSettings";
+import { RolePermissions } from "./pages/admin/RolePermissions";
 
 export const router = createBrowserRouter([
   // Candidate Routes (Trang chủ)
@@ -188,6 +189,10 @@ export const router = createBrowserRouter([
       { 
         path: "system-settings", 
         element: <ProtectedRoute requiredRole="admin"><SystemSettings /></ProtectedRoute>
+      },
+      { 
+        path: "permissions", 
+        element: <ProtectedRoute requiredRole="admin"><RolePermissions /></ProtectedRoute>
       },
     ],
   },
