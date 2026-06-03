@@ -7,8 +7,8 @@ export function CommunityLeftSidebar({
   topContributors 
 }) {
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-xl shadow-gray-200/20 border border-gray-100 sticky top-24">
-      <h3 className="text-lg font-bold text-gray-900 mb-6">Danh Mục</h3>
+    <div className="dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-6 shadow-xl shadow-gray-200/20 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-100 sticky top-24">
+      <h3 className="text-lg font-bold dark:text-white text-gray-900 mb-6">Danh Mục</h3>
       <div className="space-y-1.5">
         {categories.map((category) => (
           <button
@@ -16,8 +16,8 @@ export function CommunityLeftSidebar({
             onClick={() => setSelectedCategory(category.id)}
             className={`w-full text-left px-5 py-3 rounded-2xl font-bold text-sm transition-all ${
               selectedCategory === category.id
-                ? "bg-[#0ea5e9] text-white shadow-lg shadow-sky-100"
-                : "hover:bg-sky-50 text-gray-600 hover:text-[#0ea5e9]"
+                ? "bg-[#0ea5e9] text-white shadow-lg shadow-sky-100 dark:shadow-[#0ea5e9]/30"
+                : "hover:bg-sky-50 dark:hover:bg-sky-900/30 dark:text-slate-400 text-gray-600 hover:text-[#0ea5e9]"
             }`}
           >
             {category.name}
@@ -25,8 +25,8 @@ export function CommunityLeftSidebar({
         ))}
       </div>
 
-      <div className="mt-10 pt-8 border-t border-gray-100">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">Thành viên tích cực</h3>
+      <div className="mt-10 pt-8 border-t dark:border-white/10 border-gray-100">
+        <h3 className="text-lg font-bold dark:text-white text-gray-900 mb-6">Thành viên tích cực</h3>
         <div className="space-y-4">
           {topContributors.map((contributor, index) => (
             <div key={index} className="flex items-center gap-4 group cursor-pointer">
@@ -34,10 +34,10 @@ export function CommunityLeftSidebar({
                 {contributor.avatar}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-gray-900 truncate group-hover:text-[#0ea5e9] transition-colors">
+                <div className="text-sm font-bold dark:text-slate-200 text-gray-900 truncate group-hover:text-[#0ea5e9] transition-colors">
                   {contributor.name}
                 </div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <div className="text-[10px] font-bold dark:text-slate-500 text-gray-400 uppercase tracking-widest">
                   {contributor.posts} bài viết
                 </div>
               </div>

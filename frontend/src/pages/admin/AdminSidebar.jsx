@@ -8,7 +8,9 @@ import {
   CreditCard, 
   Cpu, 
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  ShieldAlert,
+  BarChart3
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -21,6 +23,11 @@ export function AdminSidebar() {
       path: "/admin/dashboard",
       label: "Tổng Quan",
       icon: LayoutDashboard
+    },
+    {
+      path: "/admin/dashboard/analytics",
+      label: "Thống Kê Hệ Thống",
+      icon: BarChart3
     },
     {
       path: "/admin/dashboard/users",
@@ -56,6 +63,11 @@ export function AdminSidebar() {
       path: "/admin/dashboard/system-settings",
       label: "Cài Đặt Hệ Thống",
       icon: Settings
+    },
+    {
+      path: "/admin/dashboard/permissions",
+      label: "Phân Quyền Hệ Thống",
+      icon: ShieldAlert
     }
   ];
 

@@ -112,25 +112,25 @@ export function Jobs() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Control Bar */}
-        <div className="p-6 bg-white border-b border-gray-200">
+        <div className="p-6 dark:bg-[#0a0f1c]/50 bg-white border-b dark:border-white/10 border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {!showFilters && (
                 <button
                   onClick={() => setShowFilters(true)}
-                  className="flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] transition-all font-semibold text-gray-700"
+                  className="flex items-center gap-2 px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] transition-all font-semibold dark:text-slate-300 text-gray-700"
                 >
                   <SlidersHorizontal className="w-5 h-5" />
                   <span>Bộ lọc</span>
                 </button>
               )}
               <div>
-                <p className="text-sm text-gray-650">
+                <p className="text-sm dark:text-slate-400 text-gray-500">
                   Tìm thấy <span className="font-semibold text-[#0ea5e9]">{jobsData.length}</span> công việc
                 </p>
               </div>
             </div>
-            <select className="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-[#0ea5e9] focus:outline-none text-sm text-gray-700 font-medium">
+            <select className="px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none text-sm dark:text-slate-300 text-gray-700 font-medium">
               <option>Phù hợp nhất</option>
               <option>Mới nhất</option>
               <option>Lương cao nhất</option>
@@ -140,7 +140,7 @@ export function Jobs() {
 
         {/* Double Pane List & Details Layout */}
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/50">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-transparent bg-gray-50/50">
             {jobsData.map((job) => (
               <JobCard
                 key={job.id}

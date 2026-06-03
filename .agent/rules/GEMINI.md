@@ -32,6 +32,40 @@ Hệ thống điều chỉnh mức độ nghiêm ngặt và cách phối hợp d
 
 ---
 
+## 🚪 1.5. LANDING PAGE & AUTH GATE PROTOCOL (Mandatory)
+
+> **Giao thức xác thực bắt buộc cho tất cả các module Frontend**
+
+Mọi Agent khi làm việc với Frontend PHẢI tuân thủ quy tắc sau:
+
+1. **Public Access Zone**: User chưa đăng nhập CHỈ được phép xem Landing Page (trang chủ công khai).
+2. **Protected Access Enforcement**: Khi user chưa đăng nhập cố gắng truy cập:
+   - Navigation links (Navbar, Sidebar)
+   - Direct URL access (gõ trực tiếp URL)
+   - Button CTAs (Call-to-Action)
+   - Bất kỳ trang nội bộ nào (Jobs, Profile, Interview...)
+   
+   → Hệ thống PHẢI:
+   - **Block navigation** (preventDefault, không chuyển trang)
+   - **Show Toast Notification** (góc phải màn hình) với message: "Yêu cầu đăng nhập để dùng được tính năng này"
+   - **KHÔNG tự động mở Auth Modal** - Để user tự click nút Login/Register
+
+3. **Implementation Pattern**:
+   ```javascript
+   // Check auth state trước khi navigate
+   if (!isAuthenticated) {
+     showToast({ 
+       message: 'Yêu cầu đăng nhập để dùng được tính năng này',
+       type: 'warning'
+     });
+     return; // Stop navigation
+   }
+   ```
+
+4. **Toast Priority**: Toast notification z-index 9999, xuất hiện 4 giây rồi tự động ẩn.
+
+---
+
 ## 🔄 2. PDCA CYCLE (Standard Protocol)
 
 Sử dụng workflow `/plan` -> `/create` -> `/orchestrate` -> `/status`.

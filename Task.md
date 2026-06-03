@@ -24,7 +24,7 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 - User sẽ đưa CV vào và lựa chọn vị trí muốn ứng tuyển sau đó hệ thống AI sẽ đưa ra danh sách để cho phép user luyện tập phỏng vấn thông qua giọng nói (user và AI sẽ trò chuyện với nhau).
 - Sau khi hoàn tất buổi phỏng vấn với AI thì AI sẽ dựa vào câu trả lời của ứng viên để đánh giá sau đó đưa ra lộ trình luyện tập phỏng vấn và hướng dẫn cách trả lời các câu hỏi phỏng vấn cho ứng viên để có thể trả lời phỏng vấn tốt hơn.
 
-### 3. Khánh - Module giao diện và chức năng cho HR đăng bài ứng tuyển
+### 3. Triều - Module giao diện và chức năng cho HR đăng bài ứng tuyển
 - HR sẽ đăng bài ứng tuyển lên hệ thống.
 - Hệ thống sẽ dựa vào bài đăng tuyển để đưa ra danh sách các câu hỏi phỏng vấn.
 - HR sẽ xem danh sách các ứng viên và đánh giá.
@@ -55,7 +55,7 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 *   **Phương (AI Voice)**:
     *   *BE*: Viết API đăng ký phiên Voice Session mới trong `voice_sessions`.
     *   *FE*: Thiết kế màn hình chọn thiết bị mic và kiểm tra âm thanh đầu vào.
-*   **Khánh (HR Module)**:
+*   **Triều (HR Module)**:
     *   *BE*: Viết API tạo tin tuyển dụng (`/api/jobs`) và lưu các yêu cầu chi tiết vào bảng `job_requirements`.
     *   *FE*: Thiết kế Form đăng tin tuyển dụng phía HR.
 *   **Huy (CV & Candidate Blog)**:
@@ -74,7 +74,7 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 *   **Phương (AI Voice)**:
     *   *BE*: API nhận file ghi âm ngắn và tích hợp thư viện Speech-to-Text.
     *   *FE*: Nút ghi âm microphone và hiệu ứng đang thu âm.
-*   **Khánh (HR Module)**:
+*   **Triều (HR Module)**:
     *   *BE*: API sửa/xóa/đóng/mở tin tuyển dụng.
     *   *FE*: Trang quản lý tin tuyển dụng của HR Dashboard.
 *   **Huy (CV & Candidate Blog)**:
@@ -93,13 +93,13 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 *   **Phương (AI Voice)**:
     *   *BE*: API chuyển văn bản của AI thành âm thanh thoại (Text-to-Speech).
     *   *FE*: Hiệu ứng sóng âm Ocean Blue chuyển động theo giọng phát của AI.
-*   **Khánh (HR Module)**:
+*   **Triều (HR Module)**:
     *   *BE*: API lấy danh sách hồ sơ nộp vào Job (kèm điểm CV & điểm phỏng vấn).
     *   *FE*: Giao diện danh sách ứng viên nộp hồ sơ phía HR Dashboard.
 *   **Huy (CV & Candidate Blog)**:
     *   *BE*: API gọi AI phân tích điểm yếu CV và API lấy chi tiết bài viết blog, tăng lượt xem.
     *   *FE*: Biểu đồ Radar CV và trang xem chi tiết bài đăng blog (Blog Detail) phía ứng viên.
-*   **Sang (Admin Module)**:
+*   **Sang (Admin Module)**: [Đã Hoàn Thành ✅]
     *   *BE*: API Admin ẩn/hiện tin tuyển dụng và API Admin duyệt/từ chối bài viết cộng đồng (`/api/admin/blogs/:id/review`).
     *   *FE*: Giao diện Admin duyệt tin tuyển dụng và giao diện Admin duyệt bài viết (`ManageBlog.jsx` có nút Duyệt/Từ chối).
 
@@ -112,9 +112,8 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 *   **Phương (AI Voice)**:
     *   *BE*: Logic hội thoại thoại hoàn chỉnh và AI sinh lộ trình ôn tập.
     *   *FE*: Trang hiển thị kết quả phỏng vấn giọng nói và lộ trình ôn luyện.
-*   **Khánh (HR Module)**:
-    *   *BE*: Server Socket.io chat realtime giữa HR và Candidate.
-    *   *FE*: Hộp thoại Chat Realtime trực tiếp trong HR Dashboard.
+*   **Triều (HR Module)**:
+    *   *BE*: Server Redis để lưu trữ dữ liệu tạm thời(List user ở phía admin/ List ứng viên ở phía HR/ List Job tải lên từ phía HR để User xem/ List bài viết ở phía Cộng đồng) và giảm tải cho Database. Tối ưu hiệu năng hệ thống (Tạo server ở docker và đưa vào docker-compose.yml tổng để teamate có thể chạy và sài luôn)
 *   **Huy (CV & Candidate Blog)**:
     *   *BE*: API xuất PDF báo cáo sửa CV và API lấy danh sách các bài blog đã xuất bản (`/api/blogs/published`).
     *   *FE*: Nút bấm tải báo cáo PDF và trang Bảng tin Cộng đồng (Community Feed Layout) hiển thị danh sách blog dạng lưới (Grid Cards).
@@ -131,7 +130,7 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 *   **Phương (AI Voice)**:
     *   *BE*: Cấu hình tối ưu độ trễ âm thanh STT-TTS, dọn dẹp âm thanh tạm.
     *   *FE*: Tối ưu UI sóng âm 3D mượt mà khi AI nói chuyện.
-*   **Khánh (HR Module)**:
+*   **Triều (HR Module)**:
     *   *BE*: API gửi email tự động (Nodemailer) báo kết quả duyệt ứng viên.
     *   *FE*: Nút duyệt ứng viên Đạt/Không đạt kèm điền mẫu email nhanh.
 *   **Huy (CV & Candidate Blog)**:

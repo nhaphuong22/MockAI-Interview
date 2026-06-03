@@ -29,3 +29,21 @@ export const transcribeAudioApi = async (audioBlob, draftTranscript = "") => {
   });
 };
 
+/**
+ * Finalize a voice session and update duration
+ * @param {number} sessionId - The ID of the voice session
+ * @param {number} durationSeconds - The total duration of the call in seconds
+ * @returns {Promise<{success: boolean, data: object}>}
+ */
+export const completeVoiceSessionApi = async (sessionId, durationSeconds) => {
+  return axiosClient.put(`/voice-sessions/${sessionId}/complete`, { durationSeconds });
+};
+
+/**
+ * Trigger AI evaluation, package results as JSON, upload to Cloudinary and retrieve full assessment
+ * @param {number} sessionId - The ID of the voice session
+ * @returns {Promise<{success: boolean, data: object}>}
+ */
+export const assessVoiceSessionApi = async (sessionId) => {
+  return axiosClient.post(`/voice-sessions/${sessionId}/assess`);
+};

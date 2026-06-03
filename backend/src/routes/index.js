@@ -7,6 +7,7 @@ import cvRoutes from './cvRoutes.js';
 import blogRoutes from './blogRoutes.js';
 import interviewRoutes from './interviewRoutes.js';
 import jobRoutes from './jobRoutes.js';
+import adminRoutes from './adminRoutes.js';
 
 const router = express.Router();
 
@@ -18,6 +19,7 @@ router.use('/cv', cvRoutes);
 router.use('/blogs', blogRoutes);
 router.use('/interviews', interviewRoutes);
 router.use('/jobs', jobRoutes);
+router.use('/admin', adminRoutes);
 router.use('/', systemRoutes);
 
 export default router;
