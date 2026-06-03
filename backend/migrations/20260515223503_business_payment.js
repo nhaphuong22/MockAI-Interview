@@ -40,27 +40,6 @@ export async function up(knex) {
     table.timestamps(true, true);
   });
 
-  // 3. Offers - Job offer letters from HR to candidate
-  await knex.schema.createTable('offers', (table) => {
-    table.increments('id').primary();
-    table.integer('application_id').unsigned().notNullable()
-      .references('id').inTable('applications').onDelete('CASCADE');
-    table.integer('sent_by').unsigned().notNullable()
-      .references('id').inTable('users').onDelete('CASCADE'); // HR
-    table.integer('candidate_id').unsigned().notNullable()
-      .references('id').inTable('users').onDelete('CASCADE');
-    table.string('position').notNullable();
-    table.decimal('offered_salary', 14, 2);
-    table.string('salary_currency').defaultTo('VND');
-    table.date('start_date');
-    table.text('benefits'); // Benefits description
-    table.text('additional_terms');
-    table.string('status').defaultTo('SENT'); // SENT, VIEWED, ACCEPTED, REJECTED, EXPIRED
-    table.timestamp('expires_at');
-    table.timestamp('responded_at');
-    table.text('reject_reason'); // If candidate rejects
-    table.timestamps(true, true);
-  });
 
   // 4. Email Templates - Reusable email templates for HR
   await knex.schema.createTable('email_templates', (table) => {
@@ -80,9 +59,7 @@ export async function up(knex) {
     table.index(['user_id', 'status'], 'idx_transactions_user');
   });
 
-  await knex.schema.alterTable('offers', (table) => {
-    table.index(['candidate_id', 'status'], 'idx_offers_candidate');
-  });
+
 }
 
 /**
@@ -91,7 +68,7 @@ export async function up(knex) {
  */
 export async function down(knex) {
   await knex.schema.dropTableIfExists('email_templates');
-  await knex.schema.dropTableIfExists('offers');
+
   await knex.schema.dropTableIfExists('transactions');
   await knex.schema.dropTableIfExists('packages');
 }

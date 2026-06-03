@@ -129,8 +129,8 @@ Agent cần nắm rõ bối cảnh để thiết kế database và UI cho phù h
 
 ### 5. Quyết định Kiến trúc (Architecture Decisions)
 - **AI Interview Questions**: AI tự generate câu hỏi phỏng vấn dựa trên CV + JD context. KHÔNG dùng question_bank cứng. Bảng `question_bank` đã bị xóa.
-- **Messaging/Chat**: Sử dụng **Socket.io** cho real-time messaging giữa HR và Candidate. Bảng `conversations` + `messages` đã sẵn sàng.
+- **Messaging/Chat**: Sử dụng **Socket.io** cho real-time messaging giữa HR và Candidate. (Bảng `conversations` + `messages` đã được lược bỏ).
 - **Module Thanh toán**: Chưa cần implement. Bảng `packages` + `transactions` đã tạo sẵn nhưng sẽ triển khai sau.
 
 ---
-*Cập nhật lần cuối: 15/05/2026 — Database Expansion hoàn tất (31 bảng).*
+*Cập nhật lần cuối: 03/06/2026 — Đã lược bỏ 7 bảng dư thừa (còn lại 34 bảng).*
