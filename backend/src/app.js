@@ -1,12 +1,10 @@
+import 'dotenv/config'; // Make sure env is fully loaded before any dynamic route mapping
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRoutes from './routes/index.js';
 import { setupSwagger } from './config/swagger.js';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

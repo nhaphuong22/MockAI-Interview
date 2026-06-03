@@ -113,7 +113,7 @@ export function Community() {
   });
 
   return (
-    <div className="bg-gray-50/50 py-10">
+    <div className="dark:bg-transparent bg-gray-50/50 py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Sidebar */}
@@ -130,13 +130,13 @@ export function Community() {
           <main className="lg:col-span-6">
             <div className="mb-8">
               <div className="relative">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 dark:text-slate-500 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Tìm kiếm bài viết, tác giả..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-3xl shadow-xl shadow-gray-200/30 focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all"
+                  className="w-full pl-14 pr-6 py-4 dark:bg-[#0a0f1c]/50 bg-white border dark:border-white/10 border-gray-100 rounded-3xl shadow-xl shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 dark:text-slate-300 text-gray-700 focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 dark:focus:ring-sky-900/30 focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -152,8 +152,8 @@ export function Community() {
                   />
                 ))
               ) : (
-                <div className="bg-white rounded-3xl p-12 text-center shadow-xl shadow-gray-200/30 border border-gray-50">
-                  <p className="text-gray-500 font-medium">Không tìm thấy bài viết nào phù hợp.</p>
+                <div className="dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-12 text-center shadow-xl shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-50">
+                  <p className="dark:text-slate-400 text-gray-500 font-medium">Không tìm thấy bài viết nào phù hợp.</p>
                 </div>
               )}
             </div>

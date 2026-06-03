@@ -66,10 +66,10 @@ const applications = [
 ];
 
 const statusConfig = {
-  reviewing: { label: "Đang Xem", color: "bg-yellow-100 text-yellow-700", icon: Clock },
-  interview: { label: "Phỏng Vấn", color: "bg-blue-100 text-blue-700", icon: Info },
-  accepted: { label: "Đã Tuyển", color: "bg-green-100 text-green-700", icon: CheckCircle2 },
-  rejected: { label: "Từ Chối", color: "bg-red-100 text-red-700", icon: XCircle },
+  reviewing: { label: "Đang Xem", color: "dark:bg-yellow-900/30 dark:text-yellow-400 bg-yellow-100 text-yellow-700", icon: Clock },
+  interview: { label: "Phỏng Vấn", color: "dark:bg-blue-900/30 dark:text-blue-400 bg-blue-100 text-blue-700", icon: Info },
+  accepted: { label: "Đã Tuyển", color: "dark:bg-green-900/30 dark:text-green-400 bg-green-100 text-green-700", icon: CheckCircle2 },
+  rejected: { label: "Từ Chối", color: "dark:bg-red-900/30 dark:text-red-400 bg-red-100 text-red-700", icon: XCircle },
 };
 
 export function ApplicationTracking() {
@@ -88,15 +88,15 @@ export function ApplicationTracking() {
     : applications.filter(app => app.status === activeTab);
 
   return (
-    <div className="bg-gray-50/50 min-h-screen py-10">
+    <div className="dark:bg-transparent bg-gray-50/50 min-h-screen py-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Theo Dõi Ứng Tuyển</h1>
-            <p className="text-lg text-gray-600 font-medium">Trạng thái hồ sơ của bạn đang được xử lý như thế nào?</p>
+            <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2 tracking-tight">Theo Dõi Ứng Tuyển</h1>
+            <p className="text-lg dark:text-slate-300 text-gray-600 font-medium">Trạng thái hồ sơ của bạn đang được xử lý như thế nào?</p>
           </div>
           <div className="flex gap-2">
-            <span className="px-4 py-2 bg-white border border-gray-100 rounded-xl shadow-sm text-sm font-bold text-gray-500">
+            <span className="px-4 py-2 dark:bg-[#0f172a] bg-white border dark:border-white/10 border-gray-100 rounded-xl shadow-sm text-sm font-bold text-gray-500">
               Tổng cộng: <span className="text-[#0ea5e9]">{stats.total}</span>
             </span>
           </div>
@@ -110,28 +110,28 @@ export function ApplicationTracking() {
           onValueChange={setActiveTab} 
           className="space-y-8"
         >
-          <Tabs.List className="flex gap-1 bg-white p-1.5 rounded-2xl shadow-lg shadow-gray-200/30 border border-gray-100 max-w-fit">
+          <Tabs.List className="flex gap-1 dark:bg-[#0a0f1c]/80 bg-white p-1.5 rounded-2xl shadow-lg shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-100 max-w-fit">
             <Tabs.Trigger
               value="all"
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300"
+              className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300"
             >
               Tất Cả
             </Tabs.Trigger>
             <Tabs.Trigger
               value="reviewing"
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300"
+              className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300"
             >
               Đang Xét
             </Tabs.Trigger>
             <Tabs.Trigger
               value="interview"
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300"
+              className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300"
             >
               Phỏng Vấn
             </Tabs.Trigger>
             <Tabs.Trigger
               value="accepted"
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300"
+              className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300"
             >
               Trúng Tuyển
             </Tabs.Trigger>
@@ -147,8 +147,8 @@ export function ApplicationTracking() {
                 />
               ))
             ) : (
-              <div className="bg-white rounded-3xl p-12 text-center shadow-xl shadow-gray-200/30 border border-gray-50">
-                <p className="text-gray-500 font-medium">Chưa có hồ sơ ứng tuyển nào ở trạng thái này.</p>
+              <div className="dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-12 text-center shadow-xl shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-50">
+                <p className="dark:text-slate-400 text-gray-500 font-medium">Chưa có hồ sơ ứng tuyển nào ở trạng thái này.</p>
               </div>
             )}
           </Tabs.Content>
