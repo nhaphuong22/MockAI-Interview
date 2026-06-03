@@ -7,9 +7,6 @@ import {
   updateJob,
   deleteJob
 } from '../controllers/jobController.js';
-import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
-
-import { createNewJob } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 
 
