@@ -59,16 +59,6 @@ export async function up(knex) {
     table.timestamps(true, true);
   });
 
-  // 3. Password Resets - Secure password recovery
-  await knex.schema.createTable('password_resets', (table) => {
-    table.increments('id').primary();
-    table.integer('user_id').unsigned().notNullable()
-      .references('id').inTable('users').onDelete('CASCADE');
-    table.string('token').notNullable().unique();
-    table.timestamp('expires_at').notNullable();
-    table.boolean('is_used').defaultTo(false);
-    table.timestamps(true, true);
-  });
 
   // Add index for performance on frequently queried columns
   await knex.schema.alterTable('applications', (table) => {
@@ -87,7 +77,7 @@ export async function up(knex) {
  * @returns { Promise<void> }
  */
 export async function down(knex) {
-  await knex.schema.dropTableIfExists('password_resets');
+
   await knex.schema.dropTableIfExists('notifications');
   await knex.schema.dropTableIfExists('applications');
 }
