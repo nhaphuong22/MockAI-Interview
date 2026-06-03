@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { uploadCV, scoreCV } from '../controllers/cvController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
