@@ -1,4 +1,5 @@
 import express from 'express';
+
 import { 
   createNewJob,
   getJobs,
@@ -9,6 +10,10 @@ import {
   updateJobApplication
 } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+
+import { createNewJob } from '../controllers/jobController.js';
+import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
+
 
 const router = express.Router();
 

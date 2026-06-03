@@ -7,7 +7,7 @@ export function SettingsSidebar({ user, activeTab, setActiveTab, menuItems, logo
       <div className="p-6 text-center border-b border-gray-50 mb-4">
         <div className="w-24 h-24 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg shadow-sky-100 overflow-hidden">
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           ) : (
             "👨‍💻"
           )}

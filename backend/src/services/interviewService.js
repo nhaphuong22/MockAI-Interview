@@ -1,16 +1,20 @@
 import db from '../db/knex.js';
+import { generateQuestionsFromGroq, evaluateCandidateAnswer } from './groqService.js';
+import { 
+  findInterviewWithOwner, 
+  insertInterview, 
+  insertQuestions,
+  findQuestionById,
+  findExistingAnswer,
+  insertAnswer,
+  updateAnswer,
+  fetchInterviewsByUser
+} from '../models/interviewModel.js';
+import { NotFoundError, ValidationError } from '../core/customErrors.js';
 
 /**
  * Initialize a new interview and generate dynamic questions based on CV + Position + Skills
- * 
- * @param {object} params
- * @param {number} params.userId - Candidate User ID
- * @param {number} [params.jobId] - Optional Job ID being applied to
- * @param {string} [params.customPosition] - Selected position title (if PRACTICE)
- * @param {string} [params.customSkills] - Comma-separated skills list (if PRACTICE)
- * @param {string} [params.experienceLevel] - Selected experience level
- * @param {string} [params.type] - PRACTICE or REAL
- * @returns {Promise<object>} The created interview record with generated questions
+ * Utilizes Qwen 3 32B on Groq for ultra-personalized evaluation questions.
  */
 export const initInterviewSession = async ({
   userId,
@@ -18,39 +22,65 @@ export const initInterviewSession = async ({
   customPosition = '',
   customSkills = '',
   experienceLevel = 'JUNIOR',
+  cvId = null,
+  cvText = '',
   type = 'PRACTICE'
 }) => {
-  // 1. Create the interview record
-  const [interview] = await db('interviews')
-    .insert({
-      user_id: userId,
-      job_id: jobId,
-      custom_position: customPosition || null,
-      custom_skills: customSkills || null,
-      experience_level: experienceLevel || null,
-      type: type,
-      status: 'PENDING',
-      created_at: new Date(),
-      updated_at: new Date()
-    })
-    .returning('*');
+  // 1. Retrieve the candidate's CV
+  let finalCvText = cvText || '';
+  let linkedCvId = cvId;
 
-  // 2. Generate customized interview questions based on the target position & skills
-  const questions = generateDynamicQuestions(customPosition, customSkills, experienceLevel);
+  if (!finalCvText) {
+    let targetCv = null;
+    if (cvId) {
+      targetCv = await db('cvs')
+        .where({ id: cvId, user_id: userId })
+        .first();
+    } else {
+      targetCv = await db('cvs')
+        .where({ user_id: userId })
+        .orderBy('created_at', 'desc')
+        .first();
+    }
+    if (targetCv) {
+      finalCvText = targetCv.parsed_text || '';
+      linkedCvId = targetCv.id;
+    }
+  }
 
-  // 3. Save questions to interview_questions table
-  const questionsToInsert = questions.map((qText, index) => ({
+  // 2. Create the interview record via interviewModel
+  const [interview] = await insertInterview({
+    user_id: userId,
+    cv_id: linkedCvId || null,
+    job_id: jobId,
+    custom_position: customPosition || null,
+    custom_skills: customSkills || null,
+    experience_level: experienceLevel || null,
+    type: type,
+    status: 'PENDING',
+    created_at: new Date(),
+    updated_at: new Date()
+  });
+
+  // 3. Generate customized interview questions using Qwen 3 32B on Groq
+  const aiQuestions = await generateQuestionsFromGroq({
+    position: customPosition || 'Software Engineer',
+    skills: customSkills || 'Programming',
+    experienceLevel: experienceLevel,
+    cvText: finalCvText
+  });
+
+  // 4. Save dynamic questions to interview_questions table via interviewModel
+  const questionsToInsert = aiQuestions.map((q, index) => ({
     interview_id: interview.id,
-    question_text: qText,
-    expected_answer: `Phản hồi mẫu cho câu hỏi về ${customPosition || 'Kỹ năng chung'}`,
-    score_weight: 1,
+    question_text: q.question_text,
+    expected_answer: q.expected_answer,
+    score_weight: q.score_weight || 1,
     created_at: new Date(),
     updated_at: new Date()
   }));
 
-  const insertedQuestions = await db('interview_questions')
-    .insert(questionsToInsert)
-    .returning('*');
+  const insertedQuestions = await insertQuestions(questionsToInsert);
 
   return {
     ...interview,
@@ -59,40 +89,101 @@ export const initInterviewSession = async ({
 };
 
 /**
- * Generate 5 dynamic, professional interview questions based on context
+ * Submit candidate's answer for a question, evaluate using Groq, and persist to DB
  */
-function generateDynamicQuestions(position = '', skills = '', level = 'JUNIOR') {
-  const normPosition = position.toLowerCase();
-  const normSkills = skills.toLowerCase();
+export const submitCandidateAnswer = async (questionId, answerText, audioUrl = null) => {
+  // 1. Fetch targeted question details via interviewModel
+  const question = await findQuestionById(Number(questionId));
 
-  // A. Frontend Developer questions
-  if (normPosition.includes('front') || normPosition.includes('react') || normPosition.includes('vue')) {
-    return [
-      `Với vị trí ${position} (${level}), bạn có thể giải thích cơ chế rendering (SSR, CSR, SSG) khác nhau như thế nào và khi nào nên chọn loại nào?`,
-      `Khi làm việc với các thư viện quản lý State như Redux hoặc Zustand, bạn làm cách nào để tránh re-render không cần thiết và tối ưu hóa hiệu năng?`,
-      `Bạn xử lý các bất đồng bộ (async/await) trong Javascript/React thế nào? Làm sao để xử lý lỗi (error boundary/try-catch) triệt để?`,
-      `Hãy mô tả cách bạn tối ưu hóa tốc độ tải trang (Core Web Vitals) cho một ứng dụng Web lớn?`,
-      `Dựa trên kỹ năng ${skills || 'Frontend'} của bạn, hãy kể về một lỗi UI/Performance phức tạp bạn từng gặp và cách bạn debug nó?`
-    ];
+  if (!question) {
+    throw new NotFoundError('Interview question not found');
   }
 
-  // B. Backend Developer questions
-  if (normPosition.includes('back') || normPosition.includes('node') || normPosition.includes('api') || normPosition.includes('python')) {
-    return [
-      `Tại sao bạn lại chọn xây dựng kiến trúc RESTful thay vì GraphQL trong một hệ thống cần bảo mật cao?`,
-      `Bạn tối ưu hóa các câu lệnh SQL hoặc cơ chế Indexing thế nào khi gặp các bảng dữ liệu lớn hàng triệu dòng?`,
-      `Mô tả cơ chế xác thực JWT và cách bạn quản lý Refresh Token an toàn trên Production để chống XSS/CSRF?`,
-      `Làm thế nào để bạn xử lý Race Condition khi có hàng nghìn lượt mua hàng đồng thời trong hệ thống thương mại điện tử?`,
-      `Hãy giải thích cách bạn áp dụng kỹ năng ${skills || 'NodeJS/Express'} để xây dựng cấu trúc API dễ mở rộng và bảo trì?`
-    ];
+  // 2. Perform AI evaluation using Groq Qwen 3 32B model
+  console.log('Evaluating candidate answer using Qwen 3 32B...');
+  const evaluation = await evaluateCandidateAnswer(
+    question.question_text,
+    question.expected_answer,
+    answerText.trim()
+  );
+
+  // 3. Persist to candidate_answers table via interviewModel
+  const existingAnswer = await findExistingAnswer(Number(questionId));
+
+  let savedAnswer = null;
+  if (existingAnswer) {
+    const updateData = {
+      answer_text: answerText.trim(),
+      ai_feedback: evaluation.feedback,
+      score: evaluation.score,
+      updated_at: new Date()
+    };
+    if (audioUrl) {
+      updateData.audio_url = audioUrl;
+    }
+    const [updated] = await updateAnswer(existingAnswer.id, updateData);
+    savedAnswer = updated;
+  } else {
+    const insertData = {
+      interview_question_id: Number(questionId),
+      answer_text: answerText.trim(),
+      ai_feedback: evaluation.feedback,
+      score: evaluation.score,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    if (audioUrl) {
+      insertData.audio_url = audioUrl;
+    }
+    const [inserted] = await insertAnswer(insertData);
+    savedAnswer = inserted;
   }
 
-  // C. General / Other Technical Positions
-  return [
-    `Hãy giới thiệu ngắn gọn về một dự án phần mềm bạn từng xây dựng sử dụng kỹ năng ${skills || 'lập trình'}?`,
-    `Để đảm bảo chất lượng code trong team, quy trình kiểm thử (Unit Test/E2E) và review code của bạn diễn ra như thế nào?`,
-    `Khi nhận được yêu cầu tính năng từ BA nhưng tài liệu mô tả còn mơ hồ, bạn sẽ xử lý như thế nào để làm rõ yêu cầu trước khi code?`,
-    `Tại sao bạn nghĩ mình là ứng viên phù hợp nhất cho vị trí ${position || 'Lập trình viên'} cấp độ ${level}?`,
-    `Hãy kể lại một lần bạn và đồng nghiệp bất đồng ý kiến về giải pháp kỹ thuật, và hai bạn đã thống nhất giải quyết ra sao?`
-  ];
-}
+  return savedAnswer;
+};
+
+/**
+ * Fetch and format interview history for candidate
+ * @param {number} userId - The authenticated user ID
+ * @returns {Promise<Array>} List of user interview sessions
+ */
+export const getUserInterviews = async (userId) => {
+  const interviews = await fetchInterviewsByUser(userId);
+
+  return interviews.map(item => {
+    // Parse JSON strings safely
+    let parsedRadar = null;
+    let parsedPath = null;
+    let parsedQa = null;
+
+    try {
+      parsedRadar = typeof item.radar_skills === 'string' ? JSON.parse(item.radar_skills) : item.radar_skills;
+    } catch (_) {}
+    try {
+      parsedPath = typeof item.learning_path === 'string' ? JSON.parse(item.learning_path) : item.learning_path;
+    } catch (_) {}
+    try {
+      parsedQa = typeof item.qa_details === 'string' ? JSON.parse(item.qa_details) : item.qa_details;
+    } catch (_) {}
+
+    return {
+      id: item.id,
+      position: item.custom_position || 'Lập trình viên',
+      date: item.created_at,
+      status: item.status,
+      type: item.type,
+      overall_score: item.overall_score ?? 80,
+      duration_seconds: item.duration || 0,
+      feedback_summary: item.feedback_summary || '',
+      radar_skills: parsedRadar || {
+        technical_depth: 80,
+        communication: 80,
+        problem_solving: 80,
+        confidence: 80,
+        star_structure: 80
+      },
+      learning_path: parsedPath || [],
+      qa_details: parsedQa || []
+    };
+  });
+};

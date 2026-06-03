@@ -64,12 +64,14 @@ export function CVReview() {
   const isAnalyzing = uploadMutation.isPending || scoreMutation.isPending;
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl mb-2">AI Chấm Điểm CV</h1>
-          <p className="text-gray-600">
-            Upload CV của bạn để nhận phân tích chi tiết và gợi ý cải thiện tổng quan từ AI
+    <div className="min-h-screen py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight dark:text-white text-gray-900">
+            AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8]">Chấm Điểm CV</span>
+          </h1>
+          <p className="text-lg max-w-2xl mx-auto leading-relaxed dark:text-slate-400 text-gray-500">
+            Upload CV của bạn để nhận phân tích chi tiết, đánh giá điểm mạnh, điểm yếu và gợi ý cải thiện tổng quan từ AI để tăng tỷ lệ trúng tuyển.
           </p>
         </div>
 
