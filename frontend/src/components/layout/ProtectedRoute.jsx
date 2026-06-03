@@ -25,7 +25,7 @@ export function ProtectedRoute({ children, requiredRole = null }) {
     }
 
     // Check role if required
-    if (requiredRole && user?.role !== requiredRole) {
+    if (requiredRole && user?.role?.toLowerCase() !== requiredRole.toLowerCase()) {
       showToast({
         message: 'Bạn không có quyền truy cập trang này',
         type: 'error',
@@ -39,7 +39,7 @@ export function ProtectedRoute({ children, requiredRole = null }) {
     return null;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
+  if (requiredRole && user?.role?.toLowerCase() !== requiredRole.toLowerCase()) {
     return null;
   }
 

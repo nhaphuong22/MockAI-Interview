@@ -45,6 +45,9 @@ export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuthStore();
+  const userRole = user?.role?.toLowerCase();
+  const isUserAdmin = userRole === 'admin';
+  const isUserRecruiter = userRole === 'hr';
   const { theme, toggleTheme } = useThemeStore();
   const { handleProtectedNav } = useAuthGate();
 
@@ -77,7 +80,7 @@ export function Layout() {
         <div className="w-full bg-gradient-to-r from-[#0ea5e9]/10 via-white/40 dark:via-[#0a0f1c]/40 to-[#38bdf8]/10 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-[0_8px_32px_0_rgba(14,165,233,0.06)] rounded-full px-6 transition-all duration-500 hover:from-[#0ea5e9]/15 hover:via-white/50 dark:hover:via-[#0a0f1c]/60 hover:to-[#38bdf8]/15 hover:border-white/70 dark:hover:border-white/20 hover:shadow-[0_12px_40px_0_rgba(14,165,233,0.12)]">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-8">
-              <Link to={isRecruiter ? recruiterBase : isAdministrator ? administratorBase : "/"} className="flex items-center gap-2">
+              <Link to={isUserRecruiter ? recruiterBase : isUserAdmin ? administratorBase : "/"} className="flex items-center gap-2">
                 <div className="bg-[#0ea5e9] p-1.5 rounded-lg">
                   <Briefcase className="w-6 h-6 text-white" />
                 </div>
@@ -186,17 +189,17 @@ export function Layout() {
                   >
                     <DropdownMenu.Item asChild>
                       <Link
-                        to={isRecruiter ? `${recruiterBase}/company-profile` : isAdministrator ? `${administratorBase}/analytics` : "/profile"}
+                        to={isUserRecruiter ? `${recruiterBase}/company-profile` : isUserAdmin ? `${administratorBase}/analytics` : "/profile"}
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
                       >
-                        {isRecruiter ? <Building className="w-4 h-4" /> : isAdministrator ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                        <span>{isRecruiter ? "Công Ty" : isAdministrator ? "Quản trị viên" : "Hồ Sơ Cá Nhân"}</span>
+                        {isUserRecruiter ? <Building className="w-4 h-4" /> : isUserAdmin ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                        <span>{isUserRecruiter ? "Công Ty" : isUserAdmin ? "Quản trị viên" : "Hồ Sơ Cá Nhân"}</span>
                       </Link>
                     </DropdownMenu.Item>
 
                     <DropdownMenu.Item asChild>
                       <Link
-                        to={isRecruiter ? `${recruiterBase}/settings` : isAdministrator ? `${administratorBase}/system-settings` : "/settings"}
+                        to={isUserRecruiter ? `${recruiterBase}/settings` : isUserAdmin ? `${administratorBase}/system-settings` : "/settings"}
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
                       >
                         <Settings className="w-4 h-4" />
