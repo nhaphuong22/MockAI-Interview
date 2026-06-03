@@ -115,6 +115,9 @@ export function Layout() {
                     <Link to={recruiterBase} className={`text-sm font-medium transition-colors ${location.pathname === recruiterBase ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Dashboard
                     </Link>
+                    <Link to={`${recruiterBase}/manage-jobs`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/manage-jobs`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                      Quản Lý Tin
+                    </Link>
                     <Link to={`${recruiterBase}/post-job`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/post-job`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Đăng Tin
                     </Link>
