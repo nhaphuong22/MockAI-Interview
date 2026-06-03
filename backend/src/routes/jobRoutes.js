@@ -4,7 +4,9 @@ import {
   getJobs,
   getJobById,
   updateJob,
-  deleteJob
+  deleteJob,
+  getJobApplications,
+  updateJobApplication
 } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 
@@ -262,6 +264,8 @@ const router = express.Router();
 // Route khai báo
 router.post('/', authenticateToken, requireRole(['HR', 'ADMIN']), createNewJob);
 router.get('/', getJobs);
+router.get('/applications', authenticateToken, requireRole(['HR', 'ADMIN']), getJobApplications);
+router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJobApplication);
 router.get('/:id', getJobById);
 router.put('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJob);
 router.delete('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), deleteJob);
