@@ -5,7 +5,9 @@ import {
   getBlogs, 
   reviewBlog, 
   deleteBlog,
-  getAnalytics
+  getAnalytics,
+  getPermissionsMatrix,
+  updatePermissionsMatrix
 } from '../controllers/adminController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 
@@ -16,6 +18,13 @@ router.use(authenticateToken);
 router.use(requireRole(['ADMIN']));
 
 router.get('/analytics', getAnalytics);
+
+/**
+ * Quản lý Ma trận Phân quyền (Role Permissions)
+ */
+router.get('/permissions', getPermissionsMatrix);
+router.put('/permissions/:roleId', updatePermissionsMatrix);
+
 
 /**
  * Quản lý tin tuyển dụng (Jobs)
