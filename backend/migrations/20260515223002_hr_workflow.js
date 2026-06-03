@@ -31,29 +31,6 @@ export async function up(knex) {
     table.timestamps(true, true);
   });
 
-  // 2. HR Evaluations - HR's assessment after real interviews
-  await knex.schema.createTable('hr_evaluations', (table) => {
-    table.increments('id').primary();
-    table.integer('application_id').unsigned().notNullable()
-      .references('id').inTable('applications').onDelete('CASCADE');
-    table.integer('schedule_id').unsigned()
-      .references('id').inTable('interview_schedules').onDelete('SET NULL');
-    table.integer('evaluator_id').unsigned().notNullable()
-      .references('id').inTable('users').onDelete('CASCADE'); // HR who evaluated
-
-    table.string('round').notNullable(); // "CV_SCREENING", "ROUND_1", "ROUND_2", "FINAL"
-    table.integer('technical_score'); // 1-10
-    table.integer('communication_score'); // 1-10
-    table.integer('culture_fit_score'); // 1-10
-    table.integer('overall_score'); // 1-10
-    table.text('strengths'); // What the candidate did well
-    table.text('weaknesses'); // Areas for improvement
-    table.text('comments'); // General comments
-    table.string('recommendation').notNullable().defaultTo('PENDING');
-    // STRONG_HIRE, HIRE, NO_HIRE, STRONG_NO_HIRE, PENDING
-
-    table.timestamps(true, true);
-  });
 
   // Add indexes for performance
   await knex.schema.alterTable('interview_schedules', (table) => {
@@ -61,9 +38,7 @@ export async function up(knex) {
     table.index(['scheduled_by', 'status'], 'idx_schedules_hr');
   });
 
-  await knex.schema.alterTable('hr_evaluations', (table) => {
-    table.index('application_id', 'idx_evaluations_application');
-  });
+
 }
 
 /**
@@ -71,6 +46,6 @@ export async function up(knex) {
  * @returns { Promise<void> }
  */
 export async function down(knex) {
-  await knex.schema.dropTableIfExists('hr_evaluations');
+
   await knex.schema.dropTableIfExists('interview_schedules');
 }

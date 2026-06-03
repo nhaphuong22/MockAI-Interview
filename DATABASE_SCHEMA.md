@@ -13,42 +13,36 @@ Tài liệu này cung cấp danh sách đầy đủ toàn bộ các bảng trong
 | 3 | `permissions` | Core / Admin | Danh sách các quyền hạn chi tiết trong hệ thống. | (Không có) |
 | 4 | `role_permissions` | Core / Admin | Bảng trung gian gán quyền hạn chi tiết cho từng vai trò. | `role_id` -> `roles`, `permission_id` -> `permissions` |
 | 5 | `user_roles` | Core / Admin | Bảng gán vai trò trực tiếp cho người dùng (RBAC). | `user_id` -> `users`, `role_id` -> `roles` |
-| 6 | `password_resets` | Core / Auth | Quản lý token khôi phục mật khẩu khi người dùng quên. | (Không có) |
-| 7 | `companies` | HR / Job | Thông tin chi tiết của công ty/doanh nghiệp. | (Không có) |
-| 8 | `categories` | HR / Job | Lĩnh vực ngành nghề công việc (ví dụ: IT, Marketing). | (Không có) |
-| 9 | `skills` | Core / CV | Danh mục kỹ năng chung của hệ thống (ví dụ: React, SQL). | (Không có) |
-| 10 | `locations` | HR / Job | Danh mục các địa điểm/tỉnh thành làm việc. | (Không có) |
-| 11 | `job_types` | HR / Job | Hình thức làm việc (Full-time, Part-time, Remote, Intern). | (Không có) |
-| 12 | `jobs` | HR / Job | Tin tuyển dụng do nhà tuyển dụng (HR) đăng tải. | `hr_id` -> `users`, `company_id` -> `companies`, `category_id` -> `categories`, `location_id` -> `locations`, `job_type_id` -> `job_types` |
-| 13 | `job_skills` | HR / Job | Bảng trung gian liên kết các kỹ năng yêu cầu trong tin tuyển dụng. | `job_id` -> `jobs`, `skill_id` -> `skills` |
-| 14 | `user_skills` | Candidate / CV | Bảng trung gian liên kết kỹ năng và trình độ của ứng viên. | `user_id` -> `users`, `skill_id` -> `skills` |
-| 15 | `job_requirements` | HR / Job | Yêu cầu công việc chi tiết của từng tin tuyển dụng. | `job_id` -> `jobs` |
-| 16 | `cvs` | Candidate / CV | Lưu trữ tệp CV, điểm số ATS và văn bản trích xuất từ CV. | `user_id` -> `users` |
-| 17 | `cv_skills` | Candidate / CV | Kỹ năng chuyên môn do AI bóc tách trực tiếp từ CV ứng viên. | `cv_id` -> `cvs` |
-| 18 | `cv_evaluations` | Candidate / CV | Nhận xét chi tiết và điểm số của AI theo từng tiêu chí CV. | `cv_id` -> `cvs` |
-| 19 | `interviews` | AI Interview | Buổi phỏng vấn giữa ứng viên và AI (Thật hoặc Luyện tập). | `user_id` -> `users`, `cv_id` -> `cvs`, `job_id` -> `jobs` |
-| 20 | `interview_questions`| AI Interview | Bộ câu hỏi phỏng vấn động được AI tạo riêng theo CV và JD. | `interview_id` -> `interviews` |
-| 21 | `candidate_answers` | AI Interview | Câu trả lời, điểm số, file ghi âm và phản hồi AI cho từng câu hỏi. | `interview_question_id` -> `interview_questions` |
-| 22 | `interview_messages`| AI Interview | Nhật ký transcript trò chuyện văn bản realtime giữa AI và ứng viên. | `interview_id` -> `interviews` |
-| 23 | `assessments` | AI Interview | Đánh giá tổng hợp cuối buổi phỏng vấn (điểm, nhận xét, lộ trình). | `interview_id` -> `interviews` (1-1) |
-| 24 | `voice_sessions` | AI Voice | Theo dõi phiên thoại phỏng vấn giọng nói (kết nối, thời lượng, ghi âm). | `interview_id` -> `interviews` |
-| 25 | `saved_jobs` | Engagement | Danh sách các tin tuyển dụng được ứng viên lưu lại. | `user_id` -> `users`, `job_id` -> `jobs` |
-| 26 | `company_followers` | Engagement | Theo dõi các công ty của ứng viên. | `user_id` -> `users`, `company_id` -> `companies` |
-| 27 | `job_alerts` | Engagement | Cấu hình nhận thông báo việc làm phù hợp tự động. | `user_id` -> `users` |
-| 28 | `applications` | Recruiter / HR | Hồ sơ ứng tuyển của ứng viên vào tin tuyển dụng. | `user_id` -> `users`, `job_id` -> `jobs`, `cv_id` -> `cvs` |
-| 29 | `notifications` | Engagement | Thông báo hệ thống gửi đến người dùng. | `user_id` -> `users` |
-| 30 | `conversations` | Messaging | Cuộc hội thoại trực tiếp giữa HR và ứng viên. | `sender_id` -> `users`, `receiver_id` -> `users` |
-| 31 | `messages` | Messaging | Tin nhắn chi tiết trong cuộc trò chuyện trực tiếp giữa HR - ứng viên. | `conversation_id` -> `conversations`, `sender_id` -> `users` |
-| 32 | `interview_schedules`| Recruiter / HR | Lịch hẹn phỏng vấn trực tiếp/online giữa HR và ứng viên. | `application_id` -> `applications`, `interviewer_id` -> `users` |
-| 33 | `hr_evaluations` | Recruiter / HR | HR đánh giá chi tiết ứng viên sau buổi phỏng vấn trực tiếp. | `interview_schedule_id` -> `interview_schedules`, `interviewer_id` -> `users` |
-| 34 | `cv_templates` | Content | Danh mục các mẫu CV hệ thống cung cấp cho ứng viên. | (Không có) |
-| 35 | `blogs` | Community | Bài viết chia sẻ kinh nghiệm cộng đồng (gồm bản nháp, duyệt bài). | `user_id` -> `users`, `category_id` -> `categories` |
-| 36 | `feedbacks` | Core / Admin | Phản hồi lỗi hoặc ý kiến đóng góp của người dùng. | `user_id` -> `users` |
-| 37 | `reports` | Core / Admin | Các báo cáo vi phạm nội dung hoặc tin tuyển dụng. | `reporter_id` -> `users` |
-| 38 | `packages` | Business | Danh sách gói dịch vụ thanh toán (Tin tuyển dụng, Tài khoản Premium). | (Không có) |
-| 39 | `transactions` | Business | Lịch sử giao dịch thanh toán của người dùng qua VNPAY/Thẻ. | `user_id` -> `users`, `package_id` -> `packages` |
-| 40 | `offers` | Recruiter / HR | Lời mời nhận việc (Job Offer) do nhà tuyển dụng gửi ứng viên. | `application_id` -> `applications`, `hr_id` -> `users` |
-| 41 | `email_templates` | Core / System | Mẫu email tự động gửi của hệ thống. | (Không có) |
+| 6 | `companies` | HR / Job | Thông tin chi tiết của công ty/doanh nghiệp. | (Không có) |
+| 7 | `categories` | HR / Job | Lĩnh vực ngành nghề công việc (ví dụ: IT, Marketing). | (Không có) |
+| 8 | `skills` | Core / CV | Danh mục kỹ năng chung của hệ thống (ví dụ: React, SQL). | (Không có) |
+| 9 | `locations` | HR / Job | Danh mục các địa điểm/tỉnh thành làm việc. | (Không có) |
+| 10 | `job_types` | HR / Job | Hình thức làm việc (Full-time, Part-time, Remote, Intern). | (Không có) |
+| 11 | `jobs` | HR / Job | Tin tuyển dụng do nhà tuyển dụng (HR) đăng tải. | `hr_id` -> `users`, `company_id` -> `companies`, `category_id` -> `categories`, `location_id` -> `locations`, `job_type_id` -> `job_types` |
+| 12 | `job_skills` | HR / Job | Bảng trung gian liên kết các kỹ năng yêu cầu trong tin tuyển dụng. | `job_id` -> `jobs`, `skill_id` -> `skills` |
+| 13 | `user_skills` | Candidate / CV | Bảng trung gian liên kết kỹ năng và trình độ của ứng viên. | `user_id` -> `users`, `skill_id` -> `skills` |
+| 14 | `job_requirements` | HR / Job | Yêu cầu công việc chi tiết của từng tin tuyển dụng. | `job_id` -> `jobs` |
+| 15 | `cvs` | Candidate / CV | Lưu trữ tệp CV, điểm số ATS và văn bản trích xuất từ CV. | `user_id` -> `users` |
+| 16 | `cv_skills` | Candidate / CV | Kỹ năng chuyên môn do AI bóc tách trực tiếp từ CV ứng viên. | `cv_id` -> `cvs` |
+| 17 | `cv_evaluations` | Candidate / CV | Nhận xét chi tiết và điểm số của AI theo từng tiêu chí CV. | `cv_id` -> `cvs` |
+| 18 | `interviews` | AI Interview | Buổi phỏng vấn giữa ứng viên và AI (Thật hoặc Luyện tập). | `user_id` -> `users`, `cv_id` -> `cvs`, `job_id` -> `jobs` |
+| 19 | `interview_questions`| AI Interview | Bộ câu hỏi phỏng vấn động được AI tạo riêng theo CV và JD. | `interview_id` -> `interviews` |
+| 20 | `candidate_answers` | AI Interview | Câu trả lời, điểm số, file ghi âm và phản hồi AI cho từng câu hỏi. | `interview_question_id` -> `interview_questions` |
+| 21 | `assessments` | AI Interview | Đánh giá tổng hợp cuối buổi phỏng vấn (điểm, nhận xét, lộ trình). | `interview_id` -> `interviews` (1-1) |
+| 22 | `voice_sessions` | AI Voice | Theo dõi phiên thoại phỏng vấn giọng nói (kết nối, thời lượng, ghi âm). | `interview_id` -> `interviews` |
+| 23 | `saved_jobs` | Engagement | Danh sách các tin tuyển dụng được ứng viên lưu lại. | `user_id` -> `users`, `job_id` -> `jobs` |
+| 24 | `company_followers` | Engagement | Theo dõi các công ty của ứng viên. | `user_id` -> `users`, `company_id` -> `companies` |
+| 25 | `job_alerts` | Engagement | Cấu hình nhận thông báo việc làm phù hợp tự động. | `user_id` -> `users` |
+| 26 | `applications` | Recruiter / HR | Hồ sơ ứng tuyển của ứng viên vào tin tuyển dụng. | `user_id` -> `users`, `job_id` -> `jobs`, `cv_id` -> `cvs` |
+| 27 | `notifications` | Engagement | Thông báo hệ thống gửi đến người dùng. | `user_id` -> `users` |
+| 28 | `interview_schedules`| Recruiter / HR | Lịch hẹn phỏng vấn trực tiếp/online giữa HR và ứng viên. | `application_id` -> `applications`, `interviewer_id` -> `users` |
+| 29 | `blogs` | Community | Bài viết chia sẻ kinh nghiệm cộng đồng (gồm bản nháp, duyệt bài). | `user_id` -> `users`, `category_id` -> `categories` |
+| 30 | `feedbacks` | Core / Admin | Phản hồi lỗi hoặc ý kiến đóng góp của người dùng. | `user_id` -> `users` |
+| 31 | `reports` | Core / Admin | Các báo cáo vi phạm nội dung hoặc tin tuyển dụng. | `reporter_id` -> `users` |
+| 32 | `packages` | Business | Danh sách gói dịch vụ thanh toán (Tin tuyển dụng, Tài khoản Premium). | (Không có) |
+| 33 | `transactions` | Business | Lịch sử giao dịch thanh toán của người dùng qua VNPAY/Thẻ. | `user_id` -> `users`, `package_id` -> `packages` |
+| 34 | `email_templates` | Core / System | Mẫu email tự động gửi của hệ thống. | (Không có) |
+
 
 
 ---
@@ -70,8 +64,6 @@ Tài liệu này cung cấp danh sách đầy đủ toàn bộ các bảng trong
     *   `role_permissions` liên kết `roles` với `permissions` để xác định vai trò nào được thực hiện hành động nào.
     *   `user_roles` liên kết `users` với `roles`.
 
-#### `password_resets`
-*   **Chức năng**: Lưu trữ các mã token bảo mật có thời hạn để xác thực quá trình đổi mật khẩu khi người dùng yêu cầu.
 
 ---
 
@@ -121,8 +113,6 @@ Tài liệu này cung cấp danh sách đầy đủ toàn bộ các bảng trong
     *   `interview_questions`: Các câu hỏi phỏng vấn được AI tự động sinh ngẫu nhiên/tùy biến dựa trên CV của ứng viên và JD tuyển dụng.
     *   `candidate_answers`: Lưu trữ câu trả lời của ứng viên cho từng câu hỏi, điểm số do AI đánh giá (`score`), nhận xét chi tiết (`ai_feedback`), và tệp ghi âm giọng nói (`audio_url`).
 
-#### `interview_messages`
-*   **Chức năng**: Lưu nhật ký hội thoại dạng text nhắn tin qua lại thời gian thực giữa ứng viên và AI.
 
 #### `assessments`
 *   **Chức năng**: Đánh giá tổng hợp toàn bộ buổi phỏng vấn. Bao gồm điểm tổng (`overall_score`), nhận xét chung (`feedback_summary`), và lộ trình luyện tập tiếp theo (`learning_path`) dạng JSON.
@@ -138,13 +128,8 @@ Tài liệu này cung cấp danh sách đầy đủ toàn bộ các bảng trong
 *   **Chức năng**: Quản lý hồ sơ ứng tuyển của candidate vào tin tuyển dụng. Chứa điểm phỏng vấn (`interview_score`), điểm CV (`cv_score`), trạng thái duyệt (`status`: PENDING, REVIEWING, ACCEPTED, REJECTED).
 *   **Quan hệ**: Liên kết `user_id` (Candidate), `job_id`, và `cv_id` đã nộp.
 
-#### `conversations` & `messages`
-*   **Chức năng**: Hệ thống chat realtime giữa Nhà tuyển dụng (HR) và Ứng viên (Candidate) sau khi ứng tuyển hoặc khi HR chủ động liên hệ. Tích hợp giao tiếp qua Socket.io.
-
-#### `interview_schedules` & `hr_evaluations`
-*   **Chức năng**:
-    *   `interview_schedules`: Lịch hẹn phỏng vấn trực tiếp do HR lên lịch hẹn cho ứng viên.
-    *   `hr_evaluations`: Chứa đánh giá chuyên môn, nhận xét và điểm số của HR chấm cho ứng viên sau cuộc gặp trực tiếp.
+#### `interview_schedules`
+*   **Chức năng**: Lịch hẹn phỏng vấn trực tiếp do HR lên lịch hẹn cho ứng viên.
 
 ---
 
@@ -158,5 +143,5 @@ Tài liệu này cung cấp danh sách đầy đủ toàn bộ các bảng trong
 #### `blogs`
 *   **Chức năng**: Bài đăng cộng đồng do ứng viên viết chia sẻ kinh nghiệm, hỗ trợ lưu nháp (`status = DRAFT`) và cơ chế kiểm duyệt trước khi hiển thị công khai (`PUBLISHED`).
 
-#### `feedbacks`, `reports`, `offers`, `email_templates`
-*   **Chức năng**: Các bảng tiện ích quản trị hệ thống, xử lý báo cáo vi phạm, gửi thư mời nhận việc tự động và quản lý các template email giao dịch.
+#### `feedbacks`, `reports`, `email_templates`
+*   **Chức năng**: Các bảng tiện ích quản trị hệ thống, xử lý báo cáo vi phạm và quản lý các template email giao dịch.
