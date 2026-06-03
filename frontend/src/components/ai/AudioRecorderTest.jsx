@@ -15,9 +15,9 @@ export function AudioRecorderTest({
   audioRef
 }) {
   return (
-    <div className="bg-sky-50/40 rounded-2xl p-4 border border-sky-100/50">
+    <div className="dark:bg-[#1e293b]/40 dark:border-white/10 bg-sky-50/40 rounded-2xl p-4 border border-sky-100/50">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold text-sky-950">Thử nghiệm Ghi âm & Nghe lại</span>
+        <span className="text-sm font-semibold dark:text-white text-sky-950">Thử nghiệm Ghi âm & Nghe lại</span>
         {testAudioUrl && (
           <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
             <Check className="w-3 h-3" /> Đã ghi xong
@@ -33,7 +33,7 @@ export function AudioRecorderTest({
           className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 border ${
             isRecordingTest
               ? "bg-rose-50 border-rose-200 text-rose-600 animate-pulse"
-              : "bg-white border-gray-100 text-gray-700 hover:bg-gray-50 active:scale-[0.98]"
+              : "dark:bg-[#1e293b] dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10 bg-white border-gray-100 text-gray-700 hover:bg-gray-50 active:scale-[0.98]"
           }`}
         >
           {isRecordingTest ? (

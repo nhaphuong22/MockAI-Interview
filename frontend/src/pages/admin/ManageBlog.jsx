@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Search, 
   FileText, 
@@ -14,38 +14,80 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminSidebar } from "./AdminSidebar";
-import { mockBlogPosts as initialBlogs } from "./mockAdminData";
+import { getAllAdminBlogs, reviewBlog, deleteBlog } from "../../api/adminApi";
 import confetti from "canvas-confetti";
 
 export function ManageBlog() {
-  const [blogs, setBlogs] = useState(initialBlogs);
+  const [blogs, setBlogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("pending"); // "pending" | "published"
+  const [refetchKey, setRefetchKey] = useState(0);
   
   // Dialog state
   const [deleteConfirmBlog, setDeleteConfirmBlog] = useState(null);
 
-  // Approve Draft Post
-  const handleApprovePost = (id) => {
-    setBlogs(prev => prev.map(post => {
-      if (post.id === id) {
-        return { ...post, status: "Published" };
-      }
-      return post;
-    }));
+  const triggerRefetch = () => setRefetchKey(prev => prev + 1);
 
-    confetti({
-      particleCount: 75,
-      spread: 60,
-      origin: { y: 0.6 },
-      colors: ['#0ea5e9', '#38bdf8', '#10b981']
-    });
+  // Fetch blogs from backend API
+  useEffect(() => {
+    let active = true;
+    const fetchBlogs = async () => {
+      setIsLoading(true);
+      try {
+        const res = await getAllAdminBlogs();
+        if (active) {
+          setBlogs(res.data || []);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách bài viết:", error);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchBlogs();
+    return () => {
+      active = false;
+    };
+  }, [refetchKey]);
+
+  // Approve Draft Post via backend API
+  const handleApprovePost = async (id) => {
+    try {
+      await reviewBlog(id, "Published");
+      setBlogs(prev => prev.map(post => {
+        if (post.id === id) {
+          return { ...post, status: "Published" };
+        }
+        return post;
+      }));
+
+      confetti({
+        particleCount: 75,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#0ea5e9', '#38bdf8', '#10b981']
+      });
+    } catch (error) {
+      console.error("Lỗi khi phê duyệt bài viết:", error);
+    } finally {
+      triggerRefetch();
+    }
   };
 
-  // Delete Post (any status)
-  const handleDeletePost = (id) => {
-    setBlogs(prev => prev.filter(post => post.id !== id));
-    setDeleteConfirmBlog(null);
+  // Delete Post (any status) via backend API
+  const handleDeletePost = async (id) => {
+    try {
+      await deleteBlog(id);
+      setBlogs(prev => prev.filter(post => post.id !== id));
+    } catch (error) {
+      console.error("Lỗi khi gỡ bài viết:", error);
+    } finally {
+      setDeleteConfirmBlog(null);
+      triggerRefetch();
+    }
   };
 
   // Counts
@@ -127,7 +169,12 @@ export function ManageBlog() {
         {/* Blog Posts Directory */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <AnimatePresence mode="popLayout">
-            {filteredBlogs.length > 0 ? (
+            {isLoading ? (
+              <div className="col-span-full text-center py-24 bg-white rounded-3xl border border-slate-100 flex flex-col items-center justify-center gap-3">
+                <div className="w-8 h-8 border-4 border-[#0ea5e9] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-xs text-slate-500 font-bold">Đang tải danh sách bài viết...</p>
+              </div>
+            ) : filteredBlogs.length > 0 ? (
               filteredBlogs.map((post) => (
                 <motion.div 
                   key={post.id}

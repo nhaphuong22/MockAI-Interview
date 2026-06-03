@@ -5,7 +5,9 @@ import bcrypt from 'bcryptjs';
  * @returns { Promise<void> } 
  */
 export async function seed(knex) {
-  // Deletes user_roles first, then users to respect foreign keys
+  // Deletes blogs, jobs, user_roles first, then users to respect foreign keys
+  await knex('blogs').del();
+  await knex('jobs').del();
   await knex('user_roles').del();
   await knex('users').del();
   
@@ -19,6 +21,7 @@ export async function seed(knex) {
       email: 'admin@mockai.com',
       password_hash: password_hash,
       full_name: 'Quản trị viên Hệ thống',
+      email_verified: true,
       created_at: new Date(),
       updated_at: new Date()
     },
@@ -27,6 +30,7 @@ export async function seed(knex) {
       email: 'user@mockai.com',
       password_hash: password_hash,
       full_name: 'Ứng viên Thử nghiệm',
+      email_verified: true,
       created_at: new Date(),
       updated_at: new Date()
     },
@@ -35,6 +39,7 @@ export async function seed(knex) {
       email: 'recruiter@mockai.com',
       password_hash: password_hash,
       full_name: 'Nhà Tuyển Dụng MockAI',
+      email_verified: true,
       created_at: new Date(),
       updated_at: new Date()
     }

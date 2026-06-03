@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Search, 
   Briefcase, 
@@ -16,18 +16,46 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminSidebar } from "./AdminSidebar";
-import { mockJobPosts as initialJobs } from "./mockAdminData";
+import { getAllAdminJobs, updateJobApproval } from "../../api/adminApi";
 import confetti from "canvas-confetti";
 
 export function ManageJobPosts() {
-  const [jobs, setJobs] = useState(initialJobs);
+  const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("pending"); // "pending" | "approved" | "rejected"
+  const [refetchKey, setRefetchKey] = useState(0);
   
   // Inspector state
   const [inspectJob, setInspectJob] = useState(null);
   const [rejectReasonJob, setRejectReasonJob] = useState(null);
   const [rejectReasonText, setRejectReasonText] = useState("");
+
+  const triggerRefetch = () => setRefetchKey(prev => prev + 1);
+
+  // Fetch jobs from backend API
+  useEffect(() => {
+    let active = true;
+    const fetchJobs = async () => {
+      setIsLoading(true);
+      try {
+        const res = await getAllAdminJobs();
+        if (active) {
+          setJobs(res.data || []);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách tin tuyển dụng:", error);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchJobs();
+    return () => {
+      active = false;
+    };
+  }, [refetchKey]);
 
   // Toggle Featured status
   const handleToggleFeatured = (id) => {
@@ -43,30 +71,37 @@ export function ManageJobPosts() {
     }
   };
 
-  // Change Job status
-  const handleChangeStatus = (id, newStatus) => {
-    setJobs(prev => prev.map(job => {
-      if (job.id === id) {
-        return { ...job, status: newStatus };
+  // Change Job status via backend API
+  const handleChangeStatus = async (id, newStatus) => {
+    try {
+      await updateJobApproval(id, newStatus);
+      
+      setJobs(prev => prev.map(job => {
+        if (job.id === id) {
+          return { ...job, status: newStatus };
+        }
+        return job;
+      }));
+
+      if (newStatus === "Approved") {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ['#0ea5e9', '#10b981', '#38bdf8']
+        });
       }
-      return job;
-    }));
 
-    if (newStatus === "Approved") {
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.6 },
-        colors: ['#0ea5e9', '#10b981', '#38bdf8']
-      });
+      if (inspectJob && inspectJob.id === id) {
+        setInspectJob(prev => ({ ...prev, status: newStatus }));
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trạng thái tin tuyển dụng:", error);
+    } finally {
+      setRejectReasonJob(null);
+      setRejectReasonText("");
+      triggerRefetch();
     }
-
-    if (inspectJob && inspectJob.id === id) {
-      setInspectJob(prev => ({ ...prev, status: newStatus }));
-    }
-    
-    setRejectReasonJob(null);
-    setRejectReasonText("");
   };
 
   // Counts
@@ -293,6 +328,15 @@ export function ManageJobPosts() {
                       </td>
                     </tr>
                   ))
+                ) : isLoading ? (
+                  <tr>
+                    <td colSpan={activeTab === "approved" ? "7" : "6"} className="text-center py-16">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-8 h-8 border-4 border-[#0ea5e9] border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-xs text-slate-500 font-bold">Đang tải danh sách tin tuyển dụng...</p>
+                      </div>
+                    </td>
+                  </tr>
                 ) : (
                   <tr>
                     <td colSpan={activeTab === "approved" ? "7" : "6"} className="text-center py-16 text-slate-400 font-semibold text-xs">

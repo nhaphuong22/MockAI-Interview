@@ -1,7 +1,5 @@
+import 'dotenv/config'; // Load env variables immediately before any other module is resolved
 import app from './src/app.js';
-import dotenv from 'dotenv';
-
-dotenv.config(); // Reload env configurations
 
 const PORT = process.env.PORT || 5000;
 
