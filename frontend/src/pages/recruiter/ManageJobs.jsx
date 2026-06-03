@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ToggleLeft, ToggleRight, Loader2, Eye } from "lucide-react";
+import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ToggleLeft, ToggleRight, Loader2, Eye, Pencil, CheckCircle2 } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
 
@@ -12,6 +12,16 @@ export function ManageJobs() {
 
   // State cho bộ lọc trạng thái
   const [filterStatus, setFilterStatus] = useState(""); // "" (Tất cả), "OPEN", "CLOSED"
+
+  // Thêm Toast State
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   // 1. Gọi API lấy danh sách tin tuyển dụng của HR hiện tại
   const { data, isLoading, isError, refetch } = useQuery({
@@ -42,11 +52,11 @@ export function ManageJobs() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["manage-jobs"]);
-      alert("Cập nhật trạng thái tin đăng thành công!");
+      showToast("Cập nhật trạng thái tin đăng thành công!", "success");
     },
     onError: (error) => {
       console.error("Lỗi khi cập nhật trạng thái:", error);
-      alert("Không thể cập nhật trạng thái tin đăng.");
+      showToast("Không thể cập nhật trạng thái tin đăng.", "error");
     }
   });
 
@@ -55,11 +65,11 @@ export function ManageJobs() {
     mutationFn: (id) => jobApi.deleteJob(id),
     onSuccess: () => {
       queryClient.invalidateQueries(["manage-jobs"]);
-      alert("Xóa tin tuyển dụng thành công!");
+      showToast("Xóa tin tuyển dụng thành công!", "success");
     },
     onError: (error) => {
       console.error("Lỗi khi xóa tin tuyển dụng:", error);
-      alert("Xóa tin tuyển dụng thất bại!");
+      showToast("Xóa tin tuyển dụng thất bại!", "error");
     }
   });
 
@@ -87,7 +97,30 @@ export function ManageJobs() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+    <div className="bg-gray-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8 relative">
+      
+      {/* Toast Notification */}
+      {toast.show && (
+        <div
+          className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-lg border backdrop-blur-md transition-all duration-500 transform ${
+            toast.show ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
+          } ${
+            toast.type === "success" 
+              ? "bg-emerald-50/90 border-emerald-200 text-emerald-800" 
+              : "bg-rose-50/90 border-rose-200 text-rose-800"
+          }`}
+        >
+          {toast.type === "success" ? (
+            <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
+              <span className="text-rose-500 font-bold text-sm">!</span>
+            </div>
+          )}
+          <p className="font-bold text-sm">{toast.message}</p>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto">
         {/* Header Action */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -224,6 +257,13 @@ export function ManageJobs() {
                       </td>
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/hr/dashboard/edit-job/${job.id}`}
+                            className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all inline-block"
+                            title="Chỉnh sửa tin đăng"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Link>
                           <Link
                             to={`/jobs/${job.id}`}
                             className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all inline-block"
