@@ -7,6 +7,8 @@ import { Profile } from "../pages/candidate/Profile";
 import { CVReview } from "../pages/candidate/CVReview";
 import { InterviewPractice } from "../pages/candidate/InterviewPractice";
 import { Community } from "../pages/candidate/Community";
+import { WriteBlog } from "../pages/candidate/WriteBlog";
+import { BlogDetail } from "../pages/candidate/BlogDetail";
 import { SavedCompanies } from "../pages/candidate/SavedCompanies";
 import { Notifications } from "../pages/candidate/Notifications";
 import { Settings } from "../pages/candidate/Settings";
@@ -47,6 +49,14 @@ export const candidateRoutes = [
   { 
     path: "community", 
     element: <ProtectedRoute><Community /></ProtectedRoute>
+  },
+  { 
+    path: "community/write", 
+    element: <ProtectedRoute><WriteBlog /></ProtectedRoute>
+  },
+  { 
+    path: "community/post/:id", 
+    element: <ProtectedRoute><BlogDetail /></ProtectedRoute>
   },
   { 
     path: "saved-companies", 

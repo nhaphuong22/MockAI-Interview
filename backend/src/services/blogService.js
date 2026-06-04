@@ -2,7 +2,10 @@ import db from '../db/knex.js';
 import { 
   findBlogWithOwner, 
   insertBlog, 
-  updateBlog 
+  updateBlog,
+  findPublishedBlogs,
+  findBlogWithAuthor,
+  incrementViewCount
 } from '../models/blogModel.js';
 import { NotFoundError } from '../core/customErrors.js';
 
@@ -46,4 +49,30 @@ export const requestBlogReview = async (blogId, authorId) => {
   });
 
   return updatedArticle;
+};
+
+/**
+ * Lấy danh sách bài viết đã xuất bản
+ */
+export const getPublishedBlogs = async () => {
+  const blogs = await findPublishedBlogs();
+  return blogs;
+};
+
+/**
+ * Lấy chi tiết bài viết Blog (cộng thêm 1 view)
+ */
+export const getBlogById = async (id) => {
+  const blog = await findBlogWithAuthor(id);
+  if (!blog) {
+    throw new NotFoundError('Không tìm thấy bài viết này.');
+  }
+
+  // Tăng lượt xem
+  await incrementViewCount(id);
+  
+  // Trả về dữ liệu đã cộng view
+  blog.view_count += 1;
+  
+  return blog;
 };

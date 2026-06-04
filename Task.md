@@ -114,9 +114,15 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
     *   *FE*: Trang hiển thị kết quả phỏng vấn giọng nói và lộ trình ôn luyện.
 *   **Triều (HR Module)**:
     *   *BE*: Server Redis để lưu trữ dữ liệu tạm thời(List user ở phía admin/ List ứng viên ở phía HR/ List Job tải lên từ phía HR để User xem/ List bài viết ở phía Cộng đồng) và giảm tải cho Database. Tối ưu hiệu năng hệ thống (Tạo server ở docker và đưa vào docker-compose.yml tổng để teamate có thể chạy và sài luôn)
-*   **Huy (CV & Candidate Blog)**:
-    *   *BE*: API xuất PDF báo cáo sửa CV và API lấy danh sách các bài blog đã xuất bản (`/api/blogs/published`).
-    *   *FE*: Nút bấm tải báo cáo PDF và trang Bảng tin Cộng đồng (Community Feed Layout) hiển thị danh sách blog dạng lưới (Grid Cards).
+*   **Huy (CV & Candidate Blog)**: [Đã Hoàn Thành ✅]
+    ## Frontend (FE)
+    - [x] Thêm nút bấm **Tải báo cáo PDF** cho phần CV Review (gọi API xuất PDF).
+    - [x] Làm trang **Bảng tin Cộng đồng (Community Feed Layout)** để hiển thị danh sách bài blog.
+    - [x] Đổi danh sách bài viết sang dạng lưới (Grid Cards).
+
+    ## Backend (BE)
+    - [x] Viết API để xuất PDF cho báo cáo sửa CV (Sử dụng `pdfkit`).
+    - [x] Viết API lấy danh sách các bài blog đã xuất bản (`/api/blogs/published`).
 *   **Sang (Admin Module)**:
     *   *BE*: API tổng hợp số liệu tăng trưởng của toàn hệ thống.
     *   *FE*: Biểu đồ thống kê Admin Analytics (đăng ký mới, số lượt phỏng vấn...).

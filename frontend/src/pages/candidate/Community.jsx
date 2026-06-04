@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { blogApi } from "../../api/blogApi";
 import { CommunityLeftSidebar } from "./components/CommunityLeftSidebar";
 import { CommunityRightSidebar } from "./components/CommunityRightSidebar";
 import { PostCard } from "./components/PostCard";
-import { WriteBlogModal } from "./components/WriteBlogModal";
 
 const categories = [
   { id: "all", name: "Tất Cả Bài Viết", active: true },
@@ -12,61 +14,6 @@ const categories = [
   { id: "career", name: "Lời Khuyên Sự Nghiệp", active: false },
   { id: "tech", name: "Xu Hướng Công Nghệ", active: false },
   { id: "salary", name: "Thông Tin Mức Lương", active: false },
-];
-
-const posts = [
-  {
-    id: 1,
-    featured: true,
-    title: "10 Mẹo Viết CV Chinh Phục Nhà Tuyển Dụng Tech",
-    excerpt: "Hướng dẫn chi tiết cách tối ưu CV để vượt qua ATS và gây ấn tượng với recruiter tại các công ty công nghệ hàng đầu...",
-    author: "Nguyễn Minh Anh",
-    avatar: "👩‍💼",
-    readTime: "8 phút đọc",
-    likes: 245,
-    comments: 32,
-    tags: ["CV", "Tech", "Tips"],
-    image: "📄",
-  },
-  {
-    id: 2,
-    featured: false,
-    title: "Cách Trả Lời Câu Hỏi 'Điểm Yếu Của Bạn Là Gì?' Trong Phỏng Vấn",
-    excerpt: "Đây là một trong những câu hỏi khó nhất trong phỏng vấn. Hãy cùng tìm hiểu cách trả lời thông minh...",
-    author: "Trần Văn B",
-    avatar: "👨‍💻",
-    readTime: "5 phút đọc",
-    likes: 189,
-    comments: 24,
-    tags: ["Phỏng vấn", "Mẹo"],
-    image: "💼",
-  },
-  {
-    id: 3,
-    featured: false,
-    title: "Xu Hướng Lương IT 2026: Các Ngôn Ngữ Và Framework Hot Nhất",
-    excerpt: "Phân tích mức lương trung bình cho các vị trí IT phổ biến và những kỹ năng được trả lương cao nhất...",
-    author: "Lê Thị C",
-    avatar: "👩‍🔬",
-    readTime: "12 phút đọc",
-    likes: 567,
-    comments: 89,
-    tags: ["Lương", "Công nghệ", "Xu hướng"],
-    image: "💰",
-  },
-  {
-    id: 4,
-    featured: false,
-    title: "Chuyển Nghề Sang IT Ở Tuổi 30: Câu Chuyện Thành Công",
-    excerpt: "Chia sẻ hành trình từ một nhân viên marketing chuyển sang làm developer và những bài học kinh nghiệm...",
-    author: "Phạm Văn D",
-    avatar: "👨‍🎓",
-    readTime: "10 phút đọc",
-    likes: 432,
-    comments: 56,
-    tags: ["Sự nghiệp", "Cảm hứng"],
-    image: "🚀",
-  },
 ];
 
 const topContributors = [
@@ -78,11 +25,10 @@ const topContributors = [
 const trendingTags = ["#RemoteWork", "#AI", "#Startup", "#CareerGrowth", "#Networking", "#Interview"];
 
 export function Community() {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [likedPosts, setLikedPosts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
 
   const toggleLike = (postId) => {
     setLikedPosts((prev) =>
@@ -91,13 +37,63 @@ export function Community() {
   };
 
   const handleWritePost = () => {
-    setIsWriteModalOpen(true);
+    navigate('/community/write');
   };
 
+  const { data: blogResponse, isLoading } = useQuery({
+    queryKey: ["publishedBlogs"],
+    queryFn: async () => {
+      try {
+        const res = await blogApi.getPublishedBlogs();
+        console.log("API Response:", res);
+        if (Array.isArray(res)) return res;
+        return res.data || [];
+      } catch (err) {
+        console.error("API Error:", err);
+        return [];
+      }
+    }
+  });
+
+  const apiPosts = blogResponse || [];
+
+  const formattedPosts = apiPosts.map(post => {
+    // Generate an excerpt from content
+    const stripHtml = (html) => {
+      if (!html) return "";
+      const tmp = document.createElement("DIV");
+      tmp.innerHTML = html;
+      return tmp.textContent || tmp.innerText || "";
+    };
+    const plainText = stripHtml(post.content);
+    
+    // Convert tags if it's string (e.g. from pg array)
+    const tagsArray = Array.isArray(post.tags) ? post.tags : (post.tags ? post.tags.replace(/[{}]/g, '').split(',') : []);
+
+    return {
+      id: post.id,
+      featured: post.view_count > 100, 
+      title: post.title,
+      excerpt: plainText.substring(0, 150) + "...",
+      author: post.author_name || "Tác giả",
+      avatar: post.author_avatar ? (
+        <img src={post.author_avatar} alt="avatar" className="w-full h-full rounded-2xl object-cover" />
+      ) : (
+        "✍️"
+      ),
+      readTime: Math.max(1, Math.ceil(plainText.length / 1000)) + " phút đọc",
+      likes: post.view_count,
+      comments: 0,
+      tags: tagsArray.filter(t => t),
+      image: post.cover_image_url || "📄",
+    };
+  });
+
   // Filter posts by category and search query
-  const filteredPosts = posts.filter(post => {
+  const filteredPosts = formattedPosts.filter(post => {
+    const postTags = post.tags || [];
     const matchesCategory = selectedCategory === "all" || 
-      post.tags.some(tag => tag.toLowerCase() === selectedCategory || 
+      postTags.some(tag => tag.toLowerCase() === selectedCategory || 
                             (selectedCategory === "cv" && tag.toLowerCase() === "cv") ||
                             (selectedCategory === "interview" && tag.toLowerCase() === "phỏng vấn") ||
                             (selectedCategory === "career" && tag.toLowerCase() === "sự nghiệp") ||
@@ -141,18 +137,26 @@ export function Community() {
               </div>
             </div>
 
-            <div className="space-y-8">
-              {filteredPosts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {isLoading ? (
+                <div className="col-span-full flex justify-center items-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#0ea5e9]" />
+                </div>
+              ) : filteredPosts.length > 0 ? (
                 filteredPosts.map((post) => (
-                  <PostCard 
-                    key={post.id}
-                    post={post}
-                    isLiked={likedPosts.includes(post.id)}
-                    onToggleLike={toggleLike}
-                  />
+                  <div key={post.id} onClick={() => navigate(`/community/post/${post.id}`)} className="cursor-pointer">
+                    <PostCard 
+                      post={post}
+                      isLiked={likedPosts.includes(post.id)}
+                      onToggleLike={(e) => {
+                        e.stopPropagation();
+                        toggleLike(post.id);
+                      }}
+                    />
+                  </div>
                 ))
               ) : (
-                <div className="dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-12 text-center shadow-xl shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-50">
+                <div className="col-span-full dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-12 text-center shadow-xl shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-50">
                   <p className="dark:text-slate-400 text-gray-500 font-medium">Không tìm thấy bài viết nào phù hợp.</p>
                 </div>
               )}
@@ -168,11 +172,6 @@ export function Community() {
           </aside>
         </div>
       </div>
-
-      <WriteBlogModal 
-        isOpen={isWriteModalOpen} 
-        onOpenChange={setIsWriteModalOpen} 
-      />
     </div>
   );
 }
