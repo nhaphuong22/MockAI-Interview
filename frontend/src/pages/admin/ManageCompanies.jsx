@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Search, 
   Building, 
@@ -7,39 +8,63 @@ import {
   X,
   FileText,
   Users,
-  Briefcase
+  Briefcase,
+  Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminSidebar } from "./AdminSidebar";
-import { mockCompanies as initialCompanies } from "./mockAdminData";
+import axiosClient from "../../api/axiosClient";
+import { useUiStore } from "../../store/useUiStore";
 
 export function ManageCompanies() {
-  const [companies, setCompanies] = useState(initialCompanies);
+  const queryClient = useQueryClient();
+  const showToast = useUiStore((state) => state.showToast);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedCompany, setSelectedCompany] = useState(null);
 
+  const { data: companies = [], isLoading } = useQuery({
+    queryKey: ['pendingVerifications'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/verification/pending');
+      // map backend data to frontend format
+      return res.data.map(u => ({
+        id: u.id,
+        name: u.company_name,
+        industry: "N/A",
+        status: "Pending", // backend only returns PENDING
+        logo: "🏢",
+        jobCount: 0,
+        applicationsCount: 0,
+        documentUrl: u.company_document_url,
+        email: u.email
+      }));
+    }
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: async ({ id, status }) => {
+      await axiosClient.post(`/verification/${id}/review`, { status });
+    },
+    onSuccess: () => {
+      showToast({ message: 'Đã cập nhật trạng thái hồ sơ', type: 'success' });
+      queryClient.invalidateQueries(['pendingVerifications']);
+      setSelectedCompany(null);
+    },
+    onError: () => showToast({ message: 'Có lỗi xảy ra!', type: 'error' })
+  });
+
   // Change Company Status
   const handleChangeStatus = (id, newStatus) => {
-    setCompanies(prev => prev.map(c => {
-      if (c.id === id) {
-        return { ...c, status: newStatus };
-      }
-      return c;
-    }));
-    
-    if (selectedCompany && selectedCompany.id === id) {
-      setSelectedCompany(prev => ({ ...prev, status: newStatus }));
-    }
+    // newStatus: 'Active' -> 'APPROVED', 'Suspended' -> 'REJECTED'
+    const backendStatus = newStatus === 'Active' ? 'APPROVED' : 'REJECTED';
+    reviewMutation.mutate({ id, status: backendStatus });
   };
 
   // Filter companies
   const filteredCompanies = companies.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.industry.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "All" || c.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+    const matchesSearch = c.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   return (
@@ -81,59 +106,63 @@ export function ManageCompanies() {
         </div>
 
         {/* List Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCompanies.length > 0 ? (
-            filteredCompanies.map(c => (
-              <motion.div 
-                key={c.id}
-                layout
-                className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100/80 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group"
-              >
-                <div>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#f0f9ff] text-2xl flex items-center justify-center border border-slate-50 shadow-sm group-hover:scale-105 transition-transform duration-300">
-                      {c.logo}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-[#0ea5e9]" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCompanies.length > 0 ? (
+              filteredCompanies.map(c => (
+                <motion.div 
+                  key={c.id}
+                  layout
+                  className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100/80 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group"
+                >
+                  <div>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-[#f0f9ff] text-2xl flex items-center justify-center border border-slate-50 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                        {c.logo}
+                      </div>
+                      
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        c.status === "Active" ? "bg-emerald-50 text-emerald-700" :
+                        c.status === "Pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"
+                      }`}>
+                        {c.status === "Active" ? "Hoạt động" : c.status === "Pending" ? "Chờ duyệt" : "Đang khóa"}
+                      </span>
                     </div>
-                    
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      c.status === "Active" ? "bg-emerald-50 text-emerald-700" :
-                      c.status === "Pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"
-                    }`}>
-                      {c.status === "Active" ? "Hoạt động" : c.status === "Pending" ? "Chờ duyệt" : "Đang khóa"}
-                    </span>
+
+                    <h3 className="text-sm font-bold text-slate-800 line-clamp-1">{c.name}</h3>
+                    <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{c.email}</p>
+
+                    <div className="mt-4 bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs font-semibold text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Giấy phép ĐKKD:</span>
+                        <a href={c.documentUrl} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline flex items-center gap-1">
+                          <FileText className="w-3.5 h-3.5" /> Xem file
+                        </a>
+                      </div>
+                    </div>
                   </div>
 
-                  <h3 className="text-sm font-bold text-slate-800 line-clamp-1">{c.name}</h3>
-                  <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{c.industry}</p>
-
-                  <div className="grid grid-cols-2 gap-2 mt-4 bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs font-semibold text-slate-600">
-                    <div className="flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{c.jobCount} Tin đăng</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{c.applicationsCount} Ứng tuyển</span>
-                    </div>
+                  <div className="flex items-center gap-2 mt-5 border-t border-slate-50 pt-4">
+                    <button 
+                      onClick={() => setSelectedCompany(c)}
+                      className="w-full text-slate-500 hover:text-[#0ea5e9] bg-slate-50 hover:bg-sky-50 font-bold text-xs py-2 rounded-xl transition-colors"
+                    >
+                      Duyệt Hồ Sơ
+                    </button>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 mt-5 border-t border-slate-50 pt-4">
-                  <button 
-                    onClick={() => setSelectedCompany(c)}
-                    className="w-full text-slate-500 hover:text-[#0ea5e9] bg-slate-50 hover:bg-sky-50 font-bold text-xs py-2 rounded-xl transition-colors"
-                  >
-                    Xem Chi Tiết & Quản Lý
-                  </button>
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-12 text-slate-400 font-medium text-xs">
-              Không tìm thấy doanh nghiệp phù hợp!
-            </div>
-          )}
-        </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12 text-slate-400 font-medium text-xs">
+                Không có doanh nghiệp nào chờ duyệt!
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Selected Company Details Modal */}
         <AnimatePresence>

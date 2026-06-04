@@ -1,13 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
-import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2 } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { jobApi } from "../../api/jobApi";
+import axiosClient from "../../api/axiosClient";
+import { VerifyCompany } from "./components/VerifyCompany";
 
 export function PostJob() {
   const navigate = useNavigate();
   
+  // Verification State
+  const [verificationStatus, setVerificationStatus] = useState('UNVERIFIED');
+
+  const { data: verifyData, isLoading: verifyLoading } = useQuery({
+    queryKey: ['companyVerification'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/verification/status');
+      return res.data;
+    }
+  });
+
+  useEffect(() => {
+    if (verifyData?.status) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVerificationStatus(verifyData.status);
+    }
+  }, [verifyData]);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -125,6 +145,18 @@ export function PostJob() {
     hidden: { opacity: 0, y: 15 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
   };
+
+  if (verifyLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-10 h-10 animate-spin text-sky-500" />
+      </div>
+    );
+  }
+
+  if (verificationStatus !== 'APPROVED') {
+    return <VerifyCompany status={verificationStatus} setStatus={setVerificationStatus} />;
+  }
 
   return (
     <div className="bg-slate-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8 font-inter relative">

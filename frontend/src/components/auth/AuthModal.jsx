@@ -6,12 +6,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginApi, registerApi, loginGoogleApi, forgotPasswordApi, resendVerificationApi, verifyEmailApi } from "../../api/auth";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useUiStore } from "../../store/useUiStore";
 
 /**
  * AuthModal — handles: login | register | forgot-password | register-success
  */
 export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLoginSuccess, redirectTo = null }) {
   const navigate = useNavigate();
+  const showToast = useUiStore((state) => state.showToast);
   const [mode, setMode] = useState(initialMode); // "login" | "register" | "forgot-password" | "register-success"
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -164,6 +166,20 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (regPassword !== confirmPassword) {
+      showToast({ message: "Mật khẩu xác nhận không khớp!", type: 'error' });
+      return;
+    }
+
+    if (role === 'RECRUITER') {
+      const publicDomains = ['gmail.com', 'yahoo.com', 'yahoo.com.vn', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com', 'protonmail.com'];
+      const emailDomain = regEmail.split('@')[1]?.toLowerCase();
+      if (publicDomains.includes(emailDomain)) {
+        showToast({ message: "Vui lòng sử dụng email công ty (VD: @fpt.com) để đăng ký tài khoản Nhà tuyển dụng.", type: 'error' });
+        return;
+      }
+    }
+
     setLoading(true);
     setErrorMsg("");
     try {

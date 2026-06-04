@@ -36,6 +36,18 @@ export const register = async (req, res) => {
       }
     }
 
+    // Block public emails for HR
+    if (roleName === 'HR') {
+      const publicDomains = [
+        'gmail.com', 'yahoo.com', 'yahoo.com.vn', 'hotmail.com', 
+        'outlook.com', 'icloud.com', 'aol.com', 'protonmail.com'
+      ];
+      const emailDomain = email.split('@')[1]?.toLowerCase();
+      if (publicDomains.includes(emailDomain)) {
+        return sendError(res, 400, 'Vui lòng sử dụng email công ty để đăng ký tài khoản Nhà tuyển dụng.');
+      }
+    }
+
     const result = await registerUser(email, password, fullName, roleName);
     return sendResponse(res, 201, result);
   } catch (error) {
