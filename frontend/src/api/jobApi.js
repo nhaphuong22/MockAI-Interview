@@ -40,6 +40,7 @@ export const jobApi = {
    */
   deleteJob: (id) => {
     return axiosClient.delete(`/jobs/${id}`);
+
   },
 
   /**
@@ -57,5 +58,7 @@ export const jobApi = {
    */
   updateJobApplication: (id, data) => {
     return axiosClient.put(`/jobs/applications/${id}`, data);
+
+
   }
 };

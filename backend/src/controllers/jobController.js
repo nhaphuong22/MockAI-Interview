@@ -3,10 +3,14 @@ import {
   getJobsList,
   getJobDetailById,
   updateJobById,
+
   deleteJobById,
   getJobApplicationsService,
   updateJobApplicationService,
   getApplicationDetailById
+
+  deleteJobById
+
 } from '../services/jobService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
@@ -69,6 +73,9 @@ export const createNewJob = async (req, res) => {
         return sendError(res, 400, 'Số lượng tuyển dụng (vacancy_count) phải là số nguyên lớn hơn 0.');
       }
     }
+
+
+
 
 
     // 3. Kiểm tra validation cho detailed_requirements nếu có
@@ -302,6 +309,7 @@ export const deleteJob = async (req, res) => {
   }
 };
 
+
 /**
  * Lấy danh sách hồ sơ ứng tuyển của HR
  */
@@ -381,3 +389,5 @@ export const updateJobApplication = async (req, res) => {
     return sendError(res, 500, 'Lỗi hệ thống khi cập nhật hồ sơ ứng tuyển.');
   }
 };
+
+

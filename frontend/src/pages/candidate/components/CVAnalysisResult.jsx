@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { cvApi } from "../../../api/cvApi";
 import { CheckCircle2, AlertTriangle, Download, Eye, FileText, Sparkles, ChevronDown, Zap, Target, Cpu } from "lucide-react";
 import * as Progress from "@radix-ui/react-progress";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
@@ -164,6 +165,26 @@ const SkillAccordion = ({ section, isOpen, onClick }) => {
 
 export function CVAnalysisResult({ aiResults, onReupload }) {
   const [openSectionIndex, setOpenSectionIndex] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    try {
+      setIsDownloading(true);
+      const response = await cvApi.exportPdf(aiResults);
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'CV_Review_Report.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Lỗi khi tải PDF:', error);
+      alert('Không thể tải PDF lúc này. Vui lòng thử lại sau.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     if (aiResults?.overallScore >= 70) {
@@ -344,9 +365,14 @@ export function CVAnalysisResult({ aiResults, onReupload }) {
               </div>
               
               <div className="flex gap-3">
-                <button className="group relative overflow-hidden px-6 py-4 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-2xl shadow-[0_0_20px_rgba(14,165,233,0.4)] hover:shadow-[0_0_30px_rgba(14,165,233,0.6)] hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 font-bold">
+                <button 
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloading}
+                  className="group relative overflow-hidden px-6 py-4 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-2xl shadow-[0_0_20px_rgba(14,165,233,0.4)] hover:shadow-[0_0_30px_rgba(14,165,233,0.6)] hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 font-bold disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                >
                   <motion.div animate={{ x: ["-100%", "200%"] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12 hidden group-hover:block" />
-                  <Download className="w-5 h-5 relative z-10" /> <span className="relative z-10">Tải PDF</span>
+                  <Download className="w-5 h-5 relative z-10" /> 
+                  <span className="relative z-10">{isDownloading ? 'Đang xuất PDF...' : 'Tải PDF'}</span>
                 </button>
                 <button className="px-6 py-4 dark:bg-[#0a0f1c] bg-white border-2 border-[#0ea5e9] text-[#0ea5e9] rounded-2xl shadow-[0_0_15px_rgba(14,165,233,0.2)] hover:bg-[#0ea5e9]/10 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 font-bold">
                   <Eye className="w-5 h-5" /> Mẫu CV

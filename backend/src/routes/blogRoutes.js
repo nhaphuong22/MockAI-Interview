@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { createDraft, submitForReview, uploadCoverImage } from '../controllers/blogController.js';
+import { createDraft, submitForReview, uploadCoverImage, getPublishedBlogs, getBlogById } from '../controllers/blogController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -115,5 +115,42 @@ router.post('/draft', authenticateToken, createDraft);
  *         description: Lỗi xác thực token.
  */
 router.put('/:id/submit', authenticateToken, submitForReview);
+
+/**
+ * @swagger
+ * /api/blogs/published:
+ *   get:
+ *     summary: Lấy danh sách bài viết đã duyệt
+ *     description: Lấy danh sách bài viết có trạng thái PUBLISHED cho trang Cộng đồng.
+ *     tags:
+ *       - Community Blog
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách bài viết.
+ */
+router.get('/published', getPublishedBlogs);
+
+/**
+ * @swagger
+ * /api/blogs/{id}:
+ *   get:
+ *     summary: Lấy chi tiết bài viết Blog
+ *     description: Lấy chi tiết bài viết dựa vào ID.
+ *     tags:
+ *       - Community Blog
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài viết
+ *     responses:
+ *       200:
+ *         description: Lấy chi tiết bài viết thành công.
+ *       404:
+ *         description: Không tìm thấy bài viết.
+ */
+router.get('/:id', getBlogById);
 
 export default router;

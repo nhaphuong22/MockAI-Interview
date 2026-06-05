@@ -12,5 +12,10 @@ export const cvApi = {
   },
   scoreCV: (cv_text, job_description) => {
     return axiosClient.post('/cv/score', { cv_text, job_description });
+  },
+  exportPdf: (aiResults) => {
+    return axiosClient.post('/cv/export-pdf', aiResults, {
+      responseType: 'blob'
+    });
   }
 };

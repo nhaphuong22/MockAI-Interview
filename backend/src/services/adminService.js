@@ -2,7 +2,14 @@ import db from '../db/knex.js';
 import { updateJob } from '../models/jobModel.js';
 import { updateBlog, deleteBlog } from '../models/blogModel.js';
 import { formatSalary } from '../helper/salaryHelper.js';
-import { NotFoundError } from '../core/customErrors.js';
+import { NotFoundError, ValidationError } from '../core/customErrors.js';
+import {
+  getAllRoles,
+  getAllPermissions,
+  getPermissionIdsByRole,
+  clearRolePermissions,
+  insertRolePermissions
+} from '../models/rolePermissionModel.js';
 
 /**
  * Lấy danh sách tin tuyển dụng cho kiểm duyệt
@@ -260,4 +267,59 @@ export const generateDashboardAnalytics = async () => {
     userRoles,
     jobCategories
   };
+};
+
+/**
+ * Lấy ma trận phân quyền toàn bộ hệ thống:
+ * Trả về danh sách roles, danh sách permissions, và mapping role → [permissionIds]
+ */
+export const fetchPermissionsMatrix = async () => {
+  const [roles, permissions] = await Promise.all([
+    getAllRoles(),
+    getAllPermissions()
+  ]);
+
+  // Lấy permissions của từng role song song
+  const rolePermissionsMap = {};
+  await Promise.all(
+    roles.map(async (role) => {
+      const permIds = await getPermissionIdsByRole(role.id);
+      rolePermissionsMap[role.id] = permIds;
+    })
+  );
+
+  return { roles, permissions, rolePermissionsMap };
+};
+
+/**
+ * Cập nhật toàn bộ quyền hạn cho một role cụ thể
+ * Thực hiện transaction: xóa cũ → gán mới
+ */
+export const updateRolePermissionsMatrix = async (roleId, permissionIds) => {
+  // Kiểm tra role hợp lệ
+  const role = await db('roles').where({ id: roleId }).first();
+  if (!role) {
+    throw new NotFoundError('Không tìm thấy vai trò này trong hệ thống.');
+  }
+
+  // Không cho phép cập nhật quyền của ADMIN (luôn có full quyền)
+  if (role.name === 'ADMIN') {
+    throw new ValidationError('Không thể thay đổi quyền hạn của vai trò Quản trị viên.');
+  }
+
+  // Kiểm tra các permissionIds hợp lệ
+  if (permissionIds && permissionIds.length > 0) {
+    const validPerms = await db('permissions').whereIn('id', permissionIds).select('id');
+    if (validPerms.length !== permissionIds.length) {
+      throw new ValidationError('Một hoặc nhiều quyền hạn không hợp lệ.');
+    }
+  }
+
+  // Transaction: xóa toàn bộ quyền cũ → gán quyền mới
+  await db.transaction(async (trx) => {
+    await clearRolePermissions(roleId, trx);
+    await insertRolePermissions(roleId, permissionIds || [], trx);
+  });
+
+  return true;
 };

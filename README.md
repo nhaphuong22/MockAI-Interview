@@ -75,7 +75,7 @@ npm run dev
 
 - **Frontend:** http://localhost:3000
 - **Backend:** http://localhost:5000
-- **Swagger UI:** http://localhost:5000/api-doc
+- **Swagger UI:** http://localhost:5000/api-docs
 
 ## 🔑 Tài khoản mẫu (Demo Accounts)
 

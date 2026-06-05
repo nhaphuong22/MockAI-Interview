@@ -5,11 +5,14 @@
  * @returns { Promise<void> } 
  */
 export async function seed(knex) {
+
   // Clear existing voice sessions, assessments, and messages that depend on interviews
   await knex('applications').del();
+
+  // Clear existing voice sessions and assessments that depend on interviews
+
   await knex('voice_sessions').del();
   await knex('assessments').del();
-  await knex('interview_messages').del();
   
   // Clear interviews and cvs
   await knex('interviews').del();

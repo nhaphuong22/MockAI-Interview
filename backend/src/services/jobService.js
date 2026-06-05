@@ -221,6 +221,7 @@ export const deleteJobById = async (id) => {
   return deletedCount > 0;
 };
 
+
 /**
  * Lấy danh sách hồ sơ ứng tuyển nộp vào các job thuộc sở hữu của HR
  */
@@ -280,3 +281,4 @@ export const getApplicationDetailById = async (applicationId) => {
     .where('applications.id', applicationId)
     .first();
 };
+

@@ -6,20 +6,6 @@
  * @returns { Promise<void> }
  */
 export async function up(knex) {
-  // 1. CV Templates - Admin-managed CV templates for candidates
-  await knex.schema.createTable('cv_templates', (table) => {
-    table.increments('id').primary();
-    table.string('name').notNullable();
-    table.string('thumbnail_url'); // Preview image
-    table.text('html_structure'); // Template HTML/JSON structure
-    table.string('category'); // IT, Business, Design, General...
-    table.boolean('is_premium').defaultTo(false);
-    table.boolean('is_active').defaultTo(true);
-    table.integer('usage_count').defaultTo(0);
-    table.integer('created_by').unsigned()
-      .references('id').inTable('users').onDelete('SET NULL'); // Admin who created
-    table.timestamps(true, true);
-  });
 
   // 2. Blogs - Community posts / articles
   await knex.schema.createTable('blogs', (table) => {
@@ -54,5 +40,5 @@ export async function up(knex) {
  */
 export async function down(knex) {
   await knex.schema.dropTableIfExists('blogs');
-  await knex.schema.dropTableIfExists('cv_templates');
+
 }
