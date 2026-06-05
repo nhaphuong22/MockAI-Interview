@@ -15,14 +15,17 @@ import { NotFoundError } from '../core/customErrors.js';
 export const saveDraftBlog = async ({ authorId, title, content, tags = [], category = null, coverImageUrl = null }) => {
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Date.now();
 
+  // PostgreSQL text[] cần được truyền vào dưới dạng JS array bình thường qua knex
+  const tagsArray = Array.isArray(tags) ? tags : [];
+
   const [newArticle] = await insertBlog({
     author_id: authorId,
     title,
     slug,
     content,
     cover_image_url: coverImageUrl,
-    tags: tags,
-    category: category,
+    tags: tagsArray.length > 0 ? tagsArray : null,
+    category: category || null,
     status: 'DRAFT',
     created_at: db.fn.now(),
     updated_at: db.fn.now(),
