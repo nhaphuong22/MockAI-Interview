@@ -238,10 +238,10 @@ export const generateDashboardAnalytics = async () => {
     const dateStr = d.toISOString().split('T')[0];
     const dayName = daysOfWeek[d.getDay()];
 
-    const baseUsers = i === 0 ? totalUsers : Math.max(3, Math.floor(Math.random() * 5) + 2);
-    const baseInterviews = i === 0 ? totalInterviews : Math.max(5, Math.floor(Math.random() * 10) + 4);
-    const baseJobs = i === 0 ? totalJobs : Math.max(2, Math.floor(Math.random() * 4) + 1);
-    const baseRevenue = i === 0 ? (totalRevenue > 0 ? totalRevenue : 15000000) : (Math.floor(Math.random() * 3) + 1) * 3000000;
+    const baseUsers = i === 0 ? totalUsers : Math.max(0, Math.floor(totalUsers * (1 - i*0.05)));
+    const baseInterviews = i === 0 ? totalInterviews : Math.max(0, Math.floor(totalInterviews * (1 - i*0.05)));
+    const baseJobs = i === 0 ? totalJobs : Math.max(0, Math.floor(totalJobs * (1 - i*0.05)));
+    const baseRevenue = i === 0 ? totalRevenue : Math.max(0, Math.floor(totalRevenue * (1 - i*0.05)));
 
     trends.push({
       date: dateStr,
@@ -253,19 +253,51 @@ export const generateDashboardAnalytics = async () => {
     });
   }
 
+  // 5. Giao dịch gần đây (Recent Transactions)
+  let recentTransactions = [];
+  try {
+    const txnsRaw = await db('transactions')
+      .leftJoin('users', 'transactions.user_id', 'users.id')
+      .leftJoin('packages', 'transactions.package_id', 'packages.id')
+      .select(
+        'users.full_name as user',
+        'packages.name as package',
+        'transactions.amount',
+        'transactions.status',
+        'transactions.created_at'
+      )
+      .orderBy('transactions.created_at', 'desc')
+      .limit(5);
+
+    recentTransactions = txnsRaw.map(txn => {
+      const d = new Date(txn.created_at);
+      return {
+        user: txn.user || 'Người dùng ẩn danh',
+        package: txn.package || 'Gói nâng cấp',
+        amount: parseFloat(txn.amount || 0),
+        status: txn.status === 'COMPLETED' ? 'Success' : txn.status === 'FAILED' ? 'Failed' : 'Pending',
+        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      };
+    });
+  } catch (e) {
+    console.log('Lỗi khi lấy giao dịch gần đây:', e.message);
+  }
+
   return {
     summary: {
       totalUsers,
       totalJobs,
       totalInterviews,
       totalBlogs,
-      totalRevenue: totalRevenue > 0 ? totalRevenue : 45000000,
+      totalRevenue: totalRevenue,
       pendingJobs,
-      pendingBlogs
+      pendingBlogs,
+      totalCompanies: parseInt((await db('users').join('user_roles', 'users.id', 'user_roles.user_id').join('roles', 'user_roles.role_id', 'roles.id').where('roles.name', 'HR').count('users.id as count').first())?.count || 0)
     },
     trends,
     userRoles,
-    jobCategories
+    jobCategories,
+    recentTransactions
   };
 };
 
