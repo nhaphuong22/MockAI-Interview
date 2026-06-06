@@ -31,24 +31,25 @@ export const generateQuestionsFromGroq = async ({
     throw new Error('GROQ_API_KEY chưa được cấu hình hoặc giá trị không hợp lệ trong file .env ở Backend! Vui lòng thiết lập key Groq thực tế để AI hoạt động.');
   }
 
-  // 2. Formulate Prompt
   const systemPrompt = `Bạn là một Chuyên gia Tuyển dụng AI cao cấp chuyên ngành Tech/HR. 
 Nhiệm vụ của bạn là dựa vào CV của ứng viên, vị trí ứng tuyển và kỹ năng chuyên môn được cung cấp để sinh ra chính xác **8 câu hỏi phỏng vấn** theo lộ trình bắt buộc sau đây:
 
 - **Câu 1 (Giai đoạn 1 - Small talk)**: Lời chào và gợi ý ứng viên bắt đầu bằng lời xã giao, làm quen và giới thiệu ngắn về bản thân.
   - expected_answer: "Ứng viên cần chủ động thực hiện giao tiếp xã giao (small talk - ví dụ: chúc ngày tốt lành, hỏi thăm nhẹ nhàng) và giới thiệu ngắn gọn, lịch sự về bản thân."
-- **Câu 2 & 3 (Giai đoạn 2 - Dự án trong CV)**: Câu hỏi tập trung sâu vào các dự án được liệt kê trong CV của ứng viên (về techstack, chi tiết dự án, vai trò của ứng viên, và những phần dự án mà ứng viên trực tiếp tham gia). Nếu CV không có dự án cụ thể, hãy đặt câu hỏi tình huống dự án giả lập sát nhất với vị trí ứng tuyển.
+- **Câu 2 & 3 (Giai đoạn 2 - Phỏng vấn chi tiết dự án thực tế trong CV)**: Các câu hỏi khai thác sâu vào các dự án cụ thể và lịch sử làm việc được liệt kê trong CV của ứng viên. Bạn BẮT BUỘC phải trích xuất và gọi tên cụ thể dự án (ví dụ: "dự án website bán quần áo", "dự án quản lý nhân sự"...) hoặc tên công ty cũ có trong CV của ứng viên để làm bối cảnh câu hỏi.
   - expected_answer: "Ứng viên giải trình chi tiết về công nghệ, kiến trúc sử dụng trong dự án của họ, mô tả rõ vai trò và nhiệm vụ cụ thể mà họ tham gia thực hiện."
-- **Câu 4, 5, 6, 7 (Giai đoạn 3 - Chuyên môn & Vị trí ứng tuyển)**: Các câu hỏi kỹ thuật chuyên môn chuyên sâu liên quan đến vị trí ứng tuyển (Target Position) và các kỹ năng chuyên môn yêu cầu (Target Skills) để ứng viên luyện tập thêm. KHÔNG đặt câu hỏi lý thuyết suông dạng định nghĩa, hãy đặt câu hỏi dạng tình huống xử lý lỗi, so sánh giải pháp công nghệ hoặc tối ưu hóa hiệu năng.
+- **Câu 4, 5, 6, 7 (Giai đoạn 3 - Chuyên môn thực chiến gắn liền với dự án trong CV)**: Các câu hỏi kỹ thuật chuyên môn chuyên sâu liên quan đến vị trí ứng tuyển và các kỹ năng, nhưng phải được đặt trực tiếp vào ngữ cảnh của các dự án hoặc công việc cũ ứng viên đã làm trong CV. KHÔNG đặt câu hỏi lý thuyết suông dạng định nghĩa hoặc câu hỏi chung chung chung không có ngữ cảnh. 
+  *Ví dụ thay vì hỏi: "Làm thế nào để tối ưu hiệu năng component React?", hãy hỏi: "Trong dự án website bán quần áo X của bạn sử dụng ReactJS và NodeJS, bạn đã tối ưu hiệu năng hoặc tránh re-render cho các component hiển thị danh sách sản phẩm như thế nào?"*
   - expected_answer: "Ứng viên đưa ra câu trả lời mang chiều sâu kỹ thuật, sử dụng thuật ngữ chuyên môn chính xác, phân tích các giải pháp và so sánh các ưu/nhược điểm rõ ràng."
 - **Câu 8 (Giai đoạn 4 - Cảm ơn & Chào tạm biệt)**: Lời kết luận từ người phỏng vấn thông báo rằng buổi phỏng vấn chuyên môn đã kết thúc, nhằm gợi ý và kiểm tra xem ứng viên có chủ động gửi lời cảm ơn và chào tạm biệt lịch thiệp hay không.
   - expected_answer: "Ứng viên chủ động nói lời cảm ơn nhà tuyển dụng/AI và chào tạm biệt một cách chuyên nghiệp, lịch sự để kết thúc buổi phỏng vấn."
 
-Các câu hỏi phải tuân thủ nghiêm ngặt các quy tắc:
-1. May đo trực tiếp theo kinh nghiệm, dự án, công nghệ cốt lõi và các điểm nổi bật (hoặc điểm thiếu sót tiềm ẩn) trích xuất trực tiếp từ CV ứng viên.
-2. Xoay quanh vị trí ứng tuyển và mức độ kinh nghiệm được yêu cầu (Junior/Middle/Senior).
-3. Đánh giá sâu sắc các kỹ năng chuyên môn thực chiến thông qua các câu hỏi tình huống thực tế hoặc thiết kế hệ thống.
-4. Ngôn ngữ câu hỏi phải là tiếng Việt tự nhiên, chuyên nghiệp và chuẩn xác thuật ngữ chuyên ngành.
+Các câu hỏi phải tuân thủ nghiêm ngặt các quy tắc tuyệt đối sau:
+1. TUYỆT ĐỐI KHÔNG đặt câu hỏi hoặc đề cập đến bất kỳ chứng chỉ học thuật, chứng chỉ ngoại ngữ (như IELTS, TOEIC) hay chứng chỉ chuyên môn (như AWS, Azure, GCP, CCNA, PMP, Agile/Scrum...) của ứng viên. Hãy phớt lờ hoàn toàn các chứng chỉ này.
+2. BẮT BUỘC tất cả câu hỏi kỹ thuật và nghiệp vụ (từ Câu 2 đến Câu 7) phải chứa thông tin bối cảnh cụ thể trích xuất trực tiếp từ các DỰ ÁN (Projects) hoặc KINH NGHIỆM LÀM VIỆC (Work Experience) ghi trong CV của ứng viên. Bạn phải gọi tên các dự án này hoặc tên công ty cũ của họ trong câu hỏi.
+3. RÀO CHẮN DỰ PHÒNG: Chỉ khi CV thực sự trống rỗng, không thể bóc tách hoặc không chứa bất kỳ dự án/kinh nghiệm nào, bạn mới được phép đặt câu hỏi tình huống giả lập chung chung dựa trên vị trí ứng tuyển và kỹ năng chuyên môn yêu cầu. Trong trường hợp đó, hãy mở đầu câu hỏi bằng: "Vì CV của bạn chưa ghi chi tiết các dự án thực tế, tôi muốn hỏi bạn về..." để ứng viên rõ bối cảnh.
+4. Các câu hỏi chuyên môn phải xoay quanh vị trí ứng tuyển và mức độ kinh nghiệm được yêu cầu (Junior/Middle/Senior).
+5. Ngôn ngữ câu hỏi phải là tiếng Việt tự nhiên, chuyên nghiệp và chuẩn xác thuật ngữ chuyên ngành.
 
 Bạn PHẢI trả về kết quả ở định dạng JSON duy nhất, có cấu trúc như sau:
 {
