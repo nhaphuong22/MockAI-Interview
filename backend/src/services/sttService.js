@@ -8,17 +8,16 @@ import fs from 'fs';
  * @returns {Promise<string>} Transcribed text
  */
 export const transcribeAudio = async (filePath, clientTranscript = '') => {
-  // 1. If the client has already performed speech-to-text natively and sent the draft, use it
-  if (clientTranscript && clientTranscript.trim().length > 0) {
+  // 1. If file does not exist but client transcript is present, return it immediately as a fast fallback
+  if ((!filePath || !fs.existsSync(filePath)) && clientTranscript && clientTranscript.trim().length > 0) {
     return clientTranscript.trim();
   }
 
-  // 2. Validate file existence
   if (!filePath || !fs.existsSync(filePath)) {
     throw new Error('Audio file not found or path is empty');
   }
 
-  // 3. Try to use Groq Whisper API for high-precision real audio transcription
+  // 2. Try to use Groq Whisper API for high-precision real audio transcription
   const apiKey = process.env.GROQ_API_KEY;
   if (apiKey && apiKey !== 'gsk_your_groq_api_key_here' && apiKey.trim().length > 0) {
     try {
@@ -33,7 +32,15 @@ export const transcribeAudio = async (filePath, clientTranscript = '') => {
       const formData = new FormData();
       formData.append('file', audioBlob, 'response-audio.webm');
       formData.append('model', 'whisper-large-v3');
-      formData.append('language', 'vi'); // Strictly optimize for Vietnamese candidates
+      formData.append('language', 'vi'); // Optimize for Vietnamese candidates
+      
+      // Use client transcript draft or a list of common tech terms as prompt to guide Whisper on English technical terms (code-switching)
+      if (clientTranscript && clientTranscript.trim().length > 0) {
+        formData.append('prompt', clientTranscript.trim());
+      } else {
+        formData.append('prompt', 'React, Node.js, JavaScript, Express, SQL, NoSQL, Git, API, Backend, Frontend');
+      }
+      
       formData.append('response_format', 'json');
 
       const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -59,6 +66,12 @@ export const transcribeAudio = async (filePath, clientTranscript = '') => {
     }
   } else {
     console.warn('Groq API Key is not configured for STT Whisper.');
+  }
+
+  // 3. Fallback to client transcript if Whisper failed or API key is missing
+  if (clientTranscript && clientTranscript.trim().length > 0) {
+    console.log('Whisper failed or not configured. Falling back to browser Web Speech API transcript.');
+    return clientTranscript.trim();
   }
 
   // 4. Zero-Mock: Throw real error if both browser client transcript draft and Whisper API failed

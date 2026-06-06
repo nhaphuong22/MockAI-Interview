@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Clock, Mic, MicOff, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import { Sparkles, Clock, Mic, MicOff, Loader2, CheckCircle2, ArrowRight, Volume2, VolumeX } from "lucide-react";
 import { AudioVisualizer } from "../ai/AudioVisualizer";
 import { AiWaveform } from "../ai/AiWaveform";
 import { selectVoice, configureVoiceStyle, initVoices } from "../../utils/voiceEngine";
@@ -41,10 +41,10 @@ export function InterviewSession({
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false); // Cloudinary and assessment packaging state
   const [audioLevel, setAudioLevel] = useState(0);
-  const [realtimeTranscript, setRealtimeTranscript] = useState("");
   const [finalAnswer, setFinalAnswer] = useState("");
   const [currentAudioUrl, setCurrentAudioUrl] = useState("");
   const [hasRecorded, setHasRecorded] = useState(false);
+  const [isAiVoiceEnabled, setIsAiVoiceEnabled] = useState(true);
 
   // Audio Context & Media Recorder Refs
   const mediaRecorderRef = useRef(null);
@@ -52,9 +52,7 @@ export function InterviewSession({
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const recognitionRef = useRef(null);
   const chunksRef = useRef([]);
-  const transcriptRef = useRef("");
 
   // Timer state
   const [seconds, setSeconds] = useState(0);
@@ -75,13 +73,13 @@ export function InterviewSession({
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
   };
 
-  const speakQuestionFallback = (text) => {
+  const speakQuestionFallback = (text, force = false) => {
+    if (!isAiVoiceEnabled && !force) {
+      setIsAiSpeaking(false);
+      return;
+    }
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -108,9 +106,9 @@ export function InterviewSession({
       console.warn("Speech Synthesis not supported natively in this browser.");
     }
   };
-
+ 
   // Text-To-Speech function using backend ElevenLabs API (or Google Translate TTS fallback)
-  const speakQuestion = async (text) => {
+  const speakQuestion = async (text, force = false) => {
     // 1. Cancel any active vocal sound first
     if (window.activeTtsAudio) {
       try {
@@ -122,6 +120,11 @@ export function InterviewSession({
     }
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+    }
+ 
+    if (!isAiVoiceEnabled && !force) {
+      setIsAiSpeaking(false);
+      return;
     }
 
     try {
@@ -153,13 +156,38 @@ export function InterviewSession({
         console.error("TTS audio playback error, falling back:", err);
         URL.revokeObjectURL(audioUrl);
         window.activeTtsAudio = null;
-        speakQuestionFallback(text);
+        speakQuestionFallback(text, force);
       };
 
       await audio.play();
     } catch (error) {
       console.warn("Backend TTS failed, falling back to local speech synthesis:", error);
-      speakQuestionFallback(text);
+      speakQuestionFallback(text, force);
+    }
+  };
+ 
+  const toggleAiVoice = () => {
+    const nextState = !isAiVoiceEnabled;
+    setIsAiVoiceEnabled(nextState);
+    if (!nextState) {
+      // Stop active voices immediately
+      if (window.activeTtsAudio) {
+        try {
+          window.activeTtsAudio.pause();
+          window.activeTtsAudio = null;
+        } catch (err) {
+          console.debug("Mute pause ignored:", err);
+        }
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setIsAiSpeaking(false);
+    } else {
+      // Re-trigger current question speaking if turned back on
+      if (interviewType === "voice" && questionText && !isRecording && !isTranscribing && !hasRecorded) {
+        speakQuestion(questionText, true);
+      }
     }
   };
 
@@ -209,14 +237,12 @@ export function InterviewSession({
   const startRecording = async () => {
     try {
       chunksRef.current = [];
-      setRealtimeTranscript("");
-      transcriptRef.current = "";
       setFinalAnswer("");
-
+ 
       // 1. Get audio stream
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-
+ 
       // 2. Initialize volume analyzer
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const audioContext = new AudioContext();
@@ -226,10 +252,10 @@ export function InterviewSession({
       analyser.fftSize = 256;
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
-
+ 
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-
+ 
       const drawVolume = () => {
         if (!analyserRef.current) return;
         analyserRef.current.getByteFrequencyData(dataArray);
@@ -244,7 +270,7 @@ export function InterviewSession({
         animationFrameRef.current = requestAnimationFrame(drawVolume);
       };
       drawVolume();
-
+ 
       // 3. Initialize Media Recorder
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -253,63 +279,33 @@ export function InterviewSession({
           chunksRef.current.push(e.data);
         }
       };
-
+ 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
         setIsTranscribing(true);
-
+ 
         try {
-          // Send audio to backend using latest ref value to avoid stale closures
-          const response = await transcribeAudioApi(audioBlob, transcriptRef.current);
+          // Send audio to backend with empty client transcript to enforce backend Groq Whisper processing
+          const response = await transcribeAudioApi(audioBlob, "");
           if (response && response.success) {
             setFinalAnswer(response.data.text);
             setCurrentAudioUrl(response.data.audioUrl || "");
           } else {
-            setFinalAnswer(transcriptRef.current || "Không nhận diện được âm thanh.");
+            setFinalAnswer("Không nhận diện được âm thanh.");
           }
         } catch (err) {
           console.error("Transcription API error:", err);
-          setFinalAnswer(transcriptRef.current || "Lỗi nhận diện âm thanh. Vui lòng ghi âm lại hoặc tự nhập câu trả lời vào ô này.");
+          setFinalAnswer("Lỗi nhận diện âm thanh. Vui lòng ghi âm lại hoặc tự nhập câu trả lời vào ô này.");
         } finally {
           setIsTranscribing(false);
           setHasRecorded(true);
         }
       };
-
-      // 4. Initialize Web Speech API if available
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "vi-VN"; 
-
-        recognition.onresult = (event) => {
-          let finalTranscript = "";
-          let interimTranscript = "";
-          for (let i = 0; i < event.results.length; ++i) {
-            const segment = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += segment + " ";
-            } else {
-              interimTranscript += segment;
-            }
-          }
-          const fullText = (finalTranscript + interimTranscript).trim();
-          if (fullText) {
-            setRealtimeTranscript(fullText);
-            transcriptRef.current = fullText;
-          }
-        };
-
-        recognitionRef.current = recognition;
-        recognition.start();
-      }
-
+ 
       // Start recording
       mediaRecorder.start();
       setIsRecording(true);
-
+ 
     } catch (err) {
       console.error("Start recording failed:", err);
       alert("Không thể truy cập Microphone. Vui lòng kiểm tra lại quyền.");
@@ -398,7 +394,6 @@ export function InterviewSession({
       setTextAnswer("");
       setFinalAnswer("");
       setCurrentAudioUrl("");
-      setRealtimeTranscript("");
       setHasRecorded(false);
       onNext();
     }
@@ -446,6 +441,29 @@ export function InterviewSession({
           </div>
         </div>
         <div className="flex items-center gap-6">
+          {interviewType === "voice" && (
+            <button
+              onClick={toggleAiVoice}
+              className={`px-3 py-1.5 rounded-lg border transition-all duration-200 flex items-center gap-1.5 text-sm font-semibold ${
+                isAiVoiceEnabled
+                  ? "bg-slate-700/50 hover:bg-slate-700 text-sky-400 border-sky-500/20"
+                  : "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20"
+              }`}
+              title={isAiVoiceEnabled ? "Tắt giọng đọc của AI" : "Bật giọng đọc của AI"}
+            >
+              {isAiVoiceEnabled ? (
+                <>
+                  <Volume2 className="w-4 h-4 text-sky-400" />
+                  <span className="hidden sm:inline">Giọng AI: Bật</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 text-rose-400" />
+                  <span className="hidden sm:inline">Giọng AI: Tắt</span>
+                </>
+              )}
+            </button>
+          )}
           <div className="flex items-center gap-2 text-white bg-gray-700/50 px-3 py-1.5 rounded-lg border border-gray-600/50 text-sm">
             <Clock className="w-4 h-4 text-[#0ea5e9]" />
             <span>{formatTime(seconds)}</span>
@@ -546,13 +564,13 @@ export function InterviewSession({
                     <AudioVisualizer audioLevel={audioLevel} />
                   </div>
 
-                  {/* Live transcript text */}
-                  {realtimeTranscript && (
-                    <div className="p-4 bg-sky-50/50 border border-sky-100/50 rounded-2xl max-h-24 overflow-y-auto">
-                      <span className="text-xs font-bold text-[#0ea5e9] uppercase block mb-1">Đang nhận diện:</span>
-                      <p className="text-sm text-gray-600 italic">"{realtimeTranscript}"</p>
-                    </div>
-                  )}
+                  {/* Recording instructions */}
+                  <div className="p-4 bg-sky-50/50 border border-sky-100/50 rounded-2xl text-center">
+                    <span className="text-xs font-bold text-[#0ea5e9] uppercase block mb-1 animate-pulse">AI Đang Lắng Nghe:</span>
+                    <p className="text-xs text-gray-500 italic">
+                      Hãy trình bày câu trả lời của bạn qua microphone. Khi trả lời xong, bấm nút kết thúc để AI dịch chuẩn xác câu hỏi (hỗ trợ song ngữ Anh - Việt).
+                    </p>
+                  </div>
                 </div>
               )}
 
