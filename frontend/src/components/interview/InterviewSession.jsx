@@ -116,7 +116,9 @@ export function InterviewSession({
       try {
         window.activeTtsAudio.pause();
         window.activeTtsAudio = null;
-      } catch (_) {}
+      } catch (err) {
+        console.debug("Audio pause ignored:", err);
+      }
     }
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -180,7 +182,9 @@ export function InterviewSession({
         try {
           window.activeTtsAudio.pause();
           window.activeTtsAudio = null;
-        } catch (_) {}
+        } catch (err) {
+          console.debug("Audio pause ignored:", err);
+        }
       }
     };
   }, []);
@@ -328,7 +332,9 @@ export function InterviewSession({
       try {
         window.activeTtsAudio.pause();
         window.activeTtsAudio = null;
-      } catch (_) {}
+      } catch (err) {
+        console.debug("Audio pause ignored:", err);
+      }
     }
 
     const targetSessionId = voiceSessionId || 1;
