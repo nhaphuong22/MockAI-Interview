@@ -14,6 +14,50 @@ export const generateTTS = async (text, lang = 'vi-VN') => {
     throw new Error('Input text is empty');
   }
 
+  // Determine the target language code for ElevenLabs
+  const isEnglish = lang.toLowerCase().includes('en');
+  const elevenLanguageCode = isEnglish ? 'en' : 'vi';
+
+  const elevenApiKey = process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB';
+  if (elevenApiKey && elevenApiKey.trim().length > 0 && elevenApiKey !== 'your_elevenlabs_key_here') {
+    try {
+      console.log(`Generating TTS using ElevenLabs | Voice: ${voiceId} | Language: ${elevenLanguageCode}`);
+      const elevenUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+      
+      const response = await fetch(elevenUrl, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': elevenApiKey.trim(),
+          'Content-Type': 'application/json',
+          'accept': 'audio/mpeg'
+        },
+        body: JSON.stringify({
+          text: text.trim(),
+          model_id: 'eleven_turbo_v2_5',
+          language_code: elevenLanguageCode,
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.0,
+            use_speaker_boost: true
+          }
+        })
+      });
+
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        console.log('ElevenLabs audio successfully generated.');
+        return Buffer.from(arrayBuffer);
+      } else {
+        const errorText = await response.text();
+        console.warn('ElevenLabs API returned an error:', response.status, errorText);
+      }
+    } catch (elevenError) {
+      console.error('ElevenLabs TTS error, falling back to Google TTS:', elevenError);
+    }
+  }
+
   // Normalize language code for Google Translate TTS
   let googleLang = 'vi';
   if (lang.toLowerCase().includes('en')) {
@@ -21,6 +65,7 @@ export const generateTTS = async (text, lang = 'vi-VN') => {
   }
 
   try {
+    console.log('Generating TTS using Google Translate TTS...');
     const trimmedText = text.trim();
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${googleLang}&client=tw-ob&q=${encodeURIComponent(trimmedText)}`;
 

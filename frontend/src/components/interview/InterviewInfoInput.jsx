@@ -1,8 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
-import { Sparkles, ArrowRight, ArrowLeft, Tag, Briefcase, FileCheck, Eye, X, Volume2, Play, Square } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, ArrowRight, ArrowLeft, Tag, Briefcase, FileCheck, X } from "lucide-react";
 import { CVUploadArea } from "../../pages/candidate/components/CVUploadArea";
 import { cvApi } from "../../api/cvApi";
-import { selectVoice, configureVoiceStyle, initVoices } from "../../utils/voiceEngine";
 
 const popularPositions = [
   "React Developer",
@@ -33,58 +32,8 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
   const [fileName, setFileName] = useState("");
   const [previewUrl, setPreviewUrl] = useState(null); // stores the safe blob url of uploaded PDF file
   const [aiVoice, setAiVoice] = useState("vi-VN-female");
-  const [isSamplePlaying, setIsSamplePlaying] = useState(null); // stores voice.id being previewed
 
-  // Kích hoạt nạp danh sách giọng nói của trình duyệt ngay khi mount
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-      const handleVoicesChanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-      window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-      return () => {
-        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-      };
-    }
-  }, []);
 
-  // Preview a voice sample using Web Speech Synthesis
-  const handlePreviewVoice = useCallback((voiceId) => {
-    if (!('speechSynthesis' in window)) return;
-
-    // If already playing this voice, stop it
-    if (isSamplePlaying === voiceId) {
-      window.speechSynthesis.cancel();
-      setIsSamplePlaying(null);
-      return;
-    }
-
-    // Stop any current playback
-    window.speechSynthesis.cancel();
-
-    const isEnglish = voiceId.startsWith("en-US");
-    const isMale = voiceId.includes("-male");
-    const sampleText = isEnglish
-      ? "Hello! I am your AI interview assistant. Let's start practicing!"
-      : "Xin chào! Tôi là trợ lý phỏng vấn AI của bạn. Hãy bắt đầu luyện tập nhé!";
-
-    const utterance = new SpeechSynthesisUtterance(sampleText);
-    utterance.lang = isEnglish ? "en-US" : "vi-VN";
-
-    // Configure pitch/rate for clear male/female differentiation
-    configureVoiceStyle(utterance, isMale);
-
-    // Select the best matching voice using cross-exclusion engine
-    const matchingVoice = selectVoice(voiceId);
-    if (matchingVoice) utterance.voice = matchingVoice;
-
-    utterance.onstart = () => setIsSamplePlaying(voiceId);
-    utterance.onend = () => setIsSamplePlaying(null);
-    utterance.onerror = () => setIsSamplePlaying(null);
-
-    window.speechSynthesis.speak(utterance);
-  }, [isSamplePlaying]);
 
   const handleAddSkill = (e) => {
     e.preventDefault();
@@ -360,76 +309,7 @@ export function InterviewInfoInput({ onProceed, onBack, isSubmitting = false }) 
           </select>
         </div>
 
-        {/* 4. Voice Select - Premium Grid Mode with Preview */}
-        <div>
-          <label className="block text-sm font-semibold dark:text-slate-300 text-gray-700 mb-3 flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-[#0ea5e9]" />
-            Giọng nói của trợ lý AI (AI Voice)
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { id: "vi-VN-female", label: "Giọng Nữ Tiếng Việt", desc: "Giọng đọc truyền cảm, ấm áp", flag: "🇻🇳", gender: "female" },
-              { id: "vi-VN-male", label: "Giọng Nam Tiếng Việt", desc: "Giọng đọc rõ ràng, tự tin", flag: "🇻🇳", gender: "male" },
-              { id: "en-US-female", label: "Giọng Nữ Tiếng Anh", desc: "English Female Voice", flag: "🇺🇸", gender: "female" },
-              { id: "en-US-male", label: "Giọng Nam Tiếng Anh", desc: "English Male Voice", flag: "🇺🇸", gender: "male" }
-            ].map((voice) => (
-              <div
-                key={voice.id}
-                onClick={() => setAiVoice(voice.id)}
-                className={`relative overflow-hidden text-left p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.01] flex items-center justify-between cursor-pointer group ${
-                  aiVoice === voice.id
-                    ? "bg-[#0ea5e9]/10 border-[#0ea5e9] shadow-[0_4px_20px_rgba(14,165,233,0.15)] text-[#0ea5e9]"
-                    : "dark:bg-[#1e293b]/60 dark:border-white/5 dark:hover:border-white/20 dark:text-slate-200 bg-white border-gray-100 hover:border-gray-300 hover:shadow-md text-gray-700"
-                }`}
-              >
-                {/* Glow effect on active */}
-                {aiVoice === voice.id && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0ea5e9]/5 to-[#38bdf8]/5 opacity-50 blur-xl pointer-events-none" />
-                )}
-                
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
-                    aiVoice === voice.id
-                      ? "bg-[#0ea5e9] text-white"
-                      : "dark:bg-slate-800 dark:text-slate-300 bg-gray-50 text-gray-600 group-hover:bg-sky-50 group-hover:text-[#0ea5e9] transition-all"
-                  }`}>
-                    {voice.gender === "female" ? "👩‍💼" : "👨‍💼"}
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold block">{voice.label}</span>
-                    <span className="text-[10px] dark:text-slate-400 text-gray-400 block mt-0.5">{voice.desc}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 relative z-10">
-                  {/* Preview Play/Stop Button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent selecting voice when clicking play
-                      handlePreviewVoice(voice.id);
-                    }}
-                    title={isSamplePlaying === voice.id ? "Dừng nghe thử" : "Nghe thử giọng nói"}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 shrink-0 ${
-                      isSamplePlaying === voice.id
-                        ? "bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse"
-                        : aiVoice === voice.id
-                          ? "bg-[#0ea5e9] text-white hover:bg-[#0284c7] shadow-md shadow-sky-200"
-                          : "dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 bg-gray-100 text-gray-500 hover:bg-sky-100 hover:text-[#0ea5e9]"
-                    }`}
-                  >
-                    {isSamplePlaying === voice.id ? (
-                      <Square className="w-3.5 h-3.5" />
-                    ) : (
-                      <Play className="w-3.5 h-3.5 ml-0.5" />
-                    )}
-                  </button>
-                  <span className="text-lg shrink-0">{voice.flag}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+
 
         {/* Action Buttons */}
         <div className="pt-4 flex justify-between items-center gap-4">

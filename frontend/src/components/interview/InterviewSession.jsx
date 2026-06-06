@@ -9,6 +9,7 @@ import {
   assessVoiceSessionApi 
 } from "../../api/voiceSession";
 import { submitAnswerApi } from "../../api/interviewApi";
+import { axiosClient } from "../../api/axiosClient";
 
 /**
  * InterviewSession Component
@@ -80,46 +81,85 @@ export function InterviewSession({
     }
   };
 
-  // Text-To-Speech function using native Web Speech Synthesis
-  const speakQuestion = (text) => {
+  const speakQuestionFallback = (text) => {
     if ('speechSynthesis' in window) {
-      // 1. Cancel any active vocal sound first
       window.speechSynthesis.cancel();
-
-      // 2. Format utterance
       const utterance = new SpeechSynthesisUtterance(text);
-      
       const isEnglish = aiVoice.startsWith("en-US");
       const isMale = aiVoice.includes("-male");
-      
       utterance.lang = isEnglish ? "en-US" : "vi-VN";
-
-      // Configure pitch/rate for clear male/female differentiation
       configureVoiceStyle(utterance, isMale);
-
-      // Select the best matching voice using cross-exclusion engine
       const matchingVoice = selectVoice(aiVoice);
       if (matchingVoice) utterance.voice = matchingVoice;
-
       utterance.onstart = () => {
         setIsAiSpeaking(true);
         setIsRecording(false);
         setHasRecorded(false);
       };
-
       utterance.onend = () => {
         setIsAiSpeaking(false);
       };
-
       utterance.onerror = (err) => {
         console.error("SpeechSynthesis error:", err);
         setIsAiSpeaking(false);
       };
-
-      // 3. Play voice
       window.speechSynthesis.speak(utterance);
     } else {
       console.warn("Speech Synthesis not supported natively in this browser.");
+    }
+  };
+
+  // Text-To-Speech function using backend ElevenLabs API (or Google Translate TTS fallback)
+  const speakQuestion = async (text) => {
+    // 1. Cancel any active vocal sound first
+    if (window.activeTtsAudio) {
+      try {
+        window.activeTtsAudio.pause();
+        window.activeTtsAudio = null;
+      } catch (err) {
+        console.debug("Audio pause ignored:", err);
+      }
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    try {
+      setIsAiSpeaking(true);
+      setIsRecording(false);
+      setHasRecorded(false);
+
+      // Call API using axiosClient to get binary blob
+      const response = await axiosClient.post("/voice-sessions/tts", { 
+        text: text, 
+        lang: aiVoice 
+      }, {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(blob);
+      
+      const audio = new Audio(audioUrl);
+      window.activeTtsAudio = audio;
+      
+      audio.onended = () => {
+        setIsAiSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        window.activeTtsAudio = null;
+      };
+      
+      audio.onerror = (err) => {
+        console.error("TTS audio playback error, falling back:", err);
+        URL.revokeObjectURL(audioUrl);
+        window.activeTtsAudio = null;
+        speakQuestionFallback(text);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.warn("Backend TTS failed, falling back to local speech synthesis:", error);
+      speakQuestionFallback(text);
     }
   };
 
@@ -137,6 +177,14 @@ export function InterviewSession({
       stopAudioEngine();
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
+      }
+      if (window.activeTtsAudio) {
+        try {
+          window.activeTtsAudio.pause();
+          window.activeTtsAudio = null;
+        } catch (err) {
+          console.debug("Audio pause ignored:", err);
+        }
       }
     };
   }, []);
@@ -279,6 +327,14 @@ export function InterviewSession({
     stopAudioEngine();
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+    }
+    if (window.activeTtsAudio) {
+      try {
+        window.activeTtsAudio.pause();
+        window.activeTtsAudio = null;
+      } catch (err) {
+        console.debug("Audio pause ignored:", err);
+      }
     }
 
     const targetSessionId = voiceSessionId || 1;
