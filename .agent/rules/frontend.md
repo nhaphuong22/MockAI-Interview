@@ -40,3 +40,10 @@ glob: "**/*.{js,jsx,ts,tsx,css,scss,html,vue,svelte,dart,swift,kt,xml}"
 1. **Folder Structure**: Bắt buộc tổ chức component theo cấu trúc thư mục chuyên nghiệp (VD: `components/common/`, `components/layout/`, `components/features/`). Mỗi component phức tạp nên nằm trong 1 folder riêng chứa cả file `.jsx`, logic `.hook.js` và `.css` (nếu có).
 2. **Atomic Design**: Component nhỏ, tái sử dụng cao (`<Button />`, `<INPUT />`).
 3. **State**: Server State (TanStack Query) !== Client State (Zustand/Context). Tách biệt rõ ràng.
+
+---
+
+## 🔍 5. CODE QUALITY & LINTING GATES
+
+1. **Linting Check**: Khi thực hiện bất kỳ thay đổi nào liên quan đến mã nguồn Frontend, Agent bắt buộc phải chạy lệnh linter sau khi hoàn thành code: `pnpm -C frontend run lint`.
+2. **Error Resolution**: Nếu có bất kỳ lỗi nào xuất hiện (errors), Agent phải chủ động sửa đổi cho đến khi vượt qua vòng kiểm tra sạch lỗi (0 errors).

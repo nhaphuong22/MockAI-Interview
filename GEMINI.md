@@ -113,6 +113,7 @@ Dự án MockAI-Interview là một nền tảng hỗ trợ việc làm toàn di
 - **Phân tách State**: Tuyệt đối không dùng Zustand để lưu Server Data (danh sách user, lịch sử phỏng vấn...). Việc đó là của TanStack Query. Zustand chỉ dùng cho UI State (Modal, Theme) và Auth Token.
 - **Routing & Bảo mật**: Mọi endpoint nhạy cảm ở Backend phải có Middleware check JWT. Mọi trang nội bộ ở Frontend phải được bọc bởi `<ProtectedRoute>`.
 - **API Flow**: Frontend luôn gọi API thông qua `axiosClient.js` (đã cấu hình sẵn Interceptor gắn token tự động).
+- **Kiểm tra Lint bắt buộc**: Khi làm việc liên quan tới Frontend, luôn luôn bắt buộc phải chạy lệnh `pnpm -C frontend run lint` sau khi hoàn thành viết mã. Nếu có bất kỳ lỗi nào (errors), Agent bắt buộc phải sửa lại để đảm bảo chất lượng code và không có lỗi biên dịch/runtime.
 - **Landing Page & Auth Gate (Bắt buộc)**:
   - User **chưa đăng nhập** chỉ được xem **Landing Page** (trang chủ công khai).
   - Khi user cố gắng truy cập bất kỳ tab/trang nào khác (Jobs, Community, Profile...), hệ thống PHẢI:
