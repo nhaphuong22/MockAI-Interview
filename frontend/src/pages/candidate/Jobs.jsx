@@ -6,6 +6,21 @@ import { JobCard } from "./components/JobCard";
 import { JobDetailView } from "./components/JobDetailView";
 import { jobApi } from "../../api/jobApi";
 
+const formatTime = (timeStr) => {
+  if (!timeStr) return "Vừa xong";
+  const date = new Date(timeStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffMins < 60) return `${diffMins || 1} phút trước`;
+  if (diffHours < 24) return `${diffHours} giờ trước`;
+  if (diffDays < 30) return `${diffDays} ngày trước`;
+  return date.toLocaleDateString("vi-VN");
+};
+
 /**
  * Jobs Page
  * Manages job listings, filtering by various criteria, and viewing detailed descriptions.
@@ -112,7 +127,7 @@ export function Jobs() {
               {!showFilters && (
                 <button
                   onClick={() => setShowFilters(true)}
-                  className="flex items-center gap-2 px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] transition-all font-semibold dark:text-slate-300 text-gray-700"
+                  className="flex items-center gap-2 px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] transition-all font-semibold dark:text-slate-300 text-gray-700 cursor-pointer"
                 >
                   <SlidersHorizontal className="w-5 h-5" />
                   <span>Bộ lọc</span>
@@ -189,3 +204,5 @@ export function Jobs() {
     </div>
   );
 }
+
+export default Jobs;

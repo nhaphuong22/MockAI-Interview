@@ -8,7 +8,7 @@ import { useUiStore } from '../store/useUiStore';
  */
 export const useAuthGate = () => {
   const { isAuthenticated } = useAuthStore();
-  const { showToast } = useUiStore();
+  const addToast = useUiStore((state) => state.addToast);
 
   /**
    * Check if user is authenticated before navigation
@@ -18,10 +18,7 @@ export const useAuthGate = () => {
    */
   const checkAuth = useCallback((targetPath, callback) => {
     if (!isAuthenticated) {
-      showToast({
-        message: 'Yêu cầu đăng nhập để dùng được tính năng này',
-        type: 'warning',
-      });
+      addToast('Yêu cầu đăng nhập để dùng được tính năng này', 'warning');
       return false;
     }
 
@@ -30,7 +27,7 @@ export const useAuthGate = () => {
     }
 
     return true;
-  }, [isAuthenticated, showToast]);
+  }, [isAuthenticated, addToast]);
 
   /**
    * Protected navigation handler with toast notification
@@ -41,10 +38,7 @@ export const useAuthGate = () => {
   const handleProtectedNav = useCallback((e, path, navigate) => {
     if (!isAuthenticated) {
       e.preventDefault();
-      showToast({
-        message: 'Yêu cầu đăng nhập để dùng được tính năng này',
-        type: 'warning',
-      });
+      addToast('Yêu cầu đăng nhập để dùng được tính năng này', 'warning');
       return;
     }
 
@@ -52,7 +46,7 @@ export const useAuthGate = () => {
     if (navigate) {
       navigate(path);
     }
-  }, [isAuthenticated, showToast]);
+  }, [isAuthenticated, addToast]);
 
   return {
     isAuthenticated,
@@ -60,3 +54,4 @@ export const useAuthGate = () => {
     handleProtectedNav,
   };
 };
+

@@ -7,6 +7,7 @@ import { ExperienceSection } from "./components/ExperienceSection";
 import { SkillsSection } from "./components/SkillsSection";
 import { AchievementsSection } from "./components/AchievementsSection";
 import { ProfileSidebar } from "./components/ProfileSidebar";
+import AtsReportDashboard from "./components/AtsReportDashboard";
 
 const skills = [
   { name: "React", level: 90, category: "Frontend" },
@@ -110,6 +111,12 @@ export function Profile() {
                 >
                   Thành Tích
                 </Tabs.Trigger>
+                <Tabs.Trigger
+                  value="ats-report"
+                  className="flex-1 px-6 py-4 dark:text-slate-400 text-gray-600 hover:text-[#0ea5e9] data-[state=active]:text-[#0ea5e9] data-[state=active]:border-b-2 data-[state=active]:border-[#0ea5e9] transition-colors"
+                >
+                  Báo Cáo ATS
+                </Tabs.Trigger>
               </Tabs.List>
 
               <Tabs.Content value="about" className="p-6">
@@ -127,6 +134,10 @@ export function Profile() {
               <Tabs.Content value="achievements" className="p-6">
                 <AchievementsSection achievements={achievements} />
               </Tabs.Content>
+
+              <Tabs.Content value="ats-report" className="p-6">
+                <AtsReportDashboard />
+              </Tabs.Content>
             </Tabs.Root>
           </div>
 
@@ -138,3 +149,4 @@ export function Profile() {
     </div>
   );
 }
+
