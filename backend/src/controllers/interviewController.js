@@ -10,6 +10,7 @@ export const startInterviewSession = async (req, res) => {
     const userId = req.user.id;
     const { 
       jobId, 
+      applicationId,
       customPosition, 
       customSkills, 
       experienceLevel, 
@@ -22,6 +23,7 @@ export const startInterviewSession = async (req, res) => {
     const sessionData = await initInterviewSession({
       userId,
       jobId: jobId ? Number(jobId) : null,
+      applicationId: applicationId ? Number(applicationId) : null,
       customPosition,
       customSkills,
       experienceLevel,

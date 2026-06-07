@@ -58,7 +58,13 @@ export const jobApi = {
    */
   updateJobApplication: (id, data) => {
     return axiosClient.put(`/jobs/applications/${id}`, data);
+  },
 
-
+  /**
+   * Ứng viên nộp đơn ứng tuyển vào job
+   * @param {number|string} jobId - ID của Job cần ứng tuyển
+   */
+  applyForJob: (jobId) => {
+    return axiosClient.post(`/jobs/${jobId}/apply`);
   }
 };

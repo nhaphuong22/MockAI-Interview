@@ -6,7 +6,8 @@ import {
   deleteJobById,
   getJobApplicationsService,
   updateJobApplicationService,
-  getApplicationDetailById
+  getApplicationDetailById,
+  applyForJobService
 } from '../services/jobService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
@@ -378,5 +379,33 @@ export const updateJobApplication = async (req, res) => {
   } catch (error) {
     console.error('Lỗi trong jobController.updateJobApplication:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi cập nhật hồ sơ ứng tuyển.');
+  }
+};
+
+/**
+ * Ứng viên nộp đơn ứng tuyển
+ */
+export const applyForJob = async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+    if (isNaN(jobId)) {
+      return sendError(res, 400, 'ID công việc không hợp lệ.');
+    }
+
+    const candidateId = req.user.id;
+    
+    // Check job existence
+    const job = await getJobDetailById(jobId);
+    if (!job) {
+      return sendError(res, 404, 'Không tìm thấy tin tuyển dụng.');
+    }
+
+    // Call service
+    const application = await applyForJobService(candidateId, jobId);
+
+    return sendResponse(res, 201, application, 'Ứng tuyển thành công.');
+  } catch (error) {
+    console.error('Lỗi trong jobController.applyForJob:', error);
+    return sendError(res, 500, 'Lỗi hệ thống khi ứng tuyển công việc.');
   }
 };

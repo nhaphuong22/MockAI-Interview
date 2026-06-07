@@ -19,6 +19,7 @@ import { NotFoundError, ValidationError } from '../core/customErrors.js';
 export const initInterviewSession = async ({
   userId,
   jobId = null,
+  applicationId = null,
   customPosition = '',
   customSkills = '',
   experienceLevel = 'JUNIOR',
@@ -61,6 +62,17 @@ export const initInterviewSession = async ({
     created_at: new Date(),
     updated_at: new Date()
   });
+
+  // 2.5 Link interview to application if provided
+  if (applicationId && type === 'REAL') {
+    await db('applications')
+      .where({ id: applicationId, candidate_id: userId })
+      .update({ 
+        interview_id: interview.id, 
+        status: 'AI_INTERVIEW', 
+        updated_at: new Date() 
+      });
+  }
 
   // 3. Generate customized interview questions using Qwen 3 32B on Groq
   const aiQuestions = await generateQuestionsFromGroq({

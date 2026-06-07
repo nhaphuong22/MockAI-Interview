@@ -304,3 +304,35 @@ export const getApplicationDetailById = async (applicationId) => {
     .first();
 };
 
+/**
+ * Ứng viên nộp đơn ứng tuyển
+ */
+export const applyForJobService = async (candidateId, jobId) => {
+  // Check if already applied
+  const existingApp = await db('applications')
+    .where({ candidate_id: candidateId, job_id: jobId })
+    .first();
+
+  if (existingApp) {
+    return existingApp; // Trả về application cũ nếu đã apply
+  }
+
+  const [newApp] = await db('applications')
+    .insert({
+      candidate_id: candidateId,
+      job_id: jobId,
+      status: 'SUBMITTED',
+      created_at: new Date(),
+      updated_at: new Date()
+    })
+    .returning('*');
+
+  // Xoá cache của HR
+  const job = await db('jobs').where({ id: jobId }).first();
+  if (job) {
+    await deleteCachePattern(`applications:hr:${job.hr_id}:*`);
+  }
+
+  return newApp;
+};
+

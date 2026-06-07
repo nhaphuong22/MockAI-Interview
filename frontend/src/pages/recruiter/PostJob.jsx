@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2, Loader2 } from "lucide-react";
+import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2, Loader2, Bot, Zap, SlidersHorizontal, ShieldCheck, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { jobApi } from "../../api/jobApi";
 import axiosClient from "../../api/axiosClient";
@@ -45,6 +45,11 @@ export function PostJob() {
     vacancyCount: 1,
     deadline: ""
   });
+
+  // AI Recruitment Config State
+  const [aiMode, setAiMode] = useState("OFF"); // 'OFF' | 'CV_ONLY' | 'FULL_AI'
+  const [cvPassThreshold, setCvPassThreshold] = useState(60);
+  const [fastTrackThreshold, setFastTrackThreshold] = useState(85);
 
 
   // 2. Quản lý State cho danh sách yêu cầu chi tiết (động)
@@ -153,7 +158,11 @@ export function PostJob() {
       is_salary_visible: !!formData.isSalaryVisible,
       vacancy_count: parseInt(formData.vacancyCount) || 1,
       deadline: formData.deadline || null,
-      detailed_requirements: cleanedDetailedReqs
+      detailed_requirements: cleanedDetailedReqs,
+      // AI Recruitment Config
+      ai_mode: aiMode,
+      cv_pass_threshold: aiMode !== "OFF" ? cvPassThreshold : null,
+      fast_track_threshold: aiMode === "FULL_AI" ? fastTrackThreshold : null,
     };
 
     mutation.mutate(payload);
@@ -500,8 +509,134 @@ export function PostJob() {
               </div>
             </motion.div>
 
+            {/* Section 4: AI Recruitment Config */}
+            <motion.div variants={itemVariants} className="space-y-5">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="bg-violet-500 text-white p-1.5 rounded-lg shadow-sm">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">Cài đặt AI Tuyển dụng</h2>
+                  <p className="text-xs text-slate-500 mt-0.5 font-medium">Tuỳ chọn — AI sẽ tự động lọc CV và phỏng vấn ứng viên thay bạn</p>
+                </div>
+              </div>
 
+              {/* Mode Selector */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "OFF", label: "Tắt AI", icon: XCircle, desc: "Nhận CV, xử lý thủ công", color: "slate" },
+                  { value: "CV_ONLY", label: "Chỉ lọc CV", icon: ShieldCheck, desc: "AI chấm điểm CV tự động", color: "sky" },
+                  { value: "FULL_AI", label: "AI Đầy đủ", icon: Zap, desc: "Lọc CV + Phỏng vấn AI", color: "violet" },
+                ].map((option) => {
+                  const Icon = option.icon;
+                  const isActive = aiMode === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setAiMode(option.value)}
+                      className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all text-center ${
+                        isActive
+                          ? option.color === "violet"
+                            ? "border-violet-400 bg-violet-50 shadow-md shadow-violet-100"
+                            : option.color === "sky"
+                            ? "border-sky-400 bg-sky-50 shadow-md shadow-sky-100"
+                            : "border-slate-300 bg-slate-50"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${
+                        isActive
+                          ? option.color === "violet" ? "text-violet-500" : option.color === "sky" ? "text-sky-500" : "text-slate-500"
+                          : "text-slate-400"
+                      }`} />
+                      <span className={`text-sm font-bold ${
+                        isActive
+                          ? option.color === "violet" ? "text-violet-700" : option.color === "sky" ? "text-sky-700" : "text-slate-700"
+                          : "text-slate-500"
+                      }`}>{option.label}</span>
+                      <span className="text-[10px] text-slate-400 font-medium leading-tight">{option.desc}</span>
+                      {isActive && (
+                        <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
+                          option.color === "violet" ? "bg-violet-400" : option.color === "sky" ? "bg-sky-400" : "bg-slate-400"
+                        }`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
+              {/* Threshold Sliders — Chỉ hiện khi AI mode != OFF */}
+              {aiMode !== "OFF" && (
+                <div className="space-y-5 bg-slate-50/80 p-5 rounded-2xl border border-slate-100">
+                  {/* CV Pass Threshold */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-4 h-4 text-sky-500" />
+                        Ngưỡng CV tối thiểu (Standard)
+                      </label>
+                      <span className="text-lg font-black text-sky-600">{cvPassThreshold}<span className="text-sm font-bold text-slate-400">/100</span></span>
+                    </div>
+                    <input
+                      type="range"
+                      min="30"
+                      max="80"
+                      value={cvPassThreshold}
+                      onChange={(e) => setCvPassThreshold(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-medium">
+                      <span>30 — Dễ tính</span>
+                      <span className="text-sky-600 font-bold">CV &lt; {cvPassThreshold}đ → Từ chối tự động</span>
+                      <span>80 — Khắt khe</span>
+                    </div>
+                  </div>
+
+                  {/* Fast Track Threshold — Chỉ hiện với FULL_AI */}
+                  {aiMode === "FULL_AI" && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                          <Zap className="w-4 h-4 text-violet-500" />
+                          Ngưỡng Fast Track (Mời PV ngay)
+                        </label>
+                        <span className="text-lg font-black text-violet-600">{fastTrackThreshold}<span className="text-sm font-bold text-slate-400">/100</span></span>
+                      </div>
+                      <input
+                        type="range"
+                        min={cvPassThreshold + 5}
+                        max="95"
+                        value={fastTrackThreshold}
+                        onChange={(e) => setFastTrackThreshold(Number(e.target.value))}
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-medium">
+                        <span>{cvPassThreshold + 5}</span>
+                        <span className="text-violet-600 font-bold">CV ≥ {fastTrackThreshold}đ → Mời PV AI ngay</span>
+                        <span>95</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Visual summary */}
+                  <div className="flex items-start gap-2 p-3 bg-white rounded-xl border border-slate-100 text-xs">
+                    <Bot className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1 text-slate-600">
+                      <p><span className="font-bold text-red-500">❌ Dưới {cvPassThreshold}đ</span> → Tự động từ chối, ứng viên nhận thông báo</p>
+                      {aiMode === "FULL_AI" ? (
+                        <>
+                          <p><span className="font-bold text-sky-500">📋 {cvPassThreshold}–{fastTrackThreshold - 1}đ</span> → Vào hàng chờ phỏng vấn AI</p>
+                          <p><span className="font-bold text-violet-500">⚡ {fastTrackThreshold}đ trở lên</span> → Fast Track — Mời phỏng vấn AI ngay lập tức</p>
+                        </>
+                      ) : (
+                        <p><span className="font-bold text-sky-500">✅ Từ {cvPassThreshold}đ</span> → HR xem xét và quyết định</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
 
             {/* Submit Action */}
             <motion.div variants={itemVariants} className="pt-8 mt-8 border-t border-slate-100">

@@ -6,6 +6,7 @@ import { ApplicationTracking } from "../pages/candidate/ApplicationTracking";
 import { Profile } from "../pages/candidate/Profile";
 import { CVReview } from "../pages/candidate/CVReview";
 import { InterviewPractice } from "../pages/candidate/InterviewPractice";
+import { AiJobInterview } from "../pages/candidate/AiJobInterview";
 import { Community } from "../pages/candidate/Community";
 import { WriteBlog } from "../pages/candidate/WriteBlog";
 import { BlogDetail } from "../pages/candidate/BlogDetail";
@@ -45,6 +46,10 @@ export const candidateRoutes = [
   { 
     path: "interview-practice", 
     element: <ProtectedRoute><InterviewPractice /></ProtectedRoute>
+  },
+  { 
+    path: "interview-ai/:jobId", 
+    element: <ProtectedRoute><AiJobInterview /></ProtectedRoute>
   },
   { 
     path: "community", 
