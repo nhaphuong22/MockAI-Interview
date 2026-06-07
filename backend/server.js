@@ -1,17 +1,12 @@
-<<<<<<< HEAD
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import http from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, '.env') });
-
-=======
-import 'dotenv/config'; // Load env variables immediately before any other module is resolved
-import http from 'http';
->>>>>>> 6c76fc9 (add apply job logic)
 import app from './src/app.js';
 import { setupSocket } from './src/socket.js';
 

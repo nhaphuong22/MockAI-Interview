@@ -9,12 +9,9 @@ import interviewRoutes from './interviewRoutes.js';
 import jobRoutes from './jobRoutes.js';
 import adminRoutes from './adminRoutes.js';
 import verificationRoutes from './verificationRoutes.js';
-<<<<<<< HEAD
 import paymentRoutes from './paymentRoutes.js';
-=======
 import applicationRoutes from './applicationRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
->>>>>>> 6c76fc9 (add apply job logic)
 
 const router = express.Router();
 
@@ -28,12 +25,9 @@ router.use('/interviews', interviewRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/admin', adminRoutes);
 router.use('/verification', verificationRoutes);
-<<<<<<< HEAD
 router.use('/payments', paymentRoutes);
-=======
 router.use('/applications', applicationRoutes);
 router.use('/notifications', notificationRoutes);
->>>>>>> 6c76fc9 (add apply job logic)
 router.use('/', systemRoutes);
 
 export default router;

@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { Bookmark } from "lucide-react";
-=======
-import { Bookmark, MapPin, DollarSign, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
->>>>>>> 6c76fc9 (add apply job logic)
 
 /**
  * JobDetailView Component
