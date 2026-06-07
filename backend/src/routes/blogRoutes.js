@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { createDraft, submitForReview, uploadCoverImage, getPublishedBlogs, getBlogById } from '../controllers/blogController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
 
 const router = express.Router();
 
@@ -128,7 +129,7 @@ router.put('/:id/submit', authenticateToken, submitForReview);
  *       200:
  *         description: Trả về danh sách bài viết.
  */
-router.get('/published', getPublishedBlogs);
+router.get('/published', cacheMiddleware('blogs:published', 1800), getPublishedBlogs);
 
 /**
  * @swagger
@@ -151,6 +152,6 @@ router.get('/published', getPublishedBlogs);
  *       404:
  *         description: Không tìm thấy bài viết.
  */
-router.get('/:id', getBlogById);
+router.get('/:id', cacheMiddleware('blogs:detail', 1800), getBlogById);
 
 export default router;

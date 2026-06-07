@@ -1,4 +1,5 @@
 import db from '../db/knex.js';
+import { deleteCache, deleteCachePattern } from '../config/redis.js';
 import { 
   insertJob, 
   insertJobRequirements 
@@ -55,6 +56,9 @@ export const createJob = async ({
 
       insertedRequirements = await insertJobRequirements(requirementsToInsert, trx);
     }
+
+    // Clear Jobs list cache
+    await deleteCachePattern('jobs:list:*');
 
     return {
       ...newJob,
@@ -206,6 +210,10 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
         .returning('*');
     }
 
+    // Clear cache list and detail of this job
+    await deleteCachePattern('jobs:list:*');
+    await deleteCache(`jobs:detail:${id}`);
+
     return {
       ...updatedJob,
       detailed_requirements: insertedRequirements
@@ -218,6 +226,13 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
  */
 export const deleteJobById = async (id) => {
   const deletedCount = await db('jobs').where({ id }).delete();
+  
+  if (deletedCount > 0) {
+    // Clear cache list and detail of this job
+    await deleteCachePattern('jobs:list:*');
+    await deleteCache(`jobs:detail:${id}`);
+  }
+
   return deletedCount > 0;
 };
 
@@ -256,6 +271,8 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
  * Cập nhật thông tin chi tiết của hồ sơ ứng tuyển
  */
 export const updateJobApplicationService = async (applicationId, updateData) => {
+  const application = await getApplicationDetailById(applicationId);
+
   const [updatedApplication] = await db('applications')
     .where({ id: applicationId })
     .update({
@@ -267,6 +284,11 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
       updated_at: new Date()
     })
     .returning('*');
+
+  if (application) {
+    // Clear HR applications list cache
+    await deleteCachePattern(`applications:hr:${application.job_hr_id}:*`);
+  }
 
   return updatedApplication;
 };

@@ -9,6 +9,7 @@ import interviewRoutes from './interviewRoutes.js';
 import jobRoutes from './jobRoutes.js';
 import adminRoutes from './adminRoutes.js';
 import verificationRoutes from './verificationRoutes.js';
+import paymentRoutes from './paymentRoutes.js';
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.use('/interviews', interviewRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/admin', adminRoutes);
 router.use('/verification', verificationRoutes);
+router.use('/payments', paymentRoutes);
 router.use('/', systemRoutes);
 
 export default router;

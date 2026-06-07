@@ -8,6 +8,7 @@ import {
   deleteUser 
 } from '../controllers/userController.js';
 import { requireAuth, requireAdmin } from '../middlewares/authMiddleware.js';
+import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ const router = express.Router();
  *     summary: Lấy danh sách người dùng kèm phân trang và bộ lọc (Admin)
  *     tags: [Users]
  */
-router.get('/', requireAuth, requireAdmin, getUsers);
+router.get('/', requireAuth, requireAdmin, cacheMiddleware('users:list', 1800), getUsers);
 
 /**
  * @swagger

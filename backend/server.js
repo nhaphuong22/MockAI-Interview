@@ -1,4 +1,12 @@
-import 'dotenv/config'; // Load env variables immediately before any other module is resolved
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 import app from './src/app.js';
 
 const PORT = process.env.PORT || 5000;
@@ -18,4 +26,4 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
 
-// Trigger nodemon restart after ghost process killed
+// Trigger nodemon restart after order info fix
