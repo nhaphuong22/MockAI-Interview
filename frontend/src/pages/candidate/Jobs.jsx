@@ -6,12 +6,27 @@ import { JobCard } from "./components/JobCard";
 import { JobDetailView } from "./components/JobDetailView";
 import { jobApi } from "../../api/jobApi";
 
+const formatTime = (timeStr) => {
+  if (!timeStr) return "Vừa xong";
+  const date = new Date(timeStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffMins < 60) return `${diffMins || 1} phút trước`;
+  if (diffHours < 24) return `${diffHours} giờ trước`;
+  if (diffDays < 30) return `${diffDays} ngày trước`;
+  return date.toLocaleDateString("vi-VN");
+};
+
 /**
  * Jobs Page
  * Manages job listings, filtering by various criteria, and viewing detailed descriptions.
  */
 export function Jobs() {
-  const [selectedJob, setSelectedJob] = useState(null);
+  const [selectedJobId, setSelectedJobId] = useState(null);
   const [bookmarked, setBookmarked] = useState([]);
   const [salaryRange, setSalaryRange] = useState([10, 50]);
   const [showFilters, setShowFilters] = useState(true);
@@ -67,7 +82,7 @@ export function Jobs() {
     experience: job.experience_level || "Không yêu cầu",
     tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
     aiMatch: job.aiMatch || (80 + (job.id % 16)), // Sử dụng phép toán Pure thay vì Math.random để qua kiểm tra Lint
-    posted: job.created_at ? new Date(job.created_at).toLocaleDateString("vi-VN") : "Gần đây",
+    posted: formatTime(job.created_at),
     applicants: job.applicants_count || 0,
     description: job.description,
     requirements: job.requirements,
@@ -79,8 +94,8 @@ export function Jobs() {
     return job.location.toLowerCase().includes(location.toLowerCase());
   });
 
-  // Tự động xác định Job đang được chọn (pure state logic, không sử dụng useEffect gây cascading render)
-  const activeJobId = selectedJob || (filteredJobs.length > 0 ? filteredJobs[0].id : null);
+  // Tự động xác định Job đang được chọn
+  const activeJobId = selectedJobId || (filteredJobs.length > 0 ? filteredJobs[0].id : null);
   const selectedJobData = filteredJobs.find((job) => job.id === activeJobId);
 
   const handleClearFilters = () => {
@@ -112,7 +127,7 @@ export function Jobs() {
               {!showFilters && (
                 <button
                   onClick={() => setShowFilters(true)}
-                  className="flex items-center gap-2 px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] transition-all font-semibold dark:text-slate-300 text-gray-700"
+                  className="flex items-center gap-2 px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] transition-all font-semibold dark:text-slate-300 text-gray-700 cursor-pointer"
                 >
                   <SlidersHorizontal className="w-5 h-5" />
                   <span>Bộ lọc</span>
@@ -120,7 +135,7 @@ export function Jobs() {
               )}
               <div>
                 <p className="text-sm dark:text-slate-400 text-gray-500">
-                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{filteredJobs.length}</span> công việc
+                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{isLoading ? "..." : filteredJobs.length}</span> công việc
                 </p>
               </div>
             </div>
@@ -169,7 +184,7 @@ export function Jobs() {
                     job={job}
                     isSelected={activeJobId === job.id}
                     isBookmarked={bookmarked.includes(job.id)}
-                    onSelect={() => setSelectedJob(job.id)}
+                    onSelect={() => setSelectedJobId(job.id)}
                     onToggleBookmark={toggleBookmark}
                   />
                 ))}
@@ -189,3 +204,5 @@ export function Jobs() {
     </div>
   );
 }
+
+export default Jobs;
