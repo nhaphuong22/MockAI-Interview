@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 1 (Luồng Ứng Tuyển & AI Chấm Điểm ATS)
 status: IN_PROGRESS
-last_updated: "2026-06-07T16:34:30.526Z"
+last_updated: "2026-06-07T16:36:15.662Z"
 progress:
   total_phases: 3
   completed_phases: 0
