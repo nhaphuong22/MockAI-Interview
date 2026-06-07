@@ -3,14 +3,10 @@ import {
   getJobsList,
   getJobDetailById,
   updateJobById,
-
   deleteJobById,
   getJobApplicationsService,
   updateJobApplicationService,
   getApplicationDetailById
-
-  deleteJobById
-
 } from '../services/jobService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
