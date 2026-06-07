@@ -1,13 +1,53 @@
-import { Link } from "react-router-dom";
-import { CheckCircle2, Download, Home, Sparkles, ArrowRight, Share2 } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { CheckCircle2, XCircle, Sparkles, ArrowRight, Share2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 
 export function PaymentSuccess() {
+  const [searchParams] = useSearchParams();
   const [showConfetti, setShowConfetti] = useState(true);
 
+  // Đọc thông tin kết quả thanh toán từ VNPAY
+  const vnpResponseCode = searchParams.get("vnp_ResponseCode");
+  const vnpTxnRef = searchParams.get("vnp_TxnRef");
+  const vnpAmount = searchParams.get("vnp_Amount");
+  
+  // Kiểm tra xem đây có phải là redirect từ cổng VNPAY hay không
+  const isFromVnpay = vnpResponseCode !== null;
+  // Thành công nếu không phải từ VNPAY (truy cập mock trực tiếp) hoặc mã phản hồi VNPAY là '00'
+  const isSuccess = !isFromVnpay || vnpResponseCode === "00";
+
+  // Định dạng hiển thị các thông tin giao dịch động
+  const transactionCode = vnpTxnRef || "#MAI-PRO-20260516";
+  
+  const rawAmount = vnpAmount ? parseFloat(vnpAmount) / 100 : 199000;
+  const displayAmount = rawAmount.toLocaleString("vi-VN") + " VNĐ";
+
+  // Xác định gói dịch vụ và các đặc quyền tương ứng từ số tiền
+  let planName = "Pro Member (Tháng)";
+  let vipDurationDays = 30;
+  let isRecruiterPlan = false;
+
+  if (rawAmount >= 9000000) {
+    planName = "Enterprise Plan (Năm)";
+    vipDurationDays = 365;
+    isRecruiterPlan = true;
+  } else if (rawAmount >= 1990000) {
+    planName = "Pro Member (Năm)";
+    vipDurationDays = 365;
+  } else if (rawAmount < 199000) {
+    // Fallback cho test số tiền nhỏ hoặc gói basic
+    planName = "Basic Member";
+    vipDurationDays = 30;
+  }
+
+  // Tính toán ngày hết hạn (ngày hiện tại + thời hạn gói)
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + vipDurationDays);
+  const displayExpiry = expiryDate.toLocaleDateString("vi-VN");
+
   useEffect(() => {
-    if (showConfetti) {
+    if (isSuccess && showConfetti) {
       const duration = 4000;
       const end = Date.now() + duration;
 
@@ -35,107 +75,210 @@ export function PaymentSuccess() {
       frame();
       setTimeout(() => setShowConfetti(false), duration);
     }
-  }, [showConfetti]);
+  }, [showConfetti, isSuccess]);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-gray-50 via-sky-50/30 to-white flex items-center justify-center p-6 md:p-12">
-      <div className="max-w-2xl w-full">
-        <div className="bg-white rounded-[40px] shadow-2xl p-10 md:p-16 text-center relative overflow-hidden border border-gray-100">
-          <div className="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8]"></div>
+    <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-gray-50 via-sky-50/20 to-white flex flex-col items-center justify-start py-8 md:py-16 px-4 md:px-8">
+      {/* Wrapper chính trải rộng ngang hiện đại */}
+      <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden relative animate-in fade-in slide-in-from-bottom-5 duration-700">
+        
+        {/* Viền màu trên cùng phân biệt trạng thái */}
+        <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${isSuccess ? 'from-[#0ea5e9] to-[#38bdf8]' : 'from-red-500 to-rose-600'}`}></div>
 
-          <div className="mb-10">
-            <div className="relative inline-block mb-8">
-              <div className="absolute inset-0 bg-green-100 rounded-full blur-2xl animate-pulse"></div>
-              <div className="relative z-10 inline-flex items-center justify-center w-28 h-28 bg-gradient-to-br from-green-400 to-green-600 rounded-full shadow-lg shadow-green-200 animate-in zoom-in duration-700">
-                <CheckCircle2 className="w-16 h-16 text-white" />
+        {/* Bố cục Split 2 cột: Cột trái thông điệp chính, cột phải chi tiết và quyền lợi */}
+        <div className="grid grid-cols-1 md:grid-cols-12 min-h-[500px]">
+          
+          {/* CỘT TRÁI: THÔNG ĐIỆP TRẠNG THÁI & NÚT BẤM */}
+          <div className={`col-span-1 md:col-span-5 p-8 md:p-12 flex flex-col items-center justify-center text-center relative border-b md:border-b-0 md:border-r border-gray-100 ${isSuccess ? 'bg-gradient-to-b from-sky-50/30 to-white' : 'bg-gradient-to-b from-red-50/10 to-white'}`}>
+            
+            {isSuccess ? (
+              <>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-green-100 rounded-full blur-xl animate-pulse"></div>
+                  <div className="relative z-10 inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-green-400 to-green-500 rounded-full shadow-lg shadow-green-200 animate-in zoom-in duration-500">
+                    <CheckCircle2 className="w-12 h-12 text-white" />
+                  </div>
+                </div>
+                
+                <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">Thanh toán thành công!</h1>
+                <p className="text-gray-500 text-sm md:text-base font-medium mb-8 leading-relaxed">
+                  Đặc quyền <span className="text-[#0ea5e9] font-bold">{isRecruiterPlan ? "MockAI Enterprise" : "MockAI Pro"}</span> của bạn đã sẵn sàng sử dụng.
+                </p>
+
+                {/* Các nút bấm CTA */}
+                <div className="w-full space-y-3">
+                  <Link
+                    to={isRecruiterPlan ? "/hr/dashboard" : "/interview-practice"}
+                    className="w-full py-3.5 bg-[#0ea5e9] text-white font-bold rounded-xl hover:bg-[#0284c7] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-md shadow-sky-100 cursor-pointer text-sm"
+                  >
+                    <span>Trải nghiệm ngay</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    to="/"
+                    className="w-full py-3.5 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 hover:-translate-y-0.5 transition-all flex items-center justify-center text-sm cursor-pointer"
+                  >
+                    <span>Về trang chủ</span>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-red-100 rounded-full blur-xl animate-pulse"></div>
+                  <div className="relative z-10 inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-red-400 to-rose-500 rounded-full shadow-lg shadow-rose-200 animate-in zoom-in duration-500">
+                    <XCircle className="w-12 h-12 text-white" />
+                  </div>
+                </div>
+                
+                <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">Thanh toán thất bại</h1>
+                <p className="text-gray-500 text-sm md:text-base font-medium mb-8 leading-relaxed">
+                  Giao dịch của bạn đã bị hủy hoặc gặp lỗi khi xử lý.
+                </p>
+
+                {/* Các nút bấm CTA */}
+                <div className="w-full space-y-3">
+                  <Link
+                    to="/payment"
+                    className="w-full py-3.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-md shadow-red-100 cursor-pointer text-sm"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Thử thanh toán lại</span>
+                  </Link>
+                  <Link
+                    to="/"
+                    className="w-full py-3.5 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 hover:-translate-y-0.5 transition-all flex items-center justify-center text-sm cursor-pointer"
+                  >
+                    <span>Về trang chủ</span>
+                  </Link>
+                </div>
+              </>
+            )}
+
+            {/* Footer của cột trái */}
+            <div className="mt-8 pt-6 border-t border-gray-100 w-full text-[10px] text-gray-400 text-center">
+              Mã giao dịch: <span className="font-mono font-semibold text-gray-600">{transactionCode}</span>
+            </div>
+          </div>
+
+          {/* CỘT PHẢI: CHI TIẾT HÓA ĐƠN & QUYỀN LỢI */}
+          <div className="col-span-1 md:col-span-7 p-8 md:p-12 flex flex-col justify-between bg-gray-50/30">
+            
+            <div className="space-y-6">
+              {/* Box Chi tiết hóa đơn */}
+              <div>
+                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 text-left">Thông tin hóa đơn</h3>
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-3">
+                  <div className="flex justify-between items-center text-xs pb-2.5 border-b border-gray-50">
+                    <span className="text-gray-400 font-medium">Mã đơn hàng VNPAY</span>
+                    <span className="font-mono font-bold text-gray-900 select-all">{transactionCode}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs pb-2.5 border-b border-gray-50">
+                    <span className="text-gray-400 font-medium">Gói dịch vụ</span>
+                    <span className="font-bold text-gray-950">{planName}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs pb-2.5 border-b border-gray-50">
+                    <span className="text-gray-400 font-medium">Tổng thanh toán</span>
+                    <span className="font-bold text-[#0ea5e9] text-sm font-mono">{displayAmount}</span>
+                  </div>
+                  {isSuccess && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-400 font-medium">Hạn sử dụng gói</span>
+                      <span className="font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                        {displayExpiry}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Box Quyền lợi kích hoạt (Chỉ hiển thị khi thành công) */}
+              {isSuccess && (
+                <div>
+                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 text-left">
+                    <Sparkles className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                    Đặc quyền {isRecruiterPlan ? "Doanh nghiệp" : "VIP"} đã kích hoạt
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {isRecruiterPlan ? (
+                      <>
+                        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex flex-col items-center text-center gap-1.5">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 font-bold text-2xs">HR</div>
+                          <div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">Đăng tin</div>
+                            <div className="text-xs font-bold text-gray-900">Vô hạn</div>
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex flex-col items-center text-center gap-1.5">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 font-bold text-2xs">CV</div>
+                          <div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">Tìm ứng viên</div>
+                            <div className="text-xs font-bold text-gray-900">AI Parser</div>
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex flex-col items-center text-center gap-1.5">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 font-bold text-2xs">SUP</div>
+                          <div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">Hỗ trợ</div>
+                            <div className="text-xs font-bold text-gray-900">24/7</div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex flex-col items-center text-center gap-1.5">
+                          <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center text-[#0ea5e9] font-bold text-2xs">AI</div>
+                          <div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">Phỏng vấn</div>
+                            <div className="text-xs font-bold text-gray-900">Vô hạn</div>
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex flex-col items-center text-center gap-1.5">
+                          <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center text-[#0ea5e9] font-bold text-2xs">CV</div>
+                          <div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">CV Builder</div>
+                            <div className="text-xs font-bold text-gray-900">Premium</div>
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex flex-col items-center text-center gap-1.5">
+                          <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center text-[#0ea5e9] font-bold text-2xs">HR</div>
+                          <div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">Hỗ trợ</div>
+                            <div className="text-xs font-bold text-gray-900">Ưu tiên</div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer thông tin liên hệ và chia sẻ */}
+            <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <p className="text-[11px] text-gray-400 text-center sm:text-left leading-relaxed">
+                Hóa đơn đã được xử lý tự động qua VNPAY. <br />
+                Cần hỗ trợ? Liên hệ <a href="mailto:support@mockai.vn" className="text-[#0ea5e9] font-bold hover:underline">support@mockai.vn</a>
+              </p>
+              
+              <div className="flex items-center gap-3">
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Chia sẻ:</span>
+                <div className="flex gap-2">
+                  <button className="p-2 bg-white rounded-lg border border-gray-100 shadow-sm hover:text-[#0ea5e9] hover:bg-gray-50 transition-all cursor-pointer">
+                    <Share2 className="w-3.5 h-3.5 text-gray-500" />
+                  </button>
+                  <button className="p-2 bg-white rounded-lg border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer">
+                    <div className="w-3.5 h-3.5 bg-[#0ea5e9] rounded-sm"></div>
+                  </button>
+                </div>
               </div>
             </div>
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Thanh toán thành công!</h1>
-            <p className="text-xl text-gray-500 font-medium">
-              Chào mừng bạn đến với đặc quyền <span className="text-[#0ea5e9] font-bold">MockAI Pro</span>
-            </p>
+
           </div>
 
-          <div className="bg-gray-50/50 rounded-3xl p-8 mb-10 border border-gray-100">
-            <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Chi tiết giao dịch</h2>
-            <div className="space-y-4 max-w-sm mx-auto text-sm">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                <span className="font-bold text-gray-400 uppercase text-[10px]">Mã đơn hàng</span>
-                <span className="font-bold text-[#0ea5e9]">#MAI-PRO-20260516</span>
-              </div>
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                <span className="font-bold text-gray-400 uppercase text-[10px]">Gói dịch vụ</span>
-                <span className="font-bold text-gray-900">Pro Member (Tháng)</span>
-              </div>
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                <span className="font-bold text-gray-400 uppercase text-[10px]">Tổng thanh toán</span>
-                <span className="font-bold text-gray-900">199.000 VNĐ</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-400 uppercase text-[10px]">Ngày hết hạn</span>
-                <span className="font-bold text-green-600">16/06/2026</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl p-8 mb-10 text-white shadow-xl shadow-sky-100 relative overflow-hidden group">
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <Sparkles className="w-5 h-5 text-yellow-300 fill-yellow-300" />
-              <h3 className="text-lg font-bold">Quyền lợi Pro đã kích hoạt</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                <div className="text-xs font-bold opacity-80 uppercase mb-1">AI Phỏng vấn</div>
-                <div className="text-sm font-bold">Vô hạn</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                <div className="text-xs font-bold opacity-80 uppercase mb-1">CV Builder</div>
-                <div className="text-sm font-bold">Premium</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                <div className="text-xs font-bold opacity-80 uppercase mb-1">Hỗ trợ</div>
-                <div className="text-sm font-bold">Ưu tiên</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
-            <Link
-              to="/profile"
-              className="px-10 py-4 bg-[#0ea5e9] text-white font-bold rounded-2xl hover:bg-[#0284c7] hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3 shadow-lg shadow-sky-100"
-            >
-              <span>Trải nghiệm ngay</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              to="/"
-              className="px-10 py-4 border border-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
-            >
-              <Home className="w-5 h-5" />
-              <span>Về trang chủ</span>
-            </Link>
-          </div>
-
-          <div className="pt-8 border-t border-gray-50">
-            <p className="text-sm text-gray-400 font-medium leading-relaxed">
-              Biên lai điện tử đã được gửi đến email của bạn. <br />
-              Cần hỗ trợ? Liên hệ <a href="mailto:support@mockai.vn" className="text-[#0ea5e9] font-bold hover:underline">support@mockai.vn</a>
-            </p>
-          </div>
         </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">Chia sẻ khoảnh khắc này</p>
-          <div className="flex gap-6 justify-center">
-            <button className="w-14 h-14 bg-white rounded-2xl shadow-xl shadow-gray-200/50 hover:shadow-sky-100 hover:-translate-y-1 transition-all flex items-center justify-center border border-gray-50">
-              <Share2 className="w-6 h-6 text-[#0ea5e9]" />
-            </button>
-            <button className="w-14 h-14 bg-white rounded-2xl shadow-xl shadow-gray-200/50 hover:shadow-sky-100 hover:-translate-y-1 transition-all flex items-center justify-center border border-gray-100">
-               <div className="w-6 h-6 bg-[#0ea5e9] rounded-sm"></div>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

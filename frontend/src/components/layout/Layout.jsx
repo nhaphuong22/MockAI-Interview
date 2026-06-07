@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon } from "lucide-react";
+import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon, Crown } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
@@ -150,6 +150,17 @@ export function Layout() {
             </div>
 
             <div className="flex items-center gap-4">
+              {!isUserAdmin && (
+                <ProtectedLink
+                  to="/payment"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-sky-50 to-white dark:from-slate-900/80 dark:to-slate-800/80 text-sky-700 dark:text-sky-400 border-sky-100 dark:border-sky-950 shadow-[0_2px_8px_rgba(14,165,233,0.08)] hover:shadow-[0_4px_12px_rgba(14,165,233,0.16)]"
+                >
+                  <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                  <span>
+                    {!isAuthenticated ? "Nâng cấp gói" : isUserRecruiter ? "Gói Business" : "Gói Free"}
+                  </span>
+                </ProtectedLink>
+              )}
               {isCandidate && (
                 <button 
                   onClick={toggleTheme}

@@ -1,8 +1,9 @@
-import { Check, X, CreditCard, Smartphone, ChevronDown } from "lucide-react";
+import { Check, X, ChevronDown, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import * as Switch from "@radix-ui/react-switch";
 import * as Accordion from "@radix-ui/react-accordion";
+import axiosClient from "../../api/axiosClient";
+import { useUiStore } from "../../store/useUiStore";
 
 const plans = [
   {
@@ -75,14 +76,39 @@ const faqs = [
 ];
 
 export function Payment() {
-  const navigate = useNavigate();
+  const { showToast } = useUiStore();
   const [isYearly, setIsYearly] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [loading, setLoading] = useState(false);
 
-  const handlePurchase = () => {
-    if (selectedPlan === "pro") {
-      navigate("/payment-success");
+  const handlePurchase = async (planId) => {
+    if (planId === "pro") {
+      setLoading(true);
+      try {
+        // ID 2: Gói Pro Tháng, ID 3: Gói Pro Năm
+        const packageId = isYearly ? 3 : 2;
+        
+        const response = await axiosClient.post("/payments/create-vnpay-url", {
+          packageId
+        });
+
+        if (response?.success && response?.paymentUrl) {
+          // Chuyển hướng người dùng sang VNPAY Sandbox
+          window.location.assign(response.paymentUrl);
+        } else {
+          showToast({
+            message: response?.message || "Không thể tạo liên kết thanh toán.",
+            type: "error"
+          });
+        }
+      } catch (error) {
+        console.error("Lỗi khởi tạo thanh toán VNPAY:", error);
+        showToast({
+          message: error.response?.data?.message || "Có lỗi xảy ra khi kết nối cổng thanh toán.",
+          type: "error"
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -173,134 +199,24 @@ export function Payment() {
               </ul>
 
               <button
-                onClick={() => {
-                  setSelectedPlan(plan.id);
-                  if (plan.id === "pro") {
-                    document.getElementById("checkout")?.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
-                disabled={plan.id === "free"}
-                className={`w-full py-4 rounded-2xl transition-all active:scale-[0.98] ${plan.ctaStyle}`}
+                onClick={() => handlePurchase(plan.id)}
+                disabled={plan.id === "free" || (plan.id === "pro" && loading)}
+                className={`w-full py-4 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${plan.ctaStyle}`}
               >
-                {plan.cta}
+                {plan.id === "pro" && loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Đang chuyển hướng...</span>
+                  </>
+                ) : (
+                  <span>{plan.cta}</span>
+                )}
               </button>
             </div>
           ))}
         </div>
 
-        {selectedPlan === "pro" && (
-          <div id="checkout" className="max-w-2xl mx-auto mb-20 scroll-mt-20">
-            <div className="bg-white rounded-3xl shadow-2xl p-8 border border-sky-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-8 flex items-center gap-3">
-                <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-sky-600" />
-                </div>
-                Thông tin thanh toán
-              </h2>
 
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">Phương thức</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setPaymentMethod("card")}
-                    className={`p-4 border-2 rounded-2xl transition-all text-center ${
-                      paymentMethod === "card"
-                        ? "border-[#0ea5e9] bg-sky-50 shadow-md"
-                        : "border-gray-50 hover:bg-gray-50"
-                    }`}
-                  >
-                    <CreditCard className={`w-6 h-6 mx-auto mb-2 ${paymentMethod === "card" ? "text-[#0ea5e9]" : "text-gray-300"}`} />
-                    <div className={`text-sm font-bold ${paymentMethod === "card" ? "text-sky-900" : "text-gray-600"}`}>Thẻ ngân hàng</div>
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod("qr")}
-                    className={`p-4 border-2 rounded-2xl transition-all text-center ${
-                      paymentMethod === "qr"
-                        ? "border-[#0ea5e9] bg-sky-50 shadow-md"
-                        : "border-gray-50 hover:bg-gray-50"
-                    }`}
-                  >
-                    <Smartphone className={`w-6 h-6 mx-auto mb-2 ${paymentMethod === "qr" ? "text-[#0ea5e9]" : "text-gray-300"}`} />
-                    <div className={`text-sm font-bold ${paymentMethod === "qr" ? "text-sky-900" : "text-gray-600"}`}>Ví điện tử / QR</div>
-                  </button>
-                </div>
-              </div>
-
-              {paymentMethod === "card" && (
-                <div className="space-y-4 mb-8">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Số thẻ</label>
-                    <input
-                      type="text"
-                      placeholder="xxxx xxxx xxxx xxxx"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:bg-white focus:outline-none transition-all"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Hạn dùng</label>
-                      <input
-                        type="text"
-                        placeholder="MM/YY"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:bg-white focus:outline-none transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">CVC/CVV</label>
-                      <input
-                        type="text"
-                        placeholder="123"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:bg-white focus:outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {paymentMethod === "qr" && (
-                <div className="mb-8 p-8 bg-gray-50 rounded-2xl text-center border-2 border-dashed border-gray-200">
-                  <div className="w-32 h-32 mx-auto bg-white p-2 rounded-xl shadow-sm mb-4">
-                    <div className="w-full h-full bg-sky-50 flex items-center justify-center text-sky-200">
-                      <Smartphone className="w-12 h-12" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-bold text-gray-700">Quét mã bằng ứng dụng Ngân hàng</p>
-                  <p className="text-xs text-gray-500 mt-1">Hỗ trợ VNPay, MoMo, ZaloPay</p>
-                </div>
-              )}
-
-              <div className="bg-sky-50 rounded-2xl p-6 mb-8 border border-sky-100">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-700 font-medium">Gói PRO ({isYearly ? "12 tháng" : "1 tháng"})</span>
-                  <span className="font-bold text-gray-900">
-                    {isYearly ? "1,990,000đ" : "199,000đ"}
-                  </span>
-                </div>
-                {isYearly && (
-                  <div className="flex items-center justify-between text-sm text-green-600 font-bold mb-3">
-                    <span>Ưu đãi thanh toán năm (-17%)</span>
-                    <span>-398,000đ</span>
-                  </div>
-                )}
-                <div className="border-t border-sky-200 pt-4 mt-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-gray-900">Tổng thanh toán</span>
-                    <span className="text-2xl font-bold text-[#0ea5e9]">
-                      {isYearly ? "1,990,000đ" : "199,000đ"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={handlePurchase}
-                className="w-full py-4 bg-[#0ea5e9] text-white font-bold rounded-2xl text-lg hover:bg-[#0284c7] hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-sky-100"
-              >
-                Xác nhận thanh toán
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-8 uppercase tracking-widest">Hỗ trợ giải đáp</h2>
