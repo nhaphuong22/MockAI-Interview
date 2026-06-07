@@ -23,6 +23,11 @@ requirements:
   - APPLY-03
   - APPLY-04
   - NOTI-01
+decisions_addressed:
+  - D-01
+  - D-02
+  - D-03
+  - D-04
 ---
 
 # Plan: Luồng Ứng Tuyển & AI Chấm Điểm ATS
@@ -31,10 +36,10 @@ requirements:
 Hoàn thiện luồng ứng tuyển CV của ứng viên (Candidate), tích hợp AI parse PDF & chấm điểm ATS tự động, gửi email thông báo kèm PDF đánh giá, hiển thị điểm số trên trang cá nhân của ứng viên và bảo vệ các trang nội bộ bằng Custom Toast Auth Gate.
 
 ## Must Haves
-- Ứng viên chưa đăng nhập chỉ được xem Landing Page; cố truy cập trang khác phải bị chặn, hiển thị Custom Toast (z-index 9999, biến mất sau 4 giây, không tự mở Auth Modal).
-- Chấm điểm ATS CV dựa trên JD công việc ngay khi nộp đơn, lưu kết quả chấm điểm (overall score, strengths, weaknesses, improvements) và tệp PDF báo cáo lên Cloudinary.
-- Gửi email xác nhận tự động đính kèm file PDF đánh giá CV cho cả Candidate và HR.
-- Hiển thị kết quả ATS chi tiết chia làm 3 tab trên trang cá nhân của Candidate.
+- Ứng viên chưa đăng nhập chỉ được xem Landing Page; cố truy cập trang khác phải bị chặn, hiển thị Custom Toast (z-index 9999, biến mất sau 4 giây, không tự mở Auth Modal) [D-04].
+- Chấm điểm ATS CV dựa trên JD công việc ngay khi nộp đơn, lưu kết quả chấm điểm (overall score, strengths, weaknesses, improvements) và tệp PDF báo cáo lên Cloudinary [D-03].
+- Gửi email xác nhận tự động đính kèm file PDF đánh giá CV cho cả Candidate và HR [D-02].
+- Hiển thị kết quả ATS chi tiết chia làm 3 tab trên trang cá nhân của Candidate [D-01].
 
 ## Tasks
 
@@ -46,7 +51,7 @@ Hoàn thiện luồng ứng tuyển CV của ứng viên (Candidate), tích hợ
 </read_first>
 <action>
 - Tạo hoặc cập nhật `frontend/src/store/useUiStore.js` để quản lý danh sách Toast: thêm trạng thái `toasts: []` và các hàm `addToast(message, type)`, `removeToast(id)`.
-- Tạo component `frontend/src/components/shared/CustomToast.jsx` sử dụng `framer-motion` và Tailwind CSS. Thiết kế dạng Glassmorphism, màu sắc chủ đạo Ocean Blue (`#0ea5e9`), cố định `z-[9999]`, hỗ trợ tự động xóa toast sau 4 giây ( countdown timer chạy mờ dưới đáy toast).
+- Tạo component `frontend/src/components/shared/CustomToast.jsx` sử dụng `framer-motion` và Tailwind CSS. Thiết kế dạng Glassmorphism, màu sắc chủ đạo Ocean Blue (`#0ea5e9`), cố định `z-[9999]`, hỗ trợ tự động xóa toast sau 4 giây (countdown timer chạy mờ dưới đáy toast) [D-04].
 - Bọc `ToastContainer` hoặc component Toast tương đương vào root component trong `frontend/src/App.jsx` hoặc layout chung.
 </action>
 <acceptance_criteria>
@@ -66,7 +71,7 @@ Hoàn thiện luồng ứng tuyển CV của ứng viên (Candidate), tích hợ
 - Cập nhật cơ chế Route Guard (ví dụ bọc các candidate/recruiter routes trong `<ProtectedRoute>`).
 - Khi người dùng chưa đăng nhập (`!isAuthenticated`) cố click vào các link nội bộ (như Jobs, Profile, v.v.):
   1. Chặn hành động chuyển trang (`e.preventDefault()` hoặc redirect).
-  2. Kích hoạt gọi `addToast("Yêu cầu đăng nhập để dùng được tính năng này", "warning")` thông qua `useUiStore`.
+  2. Kích hoạt gọi `addToast("Yêu cầu đăng nhập để dùng được tính năng này", "warning")` thông qua `useUiStore` [D-04].
   3. KHÔNG tự động kích hoạt hiển thị Modal Auth (giữ trạng thái đóng).
 </action>
 <acceptance_criteria>
@@ -102,9 +107,9 @@ Hoàn thiện luồng ứng tuyển CV của ứng viên (Candidate), tích hợ
   1. Nhận tệp CV PDF tải lên qua Multer.
   2. Parse tệp PDF thành text thô bằng `pdf-parse`.
   3. Gọi `evaluateCV(cvText, jobJD)` để nhận kết quả đánh giá (ATS score, strengths, weaknesses, improvements).
-  4. Tạo tệp PDF báo cáo đánh giá chi tiết bằng `pdfkit` (tông màu Ocean Blue, font chữ Unicode tiếng Việt).
-  5. Upload tệp PDF vừa tạo lên Cloudinary dưới dạng raw resource.
-  6. Ghi record vào database: bảng `cvs` lưu `ats_score`, `ai_feedback`, `file_url` (tệp CV), và `pdf_report_url` (URL báo cáo đánh giá trên Cloudinary).
+  4. Tạo tệp PDF báo cáo đánh giá chi tiết bằng `pdfkit` (tông màu Ocean Blue, font chữ Unicode tiếng Việt) [D-03].
+  5. Upload tệp PDF vừa tạo lên Cloudinary dưới dạng raw resource [D-03].
+  6. Ghi record vào database: bảng `cvs` lưu `ats_score`, `ai_feedback`, `file_url` (tệp CV), và `pdf_report_url` (URL báo cáo đánh giá trên Cloudinary) [D-03].
 </action>
 <acceptance_criteria>
 - API `POST /api/applications/apply/:jobId` tiếp nhận file PDF, trả về JSON chứa điểm số và nhận xét chi tiết của AI.
@@ -120,7 +125,7 @@ Hoàn thiện luồng ứng tuyển CV của ứng viên (Candidate), tích hợ
 - `backend/src/socket.js`
 </read_first>
 <action>
-- Cập nhật `backend/src/services/emailService.js` (hàm `sendJobApplicationEmail`): Cấu hình gửi mail thông qua SMTP, sử dụng `nodemailer` đính kèm file PDF đánh giá lấy từ Cloudinary (hoặc buffer trực tiếp) gửi cho Candidate và HR.
+- Cập nhật `backend/src/services/emailService.js` (hàm `sendJobApplicationEmail`): Cấu hình gửi mail thông qua SMTP, sử dụng `nodemailer` đính kèm file PDF đánh giá lấy từ Cloudinary (hoặc buffer trực tiếp) gửi cho Candidate và HR [D-02].
 - Gọi hàm gửi email trong controller sau khi hoàn tất lưu dữ liệu.
 - Gọi `broadcastNewApplication` trong `backend/src/socket.js` để đẩy event Socket.io cho HR Dashboard.
 </action>
@@ -140,9 +145,9 @@ Hoàn thiện luồng ứng tuyển CV của ứng viên (Candidate), tích hợ
 <action>
 - Xây dựng `ApplyJobModal.jsx` sử dụng `react-dropzone` kéo thả tệp PDF. Hiển thị màn hình chờ mượt mà khi backend đang xử lý chấm điểm.
 - Xây dựng `AtsReportDashboard.jsx` hiển thị kết quả ATS Score trên trang cá nhân của ứng viên. Thiết kế 3 tab:
-  - Tab 1: Tổng quan ATS (Circular Progress Bar màu Ocean Blue).
-  - Tab 2: Điểm mạnh & Điểm yếu.
-  - Tab 3: Khuyến nghị AI để cải thiện CV.
+  - Tab 1: Tổng quan ATS (Circular Progress Bar màu Ocean Blue) [D-01].
+  - Tab 2: Điểm mạnh & Điểm yếu [D-01].
+  - Tab 3: Khuyến nghị AI để cải thiện CV [D-01].
   - Nút Tải báo cáo PDF tải trực tiếp từ URL Cloudinary lưu trong database.
 </action>
 <acceptance_criteria>
