@@ -5,7 +5,9 @@ import {
   getJobs,
   getJobById,
   updateJob,
-  deleteJob
+  deleteJob,
+  getJobApplications,
+  updateJobApplication
 } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 
@@ -257,6 +259,133 @@ const router = express.Router();
  *         description: Không có quyền truy cập.
  *       404:
  *         description: Không tìm thấy tin.
+ */
+
+
+// Route khai báo
+router.post('/', authenticateToken, requireRole(['HR', 'ADMIN']), createNewJob);
+router.get('/', getJobs);
+router.get('/applications', authenticateToken, requireRole(['HR', 'ADMIN']), getJobApplications);
+router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJobApplication);
+
+/**
+ * @swagger
+ * /api/jobs/{id}:
+ *   get:
+ *     summary: Lấy chi tiết một tin tuyển dụng kèm yêu cầu chi tiết
+ *     description: Xem chi tiết công việc và các yêu cầu để chuẩn bị ứng tuyển hoặc chấm điểm.
+ *     tags:
+ *       - Jobs
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của Job
+ *     responses:
+ *       200:
+ *         description: Thành công.
+ *       404:
+ *         description: Không tìm thấy tin tuyển dụng.
+ *       500:
+ *         description: Lỗi hệ thống.
+ * 
+ *   put:
+ *     summary: Cập nhật thông tin tin tuyển dụng
+ *     description: Cho phép HR (chủ sở hữu) hoặc Admin chỉnh sửa tin tuyển dụng và yêu cầu chi tiết.
+ *     tags:
+ *       - Jobs
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của Job cần cập nhật
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               requirements:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [OPEN, CLOSED]
+ *               experience_level:
+ *                 type: string
+ *               salary_min:
+ *                 type: number
+ *               salary_max:
+ *                 type: number
+ *               salary_currency:
+ *                 type: string
+ *               is_salary_visible:
+ *                 type: boolean
+ *               vacancy_count:
+ *                 type: number
+ *               deadline:
+ *                 type: string
+ *                 format: date-time
+ *               detailed_requirements:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - requirement_text
+ *                   properties:
+ *                     requirement_text:
+ *                       type: string
+ *                     is_mandatory:
+ *                       type: boolean
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công.
+ *       400:
+ *         description: Lỗi dữ liệu đầu vào.
+ *       401:
+ *         description: Chưa đăng nhập.
+ *       403:
+ *         description: Không có quyền truy cập.
+ *       404:
+ *         description: Không tìm thấy tin.
+ *       500:
+ *         description: Lỗi hệ thống.
+ * 
+ *   delete:
+ *     summary: Xóa một tin tuyển dụng
+ *     description: Cho phép HR (chủ sở hữu) hoặc Admin xóa hoàn toàn tin tuyển dụng và các yêu cầu chi tiết của nó.
+ *     tags:
+ *       - Jobs
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của Job cần xóa
+ *     responses:
+ *       200:
+ *         description: Xóa thành công.
+ *       401:
+ *         description: Chưa đăng nhập.
+ *       403:
+ *         description: Không có quyền truy cập.
+ *       404:
+ *         description: Không tìm thấy tin.
  *       500:
  *         description: Lỗi hệ thống.
  */
@@ -264,6 +393,7 @@ const router = express.Router();
 // Route khai báo
 router.post('/', authenticateToken, requireRole(['HR', 'ADMIN']), createNewJob);
 router.get('/', getJobs);
+
 router.get('/:id', getJobById);
 router.put('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJob);
 router.delete('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), deleteJob);

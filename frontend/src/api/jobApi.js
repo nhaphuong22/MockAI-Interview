@@ -40,5 +40,25 @@ export const jobApi = {
    */
   deleteJob: (id) => {
     return axiosClient.delete(`/jobs/${id}`);
+
+  },
+
+  /**
+   * Lấy danh sách hồ sơ ứng tuyển của HR
+   * @param {object} params - Bộ lọc (job_id, status)
+   */
+  getJobApplications: (params) => {
+    return axiosClient.get("/jobs/applications", { params });
+  },
+
+  /**
+   * Cập nhật trạng thái duyệt, nhãn và ghi chú của hồ sơ
+   * @param {number|string} id - ID của hồ sơ ứng tuyển
+   * @param {object} data - Dữ liệu (status, hr_tag, hr_notes)
+   */
+  updateJobApplication: (id, data) => {
+    return axiosClient.put(`/jobs/applications/${id}`, data);
+
+
   }
 };

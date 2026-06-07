@@ -7,9 +7,13 @@ import { jobApi } from "../../api/jobApi";
 import axiosClient from "../../api/axiosClient";
 import { VerifyCompany } from "./components/VerifyCompany";
 
+
 export function PostJob() {
   const navigate = useNavigate();
   
+
+  // 1. Quản lý State cho các trường thông tin cơ bản
+
   // Verification State
   const [verificationStatus, setVerificationStatus] = useState('UNVERIFIED');
 
@@ -28,6 +32,7 @@ export function PostJob() {
     }
   }, [verifyData]);
 
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -41,9 +46,16 @@ export function PostJob() {
     deadline: ""
   });
 
+
+  // 2. Quản lý State cho danh sách yêu cầu chi tiết (động)
+
+
   const [detailedRequirements, setDetailedRequirements] = useState([
     { requirement_text: "", is_mandatory: true }
   ]);
+
+
+  // Handler cập nhật form cơ bản
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -53,6 +65,10 @@ export function PostJob() {
     }));
   };
 
+
+  // Handler thêm dòng yêu cầu chi tiết
+
+
   const handleAddRequirement = () => {
     setDetailedRequirements((prev) => [
       ...prev,
@@ -60,10 +76,18 @@ export function PostJob() {
     ]);
   };
 
+
+  // Handler xóa dòng yêu cầu chi tiết
+
+
   const handleRemoveRequirement = (index) => {
     if (detailedRequirements.length === 1) return;
     setDetailedRequirements((prev) => prev.filter((_, i) => i !== index));
   };
+
+
+  // Handler cập nhật giá trị yêu cầu chi tiết
+
 
   const handleRequirementChange = (index, field, value) => {
     setDetailedRequirements((prev) => {
@@ -75,6 +99,9 @@ export function PostJob() {
       return newList;
     });
   };
+
+
+
 
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
@@ -138,12 +165,16 @@ export function PostJob() {
       opacity: 1, 
       y: 0,
       transition: { duration: 0.5, staggerChildren: 0.1 }
+
     }
   };
+
+
 
   const itemVariants = {
     hidden: { opacity: 0, y: 15 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+
   };
 
   if (verifyLoading) {
@@ -159,6 +190,8 @@ export function PostJob() {
   }
 
   return (
+
+
     <div className="bg-slate-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8 font-inter relative">
       
       {/* Toast Notification */}
@@ -230,16 +263,19 @@ export function PostJob() {
                   <label className="block text-sm font-bold text-slate-700 mb-2">
                     Tiêu đề công việc <span className="text-rose-500">*</span>
                   </label>
+
                   <input
                     type="text"
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 focus:bg-white outline-none transition-all duration-200 text-slate-700 font-medium placeholder-slate-400"
-                    placeholder="VD: Senior React Developer"
+
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#0ea5e9] focus:outline-none transition-colors"
+                    placeholder="VD: Senior Frontend Developer (ReactJS)"
                     required
                   />
                 </div>
+
 
                 <div className="group">
                   <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
@@ -320,22 +356,22 @@ export function PostJob() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 focus:bg-white outline-none transition-all duration-200 text-slate-700 font-medium"
                   />
-                </div>
 
-                <div className="flex items-center gap-3 pt-9">
-                  <label className="flex items-center gap-3 cursor-pointer group-hover:opacity-80 transition-opacity">
-                    <div className="relative flex items-center">
-                      <input
-                        type="checkbox"
-                        name="isSalaryVisible"
-                        checked={formData.isSalaryVisible}
-                        onChange={handleInputChange}
-                        className="peer sr-only"
-                      />
-                      <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
-                    </div>
-                    <span className="text-sm font-bold text-slate-700">Công khai mức lương</span>
-                  </label>
+                  <div className="flex items-center gap-3 pt-9">
+                    <label className="flex items-center gap-3 cursor-pointer group-hover:opacity-80 transition-opacity">
+                      <div className="relative flex items-center">
+                        <input
+                          type="checkbox"
+                          name="isSalaryVisible"
+                          checked={formData.isSalaryVisible}
+                          onChange={handleInputChange}
+                          className="peer sr-only"
+                        />
+                        <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                      </div>
+                      <span className="text-sm font-bold text-slate-700">Công khai mức lương</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -460,8 +496,12 @@ export function PostJob() {
                     </motion.div>
                   ))}
                 </AnimatePresence>
+
               </div>
             </motion.div>
+
+
+
 
             {/* Submit Action */}
             <motion.div variants={itemVariants} className="pt-8 mt-8 border-t border-slate-100">
@@ -491,6 +531,7 @@ export function PostJob() {
                 Bằng việc đăng tin, bạn đồng ý với các điều khoản tuyển dụng của chúng tôi.
               </p>
             </motion.div>
+
 
           </form>
         </motion.div>

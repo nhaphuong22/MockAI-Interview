@@ -220,3 +220,65 @@ export const deleteJobById = async (id) => {
   const deletedCount = await db('jobs').where({ id }).delete();
   return deletedCount > 0;
 };
+
+
+/**
+ * Lấy danh sách hồ sơ ứng tuyển nộp vào các job thuộc sở hữu của HR
+ */
+export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
+  const query = db('applications')
+    .select(
+      'applications.*',
+      'users.full_name as candidate_name',
+      'users.email as candidate_email',
+      'users.phone as candidate_phone',
+      'users.avatar_url as candidate_avatar',
+      'jobs.title as job_title',
+      'cvs.file_url as cv_file_url'
+    )
+    .join('users', 'applications.candidate_id', 'users.id')
+    .join('jobs', 'applications.job_id', 'jobs.id')
+    .leftJoin('cvs', 'applications.cv_id', 'cvs.id')
+    .where('jobs.hr_id', hrId);
+
+  if (jobId) {
+    query.where('applications.job_id', jobId);
+  }
+  
+  if (status) {
+    query.where('applications.status', status);
+  }
+
+  return await query.orderBy('applications.created_at', 'desc');
+};
+
+/**
+ * Cập nhật thông tin chi tiết của hồ sơ ứng tuyển
+ */
+export const updateJobApplicationService = async (applicationId, updateData) => {
+  const [updatedApplication] = await db('applications')
+    .where({ id: applicationId })
+    .update({
+      status: updateData.status,
+      hr_tag: updateData.hrTag,
+      hr_notes: updateData.hrNotes,
+      reviewed_by: updateData.reviewedBy,
+      reviewed_at: new Date(),
+      updated_at: new Date()
+    })
+    .returning('*');
+
+  return updatedApplication;
+};
+
+/**
+ * Lấy chi tiết hồ sơ ứng tuyển và tin tuyển dụng tương ứng (dùng để check quyền)
+ */
+export const getApplicationDetailById = async (applicationId) => {
+  return await db('applications')
+    .select('applications.*', 'jobs.hr_id as job_hr_id')
+    .join('jobs', 'applications.job_id', 'jobs.id')
+    .where('applications.id', applicationId)
+    .first();
+};
+

@@ -5,7 +5,12 @@
  * @returns { Promise<void> } 
  */
 export async function seed(knex) {
+
+  // Clear existing voice sessions, assessments, and messages that depend on interviews
+  await knex('applications').del();
+
   // Clear existing voice sessions and assessments that depend on interviews
+
   await knex('voice_sessions').del();
   await knex('assessments').del();
   
@@ -27,15 +32,35 @@ export async function seed(knex) {
     }
   ]);
 
-  // Insert sample Interview (PRACTICE)
+  // Insert sample Interview (REAL/PRACTICE)
   await knex('interviews').insert([
     {
       id: 1,
       user_id: 2,
       cv_id: 1,
       job_id: 1, // Frontend Developer (React)
-      type: 'PRACTICE',
-      status: 'PENDING',
+      type: 'REAL',
+      status: 'COMPLETED',
+      created_at: new Date(),
+      updated_at: new Date()
+    }
+  ]);
+
+  // Insert sample Application
+  await knex('applications').insert([
+    {
+      id: 1,
+      candidate_id: 2, // 'user@mockai.com'
+      job_id: 1, // Frontend Developer (React)
+      cv_id: 1,
+      interview_id: 1,
+      status: 'AI_REVIEWED',
+      cv_score: 85,
+      interview_score: 78,
+      total_score: 82,
+      ai_summary: 'Ứng viên có kỹ năng React vững vàng, giao tiếp mạch lạc thông qua hội thoại thử nghiệm. Khuyên dùng: Hẹn gặp phỏng vấn trực tiếp.',
+      hr_tag: 'POTENTIAL',
+      hr_notes: 'Hồ sơ tiềm năng, CV đạt yêu cầu cơ bản và trả lời phỏng vấn AI ở mức Khá.',
       created_at: new Date(),
       updated_at: new Date()
     }
@@ -44,5 +69,6 @@ export async function seed(knex) {
   // Reset sequences to prevent duplicate key errors in auto-increment
   await knex.raw("SELECT setval('cvs_id_seq', (SELECT MAX(id) FROM cvs))");
   await knex.raw("SELECT setval('interviews_id_seq', (SELECT MAX(id) FROM interviews))");
+  await knex.raw("SELECT setval('applications_id_seq', (SELECT MAX(id) FROM applications))");
 };
 

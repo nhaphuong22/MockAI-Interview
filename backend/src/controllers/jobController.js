@@ -3,7 +3,10 @@ import {
   getJobsList,
   getJobDetailById,
   updateJobById,
-  deleteJobById
+  deleteJobById,
+  getJobApplicationsService,
+  updateJobApplicationService,
+  getApplicationDetailById
 } from '../services/jobService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
@@ -66,6 +69,10 @@ export const createNewJob = async (req, res) => {
         return sendError(res, 400, 'Số lượng tuyển dụng (vacancy_count) phải là số nguyên lớn hơn 0.');
       }
     }
+
+
+
+
 
     // 3. Kiểm tra validation cho detailed_requirements nếu có
     if (detailed_requirements !== undefined) {
@@ -297,3 +304,86 @@ export const deleteJob = async (req, res) => {
     return sendError(res, 500, 'Lỗi hệ thống khi xóa tin tuyển dụng.');
   }
 };
+
+
+/**
+ * Lấy danh sách hồ sơ ứng tuyển của HR
+ */
+export const getJobApplications = async (req, res) => {
+  try {
+    const hrId = req.user.id;
+    const { job_id, status } = req.query;
+
+    const parsedJobId = job_id ? parseInt(job_id) : null;
+    if (job_id && isNaN(parsedJobId)) {
+      return sendError(res, 400, 'ID công việc không hợp lệ.');
+    }
+
+    const applications = await getJobApplicationsService({
+      hrId,
+      jobId: parsedJobId,
+      status
+    });
+
+    return sendResponse(res, 200, applications);
+  } catch (error) {
+    console.error('Lỗi trong jobController.getJobApplications:', error);
+    return sendError(res, 500, 'Lỗi hệ thống khi lấy danh sách hồ sơ ứng tuyển.');
+  }
+};
+
+/**
+ * Cập nhật trạng thái duyệt/nhãn/ghi chú của hồ sơ ứng tuyển
+ */
+export const updateJobApplication = async (req, res) => {
+  try {
+    const applicationId = parseInt(req.params.id);
+    if (isNaN(applicationId)) {
+      return sendError(res, 400, 'ID hồ sơ ứng tuyển không hợp lệ.');
+    }
+
+    const { status, hr_tag, hr_notes } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role?.toUpperCase();
+
+    // 1. Kiểm tra sự tồn tại của hồ sơ
+    const application = await getApplicationDetailById(applicationId);
+    if (!application) {
+      return sendError(res, 404, 'Không tìm thấy hồ sơ ứng tuyển.');
+    }
+
+    // 2. Kiểm tra quyền sở hữu của HR tương ứng hoặc Admin
+    if (application.job_hr_id !== userId && userRole !== 'ADMIN') {
+      return sendError(res, 403, 'Bạn không có quyền chỉnh sửa hồ sơ ứng tuyển này.');
+    }
+
+    // 3. Validation cho status nếu có
+    const VALID_STATUSES = [
+      'SUBMITTED', 
+      'AI_INTERVIEW', 
+      'AI_REVIEWED', 
+      'HR_REVIEWING', 
+      'SHORTLISTED', 
+      'INTERVIEW_SCHEDULED', 
+      'HIRED', 
+      'REJECTED'
+    ];
+    if (status && !VALID_STATUSES.includes(status.toUpperCase())) {
+      return sendError(res, 400, 'Trạng thái ứng tuyển không hợp lệ.');
+    }
+
+    const result = await updateJobApplicationService(applicationId, {
+      status: status ? status.toUpperCase() : application.status,
+      hrTag: hr_tag !== undefined ? hr_tag : application.hr_tag,
+      hrNotes: hr_notes !== undefined ? hr_notes : application.hr_notes,
+      reviewedBy: userId
+    });
+
+    return sendResponse(res, 200, result, 'Cập nhật hồ sơ ứng tuyển thành công.');
+  } catch (error) {
+    console.error('Lỗi trong jobController.updateJobApplication:', error);
+    return sendError(res, 500, 'Lỗi hệ thống khi cập nhật hồ sơ ứng tuyển.');
+  }
+};
+
+
