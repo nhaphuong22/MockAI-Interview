@@ -12,9 +12,9 @@ const uploadToCloudinary = (fileBuffer, originalName) => {
     const cleanName = path.parse(originalName).name.replace(/[^a-zA-Z0-9_]/g, '_');
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        resource_type: 'raw',
+        resource_type: 'image',
         folder: 'cvs',
-        public_id: `${Date.now()}-${cleanName}.pdf`
+        public_id: `${Date.now()}-${cleanName}`
       },
       (error, result) => {
         if (error) return reject(error);

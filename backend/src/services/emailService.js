@@ -211,3 +211,67 @@ export const sendJobApplicationEmail = async (toEmail, hrName, candidateName, jo
     `,
   });
 };
+
+/**
+ * Gửi email báo cáo đánh giá CV kèm đính kèm tệp PDF cho Candidate hoặc HR
+ * @param {string} toEmail - Email nhận
+ * @param {string} recipientName - Tên người nhận
+ * @param {string} candidateName - Tên Ứng viên
+ * @param {string} jobTitle - Tiêu đề công việc
+ * @param {number} cvScore - Điểm số đánh giá
+ * @param {string} pdfReportUrl - URL tệp PDF báo cáo trên Cloudinary
+ * @param {boolean} isHr - Gửi cho HR hay Candidate
+ */
+export const sendApplicationReportEmail = async (toEmail, recipientName, candidateName, jobTitle, cvScore, pdfReportUrl, isHr = false, pdfBuffer = null) => {
+  const cleanName = candidateName.replace(/[^a-zA-Z0-9_]/g, '_');
+  const subject = isHr
+    ? `[${APP_NAME}] Báo cáo ATS CV: Ứng viên ${candidateName} - vị trí ${jobTitle}`
+    : `[${APP_NAME}] Xác nhận nộp đơn và Báo cáo đánh giá CV - Vị trí ${jobTitle}`;
+
+  const greeting = `Chào ${recipientName},`;
+  const introText = isHr
+    ? `Hệ thống gửi đến bạn tệp PDF báo cáo đánh giá CV chi tiết của ứng viên <strong>${candidateName}</strong> ứng tuyển vào vị trí <strong>${jobTitle}</strong>.`
+    : `Cảm ơn bạn đã nộp đơn ứng tuyển vào vị trí <strong>${jobTitle}</strong>. Dưới đây là kết quả đánh giá CV sơ bộ bằng công nghệ AI của hệ thống.`;
+
+  await sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: subject,
+    text: `${greeting}\n\n${isHr ? `Hồ sơ mới của ${candidateName} nộp vào vị trí ${jobTitle}` : `Đơn ứng tuyển của bạn vào vị trí ${jobTitle} đã được ghi nhận`}.\nĐiểm đánh giá CV của AI: ${cvScore}/100.\nTệp PDF báo cáo chi tiết được đính kèm trong thư này.\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="background: #0ea5e9; display: inline-block; padding: 12px 20px; border-radius: 12px; margin-bottom: 16px;">
+            <span style="color: white; font-size: 20px; font-weight: 800;">${APP_NAME}</span>
+          </div>
+          <h1 style="color: #0f172a; font-size: 20px; margin: 0;">Báo Cáo Đánh Giá ATS CV</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(14,165,233,0.07);">
+          <p style="color: #334155; margin-top: 0; font-size: 15px;">${greeting}</p>
+          <p style="color: #64748b; line-height: 1.6;">${introText}</p>
+          
+          <div style="margin: 24px 0; padding: 20px; background: #f0f9ff; border-radius: 12px; border-left: 4px solid #0ea5e9; text-align: center;">
+            <div style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Điểm Số CV ATS</div>
+            <div style="font-size: 36px; font-weight: 800; color: #0ea5e9;">${cvScore} <span style="font-size: 16px; color: #64748b; font-weight: 400;">/ 100</span></div>
+          </div>
+
+          <p style="color: #64748b; line-height: 1.6;">Báo cáo chi tiết bao gồm điểm mạnh, điểm yếu và các khuyến nghị cải thiện cụ thể đã được tạo dưới định dạng PDF và đính kèm trực tiếp trong email này.</p>
+          
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="${pdfReportUrl}" style="background: #0f172a; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 13px; display: inline-block;">
+              📥 Tải Báo Cáo PDF Trực Tiếp
+            </a>
+          </div>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 11px; margin-top: 20px;">Email này được gửi tự động từ hệ thống MockAI Interview. Vui lòng không trả lời trực tiếp email này.</p>
+      </div>
+    `,
+    attachments: [
+      {
+        filename: `MockAI_ATS_Report_${cleanName}.pdf`,
+        ...(pdfBuffer ? { content: pdfBuffer } : { path: pdfReportUrl })
+      }
+    ]
+  });
+};
+

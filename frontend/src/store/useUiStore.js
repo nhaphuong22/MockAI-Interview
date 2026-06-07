@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export const useUiStore = create((set) => ({
+export const useUiStore = create((set, get) => ({
   hideNavbar: false,
   setHideNavbar: (hide) => set({ hideNavbar: hide }),
 
@@ -24,20 +24,32 @@ export const useUiStore = create((set) => ({
 
   setAuthRedirectTo: (path) => set({ authRedirectTo: path }),
 
-  // Toast Notification State
-  toastVisible: false,
-  toastMessage: '',
-  toastType: 'info', // 'info' | 'success' | 'warning' | 'error'
+  // Multiple Toast Notification State
+  toasts: [],
 
-  showToast: ({ message, type = 'info' }) =>
-    set({
-      toastVisible: true,
-      toastMessage: message,
-      toastType: type,
-    }),
+  addToast: (message, type = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    set((state) => ({
+      toasts: [...state.toasts, { id, message, type }]
+    }));
+    // Auto remove toast after 4 seconds (4000ms)
+    setTimeout(() => {
+      set((state) => ({
+        toasts: state.toasts.filter((t) => t.id !== id)
+      }));
+    }, 4000);
+  },
 
-  hideToast: () =>
-    set({
-      toastVisible: false,
-    }),
+  showToast: (payload) => {
+    if (!payload) return;
+    const message = typeof payload === 'string' ? payload : payload.message;
+    const type = typeof payload === 'string' ? 'info' : (payload.type || 'info');
+    get().addToast(message, type);
+  },
+
+  removeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id)
+    })),
 }));
+
