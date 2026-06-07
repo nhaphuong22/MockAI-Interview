@@ -10,6 +10,7 @@ import {
   updateJobApplication
 } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
+import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
 
 
 const router = express.Router();
@@ -264,8 +265,8 @@ const router = express.Router();
 
 // Route khai báo
 router.post('/', authenticateToken, requireRole(['HR', 'ADMIN']), createNewJob);
-router.get('/', getJobs);
-router.get('/applications', authenticateToken, requireRole(['HR', 'ADMIN']), getJobApplications);
+router.get('/', cacheMiddleware('jobs:list', 1800), getJobs);
+router.get('/applications', authenticateToken, requireRole(['HR', 'ADMIN']), cacheMiddleware('applications:hr', 1800), getJobApplications);
 router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJobApplication);
 
 /**
@@ -390,11 +391,7 @@ router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']),
  *         description: Lỗi hệ thống.
  */
 
-// Route khai báo
-router.post('/', authenticateToken, requireRole(['HR', 'ADMIN']), createNewJob);
-router.get('/', getJobs);
-
-router.get('/:id', getJobById);
+router.get('/:id', cacheMiddleware('jobs:detail', 1800), getJobById);
 router.put('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJob);
 router.delete('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), deleteJob);
 

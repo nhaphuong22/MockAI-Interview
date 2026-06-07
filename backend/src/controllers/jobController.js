@@ -70,10 +70,6 @@ export const createNewJob = async (req, res) => {
       }
     }
 
-
-
-
-
     // 3. Kiểm tra validation cho detailed_requirements nếu có
     if (detailed_requirements !== undefined) {
       if (!Array.isArray(detailed_requirements)) {
@@ -305,7 +301,6 @@ export const deleteJob = async (req, res) => {
   }
 };
 
-
 /**
  * Lấy danh sách hồ sơ ứng tuyển của HR
  */
@@ -385,5 +380,3 @@ export const updateJobApplication = async (req, res) => {
     return sendError(res, 500, 'Lỗi hệ thống khi cập nhật hồ sơ ứng tuyển.');
   }
 };
-
-

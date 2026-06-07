@@ -1,4 +1,5 @@
 import db from '../db/knex.js';
+import { deleteCache, deleteCachePattern } from '../config/redis.js';
 import { updateJob } from '../models/jobModel.js';
 import { updateBlog, deleteBlog } from '../models/blogModel.js';
 import { formatSalary } from '../helper/salaryHelper.js';
@@ -71,6 +72,10 @@ export const approveOrRejectJob = async (jobId, status, adminUserId) => {
     throw new NotFoundError('Không tìm thấy tin tuyển dụng.');
   }
 
+  // Clear Jobs Cache
+  await deleteCachePattern('jobs:list:*');
+  await deleteCache(`jobs:detail:${jobId}`);
+
   return true;
 };
 
@@ -131,6 +136,10 @@ export const approveOrRejectBlog = async (blogId, status, rejectReason, adminUse
     throw new NotFoundError('Không tìm thấy bài viết.');
   }
 
+  // Clear Blogs Cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${blogId}`);
+
   return true;
 };
 
@@ -144,6 +153,10 @@ export const removeBlogByAdmin = async (blogId) => {
   if (!deletedRows) {
     throw new NotFoundError('Không tìm thấy bài viết để gỡ.');
   }
+
+  // Clear Blogs Cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${blogId}`);
 
   return true;
 };

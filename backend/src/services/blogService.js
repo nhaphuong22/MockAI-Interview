@@ -1,4 +1,5 @@
 import db from '../db/knex.js';
+import { deleteCache, deleteCachePattern } from '../config/redis.js';
 import { 
   findBlogWithOwner, 
   insertBlog, 
@@ -31,6 +32,9 @@ export const saveDraftBlog = async ({ authorId, title, content, tags = [], categ
     updated_at: db.fn.now(),
   });
 
+  // Clear blogs cache list
+  await deleteCachePattern('blogs:published*');
+
   return newArticle;
 };
 
@@ -50,6 +54,10 @@ export const requestBlogReview = async (blogId, authorId) => {
     status: 'PENDING',
     updated_at: db.fn.now()
   });
+
+  // Clear blogs cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${blogId}`);
 
   return updatedArticle;
 };
