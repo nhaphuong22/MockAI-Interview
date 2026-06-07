@@ -42,3 +42,6 @@ desktop.ini
 # Local Uploads
 backend/uploads/
 uploads/
+
+.planning/
+planning/

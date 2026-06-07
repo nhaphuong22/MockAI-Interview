@@ -6,11 +6,13 @@ import { useUiStore } from "../../store/useUiStore";
 import * as Dialog from "@radix-ui/react-dialog";
 
 const statusConfig = {
-  new: { label: "Mới", color: "bg-blue-100 text-blue-700" },
-  reviewed: { label: "Đang Xem", color: "bg-yellow-100 text-yellow-700" },
-  interviewed: { label: "Mời Phỏng Vấn", color: "bg-purple-100 text-purple-700" },
-  accepted: { label: "Đạt", color: "bg-green-100 text-green-700" },
-  rejected: { label: "Không Đạt", color: "bg-red-100 text-red-700" },
+  submitted: { label: "Mới tiếp nhận", color: "bg-blue-50 text-blue-600 border border-blue-100" },
+  reviewing: { label: "Đang xem hồ sơ", color: "bg-yellow-50 text-yellow-600 border border-yellow-100" },
+  interviewed: { label: "Mời phỏng vấn", color: "bg-purple-50 text-purple-600 border border-purple-100" },
+  accepted: { label: "Đạt (Hired)", color: "bg-emerald-50 text-emerald-600 border border-emerald-100" },
+  rejected: { label: "Từ chối", color: "bg-rose-50 text-rose-600 border border-rose-100" },
+  new: { label: "Mới tiếp nhận", color: "bg-blue-50 text-blue-600 border border-blue-100" },
+  reviewed: { label: "Đang xem hồ sơ", color: "bg-yellow-50 text-yellow-600 border border-yellow-100" },
 };
 
 export function HRDashboard() {
@@ -64,8 +66,8 @@ export function HRDashboard() {
     const searchMatches = nameMatches || emailMatches;
 
     if (statusFilter === "Tất cả trạng thái") return searchMatches;
-    if (statusFilter === "Mới tiếp nhận") return searchMatches && app.status === "new";
-    if (statusFilter === "Đang xem hồ sơ") return searchMatches && app.status === "reviewed";
+    if (statusFilter === "Mới tiếp nhận") return searchMatches && (app.status === "submitted" || app.status === "new");
+    if (statusFilter === "Đang xem hồ sơ") return searchMatches && (app.status === "reviewing" || app.status === "reviewed");
     if (statusFilter === "Mời phỏng vấn") return searchMatches && app.status === "interviewed";
     if (statusFilter === "Đã chấp nhận") return searchMatches && app.status === "accepted";
     if (statusFilter === "Đã từ chối") return searchMatches && app.status === "rejected";
@@ -78,7 +80,7 @@ export function HRDashboard() {
   // Tính toán các chỉ số stats thực tế
   const totalCount = rawApplications.length;
   const interviewedCount = rawApplications.filter(a => a.status === "interviewed").length;
-  const reviewingCount = rawApplications.filter(a => a.status === "new" || a.status === "reviewed").length;
+  const reviewingCount = rawApplications.filter(a => a.status === "submitted" || a.status === "new" || a.status === "reviewing" || a.status === "reviewed").length;
   const acceptedCount = rawApplications.filter(a => a.status === "accepted").length;
 
   const stats = [
@@ -89,15 +91,15 @@ export function HRDashboard() {
   ];
 
   const getScoreColor = (score) => {
-    if (score >= 80) return "text-green-600 bg-green-50";
-    if (score >= 60) return "text-sky-600 bg-sky-50";
-    return "text-red-600 bg-red-50";
+    if (score >= 80) return "text-emerald-700 bg-emerald-50/60 border border-emerald-100";
+    if (score >= 60) return "text-sky-700 bg-sky-50/60 border border-sky-100";
+    return "text-rose-700 bg-rose-50/60 border border-rose-100";
   };
 
   const getScoreBarColor = (score) => {
-    if (score >= 80) return "bg-green-500";
-    if (score >= 60) return "bg-sky-500";
-    return "bg-red-500";
+    if (score >= 80) return "bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-sm shadow-emerald-100";
+    if (score >= 60) return "bg-gradient-to-r from-sky-400 to-[#0ea5e9] shadow-sm shadow-sky-100";
+    return "bg-gradient-to-r from-rose-400 to-rose-500 shadow-sm shadow-rose-100";
   };
 
   return (
@@ -237,30 +239,46 @@ export function HRDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {(candidate.aiSummary ? candidate.aiSummary.split(", ") : ["React", "JavaScript"]).slice(0, 2).map((skill) => (
-                            <span
-                              key={skill}
-                              className="px-2 py-0.5 bg-sky-50 text-sky-600 rounded-md text-[10px] font-bold uppercase"
-                            >
-                              {skill}
-                            </span>
-                          ))}
+                        <div className="flex flex-wrap gap-1.5">
+                          {(() => {
+                            const skills = candidate.aiSummary ? candidate.aiSummary.split(", ") : ["React", "JavaScript"];
+                            const shortSkills = skills.filter(s => s.length < 15);
+                            if (shortSkills.length > 0) {
+                               return shortSkills.slice(0, 3).map((skill) => (
+                                 <span
+                                   key={skill}
+                                   className="px-2.5 py-0.5 bg-sky-50 text-sky-600 rounded-md text-[10px] font-bold uppercase border border-sky-100"
+                                 >
+                                   {skill}
+                                 </span>
+                               ));
+                            }
+                            // Rút gọn với câu nhận xét dài (bản ghi cũ)
+                            return skills.slice(0, 1).map((phrase) => (
+                               <span
+                                 key={phrase}
+                                 className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md text-[10px] font-medium border border-slate-100 max-w-[140px] truncate block cursor-help"
+                                 title={phrase}
+                               >
+                                 {phrase}
+                               </span>
+                            ));
+                          })()}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusConfig[candidate.status]?.color || "bg-gray-100 text-gray-600"}`}>
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap inline-block ${statusConfig[candidate.status]?.color || "bg-gray-50 text-gray-500 border border-gray-100"}`}>
                           {statusConfig[candidate.status]?.label || candidate.status}
-                        </span>
+                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>{new Date(candidate.appliedDate).toLocaleDateString('vi-VN')}</span>
-                        </div>
+                        <div className="flex items-center gap-2 text-xs font-semibold text-gray-500">
+                           <Calendar className="w-3.5 h-3.5" />
+                           <span>{new Date(candidate.appliedDate).toLocaleDateString('vi-VN')}</span>
+                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-2">
                           {candidate.cvUrl && (
                             <button
                               onClick={() => {
@@ -268,11 +286,11 @@ export function HRDashboard() {
                                 setShowAIReport(true);
                                 setActiveTab("cv");
 
-                                if (candidate.status === "new") {
+                                if (candidate.status === "submitted" || candidate.status === "new") {
                                   updateStatusMutation.mutate({ id: candidate.id, status: "reviewed" });
                                 }
                               }}
-                              className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-lg transition-all cursor-pointer"
+                              className="p-2 text-slate-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl hover:scale-110 active:scale-95 border border-transparent hover:border-sky-100 transition-all cursor-pointer"
                               title="Xem CV gốc (PDF)"
                             >
                               <FileText className="w-5 h-5" />
@@ -284,11 +302,11 @@ export function HRDashboard() {
                               setShowAIReport(true);
                               setActiveTab("report");
 
-                              if (candidate.status === "new") {
-                                updateStatusMutation.mutate({ id: candidate.id, status: "reviewed" });
+                              if (candidate.status === "submitted" || candidate.status === "new") {
+                                  updateStatusMutation.mutate({ id: candidate.id, status: "reviewed" });
                               }
                             }}
-                            className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-lg transition-all cursor-pointer"
+                            className="p-2 text-slate-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl hover:scale-110 active:scale-95 border border-transparent hover:border-sky-100 transition-all cursor-pointer"
                             title="Xem chi tiết AI Report"
                           >
                             <Eye className="w-5 h-5" />
@@ -450,35 +468,36 @@ export function HRDashboard() {
                       <div className="mb-10">
                         {selectedCandidate.cvUrl ? (
                           <div className="relative">
-                            {/* Google Docs Viewer for PDF rendering */}
-                            <div className="w-full h-[600px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner bg-slate-50 relative">
-                              <iframe
-                                src={`https://docs.google.com/gview?url=${encodeURIComponent(getCvFullUrl(selectedCandidate.cvUrl))}&embedded=true`}
-                                className="w-full h-full border-0"
-                                title={`CV_${selectedCandidate.candidateName}`}
-                              />
-                            </div>
-                            {/* Fallback actions */}
-                            <div className="mt-4 flex items-center justify-center gap-4">
-                              <a
-                                href={getCvFullUrl(selectedCandidate.cvUrl)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0ea5e9] text-white font-bold text-sm rounded-xl hover:bg-[#0284c7] transition-all shadow-md shadow-sky-100 cursor-pointer"
-                              >
-                                <Download className="w-4 h-4" />
-                                <span>Tải CV về máy</span>
-                              </a>
-                              <a
-                                href={`https://docs.google.com/gview?url=${encodeURIComponent(getCvFullUrl(selectedCandidate.cvUrl))}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 font-bold text-sm rounded-xl border border-gray-200 hover:border-[#0ea5e9] hover:text-[#0ea5e9] transition-all cursor-pointer"
-                              >
-                                <Eye className="w-4 h-4" />
-                                <span>Mở xem toàn màn hình</span>
-                              </a>
-                            </div>
+                             {/* Direct PDF rendering using browser viewer */}
+                             <div className="w-full h-[600px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner bg-slate-50 relative">
+                               <iframe
+                                 src={getCvFullUrl(selectedCandidate.cvUrl)}
+                                 className="w-full h-full border-0"
+                                 title={`CV_${selectedCandidate.candidateName}`}
+                               />
+                             </div>
+                             {/* Fallback actions */}
+                             <div className="mt-4 flex items-center justify-center gap-4">
+                               <a
+                                 href={getCvFullUrl(selectedCandidate.cvUrl)}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0ea5e9] text-white font-bold text-sm rounded-xl hover:bg-[#0284c7] transition-all shadow-md shadow-sky-100 cursor-pointer"
+                                 download={`CV_${selectedCandidate.candidateName}.pdf`}
+                               >
+                                 <Download className="w-4 h-4" />
+                                 <span>Tải CV về máy</span>
+                               </a>
+                               <a
+                                 href={getCvFullUrl(selectedCandidate.cvUrl)}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 font-bold text-sm rounded-xl border border-gray-200 hover:border-[#0ea5e9] hover:text-[#0ea5e9] transition-all cursor-pointer"
+                               >
+                                 <Eye className="w-4 h-4" />
+                                 <span>Mở xem toàn màn hình</span>
+                               </a>
+                             </div>
                           </div>
                         ) : (
                           <div className="text-center py-20 text-gray-400 font-bold border border-dashed border-gray-200 rounded-2xl bg-gray-50">

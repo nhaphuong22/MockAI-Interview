@@ -1,8 +1,54 @@
 import db from '../db/knex.js';
-import { evaluateCV } from '../services/cvService.js';
-import { sendJobApplicationEmail } from '../services/emailService.js';
+import { evaluateCV, generatePDFReportBuffer } from '../services/cvService.js';
+import { sendJobApplicationEmail, sendApplicationReportEmail } from '../services/emailService.js';
 import { sendRealtimeNotification, broadcastNewApplication } from '../socket.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
+import cloudinary from '../core/cloudinary.js';
+import path from 'path';
+
+/**
+ * Helper: Trích xuất các từ khóa kỹ năng từ văn bản CV
+ */
+const extractSkillsFromText = (text) => {
+  if (!text) return ['React', 'JavaScript'];
+  const commonSkills = [
+    'React', 'Node.js', 'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go', 'Rust',
+    'HTML', 'CSS', 'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Docker', 'Kubernetes', 
+    'Git', 'AWS', 'Vue', 'Angular', 'Express', 'Tailwind', 'Figma', 'UI/UX', 
+    'Marketing', 'SEO', 'Sales', 'Excel', 'Photoshop', 'Project Management'
+  ];
+  const foundSkills = [];
+  const lowerText = text.toLowerCase();
+  for (const skill of commonSkills) {
+    const escapedSkill = skill.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`(?:\\b|\\s|^)${escapedSkill}(?:\\b|\\s|$|\\.)`, 'i');
+    if (regex.test(lowerText)) {
+      foundSkills.push(skill);
+    }
+  }
+  return foundSkills.length > 0 ? foundSkills : ['React', 'JavaScript'];
+};
+
+/**
+ * Helper: Upload file report PDF buffer lên Cloudinary dạng raw
+ */
+const uploadReportToCloudinary = (fileBuffer, candidateName) => {
+  return new Promise((resolve, reject) => {
+    const cleanName = candidateName.replace(/[^a-zA-Z0-9_]/g, '_');
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'image',
+        folder: 'reports',
+        public_id: `${Date.now()}-Report-${cleanName}`
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    uploadStream.end(fileBuffer);
+  });
+};
 
 /**
  * Ứng viên nộp đơn ứng tuyển cho một Job
@@ -46,6 +92,16 @@ export const applyJob = async (req, res) => {
     console.log(`[Application] Đang chấm điểm CV cho ứng viên ${req.user.full_name} với JD của Job ${job.title}...`);
     const evaluation = await evaluateCV(sanitizedCvText, jobJD);
 
+    // 3.1. Tạo PDF báo cáo và tải lên Cloudinary
+    const candidateName = req.user.full_name || req.user.email;
+    console.log(`[Application] Đang tạo báo cáo đánh giá PDF cho ứng viên ${candidateName}...`);
+    const pdfReportBuffer = await generatePDFReportBuffer(evaluation, candidateName, job.title);
+    
+    console.log(`[Application] Đang upload PDF báo cáo lên Cloudinary...`);
+    const reportCloudinaryResult = await uploadReportToCloudinary(pdfReportBuffer, candidateName);
+    const pdfReportUrl = reportCloudinaryResult.secure_url;
+    console.log(`[Application] Upload báo cáo thành công! URL: ${pdfReportUrl}`);
+
     let cv;
     let application;
 
@@ -60,6 +116,7 @@ export const applyJob = async (req, res) => {
           parsed_text: sanitizedCvText,
           ats_score: evaluation.overallScore || 0,
           ai_feedback: JSON.stringify(evaluation).replace(/\x00/g, ''),
+          pdf_report_url: pdfReportUrl,
           created_at: new Date(),
           updated_at: new Date()
         })
@@ -75,7 +132,7 @@ export const applyJob = async (req, res) => {
           cv_score: evaluation.overallScore || 0,
           total_score: evaluation.overallScore || 0,
           cover_letter: cover_letter || null,
-          ai_summary: evaluation.strengths ? evaluation.strengths.slice(0, 2).join(', ') : 'Hồ sơ đã được cập nhật.',
+          ai_summary: extractSkillsFromText(sanitizedCvText).slice(0, 3).join(', '),
           updated_at: new Date(),
           created_at: new Date() // Đẩy lên đầu danh sách HR
         })
@@ -90,6 +147,7 @@ export const applyJob = async (req, res) => {
           parsed_text: sanitizedCvText,
           ats_score: evaluation.overallScore || 0,
           ai_feedback: JSON.stringify(evaluation).replace(/\x00/g, ''),
+          pdf_report_url: pdfReportUrl,
           created_at: new Date(),
           updated_at: new Date()
         })
@@ -106,13 +164,14 @@ export const applyJob = async (req, res) => {
           cv_score: evaluation.overallScore || 0,
           total_score: evaluation.overallScore || 0,
           cover_letter: cover_letter || null,
-          ai_summary: evaluation.strengths ? evaluation.strengths.slice(0, 2).join(', ') : 'Hồ sơ đã được tiếp nhận.',
+          ai_summary: extractSkillsFromText(sanitizedCvText).slice(0, 3).join(', '),
           created_at: new Date(),
           updated_at: new Date()
         })
         .returning('*');
       application = newApp;
     }
+
 
     // 6. Gửi thông báo & email cho HR (nếu có thông tin HR)
     if (job.hr_id) {
@@ -136,16 +195,18 @@ export const applyJob = async (req, res) => {
         })
         .returning('*');
 
-      // Gửi mail cho HR thông qua SMTP
+      // Gửi mail cho HR thông qua SMTP kèm PDF báo cáo
       if (hrUser && hrUser.email) {
-        console.log(`[Application] Đang gửi mail thông báo ứng tuyển tới HR: ${hrUser.email}`);
-        await sendJobApplicationEmail(
+        console.log(`[Application] Đang gửi mail báo cáo tuyển dụng kèm PDF tới HR: ${hrUser.email}`);
+        await sendApplicationReportEmail(
           hrUser.email,
           hrUser.full_name || 'Nhà tuyển dụng',
-          req.user.full_name || 'Ứng viên',
+          candidateName,
           job.title,
           evaluation.overallScore || 0,
-          cover_letter
+          pdfReportUrl,
+          true, // Gửi cho HR
+          pdfReportBuffer
         );
       }
 
@@ -167,11 +228,27 @@ export const applyJob = async (req, res) => {
         email: req.user.email,
         position: job.title,
         aiScore: evaluation.overallScore || 0,
-        skills: evaluation.strengths ? evaluation.strengths.slice(0, 3) : ['React', 'JavaScript'],
+        skills: extractSkillsFromText(sanitizedCvText).slice(0, 3),
         status: 'new',
         appliedDate: new Date().toISOString()
       });
     }
+
+    // Gửi mail xác nhận và báo cáo chi tiết cho Candidate thông qua SMTP kèm PDF báo cáo
+    if (req.user.email) {
+      console.log(`[Application] Đang gửi mail xác nhận và báo cáo tuyển dụng tới Candidate: ${req.user.email}`);
+      await sendApplicationReportEmail(
+        req.user.email,
+        req.user.full_name || 'Ứng viên',
+        candidateName,
+        job.title,
+        evaluation.overallScore || 0,
+        pdfReportUrl,
+        false, // Gửi cho Candidate
+        pdfReportBuffer
+      );
+    }
+
 
     return sendResponse(res, 201, {
       application_id: application.id,
@@ -206,7 +283,9 @@ export const getApplications = async (req, res) => {
         'jobs.title as job_title',
         'jobs.hr_id as job_hr_id',
         'companies.name as company_name',
-        'cvs.file_url as cv_url'
+        'cvs.file_url as cv_url',
+        'cvs.pdf_report_url as pdf_report_url',
+        'cvs.ai_feedback as ai_feedback'
       );
 
     if (role === 'HR') {
@@ -230,12 +309,15 @@ export const getApplications = async (req, res) => {
       candidateAvatar: item.candidate_avatar || '👨‍💻',
       cvId: item.cv_id,
       cvUrl: item.cv_url, // Lấy file url CV thực tế trả về cho frontend
+      pdfReportUrl: item.pdf_report_url,
+      aiFeedback: item.ai_feedback ? JSON.parse(item.ai_feedback) : null,
       status: item.status.toLowerCase(), // frontend match: 'new', 'reviewed', 'interviewed', 'accepted', 'rejected'
       aiScore: item.cv_score || 0,
       appliedDate: item.created_at,
       coverLetter: item.cover_letter,
       aiSummary: item.ai_summary
     }));
+
 
     return sendResponse(res, 200, formatted);
   } catch (error) {

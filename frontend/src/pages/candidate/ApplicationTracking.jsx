@@ -1,10 +1,12 @@
-import React, { useState } from "react";
-import { Clock, CheckCircle2, XCircle, Calendar, Info, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Clock, CheckCircle2, XCircle, Info, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { applicationApi } from "../../api/applicationApi";
 import * as Tabs from "@radix-ui/react-tabs";
 import { TrackingStats } from "./components/TrackingStats";
 import { ApplicationCard } from "./components/ApplicationCard";
+import * as Dialog from "@radix-ui/react-dialog";
+import AtsReportDashboard from "./components/AtsReportDashboard";
 
 const statusConfig = {
   reviewing: { label: "Đang Xem", color: "dark:bg-yellow-900/30 dark:text-yellow-400 bg-yellow-100 text-yellow-700", icon: Clock },
@@ -15,6 +17,8 @@ const statusConfig = {
 
 export function ApplicationTracking() {
   const [activeTab, setActiveTab] = useState("all");
+  const [selectedAppId, setSelectedAppId] = useState(null);
+  const [showAtsModal, setShowAtsModal] = useState(false);
 
   // Fetch đơn ứng tuyển của Candidate từ DB
   const { data: response, isLoading, isError } = useQuery({
@@ -53,7 +57,8 @@ export function ApplicationTracking() {
       logo: app.companyName?.substring(0, 1).toUpperCase() || "🚀",
       appliedDate: app.appliedDate,
       status,
-      timeline
+      timeline,
+      aiScore: app.aiScore
     };
   });
 
@@ -143,6 +148,10 @@ export function ApplicationTracking() {
                   key={app.id} 
                   app={app} 
                   statusConfig={statusConfig} 
+                  onViewAtsReport={(appId) => {
+                    setSelectedAppId(appId);
+                    setShowAtsModal(true);
+                  }}
                 />
               ))
             ) : (
@@ -152,6 +161,27 @@ export function ApplicationTracking() {
             )}
           </Tabs.Content>
         </Tabs.Root>
+
+        {/* ATS Report Modal */}
+        <Dialog.Root open={showAtsModal} onOpenChange={setShowAtsModal}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 animate-in fade-in duration-300" />
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto z-50 animate-in zoom-in-95 duration-300 outline-none border dark:border-white/10">
+              <div className="relative">
+                <div className="absolute top-6 right-6 z-10">
+                  <Dialog.Close className="p-2 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 outline-none cursor-pointer">
+                    <XCircle className="w-6 h-6" />
+                  </Dialog.Close>
+                </div>
+                <div className="p-10">
+                  {selectedAppId && (
+                    <AtsReportDashboard appId={selectedAppId} />
+                  )}
+                </div>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       </div>
     </div>
   );

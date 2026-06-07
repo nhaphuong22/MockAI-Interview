@@ -4,7 +4,6 @@ import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, Pi
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
-import { Toast } from "../ui/Toast";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { GlobalBackground } from "./GlobalBackground";
@@ -37,10 +36,6 @@ export function Layout() {
     authModalMode, 
     authRedirectTo, 
     closeAuthModal,
-    toastVisible,
-    toastMessage,
-    toastType,
-    hideToast,
   } = useUiStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -269,16 +264,6 @@ export function Layout() {
 
       {isCandidate && <AIChatWidget />}
       
-      {/* Toast Notification */}
-      <Toast 
-        message={toastMessage}
-        type={toastType}
-        isVisible={toastVisible}
-        onClose={hideToast}
-        duration={4000}
-        position="top-right"
-      />
-      
       {/* Cửa sổ Đăng nhập / Đăng ký */}
       <AuthModal 
         isOpen={authModalOpen} 
@@ -289,3 +274,4 @@ export function Layout() {
     </div>
   );
 }
+

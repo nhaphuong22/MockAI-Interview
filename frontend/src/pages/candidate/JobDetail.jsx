@@ -21,7 +21,7 @@ export function JobDetail() {
   const [coverLetter, setCoverLetter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { showToast } = useUiStore();
+  const addToast = useUiStore((state) => state.addToast);
 
   // 1. Gọi API lấy chi tiết Job thực tế
   const { data: response, isLoading, isError } = useQuery({
@@ -41,12 +41,12 @@ export function JobDetail() {
     if (!file) return;
 
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith('.pdf')) {
-      showToast({ message: "Hệ thống chỉ hỗ trợ định dạng file CV là PDF.", type: "error" });
+      addToast("Hệ thống chỉ hỗ trợ định dạng file CV là PDF.", "error");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      showToast({ message: "Kích thước file CV vượt quá giới hạn 5MB.", type: "error" });
+      addToast("Kích thước file CV vượt quá giới hạn 5MB.", "error");
       return;
     }
 
@@ -64,13 +64,13 @@ export function JobDetail() {
         setUploadedCvText(dataPayload.text);
         setUploadedCvUrl(dataPayload.fileUrl);
         setUploadedCvName(file.name);
-        showToast({ message: "Đã tải và bóc tách nội dung CV thành công!", type: "success" });
+        addToast("Đã tải và bóc tách nội dung CV thành công!", "success");
       } else {
-        showToast({ message: "Không thể bóc tách CV này, vui lòng chọn file PDF khác.", type: "error" });
+        addToast("Không thể bóc tách CV này, vui lòng chọn file PDF khác.", "error");
       }
     } catch (err) {
       console.error(err);
-      showToast({ message: err.response?.data?.message || "Đã xảy ra lỗi khi tải CV lên.", type: "error" });
+      addToast(err.response?.data?.message || "Đã xảy ra lỗi khi tải CV lên.", "error");
     } finally {
       setIsUploadingCv(false);
     }
@@ -79,7 +79,7 @@ export function JobDetail() {
   // Xác nhận nộp đơn ứng tuyển
   const handleApplySubmit = async () => {
     if (!uploadedCvText) {
-      showToast({ message: "Vui lòng tải lên CV của bạn trước khi nộp đơn.", type: "warning" });
+      addToast("Vui lòng tải lên CV của bạn trước khi nộp đơn.", "warning");
       return;
     }
 
@@ -91,7 +91,7 @@ export function JobDetail() {
         cv_url: uploadedCvUrl,
         cover_letter: coverLetter
       });
-      showToast({ message: "Nộp đơn ứng tuyển thành công! Nhà tuyển dụng đã nhận được hồ sơ của bạn.", type: "success" });
+      addToast("Nộp đơn ứng tuyển thành công! Nhà tuyển dụng đã nhận được hồ sơ của bạn.", "success");
       setIsApplyModalOpen(false);
       // Reset form
       setUploadedCvText("");
@@ -100,11 +100,12 @@ export function JobDetail() {
       setCoverLetter("");
     } catch (err) {
       console.error(err);
-      showToast({ message: err.response?.data?.message || "Nộp đơn ứng tuyển thất bại.", type: "error" });
+      addToast(err.response?.data?.message || "Nộp đơn ứng tuyển thất bại.", "error");
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   if (isLoading) {
     return (

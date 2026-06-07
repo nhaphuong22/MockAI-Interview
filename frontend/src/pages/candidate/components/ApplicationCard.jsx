@@ -1,7 +1,6 @@
-import React from "react";
-import { Eye, Calendar } from "lucide-react";
+import { Eye, Calendar, Sparkles } from "lucide-react";
 
-export function ApplicationCard({ app, statusConfig }) {
+export function ApplicationCard({ app, statusConfig, onViewAtsReport }) {
   const config = statusConfig[app.status] || {
     label: "Không xác định",
     color: "bg-gray-100 text-gray-700",
@@ -31,6 +30,15 @@ export function ApplicationCard({ app, statusConfig }) {
                 <span>{config.label.toUpperCase()}</span>
               </div>
             </div>
+            {app.aiScore !== null && app.aiScore !== undefined && (
+              <button
+                onClick={() => onViewAtsReport && onViewAtsReport(app.id)}
+                className="mt-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] hover:from-[#0284c7] hover:to-[#0ea5e9] text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border-none"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse fill-yellow-300" />
+                <span>Xem Phân Tích ATS ({app.aiScore} điểm)</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -38,7 +46,10 @@ export function ApplicationCard({ app, statusConfig }) {
           <div className="relative">
             <div className="flex justify-between items-center mb-6">
               <h4 className="text-sm font-bold dark:text-slate-200 text-gray-900 uppercase tracking-widest">Tiến trình hồ sơ</h4>
-              <button className="text-xs font-bold text-[#0ea5e9] hover:underline flex items-center gap-1">
+              <button 
+                onClick={() => onViewAtsReport && onViewAtsReport(app.id)}
+                className="text-xs font-bold text-[#0ea5e9] hover:underline flex items-center gap-1 cursor-pointer"
+              >
                 <Eye className="w-3.5 h-3.5" /> Chi tiết
               </button>
             </div>
@@ -60,9 +71,13 @@ export function ApplicationCard({ app, statusConfig }) {
                       {step.step}
                     </span>
                     {step.score && (
-                      <span className="text-[10px] font-bold dark:bg-green-900/20 bg-green-50 dark:text-green-400 text-green-600 px-2 py-0.5 rounded-lg border dark:border-green-800/30 border-green-100">
+                      <button 
+                        onClick={() => onViewAtsReport && onViewAtsReport(app.id)}
+                        className="text-[10px] font-bold dark:bg-green-900/20 bg-green-50 dark:text-green-400 text-green-600 px-2 py-0.5 rounded-lg border dark:border-green-800/30 border-green-100 cursor-pointer hover:bg-green-100 hover:scale-105 active:scale-95 transition-all"
+                        title="Click để xem báo cáo ATS chi tiết"
+                      >
                         AI: {step.score}%
-                      </span>
+                      </button>
                     )}
                   </div>
                 </div>

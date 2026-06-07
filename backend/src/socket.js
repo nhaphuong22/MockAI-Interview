@@ -87,6 +87,6 @@ export const sendRealtimeNotification = (userId, notification) => {
  */
 export const broadcastNewApplication = (application) => {
   if (!io) return;
-  console.log(`[Socket] Broadcast ứng tuyển mới tới toàn bộ HR:`, application.candidate_name);
+  console.log(`[Socket] Broadcast ứng tuyển mới tới toàn bộ HR:`, application.name || application.candidate_name);
   io.to('hr_room').emit('new_application', application);
 };
