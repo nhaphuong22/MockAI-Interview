@@ -1,3 +1,18 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+current_phase: Phase 1 (Luồng Ứng Tuyển & AI Chấm Điểm ATS)
+status: IN_PROGRESS
+last_updated: "2026-06-07T16:34:30.526Z"
+progress:
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
+---
+
 # Project State: MockAI-Interview
 
 **Last Updated:** 2026-06-07
@@ -13,6 +28,7 @@
 ## Active Work
 
 Các công việc đang triển khai trong Phase 1:
+
 - [ ] Thiết kế và xây dựng giao diện Danh sách công việc (Jobs List) và Chi tiết công việc (Job Details) ở Frontend.
 - [ ] Xây dựng Modal nộp hồ sơ (Apply Job Modal) cho phép tải lên tệp CV PDF và nhập thư xin việc (Cover Letter) ở Frontend.
 - [ ] Tích hợp API nộp đơn ứng tuyển, parse PDF và gọi dịch vụ AI chấm điểm ATS tương thích ở Backend.
