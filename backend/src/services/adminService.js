@@ -228,28 +228,74 @@ export const generateDashboardAnalytics = async () => {
     ];
   }
 
-  // 4. Số liệu tăng trưởng theo thời gian (Trends)
+  // 4. Số liệu tăng trưởng thực tế theo thời gian (Trends - 7 ngày qua)
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 6);
+  startDate.setHours(0, 0, 0, 0); // Bắt đầu từ 00:00 của 6 ngày trước
+
+  // Lấy dữ liệu đăng ký mới theo ngày
+  const usersTrend = await db('users')
+    .where('created_at', '>=', startDate)
+    .select(db.raw("to_char(created_at, 'YYYY-MM-DD') as date"))
+    .count('id as count')
+    .groupByRaw("to_char(created_at, 'YYYY-MM-DD')");
+
+  // Lấy dữ liệu số lượt phỏng vấn theo ngày
+  const interviewsTrend = await db('interviews')
+    .where('created_at', '>=', startDate)
+    .select(db.raw("to_char(created_at, 'YYYY-MM-DD') as date"))
+    .count('id as count')
+    .groupByRaw("to_char(created_at, 'YYYY-MM-DD')");
+
+  // Lấy dữ liệu tin đăng tuyển dụng theo ngày
+  const jobsTrend = await db('jobs')
+    .where('created_at', '>=', startDate)
+    .select(db.raw("to_char(created_at, 'YYYY-MM-DD') as date"))
+    .count('id as count')
+    .groupByRaw("to_char(created_at, 'YYYY-MM-DD')");
+
+  // Lấy doanh thu theo ngày từ các giao dịch thành công
+  let revenueTrend = [];
+  try {
+    revenueTrend = await db('transactions')
+      .where('status', 'COMPLETED')
+      .where('created_at', '>=', startDate)
+      .select(db.raw("to_char(created_at, 'YYYY-MM-DD') as date"))
+      .sum('amount as total')
+      .groupByRaw("to_char(created_at, 'YYYY-MM-DD')");
+  } catch (e) {
+    console.log('Lỗi truy vấn doanh thu theo ngày:', e.message);
+  }
+
+  // Chuyển kết quả truy vấn thành Maps để tra cứu nhanh
+  const usersMap = {};
+  usersTrend.forEach(item => { usersMap[item.date] = parseInt(item.count || 0); });
+
+  const interviewsMap = {};
+  interviewsTrend.forEach(item => { interviewsMap[item.date] = parseInt(item.count || 0); });
+
+  const jobsMap = {};
+  jobsTrend.forEach(item => { jobsMap[item.date] = parseInt(item.count || 0); });
+
+  const revenueMap = {};
+  revenueTrend.forEach(item => { revenueMap[item.date] = parseFloat(item.total || 0); });
+
   const trends = [];
   const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-  
+
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     const dayName = daysOfWeek[d.getDay()];
 
-    const baseUsers = i === 0 ? totalUsers : Math.max(0, Math.floor(totalUsers * (1 - i*0.05)));
-    const baseInterviews = i === 0 ? totalInterviews : Math.max(0, Math.floor(totalInterviews * (1 - i*0.05)));
-    const baseJobs = i === 0 ? totalJobs : Math.max(0, Math.floor(totalJobs * (1 - i*0.05)));
-    const baseRevenue = i === 0 ? totalRevenue : Math.max(0, Math.floor(totalRevenue * (1 - i*0.05)));
-
     trends.push({
       date: dateStr,
       dayLabel: dayName,
-      users: baseUsers,
-      interviews: baseInterviews,
-      jobs: baseJobs,
-      revenue: baseRevenue
+      users: usersMap[dateStr] || 0,
+      interviews: interviewsMap[dateStr] || 0,
+      jobs: jobsMap[dateStr] || 0,
+      revenue: revenueMap[dateStr] || 0
     });
   }
 
