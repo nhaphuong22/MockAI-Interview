@@ -5,13 +5,9 @@ import {
   getJobs,
   getJobById,
   updateJob,
-
   deleteJob,
   getJobApplications,
   updateJobApplication
-
-  deleteJob
-
 } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 
@@ -92,7 +88,6 @@ const router = express.Router();
  *         description: Tạo tin tuyển dụng thành công.
  *       400:
  *         description: Lỗi đầu vào.
-
  *       401:
  *         description: Chưa xác thực.
  *       403:
@@ -264,59 +259,6 @@ const router = express.Router();
  *         description: Không có quyền truy cập.
  *       404:
  *         description: Không tìm thấy tin.
-
- *       401:
- *         description: Chưa xác thực.
- *       403:
- *         description: Không có quyền truy cập.
- *       500:
- *         description: Lỗi hệ thống.
- * 
- *   get:
- *     summary: Lấy danh sách tin tuyển dụng có bộ lọc và phân trang
- *     description: Cho phép ứng viên và HR xem danh sách tin tuyển dụng đang mở hoặc đóng.
- *     tags:
- *       - Jobs
- *     parameters:
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [OPEN, CLOSED]
- *         description: Trạng thái tuyển dụng
- *       - in: query
- *         name: experience_level
- *         schema:
- *           type: string
- *         description: Yêu cầu cấp độ kinh nghiệm (JUNIOR, MID, SENIOR...)
- *       - in: query
- *         name: hr_id
- *         schema:
- *           type: integer
- *         description: Lọc theo ID của HR tạo tin
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Từ khóa tìm kiếm theo tiêu đề công việc
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Số trang hiện tại
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Số lượng tin hiển thị mỗi trang
- *     responses:
- *       200:
- *         description: Thành công.
-
- *       500:
- *         description: Lỗi hệ thống.
  */
 
 

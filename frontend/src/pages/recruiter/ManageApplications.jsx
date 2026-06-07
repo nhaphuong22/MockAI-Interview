@@ -192,6 +192,7 @@ export function ManageApplications() {
         )}
 
         <ApplicationDetailModal 
+          key={selectedApplication?.id || "empty"}
           isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
           application={selectedApplication}

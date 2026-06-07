@@ -19,17 +19,9 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
   const queryClient = useQueryClient();
   const showToast = useUiStore((state) => state.showToast);
 
-  const [status, setStatus] = useState("SUBMITTED");
-  const [hrTag, setHrTag] = useState("");
-  const [hrNotes, setHrNotes] = useState("");
-
-  useEffect(() => {
-    if (application) {
-      setStatus(application.status || "SUBMITTED");
-      setHrTag(application.hr_tag || "");
-      setHrNotes(application.hr_notes || "");
-    }
-  }, [application]);
+  const [status, setStatus] = useState(application?.status || "SUBMITTED");
+  const [hrTag, setHrTag] = useState(application?.hr_tag || "");
+  const [hrNotes, setHrNotes] = useState(application?.hr_notes || "");
 
   const updateMutation = useMutation({
     mutationFn: (data) => jobApi.updateJobApplication(application.id, data),
