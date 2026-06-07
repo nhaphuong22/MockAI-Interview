@@ -1,9 +1,16 @@
 import 'dotenv/config'; // Load env variables immediately before any other module is resolved
+import http from 'http';
 import app from './src/app.js';
+import { setupSocket } from './src/socket.js';
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Khởi tạo Socket.io
+setupSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 

@@ -1,4 +1,5 @@
 import { Bookmark, MapPin, DollarSign, Briefcase } from "lucide-react";
+import { Link } from "react-router-dom";
 
 /**
  * JobDetailView Component
@@ -20,9 +21,12 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
         </div>
 
         <div className="flex gap-3">
-          <button className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white font-bold rounded-xl hover:shadow-lg transition-all hover:scale-[1.01]">
+          <Link 
+            to={`/jobs/${job.id}`}
+            className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white font-bold rounded-xl hover:shadow-lg transition-all hover:scale-[1.01] flex items-center justify-center text-center cursor-pointer"
+          >
             Nộp Đơn Ngay
-          </button>
+          </Link>
           <button 
             onClick={() => onToggleBookmark(job.id)}
             className="px-4 py-3 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] dark:text-slate-400 text-gray-400 hover:text-[#0ea5e9] transition-all"

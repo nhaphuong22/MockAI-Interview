@@ -144,3 +144,70 @@ export const sendResetPasswordEmail = async (toEmail, token) => {
     `,
   });
 };
+
+/**
+ * Gửi email thông báo cho HR khi có ứng viên ứng tuyển
+ * @param {string} toEmail - Email của HR nhận
+ * @param {string} hrName - Tên HR
+ * @param {string} candidateName - Tên Ứng viên
+ * @param {string} jobTitle - Tiêu đề công việc
+ * @param {number} cvScore - Điểm CV được đánh giá bởi AI
+ * @param {string} coverLetter - Cover Letter của ứng viên
+ */
+export const sendJobApplicationEmail = async (toEmail, hrName, candidateName, jobTitle, cvScore, coverLetter) => {
+  const dashboardUrl = `${FRONTEND_URL}/hr/dashboard`;
+
+  await sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Đơn ứng tuyển mới: ${candidateName} - vị trí ${jobTitle}`,
+    text: `Chào ${hrName},\n\nỨng viên ${candidateName} đã ứng tuyển vào vị trí "${jobTitle}".\nĐiểm đánh giá CV của AI: ${cvScore}/100.\nThư xin việc:\n${coverLetter || 'Không có'}\n\nVui lòng truy cập trang quản trị để xem chi tiết: ${dashboardUrl}\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="background: #0ea5e9; display: inline-block; padding: 12px 20px; border-radius: 12px; margin-bottom: 16px;">
+            <span style="color: white; font-size: 20px; font-weight: 800;">${APP_NAME}</span>
+          </div>
+          <h1 style="color: #0f172a; font-size: 22px; margin: 0;">Đơn ứng tuyển mới nhận được</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(14,165,233,0.07);">
+          <p style="color: #334155; margin-top: 0; font-size: 16px;">Chào <strong>${hrName}</strong>,</p>
+          <p style="color: #64748b;">Hệ thống vừa ghi nhận một hồ sơ ứng tuyển mới cho tin đăng của bạn:</p>
+          
+          <div style="margin: 20px 0; padding: 20px; background: #f0f9ff; border-radius: 12px; border-left: 4px solid #0ea5e9;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="color: #64748b; padding-bottom: 8px; width: 120px; font-weight: 600;">Ứng viên:</td>
+                <td style="color: #0f172a; padding-bottom: 8px; font-weight: 700;">${candidateName}</td>
+              </tr>
+              <tr>
+                <td style="color: #64748b; padding-bottom: 8px; font-weight: 600;">Vị trí:</td>
+                <td style="color: #0f172a; padding-bottom: 8px; font-weight: 700;">${jobTitle}</td>
+              </tr>
+              <tr>
+                <td style="color: #64748b; font-weight: 600;">Điểm AI Match:</td>
+                <td>
+                  <span style="background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 6px; font-weight: 800; font-size: 14px;">
+                    ${cvScore} / 100
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <p style="color: #0f172a; font-weight: 700; margin-top: 24px; margin-bottom: 8px;">Thư giới thiệu (Cover Letter):</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; color: #475569; font-style: italic; white-space: pre-wrap; font-size: 14px; min-height: 50px;">
+            ${coverLetter ? coverLetter.replace(/\\n/g, '<br/>') : 'Ứng viên không gửi kèm thư giới thiệu.'}
+          </div>
+
+          <div style="text-align: center; margin: 32px 0 10px 0;">
+            <a href="${dashboardUrl}" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; text-decoration: none; padding: 14px 30px; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
+              💼 Xem Chi Tiết Trên Dashboard
+            </a>
+          </div>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 11px; margin-top: 20px;">Email này được gửi tự động từ hệ thống MockAI Interview. Vui lòng không trả lời trực tiếp email này.</p>
+      </div>
+    `,
+  });
+};
