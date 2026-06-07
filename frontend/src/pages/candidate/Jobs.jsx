@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { SlidersHorizontal, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -5,6 +6,14 @@ import { JobFilters } from "./components/JobFilters";
 import { JobCard } from "./components/JobCard";
 import { JobDetailView } from "./components/JobDetailView";
 import { jobApi } from "../../api/jobApi";
+=======
+import { SlidersHorizontal, Loader2, Briefcase } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { jobApi } from "../../api/jobApi";
+import { JobFilters } from "./components/JobFilters";
+import { JobCard } from "./components/JobCard";
+import { JobDetailView } from "./components/JobDetailView";
 
 const formatTime = (timeStr) => {
   if (!timeStr) return "Vừa xong";
@@ -20,6 +29,7 @@ const formatTime = (timeStr) => {
   if (diffDays < 30) return `${diffDays} ngày trước`;
   return date.toLocaleDateString("vi-VN");
 };
+>>>>>>> 6c76fc9 (add apply job logic)
 
 /**
  * Jobs Page
@@ -47,12 +57,59 @@ export function Jobs() {
 
   const jobsList = response?.data?.items || [];
 
+  // Gọi API lấy danh sách Job thực tế từ DB
+  const { data: response, isLoading, isError } = useQuery({
+    queryKey: ["jobs-list"],
+    queryFn: async () => {
+      const res = await jobApi.getJobs({ status: "OPEN" });
+      return res; // Axios client bóc tách response.data
+    }
+  });
+
+  const rawJobs = response?.data?.items || [];
+
+  // Ánh xạ dữ liệu từ backend sang định dạng frontend component yêu cầu
+  const jobs = rawJobs.map(item => {
+    let salaryText = "Thương lượng";
+    if (item.is_salary_visible) {
+      if (item.salary_min && item.salary_max) {
+        salaryText = `${(item.salary_min / 1000000).toFixed(0)}-${(item.salary_max / 1000000).toFixed(0)} triệu`;
+      } else if (item.salary_min) {
+        salaryText = `Từ ${(item.salary_min / 1000000).toFixed(0)} triệu`;
+      } else if (item.salary_max) {
+        salaryText = `Lên đến ${(item.salary_max / 1000000).toFixed(0)} triệu`;
+      }
+    }
+
+    const tags = item.requirements
+      ? item.requirements.split(",").map(t => t.trim())
+      : ["React", "JavaScript"];
+
+    return {
+      id: item.id,
+      title: item.title,
+      company: item.company_name || "Doanh nghiệp tuyển dụng",
+      logo: item.company_logo || item.company_name?.substring(0, 1).toUpperCase() || "J",
+      location: item.company_address || "Việt Nam",
+      salary: salaryText,
+      type: "Full-time",
+      remote: item.company_address?.toLowerCase().includes("remote") ? "Remote" : "Hybrid",
+      experience: item.experience_level || "Không yêu cầu",
+      tags: tags.slice(0, 3),
+      aiMatch: 90, // Mặc định score AI match
+      posted: formatTime(item.created_at),
+      applicants: 12,
+      description: item.description
+    };
+  });
+
   const toggleBookmark = (jobId) => {
     setBookmarked((prev) =>
       prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
     );
   };
 
+<<<<<<< HEAD
   // Định dạng hiển thị mức lương
   const formatSalary = (min, max, currency, visible) => {
     if (!visible) return "Thương lượng (Ẩn)";
@@ -82,7 +139,7 @@ export function Jobs() {
     experience: job.experience_level || "Không yêu cầu",
     tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
     aiMatch: job.aiMatch || (80 + (job.id % 16)), // Sử dụng phép toán Pure thay vì Math.random để qua kiểm tra Lint
-    posted: formatTime(job.created_at),
+    posted: job.created_at ? new Date(job.created_at).toLocaleDateString("vi-VN") : "Gần đây",
     applicants: job.applicants_count || 0,
     description: job.description,
     requirements: job.requirements,
@@ -94,8 +151,8 @@ export function Jobs() {
     return job.location.toLowerCase().includes(location.toLowerCase());
   });
 
-  // Tự động xác định Job đang được chọn
-  const activeJobId = selectedJobId || (filteredJobs.length > 0 ? filteredJobs[0].id : null);
+  // Tự động xác định Job đang được chọn (pure state logic, không sử dụng useEffect gây cascading render)
+  const activeJobId = selectedJob || (filteredJobs.length > 0 ? filteredJobs[0].id : null);
   const selectedJobData = filteredJobs.find((job) => job.id === activeJobId);
 
   const handleClearFilters = () => {
@@ -103,6 +160,11 @@ export function Jobs() {
     setLocation("");
     setSalaryRange([10, 50]);
   };
+=======
+  // Mặc định chọn job đầu tiên trong list nếu chưa chọn job nào
+  const currentSelectedJobId = selectedJobId || (jobs.length > 0 ? jobs[0].id : null);
+  const selectedJobData = jobs.find((job) => job.id === currentSelectedJobId);
+>>>>>>> 6c76fc9 (add apply job logic)
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
@@ -135,7 +197,11 @@ export function Jobs() {
               )}
               <div>
                 <p className="text-sm dark:text-slate-400 text-gray-500">
-                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{isLoading ? "..." : filteredJobs.length}</span> công việc
+<<<<<<< HEAD
+                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{filteredJobs.length}</span> công việc
+=======
+                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{isLoading ? "..." : jobs.length}</span> công việc
+>>>>>>> 6c76fc9 (add apply job logic)
                 </p>
               </div>
             </div>
@@ -150,6 +216,7 @@ export function Jobs() {
         {/* Double Pane List & Details Layout */}
         <div className="flex-1 flex overflow-hidden">
           {isLoading ? (
+<<<<<<< HEAD
             <div className="flex-1 flex flex-col items-center justify-center p-12 dark:bg-transparent bg-gray-50/50">
               <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mb-4" />
               <p className="text-gray-500 dark:text-slate-400 text-sm">Đang tải danh sách công việc từ hệ thống...</p>
@@ -174,17 +241,44 @@ export function Jobs() {
               >
                 Xóa tất cả bộ lọc
               </button>
+=======
+            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/50">
+              <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mb-4" />
+              <p className="text-gray-500 font-semibold text-sm">Đang tải danh sách việc làm...</p>
+            </div>
+          ) : isError ? (
+            <div className="flex-1 flex items-center justify-center bg-gray-50/50 text-red-500 font-bold">
+              Đã xảy ra lỗi khi tải danh sách việc làm. Vui lòng thử lại!
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/50 p-6 text-center">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                <Briefcase className="w-10 h-10 text-gray-300" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có việc làm nào</h3>
+              <p className="text-gray-500 font-medium max-w-sm">Hiện tại chưa có tin tuyển dụng nào được đăng. Quay lại sau bạn nhé!</p>
+>>>>>>> 6c76fc9 (add apply job logic)
             </div>
           ) : (
             <>
               <div className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-transparent bg-gray-50/50">
+<<<<<<< HEAD
                 {filteredJobs.map((job) => (
                   <JobCard
                     key={job.id}
                     job={job}
                     isSelected={activeJobId === job.id}
                     isBookmarked={bookmarked.includes(job.id)}
+                    onSelect={() => setSelectedJob(job.id)}
+=======
+                {jobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    isSelected={currentSelectedJobId === job.id}
+                    isBookmarked={bookmarked.includes(job.id)}
                     onSelect={() => setSelectedJobId(job.id)}
+>>>>>>> 6c76fc9 (add apply job logic)
                     onToggleBookmark={toggleBookmark}
                   />
                 ))}
