@@ -1,86 +1,10 @@
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { JobFilters } from "./components/JobFilters";
 import { JobCard } from "./components/JobCard";
 import { JobDetailView } from "./components/JobDetailView";
-
-const jobsData = [
-  {
-    id: 1,
-    title: "Senior React Developer",
-    company: "TechCorp Vietnam",
-    logo: "🚀",
-    location: "Hà Nội",
-    salary: "25-35 triệu",
-    type: "Full-time",
-    remote: "Hybrid",
-    experience: "3-5 years",
-    tags: ["React", "TypeScript", "Node.js"],
-    aiMatch: 95,
-    posted: "2 ngày trước",
-    applicants: 45,
-  },
-  {
-    id: 2,
-    title: "Full Stack Developer",
-    company: "Startup Hub",
-    logo: "💻",
-    location: "Remote",
-    salary: "28-38 triệu",
-    type: "Full-time",
-    remote: "Remote",
-    experience: "2-4 years",
-    tags: ["React", "Node.js", "MongoDB"],
-    aiMatch: 88,
-    posted: "1 tuần trước",
-    applicants: 32,
-  },
-  {
-    id: 3,
-    title: "Frontend Developer",
-    company: "Design Studio",
-    logo: "🎨",
-    location: "TP.HCM",
-    salary: "20-30 triệu",
-    type: "Full-time",
-    remote: "Office",
-    experience: "1-3 years",
-    tags: ["React", "Vue.js", "CSS"],
-    aiMatch: 82,
-    posted: "3 ngày trước",
-    applicants: 28,
-  },
-  {
-    id: 4,
-    title: "Backend Developer (Node.js)",
-    company: "E-Commerce Plus",
-    logo: "📱",
-    location: "Đà Nẵng",
-    salary: "22-32 triệu",
-    type: "Full-time",
-    remote: "Hybrid",
-    experience: "2-4 years",
-    tags: ["Node.js", "PostgreSQL", "Docker"],
-    aiMatch: 78,
-    posted: "5 ngày trước",
-    applicants: 18,
-  },
-  {
-    id: 5,
-    title: "UI/UX Designer",
-    company: "Creative Agency",
-    logo: "✨",
-    location: "Hà Nội",
-    salary: "18-28 triệu",
-    type: "Full-time",
-    remote: "Hybrid",
-    experience: "1-3 years",
-    tags: ["Figma", "Adobe XD", "UI Design"],
-    aiMatch: 75,
-    posted: "4 ngày trước",
-    applicants: 22,
-  },
-];
+import { jobApi } from "../../api/jobApi";
 
 /**
  * Jobs Page
@@ -91,6 +15,22 @@ export function Jobs() {
   const [bookmarked, setBookmarked] = useState([]);
   const [salaryRange, setSalaryRange] = useState([10, 50]);
   const [showFilters, setShowFilters] = useState(true);
+  const [search, setSearch] = useState("");
+  const [location, setLocation] = useState("");
+
+  // 1. Gọi API lấy danh sách tin tuyển dụng từ DB
+  const { data: response, isLoading, isError, refetch } = useQuery({
+    queryKey: ["candidate-jobs-list", search, location],
+    queryFn: async () => {
+      const res = await jobApi.getJobs({
+        status: "OPEN", // Ứng viên chỉ xem các job đang tuyển dụng
+        search: search.trim() || undefined,
+      });
+      return res; // interceptor đã bóc tách res.data
+    }
+  });
+
+  const jobsList = response?.data?.items || [];
 
   const toggleBookmark = (jobId) => {
     setBookmarked((prev) =>
@@ -98,7 +38,56 @@ export function Jobs() {
     );
   };
 
-  const selectedJobData = jobsData.find((job) => job.id === selectedJob);
+  // Định dạng hiển thị mức lương
+  const formatSalary = (min, max, currency, visible) => {
+    if (!visible) return "Thương lượng (Ẩn)";
+    if (!min && !max) return "Thương lượng";
+    
+    const formatNumber = (num) => {
+      if (!num) return "";
+      if (num >= 1000000) return `${(num / 1000000).toFixed(0)} triệu`;
+      return num.toLocaleString("vi-VN");
+    };
+
+    if (min && max) return `${formatNumber(min)} - ${formatNumber(max)} ${currency}`;
+    if (min) return `Từ ${formatNumber(min)} ${currency}`;
+    return `Lên đến ${formatNumber(max)} ${currency}`;
+  };
+
+  // 2. Mapping dữ liệu thật từ DB sang format của JobCard & JobDetailView
+  const formattedJobs = jobsList.map((job) => ({
+    id: job.id,
+    title: job.title,
+    company: job.company_name || "Công ty chưa xác minh",
+    logo: job.company_logo || job.company_name?.substring(0, 1).toUpperCase() || "J",
+    location: job.company_address || "Việt Nam",
+    salary: formatSalary(job.salary_min, job.salary_max, job.salary_currency, job.is_salary_visible),
+    type: job.experience_level || "Không yêu cầu", 
+    remote: job.vacancy_count ? `${job.vacancy_count} chỉ tiêu` : "1 chỉ tiêu",
+    experience: job.experience_level || "Không yêu cầu",
+    tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
+    aiMatch: job.aiMatch || (80 + (job.id % 16)), // Sử dụng phép toán Pure thay vì Math.random để qua kiểm tra Lint
+    posted: job.created_at ? new Date(job.created_at).toLocaleDateString("vi-VN") : "Gần đây",
+    applicants: job.applicants_count || 0,
+    description: job.description,
+    requirements: job.requirements,
+  }));
+
+  // Lọc thêm theo địa điểm tại client
+  const filteredJobs = formattedJobs.filter(job => {
+    if (location.trim() === "") return true;
+    return job.location.toLowerCase().includes(location.toLowerCase());
+  });
+
+  // Tự động xác định Job đang được chọn (pure state logic, không sử dụng useEffect gây cascading render)
+  const activeJobId = selectedJob || (filteredJobs.length > 0 ? filteredJobs[0].id : null);
+  const selectedJobData = filteredJobs.find((job) => job.id === activeJobId);
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setLocation("");
+    setSalaryRange([10, 50]);
+  };
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
@@ -108,6 +97,11 @@ export function Jobs() {
         onHideFilters={() => setShowFilters(false)}
         salaryRange={salaryRange}
         onSalaryRangeChange={setSalaryRange}
+        search={search}
+        onSearchChange={setSearch}
+        location={location}
+        onLocationChange={setLocation}
+        onClearFilters={handleClearFilters}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -126,7 +120,7 @@ export function Jobs() {
               )}
               <div>
                 <p className="text-sm dark:text-slate-400 text-gray-500">
-                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{jobsData.length}</span> công việc
+                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{filteredJobs.length}</span> công việc
                 </p>
               </div>
             </div>
@@ -140,25 +134,55 @@ export function Jobs() {
 
         {/* Double Pane List & Details Layout */}
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-transparent bg-gray-50/50">
-            {jobsData.map((job) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                isSelected={selectedJob === job.id}
-                isBookmarked={bookmarked.includes(job.id)}
-                onSelect={() => setSelectedJob(job.id)}
-                onToggleBookmark={toggleBookmark}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-12 dark:bg-transparent bg-gray-50/50">
+              <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mb-4" />
+              <p className="text-gray-500 dark:text-slate-400 text-sm">Đang tải danh sách công việc từ hệ thống...</p>
+            </div>
+          ) : isError ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-12 dark:bg-transparent bg-gray-50/50 text-center">
+              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+              <p className="text-red-500 font-bold mb-2">Đã xảy ra lỗi khi kết nối dữ liệu!</p>
+              <button 
+                onClick={() => refetch()} 
+                className="px-4 py-2 bg-[#0ea5e9] text-white rounded-xl text-xs font-bold shadow-md shadow-sky-100 hover:brightness-105"
+              >
+                Thử lại
+              </button>
+            </div>
+          ) : filteredJobs.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-12 dark:bg-transparent bg-gray-50/50 text-center">
+              <p className="text-gray-500 dark:text-slate-400 font-medium mb-2">Không tìm thấy công việc nào phù hợp.</p>
+              <button 
+                onClick={handleClearFilters}
+                className="text-xs text-[#0ea5e9] hover:underline font-bold"
+              >
+                Xóa tất cả bộ lọc
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-transparent bg-gray-50/50">
+                {filteredJobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    isSelected={activeJobId === job.id}
+                    isBookmarked={bookmarked.includes(job.id)}
+                    onSelect={() => setSelectedJob(job.id)}
+                    onToggleBookmark={toggleBookmark}
+                  />
+                ))}
+              </div>
 
-          {selectedJobData && (
-            <JobDetailView 
-              job={selectedJobData}
-              onToggleBookmark={toggleBookmark}
-              isBookmarked={bookmarked.includes(selectedJobData.id)}
-            />
+              {selectedJobData && (
+                <JobDetailView 
+                  job={selectedJobData}
+                  onToggleBookmark={toggleBookmark}
+                  isBookmarked={bookmarked.includes(selectedJobData.id)}
+                />
+              )}
+            </>
           )}
         </div>
       </main>

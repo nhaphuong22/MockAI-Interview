@@ -12,7 +12,12 @@ export function JobFilters({
   showFilters, 
   onHideFilters, 
   salaryRange, 
-  onSalaryRangeChange 
+  onSalaryRangeChange,
+  search,
+  onSearchChange,
+  location,
+  onLocationChange,
+  onClearFilters
 }) {
   return (
     <aside
@@ -37,6 +42,8 @@ export function JobFilters({
             <Search className="w-5 h-5 dark:text-slate-500 text-gray-400 shrink-0" />
             <input
               type="text"
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Tìm kiếm công việc..."
               className="flex-1 outline-none bg-transparent text-sm dark:text-slate-300 text-gray-700"
             />
@@ -45,6 +52,8 @@ export function JobFilters({
             <MapPin className="w-5 h-5 dark:text-slate-500 text-gray-400 shrink-0" />
             <input
               type="text"
+              value={location}
+              onChange={(e) => onLocationChange(e.target.value)}
               placeholder="Địa điểm..."
               className="flex-1 outline-none bg-transparent text-sm dark:text-slate-300 text-gray-700"
             />
@@ -150,7 +159,10 @@ export function JobFilters({
           </Collapsible.Content>
         </Collapsible.Root>
 
-        <button className="w-full py-2 text-[#0ea5e9] hover:underline text-sm font-semibold transition-all">
+        <button 
+          onClick={onClearFilters}
+          className="w-full py-2 text-[#0ea5e9] hover:underline text-sm font-semibold transition-all"
+        >
           Xóa bộ lọc
         </button>
       </div>
