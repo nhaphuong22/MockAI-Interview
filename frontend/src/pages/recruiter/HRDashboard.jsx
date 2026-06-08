@@ -1,9 +1,10 @@
-import { FileText, Users, CheckCircle, XCircle, Eye, Download, Filter, TrendingUp, Calendar, ChevronDown, Check, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { FileText, Users, CheckCircle, XCircle, Eye, Download, TrendingUp, Calendar, Check, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { applicationApi } from "../../api/applicationApi";
 import { useUiStore } from "../../store/useUiStore";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useSocket } from "../../context/SocketContext";
 
 const statusConfig = {
   submitted: { label: "Mới tiếp nhận", color: "bg-blue-50 text-blue-600 border border-blue-100" },
@@ -21,6 +22,9 @@ export function HRDashboard() {
   const [activeTab, setActiveTab] = useState("report"); // 'report' hoặc 'cv'
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tất cả trạng thái");
+  const [selectedJobId, setSelectedJobId] = useState("Tất cả công việc");
+  const [sortOption, setSortOption] = useState("ats_desc"); // 'ats_desc', 'ats_asc', 'date_desc', 'date_asc'
+  const [jobsList, setJobsList] = useState([]);
 
   const getCvFullUrl = (cvUrl) => {
     if (!cvUrl) return "";
@@ -31,22 +35,75 @@ export function HRDashboard() {
     return `${backendUrl}/${cvUrl}`;
   };
 
+  const getSortParams = (option) => {
+    const [sortBy, order] = option.split("_");
+    return { sortBy, order };
+  };
+
   const queryClient = useQueryClient();
   const { showToast } = useUiStore();
+  const socket = useSocket();
+
+  const { sortBy, order } = getSortParams(sortOption);
 
   // Fetch danh sách đơn ứng tuyển thực tế từ DB
   const { data: response, isLoading, isError } = useQuery({
-    queryKey: ["recruiter-applications"],
+    queryKey: ["recruiter-applications", { jobId: selectedJobId, sortBy, order }],
     queryFn: async () => {
-      const res = await applicationApi.getApplications();
+      const params = {
+        jobId: selectedJobId !== "Tất cả công việc" ? selectedJobId : undefined,
+        sortBy,
+        order
+      };
+      const res = await applicationApi.getApplications(params);
       return res; // Axios interceptor đã bóc tách response.data
     }
   });
 
+  // Tự động trích xuất danh sách công việc có ứng viên khi load đầy đủ danh sách
+  useEffect(() => {
+    if (response?.data && selectedJobId === "Tất cả công việc") {
+      const uniqueJobsMap = {};
+      response.data.forEach((app) => {
+        if (app.jobId && app.jobTitle) {
+          uniqueJobsMap[app.jobId] = app.jobTitle;
+        }
+      });
+      const uniqueJobs = Object.entries(uniqueJobsMap).map(([id, title]) => ({
+        id: parseInt(id),
+        title
+      }));
+      setTimeout(() => {
+        setJobsList(uniqueJobs);
+      }, 0);
+    }
+  }, [response, selectedJobId]);
+
+  // Lắng nghe sự kiện ứng tuyển mới qua Socket.io thời gian thực
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewApplication = (application) => {
+      console.log("[Socket] HR Dashboard nhận được đơn ứng tuyển mới:", application);
+      showToast({
+        message: `Hồ sơ mới: Ứng viên ${application.name} vừa nộp đơn vào vị trí "${application.position}"!`,
+        type: "success"
+      });
+      // Làm mới danh sách ứng viên
+      queryClient.invalidateQueries(["recruiter-applications"]);
+    };
+
+    socket.on("new_application", handleNewApplication);
+
+    return () => {
+      socket.off("new_application", handleNewApplication);
+    };
+  }, [socket, queryClient, showToast]);
+
   // Mutation cập nhật trạng thái đơn tuyển
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => applicationApi.updateStatus(id, status),
-    onSuccess: (data) => {
+    onSuccess: () => {
       showToast({ message: "Cập nhật trạng thái hồ sơ ứng viên thành công!", type: "success" });
       queryClient.invalidateQueries(["recruiter-applications"]);
       setShowAIReport(false);
@@ -102,6 +159,51 @@ export function HRDashboard() {
     return "bg-gradient-to-r from-rose-400 to-rose-500 shadow-sm shadow-rose-100";
   };
 
+  const handleExportCSV = () => {
+    if (applications.length === 0) {
+      showToast({ message: "Không có dữ liệu ứng viên để xuất báo cáo.", type: "warning" });
+      return;
+    }
+
+    const headers = ["Tên ứng viên", "Email", "Vị trí tuyển dụng", "Điểm ATS", "Trạng thái", "Ngày nộp hồ sơ"];
+    
+    const statusLabels = {
+      submitted: "Mới tiếp nhận",
+      new: "Mới tiếp nhận",
+      reviewing: "Đang xem hồ sơ",
+      reviewed: "Đang xem hồ sơ",
+      interviewed: "Mời phỏng vấn",
+      accepted: "Đạt (Hired)",
+      rejected: "Từ chối"
+    };
+
+    const csvRows = [
+      headers.join(","), // Header row
+      ...applications.map(app => {
+        const name = `"${(app.candidateName || "").replace(/"/g, '""')}"`;
+        const email = `"${(app.candidateEmail || "").replace(/"/g, '""')}"`;
+        const position = `"${(app.jobTitle || "").replace(/"/g, '""')}"`;
+        const score = app.aiScore || 0;
+        const status = `"${statusLabels[app.status] || app.status}"`;
+        const date = new Date(app.appliedDate).toLocaleDateString('vi-VN');
+        return [name, email, position, score, status, date].join(",");
+      })
+    ];
+
+    const csvContent = "\uFEFF" + csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const today = new Date().toISOString().slice(0, 10);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `MockAI_Applications_Report_${today}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast({ message: "Xuất file CSV thành công!", type: "success" });
+  };
+
   return (
     <div className="bg-gray-50/50 min-h-[calc(100vh-64px)] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -110,7 +212,10 @@ export function HRDashboard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản trị Tuyển dụng</h1>
             <p className="text-gray-600 font-medium">Theo dõi ứng viên và phân tích chất lượng bằng AI</p>
           </div>
-          <button className="px-6 py-3 bg-[#0ea5e9] text-white font-bold rounded-xl hover:bg-[#0284c7] hover:shadow-lg transition-all flex items-center gap-2 shadow-md shadow-sky-100 cursor-pointer">
+          <button 
+            onClick={handleExportCSV}
+            className="px-6 py-3 bg-[#0ea5e9] text-white font-bold rounded-xl hover:bg-[#0284c7] hover:shadow-lg transition-all flex items-center gap-2 shadow-md shadow-sky-100 cursor-pointer"
+          >
             <Download className="w-5 h-5" />
             <span>Xuất Báo Cáo</span>
           </button>
@@ -140,34 +245,57 @@ export function HRDashboard() {
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
           {/* Filters Bar */}
           <div className="p-6 border-b border-gray-100 bg-gray-50/30">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-              <div className="flex-1 flex gap-4 w-full">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm ứng viên theo tên, email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-4 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
-                  />
-                </div>
-                <button className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl hover:border-[#0ea5e9] hover:bg-sky-50 transition-all flex items-center gap-2 font-bold text-gray-600 cursor-pointer">
-                  <Filter className="w-5 h-5" />
-                  <span>Bộ lọc</span>
-                </button>
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+              <div className="w-full lg:flex-1">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm ứng viên theo tên, email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-4 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400 font-medium text-sm"
+                />
               </div>
-              <select 
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#0ea5e9] focus:outline-none font-bold text-gray-700 min-w-[200px]"
-              >
-                <option>Tất cả trạng thái</option>
-                <option>Mới tiếp nhận</option>
-                <option>Đang xem hồ sơ</option>
-                <option>Mời phỏng vấn</option>
-                <option>Đã chấp nhận</option>
-                <option>Đã từ chối</option>
-              </select>
+              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                <select
+                  value={selectedJobId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedJobId(val === "Tất cả công việc" ? "Tất cả công việc" : parseInt(val));
+                  }}
+                  className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#0ea5e9] focus:outline-none font-bold text-gray-700 text-sm flex-1 sm:flex-initial"
+                >
+                  <option value="Tất cả công việc">Tất cả công việc</option>
+                  {jobsList.map((job) => (
+                    <option key={job.id} value={job.id}>
+                      {job.title}
+                    </option>
+                  ))}
+                </select>
+
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#0ea5e9] focus:outline-none font-bold text-gray-700 text-sm flex-1 sm:flex-initial"
+                >
+                  <option>Tất cả trạng thái</option>
+                  <option>Mới tiếp nhận</option>
+                  <option>Đang xem hồ sơ</option>
+                  <option>Mời phỏng vấn</option>
+                  <option>Đã chấp nhận</option>
+                  <option>Đã từ chối</option>
+                </select>
+
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                  className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-[#0ea5e9] focus:outline-none font-bold text-gray-700 text-sm flex-1 sm:flex-initial"
+                >
+                  <option value="ats_desc">Điểm ATS (Cao → Thấp)</option>
+                  <option value="ats_asc">Điểm ATS (Thấp → Cao)</option>
+                  <option value="date_desc">Ngày nộp (Mới nhất)</option>
+                  <option value="date_asc">Ngày nộp (Cũ nhất)</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -355,17 +483,30 @@ export function HRDashboard() {
                             {statusConfig[selectedCandidate.status]?.label || selectedCandidate.status}
                           </span>
                         </div>
-                        {selectedCandidate.cvUrl && (
-                          <a 
-                            href={getCvFullUrl(selectedCandidate.cvUrl)}
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-sky-50 text-[#0ea5e9] border border-sky-100 hover:bg-sky-100 hover:text-[#0284c7] font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm shadow-sky-50"
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span>Mở CV trong tab mới</span>
-                          </a>
-                        )}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          {selectedCandidate.cvUrl && (
+                            <a 
+                              href={getCvFullUrl(selectedCandidate.cvUrl)}
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-sky-50 text-[#0ea5e9] border border-sky-100 hover:bg-sky-100 hover:text-[#0284c7] font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm shadow-sky-50"
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span>Mở CV trong tab mới</span>
+                            </a>
+                          )}
+                          {selectedCandidate.pdfReportUrl && (
+                            <a 
+                              href={selectedCandidate.pdfReportUrl}
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-[#e0f2fe] text-[#0369a1] border border-sky-200 hover:bg-sky-200 hover:text-[#0284c7] font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm shadow-sky-50"
+                            >
+                              <Download className="w-4 h-4" />
+                              <span>Tải Báo cáo AI (PDF)</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
 

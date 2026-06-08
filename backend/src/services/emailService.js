@@ -275,3 +275,70 @@ export const sendApplicationReportEmail = async (toEmail, recipientName, candida
   });
 };
 
+/**
+ * Gửi email thông báo cập nhật trạng thái đơn ứng tuyển cho ứng viên
+ * @param {string} toEmail - Email nhận
+ * @param {string} candidateName - Tên ứng viên
+ * @param {string} jobTitle - Tiêu đề công việc
+ * @param {string} status - Trạng thái đơn tuyển (SUBMITTED, REVIEWING, INTERVIEWED, ACCEPTED, REJECTED)
+ */
+export const sendApplicationStatusUpdateEmail = async (toEmail, candidateName, jobTitle, status) => {
+  const statusLabels = {
+    SUBMITTED: 'Mới tiếp nhận',
+    REVIEWING: 'Đang xem hồ sơ',
+    INTERVIEWED: 'Mời phỏng vấn',
+    ACCEPTED: 'Đạt / Trúng tuyển',
+    REJECTED: 'Từ chối'
+  };
+
+  const statusColors = {
+    SUBMITTED: '#0ea5e9', // Blue
+    REVIEWING: '#eab308', // Yellow
+    INTERVIEWED: '#a855f7', // Purple
+    ACCEPTED: '#10b981', // Emerald
+    REJECTED: '#f43f5e' // Rose
+  };
+
+  const statusLabel = statusLabels[status] || status;
+  const statusColor = statusColors[status] || '#64748b';
+  const loginUrl = `${FRONTEND_URL}/`;
+
+  await sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Cập nhật trạng thái đơn ứng tuyển - Vị trí ${jobTitle}`,
+    text: `Chào ${candidateName},\n\nHồ sơ ứng tuyển của bạn cho vị trí "${jobTitle}" đã được cập nhật thành: ${statusLabel}.\n\nVui lòng đăng nhập vào hệ thống để xem chi tiết: ${loginUrl}\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #f8fafc; padding: 32px; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="background: #0ea5e9; display: inline-block; padding: 12px 20px; border-radius: 12px; margin-bottom: 16px;">
+            <span style="color: white; font-size: 20px; font-weight: 800;">${APP_NAME}</span>
+          </div>
+          <h1 style="color: #0f172a; font-size: 20px; margin: 0;">Trạng Thế Ứng Tuyển Thay Đổi</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(14,165,233,0.07);">
+          <p style="color: #334155; margin-top: 0; font-size: 15px;">Chào <strong>${candidateName}</strong>,</p>
+          <p style="color: #64748b; line-height: 1.6;">Chúng tôi muốn thông báo rằng hồ sơ ứng tuyển của bạn cho vị trí <strong>${jobTitle}</strong> đã được cập nhật trạng thái mới:</p>
+          
+          <div style="margin: 24px 0; padding: 16px; background: #f8fafc; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
+            <div style="color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 6px;">Trạng Thái Hiện Tại</div>
+            <span style="background: ${statusColor}15; color: ${statusColor}; padding: 6px 16px; border-radius: 9999px; font-weight: 800; font-size: 14px; border: 1px solid ${statusColor}30; display: inline-block;">
+              ${statusLabel}
+            </span>
+          </div>
+
+          <p style="color: #64748b; line-height: 1.6; font-size: 14px;">Bạn có thể theo dõi tiến trình ứng tuyển, nhận xét của nhà tuyển dụng hoặc luyện tập phỏng vấn ảo trực tiếp trên hệ thống của chúng tôi.</p>
+          
+          <div style="text-align: center; margin: 28px 0 8px 0;">
+            <a href="${loginUrl}" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; text-decoration: none; padding: 12px 30px; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
+              🌐 Đi tới MockAI Interview
+            </a>
+          </div>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 11px; margin-top: 20px;">Email này được gửi tự động từ hệ thống MockAI Interview. Vui lòng không trả lời trực tiếp email này.</p>
+      </div>
+    `
+  });
+};
+
+

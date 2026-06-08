@@ -58,19 +58,7 @@ export const SocketProvider = ({ children }) => {
       queryClient.invalidateQueries(["notifications"]);
     });
 
-    // Lắng nghe sự kiện ứng tuyển mới (chỉ dành cho HR ở Dashboard)
-    socketInstance.on("new_application", (application) => {
-      console.log("[Socket] Có ứng viên mới ứng tuyển:", application);
-      
-      // Hiển thị Toast thông báo nộp đơn mới cho HR
-      showToast({
-        message: `Hồ sơ mới: Ứng viên ${application.name} vừa nộp đơn vào vị trí "${application.position}"!`,
-        type: "success"
-      });
 
-      // Làm mới danh sách ứng viên tuyển dụng trên Dashboard HR
-      queryClient.invalidateQueries(["recruiter-applications"]);
-    });
 
     socketInstance.on("connect_error", (error) => {
       console.error("[Socket] Lỗi kết nối socket:", error.message);
