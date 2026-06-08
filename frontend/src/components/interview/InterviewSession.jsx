@@ -10,6 +10,7 @@ import {
 } from "../../api/voiceSession";
 import { submitAnswerApi } from "../../api/interviewApi";
 import { axiosClient } from "../../api/axiosClient";
+import { Avatar3D } from "../ai/Avatar3D";
 
 /**
  * InterviewSession Component
@@ -39,6 +40,7 @@ export function InterviewSession({
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [aiVolume, setAiVolume] = useState(0);
   const [isFinalizing, setIsFinalizing] = useState(false); // Cloudinary and assessment packaging state
   const [audioLevel, setAudioLevel] = useState(0);
   const [finalAnswer, setFinalAnswer] = useState("");
@@ -89,17 +91,36 @@ export function InterviewSession({
       configureVoiceStyle(utterance, isMale);
       const matchingVoice = selectVoice(aiVoice);
       if (matchingVoice) utterance.voice = matchingVoice;
+      
+      let fallbackInterval;
+
       utterance.onstart = () => {
         setIsAiSpeaking(true);
         setIsRecording(false);
         setHasRecorded(false);
+
+        // Giả lập âm lượng miệng nhấp nháy khi nói
+        fallbackInterval = setInterval(() => {
+          if (window.speechSynthesis.speaking) {
+            setAiVolume(0.15 + Math.random() * 0.75);
+          } else {
+            setAiVolume(0);
+            clearInterval(fallbackInterval);
+          }
+        }, 80);
       };
+      
       utterance.onend = () => {
         setIsAiSpeaking(false);
+        setAiVolume(0);
+        if (fallbackInterval) clearInterval(fallbackInterval);
       };
+      
       utterance.onerror = (err) => {
         console.error("SpeechSynthesis error:", err);
         setIsAiSpeaking(false);
+        setAiVolume(0);
+        if (fallbackInterval) clearInterval(fallbackInterval);
       };
       window.speechSynthesis.speak(utterance);
     } else {
@@ -121,6 +142,7 @@ export function InterviewSession({
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    setAiVolume(0);
  
     if (!isAiVoiceEnabled && !force) {
       setIsAiSpeaking(false);
@@ -145,15 +167,54 @@ export function InterviewSession({
       
       const audio = new Audio(audioUrl);
       window.activeTtsAudio = audio;
+
+      // Web Audio AnalyserNode setup for R3F Lipsync
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioContext();
+      const analyser = audioCtx.createAnalyser();
+      const source = audioCtx.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      analyser.fftSize = 64;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let animationId;
+
+      const checkVolume = () => {
+        if (audio.paused || audio.ended) {
+          setAiVolume(0);
+          return;
+        }
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / dataArray.length;
+        const vol = Math.min(average / 90, 1.0); // normalize and scale volume
+        setAiVolume(vol);
+        animationId = requestAnimationFrame(checkVolume);
+      };
+
+      audio.onplay = () => {
+        audioCtx.resume();
+        checkVolume();
+      };
       
       audio.onended = () => {
         setIsAiSpeaking(false);
+        setAiVolume(0);
+        cancelAnimationFrame(animationId);
+        audioCtx.close();
         URL.revokeObjectURL(audioUrl);
         window.activeTtsAudio = null;
       };
       
       audio.onerror = (err) => {
         console.error("TTS audio playback error, falling back:", err);
+        setAiVolume(0);
+        cancelAnimationFrame(animationId);
+        audioCtx.close();
         URL.revokeObjectURL(audioUrl);
         window.activeTtsAudio = null;
         speakQuestionFallback(text, force);
@@ -479,133 +540,140 @@ export function InterviewSession({
         </div>
       </div>
 
-      {/* Main question area */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-3xl w-full">
-          <div className="bg-white rounded-3xl p-8 mb-6 text-center shadow-2xl relative overflow-hidden border border-gray-100">
-            {/* Decorative colored strip */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8]" />
-            <div className="text-xs font-bold text-[#0ea5e9] tracking-widest uppercase mb-2">Câu Hỏi {currentQuestion + 1}</div>
-            <h2 className="text-2xl md:text-3xl mb-4 font-bold text-gray-800 leading-snug">{questionText}</h2>
-            <div className="inline-flex px-3 py-1.5 bg-sky-50 text-[#0ea5e9] rounded-full text-xs font-semibold border border-sky-100/50">
-              Câu hỏi phỏng vấn AI
-            </div>
-          </div>
+      {/* Main question area - Bố cục chia đôi phòng phỏng vấn */}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+        {/* Cột bên trái: Khung Avatar 3D (60%) */}
+        <div className="flex-1 lg:flex-[3] min-h-[350px] lg:min-h-0 border-b lg:border-b-0 lg:border-r border-gray-800 relative">
+          <Avatar3D volume={aiVolume} isListening={isRecording} />
+        </div>
 
-          {isTextMode ? (
-            /* ================= TEXT MODE ================= */
-            <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
-              <textarea
-                placeholder="Nhập câu trả lời của bạn vào đây..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:ring-2 focus:ring-[#0ea5e9]/10 focus:outline-none resize-none text-gray-700 transition-all"
-                rows={6}
-                autoFocus
-                value={textAnswer}
-                onChange={(e) => setTextAnswer(e.target.value)}
-              />
-
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-xs text-gray-500">
-                  <span className="text-[#0ea5e9] font-bold">Gợi ý:</span> Sử dụng phương pháp STAR để cấu trúc câu trả lời của bạn.
-                </div>
-                <button
-                  onClick={handleSaveAndNext}
-                  disabled={isSavingAnswer || !textAnswer.trim()}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg hover:shadow-sky-100 transition-all font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>{currentQuestion < questions.length - 1 ? "Câu Tiếp Theo" : "Hoàn Thành"}</span>
-                </button>
+        {/* Cột bên phải: Câu hỏi & Thu âm (40%) */}
+        <div className="flex-1 lg:flex-[2] overflow-y-auto p-6 md:p-8 flex items-center justify-center bg-gray-900/10">
+          <div className="max-w-xl w-full">
+            <div className="bg-white rounded-3xl p-6 md:p-8 mb-6 text-center shadow-2xl relative overflow-hidden border border-gray-100">
+              {/* Decorative colored strip */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8]" />
+              <div className="text-xs font-bold text-[#0ea5e9] tracking-widest uppercase mb-2">Câu Hỏi {currentQuestion + 1}</div>
+              <h2 className="text-xl md:text-2xl mb-4 font-bold text-gray-800 leading-snug">{questionText}</h2>
+              <div className="inline-flex px-3 py-1.5 bg-sky-50 text-[#0ea5e9] rounded-full text-xs font-semibold border border-sky-100/50">
+                Câu hỏi phỏng vấn AI
               </div>
             </div>
-          ) : (
-            /* ================= VOICE MODE ================= */
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 space-y-6">
-              
-              {/* Case 0: AI is actively speaking TTS question */}
-              {isAiSpeaking && (
-                <div className="py-6 space-y-4">
-                  <AiWaveform />
-                </div>
-              )}
 
-              {/* Case 1: Idle state (ready to record) */}
-              {!isAiSpeaking && !isRecording && !isTranscribing && !hasRecorded && (
-                <div className="text-center py-6">
+            {isTextMode ? (
+              /* ================= TEXT MODE ================= */
+              <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
+                <textarea
+                  placeholder="Nhập câu trả lời của bạn vào đây..."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:ring-2 focus:ring-[#0ea5e9]/10 focus:outline-none resize-none text-gray-700 transition-all"
+                  rows={6}
+                  autoFocus
+                  value={textAnswer}
+                  onChange={(e) => setTextAnswer(e.target.value)}
+                />
+
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-xs text-gray-500">
+                    <span className="text-[#0ea5e9] font-bold">Gợi ý:</span> Sử dụng phương pháp STAR để cấu trúc câu trả lời của bạn.
+                  </div>
                   <button
-                    onClick={startRecording}
-                    className="w-24 h-24 mx-auto mb-4 bg-sky-50 hover:bg-[#f0f9ff] border border-sky-100 rounded-full flex items-center justify-center text-[#0ea5e9] hover:scale-105 transition-all shadow-md group"
+                    onClick={handleSaveAndNext}
+                    disabled={isSavingAnswer || !textAnswer.trim()}
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg hover:shadow-sky-100 transition-all font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    <Mic className="w-10 h-10 group-hover:scale-110 transition-transform" />
+                    {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
+                    <span>{currentQuestion < questions.length - 1 ? "Câu Tiếp Theo" : "Hoàn Thành"}</span>
                   </button>
-                  <p className="text-lg font-bold text-gray-800">Nhấn để bắt đầu trả lời</p>
-                  <p className="text-sm text-gray-500 mt-1">AI đã đọc xong. Sẵn sàng ghi âm giọng nói của bạn</p>
                 </div>
-              )}
+              </div>
+            ) : (
+              /* ================= VOICE MODE ================= */
+              <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 space-y-6">
+                
+                {/* Case 0: AI is actively speaking TTS question */}
+                {isAiSpeaking && (
+                  <div className="py-6 space-y-4">
+                    <AiWaveform />
+                  </div>
+                )}
 
-              {/* Case 2: Recording state */}
-              {!isAiSpeaking && isRecording && (
-                <div className="space-y-6">
-                  <div className="text-center py-4">
+                {/* Case 1: Idle state (ready to record) */}
+                {!isAiSpeaking && !isRecording && !isTranscribing && !hasRecorded && (
+                  <div className="text-center py-6">
                     <button
-                      onClick={stopRecording}
-                      className="w-24 h-24 mx-auto mb-4 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-600 hover:scale-105 transition-all animate-pulse shadow-md relative"
+                      onClick={startRecording}
+                      className="w-20 h-20 mx-auto mb-4 bg-sky-50 hover:bg-[#f0f9ff] border border-sky-100 rounded-full flex items-center justify-center text-[#0ea5e9] hover:scale-105 transition-all shadow-md group"
                     >
-                      <MicOff className="w-10 h-10" />
-                      {/* Ocean blue waves around recording button */}
-                      <span className="absolute inset-0 rounded-full border-4 border-[#0ea5e9]/20 animate-ping" />
+                      <Mic className="w-8 h-8 group-hover:scale-110 transition-transform" />
                     </button>
-                    <p className="text-lg font-bold text-gray-800">Hệ thống đang ghi âm...</p>
-                    <p className="text-sm text-gray-500 mt-1">Nhấp nút ở trên để hoàn thành câu trả lời</p>
+                    <p className="text-base font-bold text-gray-800">Nhấn để bắt đầu trả lời</p>
+                    <p className="text-xs text-gray-500 mt-1">AI đã đọc xong. Sẵn sàng ghi âm giọng nói của bạn</p>
                   </div>
+                )}
 
-                  {/* Realtime voice visualizer */}
-                  <div className="max-w-md mx-auto">
-                    <AudioVisualizer audioLevel={audioLevel} />
-                  </div>
+                {/* Case 2: Recording state */}
+                {!isAiSpeaking && isRecording && (
+                  <div className="space-y-6">
+                    <div className="text-center py-4">
+                      <button
+                        onClick={stopRecording}
+                        className="w-20 h-20 mx-auto mb-4 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-600 hover:scale-105 transition-all animate-pulse shadow-md relative"
+                      >
+                        <MicOff className="w-8 h-8" />
+                        {/* Ocean blue waves around recording button */}
+                        <span className="absolute inset-0 rounded-full border-4 border-[#0ea5e9]/20 animate-ping" />
+                      </button>
+                      <p className="text-lg font-bold text-gray-800">Hệ thống đang ghi âm...</p>
+                      <p className="text-sm text-gray-500 mt-1">Nhấp nút ở trên để hoàn thành câu trả lời</p>
+                    </div>
 
-                  {/* Recording instructions */}
-                  <div className="p-4 bg-sky-50/50 border border-sky-100/50 rounded-2xl text-center">
-                    <span className="text-xs font-bold text-[#0ea5e9] uppercase block mb-1 animate-pulse">AI Đang Lắng Nghe:</span>
-                    <p className="text-xs text-gray-500 italic">
-                      Hãy trình bày câu trả lời của bạn qua microphone. Khi trả lời xong, bấm nút kết thúc để AI dịch chuẩn xác câu hỏi (hỗ trợ song ngữ Anh - Việt).
-                    </p>
-                  </div>
-                </div>
-              )}
+                    {/* Realtime voice visualizer */}
+                    <div className="max-w-xs mx-auto">
+                      <AudioVisualizer audioLevel={audioLevel} />
+                    </div>
 
-              {/* Case 3: Transcribing (loading state) */}
-              {!isAiSpeaking && isTranscribing && (
-                <div className="text-center py-10 space-y-4">
-                  <Loader2 className="w-12 h-12 text-[#0ea5e9] animate-spin mx-auto" />
-                  <p className="text-lg font-bold text-gray-800">AI đang phân tích câu trả lời...</p>
-                  <p className="text-sm text-gray-500">Chuyển âm thanh thành văn bản qua Speech-to-Text</p>
-                </div>
-              )}
-
-              {/* Case 4: Answer transcribing completed */}
-              {!isAiSpeaking && hasRecorded && !isTranscribing && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                    <div>
-                      <h4 className="font-bold text-sm">Ghi âm thành công!</h4>
-                      <p className="text-xs text-emerald-700/80">AI đã chuyển đổi giọng thoại của bạn thành văn bản bên dưới.</p>
+                    {/* Recording instructions */}
+                    <div className="p-4 bg-sky-50/50 border border-sky-100/50 rounded-2xl text-center">
+                      <span className="text-xs font-bold text-[#0ea5e9] uppercase block mb-1 animate-pulse">AI Đang Lắng Nghe:</span>
+                      <p className="text-xs text-gray-500 italic">
+                        Hãy trình bày câu trả lời của bạn qua microphone. Khi trả lời xong, bấm nút kết thúc để AI dịch chuẩn xác câu hỏi (hỗ trợ song ngữ Anh - Việt).
+                      </p>
                     </div>
                   </div>
+                )}
 
-                  {/* Editable transcription result */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                      Nội dung câu trả lời của bạn
-                    </label>
-                    <textarea
-                      value={finalAnswer}
-                      onChange={(e) => setFinalAnswer(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:outline-none text-gray-700 transition-all text-sm leading-relaxed"
-                      rows={5}
-                    />
+                {/* Case 3: Transcribing (loading state) */}
+                {!isAiSpeaking && isTranscribing && (
+                  <div className="text-center py-10 space-y-4">
+                    <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mx-auto" />
+                    <p className="text-base font-bold text-gray-800">AI đang phân tích câu trả lời...</p>
+                    <p className="text-xs text-gray-500">Chuyển âm thanh thành văn bản qua Speech-to-Text</p>
                   </div>
+                )}
+
+                {/* Case 4: Answer transcribing completed */}
+                {!isAiSpeaking && hasRecorded && !isTranscribing && (
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <div>
+                        <h4 className="font-bold text-xs">Ghi âm thành công!</h4>
+                        <p className="text-xs text-emerald-700/80">AI đã chuyển đổi giọng thoại của bạn thành văn bản bên dưới.</p>
+                      </div>
+                    </div>
+
+                    {/* Editable transcription result */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        Nội dung câu trả lời của bạn
+                      </label>
+                      <textarea
+                        value={finalAnswer}
+                        onChange={(e) => setFinalAnswer(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:outline-none text-gray-700 transition-all text-xs leading-relaxed"
+                        rows={4}
+                      />
+                    </div>
 
                   {/* Action buttons */}
                   <div className="flex justify-between items-center gap-4">
@@ -632,6 +700,7 @@ export function InterviewSession({
           )}
         </div>
       </div>
+    </div>
 
       {/* Progress tracker footbar */}
       <div className="bg-gray-800 px-6 py-4">
