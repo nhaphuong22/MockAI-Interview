@@ -1,5 +1,5 @@
 import db from '../db/knex.js';
-import { deleteCache, deleteCachePattern } from '../config/redis.js';
+import { getCache, setCache, deleteCache, deleteCachePattern } from '../config/redis.js';
 import { 
   findBlogWithOwner, 
   insertBlog, 
@@ -66,7 +66,14 @@ export const requestBlogReview = async (blogId, authorId) => {
  * Lấy danh sách bài viết đã xuất bản
  */
 export const getPublishedBlogs = async () => {
+  const cacheKey = 'blogs:published:all';
+  const cachedData = await getCache(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
+
   const blogs = await findPublishedBlogs();
+  await setCache(cacheKey, blogs, 300); // Lưu cache 5 phút
   return blogs;
 };
 

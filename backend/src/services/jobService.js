@@ -1,5 +1,5 @@
 import db from '../db/knex.js';
-import { deleteCache, deleteCachePattern } from '../config/redis.js';
+import { getCache, setCache, deleteCache, deleteCachePattern } from '../config/redis.js';
 import { 
   insertJob, 
   insertJobRequirements 
@@ -86,6 +86,12 @@ export const getJobsList = async ({
   page = 1,
   limit = 10
 }) => {
+  const cacheKey = `jobs:list:${status || 'all'}:${experienceLevel || 'all'}:${hrId || 'all'}:${search || ''}:${page}:${limit}`;
+  const cachedData = await getCache(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
+
   const query = db('jobs')
     .select(
       'jobs.*',
@@ -125,7 +131,7 @@ export const getJobsList = async ({
     .limit(limit)
     .orderBy('jobs.created_at', 'desc');
 
-  return {
+  const result = {
     items,
     pagination: {
       total: count,
@@ -134,6 +140,9 @@ export const getJobsList = async ({
       totalPages: Math.ceil(count / limit)
     }
   };
+
+  await setCache(cacheKey, result, 300); // Lưu cache 5 phút
+  return result;
 };
 
 /**
@@ -241,6 +250,12 @@ export const deleteJobById = async (id) => {
  * Lấy danh sách hồ sơ ứng tuyển nộp vào các job thuộc sở hữu của HR
  */
 export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
+  const cacheKey = `applications:hr:${hrId}:${jobId || 'all'}:${status || 'all'}`;
+  const cachedData = await getCache(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
+
   const query = db('applications')
     .select(
       'applications.*',
@@ -264,7 +279,9 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
     query.where('applications.status', status);
   }
 
-  return await query.orderBy('applications.created_at', 'desc');
+  const result = await query.orderBy('applications.created_at', 'desc');
+  await setCache(cacheKey, result, 300); // Lưu cache 5 phút
+  return result;
 };
 
 /**

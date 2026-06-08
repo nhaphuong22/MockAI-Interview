@@ -1,5 +1,5 @@
 import db from '../db/knex.js';
-import { deleteCachePattern } from '../config/redis.js';
+import { getCache, setCache, deleteCachePattern } from '../config/redis.js';
 import bcrypt from 'bcryptjs';
 import { mapRoleToClient, mapRoleToDb, ROLES } from '../data/roles.js';
 import { 
@@ -18,6 +18,12 @@ import { NotFoundError, ValidationError } from '../core/customErrors.js';
  * Lấy danh sách toàn bộ người dùng kèm phân trang, tìm kiếm và lọc
  */
 export const fetchUsersList = async ({ page = 1, limit = 10, search, role, status }) => {
+  const cacheKey = `users:list:${page}:${limit}:${search || ''}:${role || ''}:${status || ''}`;
+  const cachedData = await getCache(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
+
   const offset = (page - 1) * limit;
 
   // Sử dụng getBaseQuery() từ userModel thay vì truy vấn Knex thô
@@ -83,7 +89,7 @@ export const fetchUsersList = async ({ page = 1, limit = 10, search, role, statu
     totalPaid: parseInt(user.total_paid).toLocaleString('vi-VN') + 'đ'
   }));
 
-  return {
+  const result = {
     users: formattedUsers,
     pagination: {
       totalItems: totalUsers,
@@ -92,6 +98,9 @@ export const fetchUsersList = async ({ page = 1, limit = 10, search, role, statu
       limit
     }
   };
+
+  await setCache(cacheKey, result, 300); // Lưu cache 5 phút
+  return result;
 };
 
 /**
