@@ -1,6 +1,6 @@
 import db from '../db/knex.js';
 import { evaluateCV, generatePDFReportBuffer } from '../services/cvService.js';
-import { sendJobApplicationEmail, sendApplicationReportEmail } from '../services/emailService.js';
+import { sendJobApplicationEmail, sendApplicationReportEmail, sendApplicationStatusUpdateEmail } from '../services/emailService.js';
 import { sendRealtimeNotification, broadcastNewApplication } from '../socket.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -296,7 +296,28 @@ export const getApplications = async (req, res) => {
       query.where('applications.candidate_id', userId);
     } // ADMIN xem toàn bộ
 
-    const list = await query.orderBy('applications.created_at', 'desc');
+    // Xử lý lọc theo jobId (chỉ áp dụng cho HR hoặc Admin)
+    const { jobId, sortBy, order } = req.query;
+    if (jobId && jobId !== "Tất cả công việc" && !isNaN(parseInt(jobId))) {
+      query.where("applications.job_id", parseInt(jobId));
+    }
+
+    // Xử lý sắp xếp (Sorting)
+    const validSortFields = {
+      ats: "applications.cv_score",
+      date: "applications.created_at"
+    };
+    const sortField = validSortFields[sortBy] || "applications.cv_score";
+    const sortOrder = (order === "asc" || order === "desc") ? order : "desc";
+
+    query.orderBy(sortField, sortOrder);
+
+    // Secondary sort để đảm bảo thứ tự nhất quán khi trùng điểm
+    if (sortField !== "applications.created_at") {
+      query.orderBy("applications.created_at", "desc");
+    }
+
+    const list = await query;
 
     // Ánh xạ trả về định dạng chuẩn hoá
     const formatted = list.map(item => ({
@@ -345,10 +366,17 @@ export const updateApplicationStatus = async (req, res) => {
       return sendError(res, 400, 'Trạng thái cập nhật không hợp lệ.');
     }
 
-    // Lấy thông tin đơn ứng tuyển hiện tại
+    // Lấy thông tin đơn ứng tuyển hiện tại cùng thông tin ứng viên
     const app = await db('applications')
       .join('jobs', 'applications.job_id', 'jobs.id')
-      .select('applications.*', 'jobs.hr_id as job_hr_id', 'jobs.title as job_title')
+      .join('users', 'applications.candidate_id', 'users.id')
+      .select(
+        'applications.*', 
+        'jobs.hr_id as job_hr_id', 
+        'jobs.title as job_title',
+        'users.email as candidate_email',
+        'users.full_name as candidate_name'
+      )
       .where('applications.id', appId)
       .first();
 
@@ -374,6 +402,17 @@ export const updateApplicationStatus = async (req, res) => {
         reviewed_at: new Date(),
         updated_at: new Date()
       });
+
+    // Gửi email thông báo trạng thái cập nhật cho ứng viên
+    if (app.candidate_email) {
+      console.log(`[Application] Gửi mail thông báo trạng thái ${dbStatus} tới Candidate: ${app.candidate_email}`);
+      sendApplicationStatusUpdateEmail(
+        app.candidate_email,
+        app.candidate_name || 'Ứng viên',
+        app.job_title,
+        dbStatus
+      ).catch(err => console.error('Lỗi khi gửi email thông báo trạng thái đơn ứng tuyển:', err));
+    }
 
     // Tạo thông báo gửi cho Ứng viên
     const statusLabels = {

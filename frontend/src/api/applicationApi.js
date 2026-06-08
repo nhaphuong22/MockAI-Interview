@@ -13,8 +13,8 @@ export const applicationApi = {
   /**
    * Lấy danh sách hồ sơ ứng tuyển của người dùng hiện tại (Candidate hoặc HR/Admin)
    */
-  getApplications: () => {
-    return axiosClient.get("/applications");
+  getApplications: (params) => {
+    return axiosClient.get("/applications", { params });
   },
 
   /**
