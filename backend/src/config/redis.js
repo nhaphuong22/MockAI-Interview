@@ -9,11 +9,26 @@ let redisClient = null;
 let isRedisConnected = false;
 
 if (process.env.NODE_ENV !== 'test') {
-  const redisUrl = process.env.REDIS_URL || (redisPassword 
+  let redisUrl = process.env.REDIS_URL || (redisPassword 
     ? `redis://:${redisPassword}@${redisHost}:${redisPort}`
     : `redis://${redisHost}:${redisPort}`);
 
-  redisClient = createClient({ url: redisUrl });
+  // Auto-convert to secure protocol (rediss://) if connecting to Upstash via separate env variables
+  if (redisUrl.includes('upstash.io') && redisUrl.startsWith('redis://')) {
+    redisUrl = redisUrl.replace('redis://', 'rediss://');
+  }
+
+  const clientOptions = { url: redisUrl };
+
+  // Enable TLS and bypass self-signed certificate validation for secure connections
+  if (redisUrl.startsWith('rediss://') || redisUrl.includes('upstash.io')) {
+    clientOptions.socket = {
+      tls: true,
+      rejectUnauthorized: false
+    };
+  }
+
+  redisClient = createClient(clientOptions);
 
   redisClient.on('error', (err) => {
     console.warn('⚠️ [Redis Error]: Kết nối Redis thất bại hoặc bị ngắt quãng. Hệ thống tự động chuyển sang fallback dùng Database chính.', err.message);
