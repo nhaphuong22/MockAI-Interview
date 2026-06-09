@@ -9,9 +9,9 @@ let redisClient = null;
 let isRedisConnected = false;
 
 if (process.env.NODE_ENV !== 'test') {
-  const redisUrl = redisPassword 
+  const redisUrl = process.env.REDIS_URL || (redisPassword 
     ? `redis://:${redisPassword}@${redisHost}:${redisPort}`
-    : `redis://${redisHost}:${redisPort}`;
+    : `redis://${redisHost}:${redisPort}`);
 
   redisClient = createClient({ url: redisUrl });
 
