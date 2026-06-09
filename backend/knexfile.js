@@ -26,8 +26,7 @@ export const production = {
   },
   pool: {
     min: parseInt(process.env.DB_POOL_MIN || 2),
-    max: parseInt(process.env.DB_POOL_MAX || 10),
-    ping: (conn, cb) => conn.query('SELECT 1', cb)
+    max: parseInt(process.env.DB_POOL_MAX || 10)
   },
   migrations: {
     tableName: 'knex_migrations',
