@@ -38,7 +38,6 @@ Vui lòng sử dụng các kỹ năng phù hợp nhất cho **Phát triển chun
 
 - Thao tác tệp (đọc, ghi, tìm kiếm)
 - Lệnh terminal
-- Duyệt web
 - Phân tích và refactor code
 - Kiểm thử và gỡ lỗi
 

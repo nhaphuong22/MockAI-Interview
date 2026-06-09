@@ -31,7 +31,12 @@ export const SocketProvider = ({ children }) => {
     console.log("[Socket] Đang kết nối tới server:", wsUrl);
 
     const socketInstance = io(wsUrl, {
-      auth: { token }
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000
     });
 
     setTimeout(() => {
@@ -58,14 +63,41 @@ export const SocketProvider = ({ children }) => {
       queryClient.invalidateQueries(["notifications"]);
     });
 
-
+    let disconnectToastShown = false;
 
     socketInstance.on("connect_error", (error) => {
       console.error("[Socket] Lỗi kết nối socket:", error.message);
+      if (!disconnectToastShown) {
+        showToast({
+          message: "Không thể kết nối máy chủ thời gian thực. Đang tự động kết nối lại...",
+          type: "warning"
+        });
+        disconnectToastShown = true;
+      }
     });
 
-    socketInstance.on("disconnect", () => {
-      console.log("[Socket] Đã ngắt kết nối socket");
+    socketInstance.on("disconnect", (reason) => {
+      console.log("[Socket] Đã ngắt kết nối socket. Lý do:", reason);
+      if (!disconnectToastShown && reason !== "io client disconnect") {
+        showToast({
+          message: "Mất kết nối thời gian thực. Đang tự động kết nối lại...",
+          type: "warning"
+        });
+        disconnectToastShown = true;
+      }
+    });
+
+    socketInstance.on("reconnect", (attemptNumber) => {
+      console.log("[Socket] Đã kết nối lại thành công sau", attemptNumber, "lần thử.");
+      showToast({
+        message: "Đã khôi phục kết nối thời gian thực thành công!",
+        type: "success"
+      });
+      disconnectToastShown = false;
+    });
+
+    socketInstance.on("reconnect_error", (error) => {
+      console.error("[Socket] Lỗi kết nối lại socket:", error.message);
     });
 
     return () => {
