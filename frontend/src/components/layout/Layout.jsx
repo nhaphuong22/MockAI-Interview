@@ -196,7 +196,7 @@ export function Layout() {
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
                       >
                         {isUserRecruiter ? <Building className="w-4 h-4" /> : isUserAdmin ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                        <span>{isUserRecruiter ? "Công Ty" : isUserAdmin ? "Quản trị viên" : "Hồ Sơ Cá Nhân"}</span>
+                        <span>{isUserRecruiter ? "Hồ sơ Công ty" : isUserAdmin ? "Quản trị viên" : "Hồ sơ Cá nhân"}</span>
                       </Link>
                     </DropdownMenu.Item>
 
@@ -206,7 +206,7 @@ export function Layout() {
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
                       >
                         <Settings className="w-4 h-4" />
-                        <span>Cài Đặt</span>
+                        <span>{isUserRecruiter ? "Cài đặt tài khoản" : "Cài đặt"}</span>
                       </Link>
                     </DropdownMenu.Item>
 
