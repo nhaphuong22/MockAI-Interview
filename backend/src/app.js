@@ -17,14 +17,21 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000'
-].filter(Boolean);
+].filter(Boolean).map(url => url.replace(/\/$/, ''));
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, or Postman)
     if (!origin) return callback(null, true);
     
-    if (process.env.NODE_ENV !== 'production' || allowedOrigins.indexOf(origin) !== -1) {
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
+    const isAllowed = 
+      process.env.NODE_ENV !== 'production' || 
+      allowedOrigins.includes(normalizedOrigin) ||
+      normalizedOrigin.endsWith('.vercel.app');
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error('Blocked by CORS policy'));
