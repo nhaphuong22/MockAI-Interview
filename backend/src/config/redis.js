@@ -18,6 +18,14 @@ if (process.env.NODE_ENV !== 'test') {
     redisUrl = redisUrl.replace('redis://', 'rediss://');
   }
 
+  let logTarget = `${redisHost}:${redisPort}`;
+  try {
+    const parsedUrl = new URL(redisUrl);
+    logTarget = parsedUrl.host;
+  } catch (e) {
+    // Keep fallback
+  }
+
   const clientOptions = { url: redisUrl };
 
   // Enable TLS and bypass self-signed certificate validation for secure connections
@@ -40,7 +48,7 @@ if (process.env.NODE_ENV !== 'test') {
   });
 
   redisClient.on('ready', () => {
-    console.log(`🚀 [Redis]: Kết nối thành công tới Redis server tại ${redisHost}:${redisPort}`);
+    console.log(`🚀 [Redis]: Kết nối thành công tới Redis server tại ${logTarget}`);
     isRedisConnected = true;
   });
 
@@ -107,7 +115,7 @@ export const deleteCachePattern = async (pattern) => {
       keys.push(key);
     }
     if (keys.length > 0) {
-      await Promise.all(keys.map(key => redisClient.del(key)));
+      await redisClient.del(keys);
       console.log(`🧹 [Redis Cache Cleaned]: Đã xóa ${keys.length} keys khớp với pattern "${pattern}"`);
     }
     return true;

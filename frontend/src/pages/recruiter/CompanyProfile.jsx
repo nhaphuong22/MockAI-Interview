@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import {
@@ -97,13 +97,25 @@ export function CompanyProfile() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const toastTimerRef = useRef(null);
 
-  const showToast = (message, type = "success") => {
+  const showToast = useCallback((message, type = "success") => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToast({ show: true, message, type });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast((prev) => ({ ...prev, show: false }));
     }, 4000);
-  };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -155,7 +167,7 @@ export function CompanyProfile() {
     updateProfileMutation.mutate(formData);
   };
 
-  const processFileUpload = async (file) => {
+  const processFileUpload = useCallback(async (file) => {
     if (!file) return;
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -170,11 +182,12 @@ export function CompanyProfile() {
         showToast("Tải logo lên thành công!", "success");
       }
     } catch (error) {
+      console.error(error);
       showToast("Không thể tải ảnh lên. Vui lòng thử lại.", "error");
     } finally {
       setIsUploadingLogo(false);
     }
-  };
+  }, [showToast]);
 
   const handleFileUpload = async (e) => processFileUpload(e.target.files[0]);
 
@@ -190,7 +203,7 @@ export function CompanyProfile() {
     } else {
       showToast("Vui lòng chọn file ảnh (JPG, PNG).", "error");
     }
-  }, []);
+  }, [processFileUpload, showToast]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1c] py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-500 font-inter relative">

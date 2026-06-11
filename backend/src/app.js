@@ -29,7 +29,7 @@ app.use(cors({
     const isAllowed = 
       process.env.NODE_ENV !== 'production' || 
       allowedOrigins.includes(normalizedOrigin) ||
-      normalizedOrigin.endsWith('.vercel.app');
+      (normalizedOrigin.endsWith('.vercel.app') && normalizedOrigin.includes('mockai'));
 
     if (isAllowed) {
       callback(null, true);
@@ -44,9 +44,6 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Phục vụ thư mục uploads như là file tĩnh
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Serve static uploads
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
