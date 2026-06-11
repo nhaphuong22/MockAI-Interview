@@ -25,10 +25,41 @@ const COMPANY_SIZE_OPTIONS = [
 ];
 
 const CITY_OPTIONS = [
-  "Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Bình Dương",
-  "Đồng Nai", "Khánh Hòa", "Bắc Ninh", "Quảng Ninh", "Thừa Thiên Huế", "Nghệ An",
-  "Thanh Hóa", "Bà Rịa - Vũng Tàu", "Long An", "Lâm Đồng", "Khác",
-];
+  "Thành phố Hà Nội",
+  "Thành phố Hồ Chí Minh",
+  "Thành phố Hải Phòng",
+  "Thành phố Đà Nẵng",
+  "Thành phố Cần Thơ",
+  "Thành phố Huế",
+  "Tỉnh Cao Bằng",
+  "Tỉnh Điện Biên",
+  "Tỉnh Hà Tĩnh",
+  "Tỉnh Lai Châu",
+  "Tỉnh Lạng Sơn",
+  "Tỉnh Nghệ An",
+  "Tỉnh Quảng Ninh",
+  "Tỉnh Thanh Hóa",
+  "Tỉnh Sơn La",
+  "Tỉnh Tuyên Quang",
+  "Tỉnh Lào Cai",
+  "Tỉnh Thái Nguyên",
+  "Tỉnh Phú Thọ",
+  "Tỉnh Bắc Ninh",
+  "Tỉnh Hưng Yên",
+  "Tỉnh Ninh Bình",
+  "Tỉnh Quảng Trị",
+  "Tỉnh Quảng Ngãi",
+  "Tỉnh Gia Lai",
+  "Tỉnh Khánh Hòa",
+  "Tỉnh Lâm Đồng",
+  "Tỉnh Đắk Lắk",
+  "Tỉnh Đồng Nai",
+  "Tỉnh Tây Ninh",
+  "Tỉnh Vĩnh Long",
+  "Tỉnh Đồng Tháp",
+  "Tỉnh Cà Mau",
+  "Tỉnh An Giang"
+].sort((a, b) => a.localeCompare(b, 'vi'));
 
 // ─── Reusable Sub-components (outside to prevent re-mount on re-render) ────────
 
@@ -98,6 +129,27 @@ export function CompanyProfile() {
   const [isDragging, setIsDragging] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const toastTimerRef = useRef(null);
+  const [provinces, setProvinces] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProvinces = async () => {
+      try {
+        const response = await fetch("https://provinces.open-api.vn/api/v2/p/");
+        if (response.ok && isMounted) {
+          const data = await response.json();
+          const sortedProvinces = data.map(p => p.name).sort((a, b) => a.localeCompare(b, 'vi'));
+          setProvinces(sortedProvinces);
+        }
+      } catch (error) {
+        console.error("Failed to fetch provinces from API v2:", error);
+      }
+    };
+    fetchProvinces();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const showToast = useCallback((message, type = "success") => {
     if (toastTimerRef.current) {
@@ -471,7 +523,7 @@ export function CompanyProfile() {
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">Địa chỉ trụ sở</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <SelectField label="Tỉnh / Thành phố" name="companyCity" icon={MapPin} options={CITY_OPTIONS} placeholder="-- Chọn tỉnh / thành phố --" value={formData.companyCity} onChange={handleChange} />
+                  <SelectField label="Tỉnh / Thành phố" name="companyCity" icon={MapPin} options={provinces.length > 0 ? provinces : CITY_OPTIONS} placeholder="-- Chọn tỉnh / thành phố --" value={formData.companyCity} onChange={handleChange} />
                   <InputField label="Địa chỉ chi tiết" name="companyAddress" icon={MapPin} placeholder="Số nhà, đường, quận/huyện..." value={formData.companyAddress} onChange={handleChange} />
                 </div>
               </div>
