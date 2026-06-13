@@ -1,16 +1,16 @@
-# Graph Report - MockAI-Interview  (2026-06-07)
+# Graph Report - MockAI-Interview  (2026-06-13)
 
 ## Corpus Check
-- 3258 files · ~2,569,206 words
+- 3272 files · ~1,130,532 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 19765 nodes · 17986 edges · 3145 communities (1242 shown, 1903 thin omitted)
+- 18783 nodes · 17113 edges · 3154 communities (1248 shown, 1906 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 5 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6c76fc98`
+- Built from commit: `3d356fab`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -3000,15 +3000,17 @@
 - [[_COMMUNITY_Community 3017|Community 3017]]
 - [[_COMMUNITY_Community 3018|Community 3018]]
 - [[_COMMUNITY_Community 3019|Community 3019]]
+- [[_COMMUNITY_Community 3151|Community 3151]]
+- [[_COMMUNITY_Community 3152|Community 3152]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `Communities (3145 total, 1904 thin omitted)` - 1082 edges
-2. `files` - 436 edges
-3. `cn()` - 58 edges
-4. `🧠 Knowledge Modules (Fractal Skills)` - 55 edges
-5. `sendResponse()` - 44 edges
-6. `sendError()` - 44 edges
-7. `🧠 Knowledge Modules (Fractal Skills)` - 44 edges
+1. `files` - 436 edges
+2. `cn()` - 58 edges
+3. `🧠 Knowledge Modules (Fractal Skills)` - 55 edges
+4. `sendResponse()` - 46 edges
+5. `sendError()` - 46 edges
+6. `🧠 Knowledge Modules (Fractal Skills)` - 44 edges
+7. `PLEASE PARSE INSTRUCTIONS IN ENGLISH ONLY (See .agent rules).` - 40 edges
 8. `🧠 Knowledge Modules (Fractal Skills)` - 39 edges
 9. `agents` - 34 edges
 10. `🧠 Knowledge Modules (Fractal Skills)` - 34 edges
@@ -3028,7 +3030,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (3145 total, 1903 thin omitted)
+## Communities (3154 total, 1906 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.00
@@ -3051,8 +3053,8 @@ Cohesion: 0.07
 Nodes (28): Any, analyze_reviews(), Review analysis module for App Store Optimization. Analyzes user reviews for sen, Extract frequently mentioned themes and topics.          Args:             revie, Analyzes user reviews for actionable insights., Identify bugs, crashes, and other issues from reviews.          Args:, Extract feature requests and desired improvements.          Args:             re, Track sentiment changes over time.          Args:             reviews_by_period: (+20 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.14
-Nodes (28): generateToken(), changePasswordController(), forgotPasswordController(), login(), loginGoogle(), logout(), register(), resendVerificationEmailController() (+20 more)
+Cohesion: 0.09
+Nodes (47): generateToken(), verifyToken(), changePasswordController(), forgotPasswordController(), login(), loginGoogle(), logout(), register() (+39 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.04
@@ -3111,8 +3113,8 @@ Cohesion: 0.05
 Nodes (43): 1. Push Notifications, 2. Offline Sync & Conflict Resolution, 3. Mobile API Optimization, 4. App Versioning, 5. Authentication for Mobile, 6. Error Handling for Mobile, 7. Media & Binary Handling, 8. Security for Mobile (+35 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.08
-Nodes (26): AiWaveform(), AudioRecorderTest(), AudioVisualizer(), MicrophoneSelector(), MicrophoneSetup(), axiosClient, getInterviewHistoryApi(), initInterviewApi() (+18 more)
+Cohesion: 0.09
+Nodes (24): AiWaveform(), Avatar3D(), axiosClient, getInterviewHistoryApi(), initInterviewApi(), submitAnswerApi(), assessVoiceSessionApi(), completeVoiceSessionApi() (+16 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.05
@@ -3127,8 +3129,8 @@ Cohesion: 0.05
 Nodes (42): 1. ClusterIP (Default), 2. NodePort, 3. LoadBalancer, 4. ExternalName, Algorithms, Best Practices, ClientIP, Common Patterns (+34 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.10
-Nodes (28): AdminAnalytics(), AdminDashboard(), formatMoney(), AdminSidebar(), AISettings(), ManageBlog(), ManageCompanies(), ManageJobPosts() (+20 more)
+Cohesion: 0.08
+Nodes (32): AdminAnalytics(), AdminDashboard(), formatMoney(), AdminSidebar(), AISettings(), ManageBlog(), ManageCompanies(), ManageJobPosts() (+24 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.05
@@ -3160,7 +3162,7 @@ Nodes (22): Any, LocalizationHelper, plan_localization_strategy(), Localization 
 
 ### Community 32 - "Community 32"
 Cohesion: 0.05
-Nodes (39): dependencies, axios, canvas-confetti, clsx, framer-motion, gsap, lucide-react, mockai-interview-root (+31 more)
+Nodes (39): dependencies, axios, canvas-confetti, clsx, framer-motion, gsap, lucide-react, @mediapipe/tasks-vision (+31 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.05
@@ -3307,8 +3309,8 @@ Cohesion: 0.06
 Nodes (32): 10. [Step 2: Generate Design System (REQUIRED)](./sub-skills/step-2-generate-design-system-required.md), 11. [Step 3: Supplement with Detailed Searches (as needed)](./sub-skills/step-3-supplement-with-detailed-searches-as-needed.md), 12. [Step 4: Stack Guidelines (Default: html-tailwind)](./sub-skills/step-4-stack-guidelines-default-html-tailwind.md), 13. [Available Domains](./sub-skills/available-domains.md), 14. [Available Stacks](./sub-skills/available-stacks.md), 15. [Step 1: Analyze Requirements](./sub-skills/step-1-analyze-requirements.md), 16. [Step 2: Generate Design System (REQUIRED)](./sub-skills/step-2-generate-design-system-required.md), 17. [Step 3: Supplement with Detailed Searches (as needed)](./sub-skills/step-3-supplement-with-detailed-searches-as-needed.md) (+24 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.13
-Nodes (15): ManageUsers(), getAllUsers(), toggleUserStatus(), updateUser(), VerifyCompany(), SocketContext, SocketProvider(), useAuthGate() (+7 more)
+Cohesion: 0.10
+Nodes (26): jobApi, ApplicationDetailModal(), STATUS_OPTIONS, VerifyCompany(), SocketContext, SocketProvider(), useSocket(), useAuthGate() (+18 more)
 
 ### Community 70 - "Community 70"
 Cohesion: 0.06
@@ -3335,11 +3337,11 @@ Cohesion: 0.09
 Nodes (18): Any, analyze_keyword_set(), KeywordAnalyzer, Keyword analysis module for App Store Optimization. Analyzes keyword search volu, Analyzes keywords for ASO effectiveness., Generate long-tail keyword variations.          Args:             base_keyword:, Extract potential keywords from text (descriptions, reviews).          Args:, Calculate keyword density in text.          Args:             text: Text to anal (+10 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.11
-Nodes (20): changePasswordApi(), forgotPasswordApi(), loginApi(), loginGoogleApi(), registerApi(), resendVerificationApi(), resetPasswordApi(), updateProfileApi() (+12 more)
+Cohesion: 0.07
+Nodes (27): changePasswordApi(), forgotPasswordApi(), loginApi(), loginGoogleApi(), registerApi(), resendVerificationApi(), resetPasswordApi(), updateProfileApi() (+19 more)
 
 ### Community 77 - "Community 77"
-Cohesion: 0.22
+Cohesion: 0.24
 Nodes (11): exportPdf(), scoreCV(), uploadCV(), uploadToCloudinary(), router, storage, upload, uploadHandler (+3 more)
 
 ### Community 78 - "Community 78"
@@ -3368,7 +3370,7 @@ Nodes (29): 10. [Phase 7: AWS Enumeration](./sub-skills/phase-7-aws-enumeration.
 
 ### Community 84 - "Community 84"
 Cohesion: 0.16
-Nodes (25): createUser(), deleteUser(), getUserById(), getUsers(), toggleUserStatus(), updateUser(), CLIENT_ROLES, mapRoleToClient() (+17 more)
+Nodes (26): deleteCachePattern(), createUser(), deleteUser(), getUserById(), getUsers(), toggleUserStatus(), updateUser(), CLIENT_ROLES (+18 more)
 
 ### Community 85 - "Community 85"
 Cohesion: 0.07
@@ -3467,12 +3469,12 @@ Cohesion: 0.07
 Nodes (26): 1. [Static Analysis & Formatting](./sub-skills/static-analysis-formatting.md), 2. [Testing Frameworks](./sub-skills/testing-frameworks.md), 3. [Modern Development Tools](./sub-skills/modern-development-tools.md), 4. [CI/CD & Automation](./sub-skills/cicd-automation.md), 5. [Style Guides & Best Practices](./sub-skills/style-guides-best-practices.md), 6. [Tools & Frameworks](./sub-skills/tools-frameworks.md), 7. [Security & Advanced Topics](./sub-skills/security-advanced-topics.md), Approach (+18 more)
 
 ### Community 109 - "Community 109"
-Cohesion: 0.11
-Nodes (15): ApplicationTracking(), statusConfig, SavedCompanies(), SavedJobs(), savedJobsData, ApplicationCard(), TrackingStats(), router (+7 more)
+Cohesion: 0.27
+Nodes (5): applicationApi, ApplicationTracking(), statusConfig, ApplicationCard(), TrackingStats()
 
 ### Community 110 - "Community 110"
-Cohesion: 0.12
-Nodes (27): JobDetail(), deleteBlog(), getAnalytics(), getBlogs(), getJobs(), getPermissionsMatrix(), reviewBlog(), updateJobApproval() (+19 more)
+Cohesion: 0.14
+Nodes (24): JobDetail(), deleteBlog(), getAnalytics(), getBlogs(), getJobs(), getPermissionsMatrix(), reviewBlog(), updateJobApproval() (+16 more)
 
 ### Community 111 - "Community 111"
 Cohesion: 0.07
@@ -3575,16 +3577,16 @@ Cohesion: 0.08
 Nodes (24): Context, Do not use this skill when, Instructions, Requirements, Safety, Use this skill when, 1. Compliance Framework Analysis, 1. Data Controller (+16 more)
 
 ### Community 136 - "Community 136"
-Cohesion: 0.14
-Nodes (12): applicationApi, jobApi, CandidateProfile(), CompanyProfile(), CompanySettings(), EditJob(), HRDashboard(), statusConfig (+4 more)
+Cohesion: 0.17
+Nodes (7): router, createPaymentUrl(), handleVnpayIpn(), getStatus(), router, router, paymentService
 
 ### Community 137 - "Community 137"
 Cohesion: 0.08
 Nodes (24): 10. [Caching Strategies](./sub-skills/caching-strategies.md), 11. [Asynchronous Processing](./sub-skills/asynchronous-processing.md), 12. [Framework & Technology Expertise](./sub-skills/framework-technology-expertise.md), 13. [API Gateway & Load Balancing](./sub-skills/api-gateway-load-balancing.md), 14. [Performance Optimization](./sub-skills/performance-optimization.md), 15. [Testing Strategies](./sub-skills/testing-strategies.md), 16. [Deployment & Operations](./sub-skills/deployment-operations.md), 17. [Documentation & Developer Experience](./sub-skills/documentation-developer-experience.md) (+16 more)
 
 ### Community 138 - "Community 138"
-Cohesion: 0.09
-Nodes (33): completeVoiceSession(), AppError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError, getDefaultLearningPath(), getDefaultRadarSkills() (+25 more)
+Cohesion: 0.08
+Nodes (39): development, production, getInterviewsHistory(), startInterviewSession(), submitAnswer(), AppError, ForbiddenError, NotFoundError (+31 more)
 
 ### Community 139 - "Community 139"
 Cohesion: 0.08
@@ -3643,8 +3645,8 @@ Cohesion: 0.08
 Nodes (23): Additional Tools Reference, Advanced Cloud Pentesting Scripts, AWS Queries, AWS Region Iteration Scripts, Azure Automation Runbooks, Azure Device Code Login Flow, Azure Function Apps, Azure Managed Identity Token Retrieval (+15 more)
 
 ### Community 153 - "Community 153"
-Cohesion: 0.16
-Nodes (24): haiku, opus, haiku, opus, haiku, opus, high, low (+16 more)
+Cohesion: 0.14
+Nodes (28): haiku, opus, haiku, opus, haiku, opus, high, low (+20 more)
 
 ### Community 154 - "Community 154"
 Cohesion: 0.08
@@ -3667,16 +3669,16 @@ Cohesion: 0.09
 Nodes (22): API Design Checklist, Authentication & Authorization, Documentation, Documentation, Error Handling, Filtering & Sorting, GraphQL-Specific Checks, HTTP Methods (+14 more)
 
 ### Community 159 - "Community 159"
-Cohesion: 0.10
-Nodes (40): verifyToken(), router, applyJob(), getApplications(), updateApplicationStatus(), getInterviewsHistory(), startInterviewSession(), submitAnswer() (+32 more)
+Cohesion: 0.18
+Nodes (19): createNewJob(), deleteJob(), getJobApplications(), getJobById(), getJobs(), updateJob(), updateJobApplication(), insertJob() (+11 more)
 
 ### Community 160 - "Community 160"
 Cohesion: 0.14
-Nodes (20): createDraft(), getBlogById(), getPublishedBlogs(), submitForReview(), uploadCoverImage(), db, deleteBlog(), findBlogWithAuthor() (+12 more)
+Nodes (23): deleteCache(), getCache(), setCache(), createDraft(), getBlogById(), getPublishedBlogs(), submitForReview(), uploadCoverImage() (+15 more)
 
 ### Community 161 - "Community 161"
-Cohesion: 0.15
-Nodes (13): assessVoiceSession(), getTTSAudio(), registerVoiceSession(), transcribeVoiceSession(), avatarDir, avatarStorage, storage, uploadAudio (+5 more)
+Cohesion: 0.22
+Nodes (6): avatarDir, avatarStorage, storage, uploadAudio, uploadAvatar, uploadDir
 
 ### Community 162 - "Community 162"
 Cohesion: 0.09
@@ -3703,8 +3705,8 @@ Cohesion: 0.09
 Nodes (22): Ambiguity Resolution, At Milestone Completion, Check Order, Cleanup, Creating Overrides, During Re-verification, Example VERIFICATION.md, Examples (+14 more)
 
 ### Community 168 - "Community 168"
-Cohesion: 0.12
-Nodes (23): haiku, opus, sonnet, haiku, opus, sonnet, haiku, opus (+15 more)
+Cohesion: 0.09
+Nodes (31): haiku, opus, sonnet, haiku, opus, sonnet, haiku, opus (+23 more)
 
 ### Community 169 - "Community 169"
 Cohesion: 0.09
@@ -3763,8 +3765,8 @@ Cohesion: 0.09
 Nodes (21): 2a. Git History, 2b. Planning State, 2c. Phase Artifacts, 2d. Session Reports, 2e. Git Worktree State, Abandoned Work Detection, Crash/Interruption Detection, Forensics Workflow (+13 more)
 
 ### Community 183 - "Community 183"
-Cohesion: 0.17
-Nodes (12): blogApi, BlogDetail(), featuredJobs, Home(), popularTags, stats, WriteBlog(), GlobalBackground() (+4 more)
+Cohesion: 0.09
+Nodes (22): blogApi, AuthModal(), BlogDetail(), CITY_OPTIONS, featuredJobs, Home(), popularTags, stats (+14 more)
 
 ### Community 184 - "Community 184"
 Cohesion: 0.10
@@ -3935,8 +3937,8 @@ Cohesion: 0.11
 Nodes (18): Color, Copywriting, Output: UI-SPEC.md, Registry (only if shadcn initialized), shadcn Initialization Gate, Spacing, Step 1: Load Context, Step 2: Scout Existing UI (+10 more)
 
 ### Community 226 - "Community 226"
-Cohesion: 0.00
-Nodes (1082): Communities (3145 total, 1904 thin omitted), Community 0 - "Community 0", Community 1000 - "Community 1000", Community 1001 - "Community 1001", Community 1002 - "Community 1002", Community 1003 - "Community 1003", Community 1004 - "Community 1004", Community 1005 - "Community 1005" (+1074 more)
+Cohesion: 0.31
+Nodes (5): AudioRecorderTest(), AudioVisualizer(), MicrophoneSelector(), MicrophoneSetup(), useMicrophone()
 
 ### Community 227 - "Community 227"
 Cohesion: 0.11
@@ -4019,8 +4021,8 @@ Cohesion: 0.11
 Nodes (17): API Service (userApi.ts), Complete Examples, Example 1: Complete Modern Component, Example 2: Complete Feature Structure, Example 2: Parent Container with Lazy Loading, Example 3: Cache-First Strategy Implementation, Example 3: Complete Route with Lazy Loading, Example 4: Complete Route File (+9 more)
 
 ### Community 247 - "Community 247"
-Cohesion: 0.17
-Nodes (8): cvApi, CVReview(), CVAnalysisLoading(), CVAnalysisResult(), CVUploadArea(), InterviewInfoInput(), popularPositions, positionSkillsMap
+Cohesion: 0.18
+Nodes (7): cvApi, CVReview(), CVAnalysisLoading(), CVAnalysisResult(), CVUploadArea(), popularPositions, positionSkillsMap
 
 ### Community 248 - "Community 248"
 Cohesion: 0.11
@@ -4147,8 +4149,8 @@ Cohesion: 0.12
 Nodes (16): 10. [Third-Party Integrations](./sub-skills/third-party-integrations.md), 1. [Core React Expertise](./sub-skills/core-react-expertise.md), 2. [Next.js & Full-Stack Integration](./sub-skills/nextjs-full-stack-integration.md), 3. [Modern Frontend Architecture](./sub-skills/modern-frontend-architecture.md), 4. [State Management & Data Fetching](./sub-skills/state-management-data-fetching.md), 5. [Styling & Design Systems](./sub-skills/styling-design-systems.md), 6. [Performance & Optimization](./sub-skills/performance-optimization.md), 7. [Testing & Quality Assurance](./sub-skills/testing-quality-assurance.md) (+8 more)
 
 ### Community 279 - "Community 279"
-Cohesion: 0.12
-Nodes (16): 1. Kiến trúc & Công nghệ (Tech Stack), 2. Tiêu chuẩn Thiết kế (Frontend & Design), 3. Quy tắc Code (Coding Rules), 4. Lộ trình sắp tới (Upcoming Modules), 5. Quyết định Kiến trúc (Architecture Decisions), 🤖 Danh tính Agent: NhaPhuong, GEMINI.md - Cấu hình Agent, 🌐 Giao thức Ngôn ngữ (Language Protocol) (+8 more)
+Cohesion: 0.06
+Nodes (36): Architectural Constraints, Architecture, Code Style, Component Responsibilities, Configuration, Conventions, Cross-Cutting Concerns, 🤖 Danh tính Agent: NhaPhuong (+28 more)
 
 ### Community 280 - "Community 280"
 Cohesion: 0.12
@@ -4228,7 +4230,7 @@ Nodes (15): Basic Pipeline Structure, Best Practices, Caching Strategies, Do not
 
 ### Community 299 - "Community 299"
 Cohesion: 0.12
-Nodes (15): description, devDependencies, concurrently, name, private, scripts, build, dev (+7 more)
+Nodes (16): description, devDependencies, concurrently, name, packageManager, private, scripts, build (+8 more)
 
 ### Community 300 - "Community 300"
 Cohesion: 0.12
@@ -4348,7 +4350,7 @@ Nodes (14): 10. [What Constitutes Healthy](./sub-skills/what-constitutes-healthy
 
 ### Community 329 - "Community 329"
 Cohesion: 0.13
-Nodes (14): 1. Quân - Module phỏng vấn kiến thức giữa ứng viên với AI (Chỉ test kiến thức), 2. Phương - Module luyện tập Phỏng vấn Giọng nói & Tương tác AI (AI Voice Engine & Interaction), 3. Triều - Module giao diện và chức năng cho HR đăng bài ứng tuyển, 4. Huy - Module Đánh giá CV, chấm điểm CV và gợi ý chỉnh sửa CV & Blog Cộng đồng, 5. Sang - Module giao diện và chức năng cho Admin hệ thống để quản lý các users & Kiểm duyệt nội dung, GIAI ĐOẠN 1: Thiết lập & Khởi tạo (Core Setup & Shells), GIAI ĐOẠN 2: Xử lý Dữ liệu & Đăng tải (Data Processing & Blog Submit), GIAI ĐOẠN 3: Tương tác Động & Phê duyệt (Dynamic Feedback & Admin Review) (+6 more)
+Nodes (16): 1. Quân - Module phỏng vấn kiến thức giữa ứng viên với AI (Chỉ test kiến thức), 2. Phương - Module luyện tập Phỏng vấn Giọng nói & Tương tác AI (AI Voice Engine & Interaction), 3. Triều - Module giao diện và chức năng cho HR đăng bài ứng tuyển, 4. Huy - Module Đánh giá CV, chấm điểm CV và gợi ý chỉnh sửa CV & Blog Cộng đồng, 5. Sang - Module giao diện và chức năng cho Admin hệ thống để quản lý các users & Kiểm duyệt nội dung, GIAI ĐOẠN 1: Thiết lập & Khởi tạo (Core Setup & Shells), GIAI ĐOẠN 2: Xử lý Dữ liệu & Đăng tải (Data Processing & Blog Submit), GIAI ĐOẠN 3: Tương tác Động & Phê duyệt (Dynamic Feedback & Admin Review) (+8 more)
 
 ### Community 330 - "Community 330"
 Cohesion: 0.13
@@ -4735,8 +4737,8 @@ Cohesion: 0.18
 Nodes (10): 1. [implementation-playbook](./sub-skills/implementation-playbook.md), Context, Do not use this skill when, Instructions, 🧠 Knowledge Modules (Fractal Skills), Output Format, Pull Request Enhancement, Requirements (+2 more)
 
 ### Community 426 - "Community 426"
-Cohesion: 0.18
-Nodes (10): Community Hubs (Navigation), Corpus Check, God Nodes (most connected - your core abstractions), Graph Freshness, Graph Report - MockAI-Interview  (2026-06-07), Import Cycles, Knowledge Gaps, Suggested Questions (+2 more)
+Cohesion: 0.33
+Nodes (6): 1. Kiến trúc & Công nghệ (Tech Stack), 2. Tiêu chuẩn Thiết kế (Frontend & Design), 3. Quy tắc Code (Coding Rules), 4. Lộ trình sắp tới (Upcoming Modules), 5. Quyết định Kiến trúc (Architecture Decisions), 🚀 Hướng dẫn tùy chỉnh: Dự án MockAI-Interview
 
 ### Community 427 - "Community 427"
 Cohesion: 0.18
@@ -5191,8 +5193,8 @@ Cohesion: 0.25
 Nodes (7): 1. [implementation-playbook](./sub-skills/implementation-playbook.md), Async Python Patterns, Do not use this skill when, Instructions, 🧠 Knowledge Modules (Fractal Skills), Resources, Use this skill when
 
 ### Community 540 - "Community 540"
-Cohesion: 0.29
-Nodes (6): app, options, setupSwagger(), swaggerSpec, __dirname, __filename
+Cohesion: 0.25
+Nodes (7): app, options, setupSwagger(), swaggerSpec, allowedOrigins, __dirname, __filename
 
 ### Community 541 - "Community 541"
 Cohesion: 0.25
@@ -5336,7 +5338,7 @@ Nodes (7): Approach, Do not use this skill when, E-E-A-T Framework, Focus Areas,
 
 ### Community 576 - "Community 576"
 Cohesion: 0.25
-Nodes (7): adaptiveTierMap, heavy, light, standard, phaseTypes, profiles, providerPresets
+Nodes (7): adaptiveTierMap, heavy, light, standard, agents, phaseTypes, profiles
 
 ### Community 577 - "Community 577"
 Cohesion: 0.54
@@ -5639,12 +5641,12 @@ Cohesion: 0.29
 Nodes (7): git, base_branch, branching_strategy, create_tag, milestone_branch_template, phase_branch_template, quick_branch_template
 
 ### Community 654 - "Community 654"
-Cohesion: 0.29
-Nodes (7): agents, gsd-doc-classifier, balanced, budget, golden, phaseType, routingTier
+Cohesion: 0.33
+Nodes (6): gsd-doc-classifier, balanced, budget, golden, phaseType, routingTier
 
 ### Community 655 - "Community 655"
-Cohesion: 0.29
-Nodes (7): haiku, opus, sonnet, reasoning_effort, reasoning_effort, codex, reasoning_effort
+Cohesion: 0.50
+Nodes (4): haiku, opus, sonnet, codebuddy
 
 ### Community 656 - "Community 656"
 Cohesion: 0.29
@@ -6891,8 +6893,8 @@ Cohesion: 0.50
 Nodes (3): ⚖️ Compliance & Legal Blueprint, 📂 Structure, 🚀 Usage
 
 ### Community 972 - "Community 972"
-Cohesion: 0.40
-Nodes (3): server, setupSocket(), userSockets
+Cohesion: 0.13
+Nodes (23): __dirname, __filename, missingEnv, requiredEnv, server, applyJob(), extractSkillsFromText(), getApplications() (+15 more)
 
 ### Community 973 - "Community 973"
 Cohesion: 0.50
@@ -6960,19 +6962,11 @@ Nodes (3): 🚀 SEO Master & GEO Optimization DNA, 📂 Structure, 🚀 Usage
 
 ### Community 989 - "Community 989"
 Cohesion: 0.50
-Nodes (4): haiku, opus, sonnet, antigravity
+Nodes (4): trae, haiku, opus, sonnet
 
 ### Community 990 - "Community 990"
 Cohesion: 0.50
 Nodes (4): haiku, opus, sonnet, cline
-
-### Community 991 - "Community 991"
-Cohesion: 0.67
-Nodes (4): qwen, haiku, opus, qwen
-
-### Community 992 - "Community 992"
-Cohesion: 0.50
-Nodes (4): windsurf, haiku, opus, sonnet
 
 ### Community 993 - "Community 993"
 Cohesion: 0.50
@@ -7342,6 +7336,10 @@ Nodes (3): 📋 Các bước thực hiện, /log-error - Hệ thống Ghi nhận
 Cohesion: 0.50
 Nodes (3): 🎨 Design Standard, 🛠️ Quy trình thực hiện, /ui-ux-pro-max - Premium UI Generator
 
+### Community 1154 - "Community 1154"
+Cohesion: 0.67
+Nodes (3): Data Flow, Primary Request Path, Real-time Flow (Socket.io)
+
 ### Community 1158 - "Community 1158"
 Cohesion: 0.67
 Nodes (3): hooks, context_warnings, workflow_guard
@@ -7359,19 +7357,19 @@ Cohesion: 0.67
 Nodes (3): safety, always_confirm_destructive, always_confirm_external_services
 
 ## Knowledge Gaps
-- **12944 isolated node(s):** `name`, `description`, `glass-border`, `glass-surface`, `linear-gradient-top` (+12939 more)
+- **11901 isolated node(s):** `name`, `description`, `glass-border`, `glass-surface`, `linear-gradient-top` (+11896 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **1903 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1906 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Communities (3145 total, 1904 thin omitted)` connect `Community 226` to `Community 426`?**
-  _High betweenness centrality (0.002) - this node is a cross-community bridge._
 - **Why does `files` connect `Community 0` to `Community 947`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
+- **Why does `JobDetail()` connect `Community 110` to `Community 183`, `Community 69`, `Community 247`?**
+  _High betweenness centrality (0.001) - this node is a cross-community bridge._
 - **What connects `name`, `description`, `glass-border` to the rest of the system?**
-  _13198 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _12155 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.0045871559633027525 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
