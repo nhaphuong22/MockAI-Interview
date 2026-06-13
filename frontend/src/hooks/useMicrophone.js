@@ -92,6 +92,18 @@ export function useMicrophone() {
       // Stop existing streams first to prevent conflicts
       stopAllAudioTracks();
 
+      // Check if bypass mic is requested for headless test/dev environments
+      const hasBypass = typeof window !== 'undefined' && 
+        (window.location.search.includes("bypassMic=true") || localStorage.getItem("bypassMic") === "true");
+
+      if (hasBypass) {
+        console.warn("Bypassing microphone access for testing/headless mode.");
+        setPermissionGranted(true);
+        setDevices([{ deviceId: "mock-mic", label: "Mock Microphone (Test Mode)", kind: "audioinput" }]);
+        setSelectedDevice("mock-mic");
+        return;
+      }
+
       const constraints = {
         audio: deviceId ? { deviceId: { exact: deviceId } } : true
       };

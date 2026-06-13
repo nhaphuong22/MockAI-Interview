@@ -23,10 +23,15 @@ export const createJob = async ({
   deadline = null,
   detailedRequirements = []
 }) => {
-  return await db.transaction(async (trx) => {
+  // Lấy company_id của HR tuyển dụng từ bảng users để liên kết công ty
+  const hrUser = await db('users').where({ id: hrId }).first();
+  const companyId = hrUser ? hrUser.company_id : null;
+
+  const result = await db.transaction(async (trx) => {
     // 1. Tạo bản ghi tin tuyển dụng trong bảng 'jobs' qua jobModel
     const [newJob] = await insertJob({
       hr_id: hrId,
+      company_id: companyId, // Lưu thông tin công ty của HR
       title,
       description: description || null,
       requirements: requirements || null,
@@ -57,14 +62,20 @@ export const createJob = async ({
       insertedRequirements = await insertJobRequirements(requirementsToInsert, trx);
     }
 
-    // Clear Jobs list cache
-    await deleteCachePattern('jobs:list:*');
-
     return {
-      ...newJob,
-      detailed_requirements: insertedRequirements
+      newJob,
+      insertedRequirements
     };
   });
+
+  // Clear Jobs list cache SAU KHI TRANSACTION ĐÃ COMMIT THÀNH CÔNG
+  // Tránh Race Condition: client khác truy vấn DB cũ và ghi đè cache cũ vào Redis
+  await deleteCachePattern('jobs:list:*');
+
+  return {
+    ...result.newJob,
+    detailed_requirements: result.insertedRequirements
+  };
 };
 
 /**

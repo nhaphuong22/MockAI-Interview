@@ -91,7 +91,7 @@ export const initInterviewSession = async ({
 /**
  * Submit candidate's answer for a question, evaluate using Groq, and persist to DB
  */
-export const submitCandidateAnswer = async (questionId, answerText, audioUrl = null) => {
+export const submitCandidateAnswer = async (questionId, answerText, audioUrl = null, gazeViolations = 0) => {
   // 1. Fetch targeted question details via interviewModel
   const question = await findQuestionById(Number(questionId));
 
@@ -107,6 +107,16 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     answerText.trim()
   );
 
+  // Tính toán trừ điểm vi phạm ánh mắt
+  const penalty = Math.min(50, (gazeViolations || 0) * 10);
+  const finalScore = Math.max(0, (evaluation.score || 0) - penalty);
+
+  // Bổ sung phản hồi về vi phạm ánh mắt nếu có
+  let feedback = evaluation.feedback || '';
+  if (gazeViolations > 0) {
+    feedback += `\n\n[Cảnh báo AI]: Phát hiện ${gazeViolations} lần ứng viên nhìn lệch khỏi khung hình phỏng vấn. Điểm số bị trừ ${penalty} điểm.`;
+  }
+
   // 3. Persist to candidate_answers table via interviewModel
   const existingAnswer = await findExistingAnswer(Number(questionId));
 
@@ -114,8 +124,10 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
   if (existingAnswer) {
     const updateData = {
       answer_text: answerText.trim(),
-      ai_feedback: evaluation.feedback,
-      score: evaluation.score,
+      ai_feedback: feedback,
+      score: finalScore,
+      gaze_violations: gazeViolations,
+      gaze_score_penalty: penalty,
       updated_at: new Date()
     };
     if (audioUrl) {
@@ -127,8 +139,10 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     const insertData = {
       interview_question_id: Number(questionId),
       answer_text: answerText.trim(),
-      ai_feedback: evaluation.feedback,
-      score: evaluation.score,
+      ai_feedback: feedback,
+      score: finalScore,
+      gaze_violations: gazeViolations,
+      gaze_score_penalty: penalty,
       created_at: new Date(),
       updated_at: new Date()
     };

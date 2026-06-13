@@ -10,7 +10,9 @@ import {
 } from "../../api/voiceSession";
 import { submitAnswerApi } from "../../api/interviewApi";
 import { axiosClient } from "../../api/axiosClient";
+import { useGazeTracker } from "../../hooks/useGazeTracker";
 import { Avatar3D } from "../ai/Avatar3D";
+import { useAuthStore } from "../../store/useAuthStore";
 
 /**
  * InterviewSession Component
@@ -28,6 +30,9 @@ export function InterviewSession({
   aiVoice = "vi-VN-female",
   onFinish
 }) {
+  const { user } = useAuthStore();
+  const userDisplayName = user?.full_name || user?.fullName || user?.name || "Ứng viên";
+
   const isTextMode = interviewType === "text";
   const questionObj = questions[currentQuestion];
   const questionText = typeof questionObj === "string" ? questionObj : (questionObj?.question_text || "");
@@ -58,6 +63,32 @@ export function InterviewSession({
 
   // Timer state
   const [seconds, setSeconds] = useState(0);
+
+  // Gaze tracking state
+  const [gazeWarning, setGazeWarning] = useState(false);
+  const [cameraErrorMessage, setCameraErrorMessage] = useState("");
+  const [accumulatedGazeViolations, setAccumulatedGazeViolations] = useState(0);
+
+  const {
+    videoRef,
+    gazeViolations,
+    isWarningActive,
+    isCameraActive,
+    isLoadingModel,
+    isFaceDetected,
+    resetViolations
+  } = useGazeTracker({
+    isActive: interviewType === "voice" && !isFinalizing,
+    onViolation: (count) => {
+      setAccumulatedGazeViolations(count);
+    },
+    onWarning: (active) => {
+      setGazeWarning(active);
+    },
+    onCameraError: (msg) => {
+      setCameraErrorMessage(msg);
+    }
+  });
 
   const stopAudioEngine = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -435,12 +466,19 @@ export function InterviewSession({
       setIsSavingAnswer(true);
       try {
         console.log(`Submitting answer for question ID ${questionId} to backend...`);
-        await submitAnswerApi(questionId, answerToSave.trim(), currentAudioUrl);
+        // Gửi kèm số lần vi phạm ánh mắt lên backend
+        await submitAnswerApi(questionId, answerToSave.trim(), currentAudioUrl, accumulatedGazeViolations);
       } catch (err) {
         console.error("Failed to submit and grade answer:", err);
       } finally {
         setIsSavingAnswer(false);
       }
+    }
+
+    // Reset violations count for next question
+    if (interviewType === "voice") {
+      resetViolations();
+      setAccumulatedGazeViolations(0);
     }
 
     // If it's the final question, trigger evaluation and Cloudinary upload
@@ -540,167 +578,236 @@ export function InterviewSession({
         </div>
       </div>
 
-      {/* Main question area - Bố cục chia đôi phòng phỏng vấn */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-        {/* Cột bên trái: Khung Avatar 3D (60%) */}
-        <div className="flex-1 lg:flex-[3] min-h-[350px] lg:min-h-0 border-b lg:border-b-0 lg:border-r border-gray-800 relative">
-          <Avatar3D volume={aiVolume} isListening={isRecording} />
-        </div>
-
-        {/* Cột bên phải: Câu hỏi & Thu âm (40%) */}
-        <div className="flex-1 lg:flex-[2] overflow-y-auto p-6 md:p-8 flex items-center justify-center bg-gray-900/10">
-          <div className="max-w-xl w-full">
-            <div className="bg-white rounded-3xl p-6 md:p-8 mb-6 text-center shadow-2xl relative overflow-hidden border border-gray-100">
-              {/* Decorative colored strip */}
+      {/* Main question area - Bố cục căn giữa cho text, hoặc 2 cột cho voice */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-950 flex flex-col justify-between">
+        {isTextMode ? (
+          /* ================= TEXT MODE (Căn giữa đơn giản) ================= */
+          <div className="max-w-2xl mx-auto py-12 w-full flex-1 flex flex-col justify-center">
+            <div className="bg-slate-900 rounded-3xl p-6 md:p-8 mb-6 text-center border border-slate-800 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8]" />
               <div className="text-xs font-bold text-[#0ea5e9] tracking-widest uppercase mb-2">Câu Hỏi {currentQuestion + 1}</div>
-              <h2 className="text-xl md:text-2xl mb-4 font-bold text-gray-800 leading-snug">{questionText}</h2>
-              <div className="inline-flex px-3 py-1.5 bg-sky-50 text-[#0ea5e9] rounded-full text-xs font-semibold border border-sky-100/50">
+              <h2 className="text-xl md:text-2xl mb-4 font-bold text-white leading-snug">{questionText}</h2>
+              <div className="inline-flex px-3 py-1.5 bg-sky-950/50 text-[#38bdf8] rounded-full text-xs font-semibold border border-sky-900/50">
                 Câu hỏi phỏng vấn AI
               </div>
             </div>
 
-            {isTextMode ? (
-              /* ================= TEXT MODE ================= */
-              <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
-                <textarea
-                  placeholder="Nhập câu trả lời của bạn vào đây..."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:ring-2 focus:ring-[#0ea5e9]/10 focus:outline-none resize-none text-gray-700 transition-all"
-                  rows={6}
-                  autoFocus
-                  value={textAnswer}
-                  onChange={(e) => setTextAnswer(e.target.value)}
-                />
+            <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl">
+              <textarea
+                placeholder="Nhập câu trả lời của bạn vào đây..."
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl focus:border-[#0ea5e9] focus:ring-2 focus:ring-[#0ea5e9]/10 focus:outline-none resize-none text-white transition-all placeholder-gray-500"
+                rows={6}
+                autoFocus
+                value={textAnswer}
+                onChange={(e) => setTextAnswer(e.target.value)}
+              />
 
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-xs text-gray-500">
-                    <span className="text-[#0ea5e9] font-bold">Gợi ý:</span> Sử dụng phương pháp STAR để cấu trúc câu trả lời của bạn.
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-xs text-gray-400">
+                  <span className="text-[#38bdf8] font-bold">Gợi ý:</span> Sử dụng phương pháp STAR để cấu trúc câu trả lời của bạn.
+                </div>
+                <button
+                  onClick={handleSaveAndNext}
+                  disabled={isSavingAnswer || !textAnswer.trim()}
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg hover:shadow-sky-500/20 transition-all font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{currentQuestion < questions.length - 1 ? "Câu Tiếp Theo" : "Hoàn Thành"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ================= VOICE MODE (Giao diện 2 cột Premium PiP) ================= */
+          <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col lg:flex-row gap-6 items-stretch my-auto min-h-[480px]">
+            
+            {/* Cột trái: Camera của Candidate chiếm 2/3 */}
+            <div className="flex-1 lg:flex-[2] relative bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col justify-between">
+              
+              {/* Warning Banner nhấp nháy đỏ */}
+              {gazeWarning && (
+                <div className="absolute top-4 left-4 right-4 bg-red-600/90 text-white font-bold px-4 py-3 rounded-2xl text-center text-sm shadow-xl backdrop-blur-md animate-pulse border border-red-500 z-30">
+                  {isFaceDetected ? (
+                    `⚠️ Cảnh báo: Vui lòng tập trung nhìn vào màn hình! (Số lần vi phạm: ${accumulatedGazeViolations})`
+                  ) : (
+                    `⚠️ Cảnh báo: Không phát hiện khuôn mặt ứng viên! (Số lần vi phạm: ${accumulatedGazeViolations})`
+                  )}
+                </div>
+              )}
+
+              {/* Loader Loading Model AI */}
+              {isLoadingModel && (
+                <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center text-center p-4 z-40">
+                  <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mb-3" />
+                  <p className="text-sm font-bold text-white">Đang tải mô hình AI giám sát...</p>
+                  <p className="text-xs text-slate-400">Vui lòng cấp quyền camera và đợi trong giây lát</p>
+                </div>
+              )}
+
+              {/* Pause Overlay khi mất kết nối Camera */}
+              {!isCameraActive && !isLoadingModel && (
+                <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center text-center p-6 z-40">
+                  <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4 border border-rose-500/20">
+                    <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
                   </div>
-                  <button
-                    onClick={handleSaveAndNext}
-                    disabled={isSavingAnswer || !textAnswer.trim()}
-                    className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg hover:shadow-sky-100 transition-all font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
-                    <span>{currentQuestion < questions.length - 1 ? "Câu Tiếp Theo" : "Hoàn Thành"}</span>
-                  </button>
+                  <p className="text-lg font-bold text-rose-500 mb-2">Đã tạm dừng phỏng vấn!</p>
+                  <p className="text-sm text-slate-300 max-w-md">
+                    {cameraErrorMessage || "Vui lòng giữ camera luôn kết nối và cấp quyền camera cho trình duyệt để tiếp tục buổi phỏng vấn."}
+                  </p>
+                </div>
+              )}
+
+              {/* Webcam Video Stream */}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover rounded-3xl transform -scale-x-100 bg-slate-950"
+              />
+
+              {/* Floating Name Badge */}
+              <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-slate-900/80 text-white text-xs font-semibold rounded-full border border-slate-700/50 backdrop-blur-sm z-20">
+                {userDisplayName} (Webcam HD)
+              </div>
+
+              {/* Khung nhỏ Picture-in-Picture cho Avatar 3D phỏng vấn */}
+              <div className="absolute bottom-4 right-4 w-48 h-36 rounded-2xl overflow-hidden border border-sky-500/30 shadow-2xl bg-slate-950 z-20">
+                <Avatar3D volume={aiVolume} isListening={isRecording} emotion={isAiSpeaking ? "happy" : "idle"} />
+                <div className="absolute bottom-1.5 left-2 text-[9px] font-bold text-sky-400 bg-slate-900/90 px-2 py-0.5 rounded-full border border-sky-500/20 shadow z-30">
+                  X Interviewer
                 </div>
               </div>
-            ) : (
-              /* ================= VOICE MODE ================= */
-              <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 space-y-6">
+            </div>
+
+            {/* Cột phải: Chatbot Log & Tiến Trình chiếm 1/3 */}
+            <div className="flex-1 lg:flex-[1] bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl p-6 flex flex-col justify-between space-y-6">
+              
+              {/* Tiêu đề & Thông báo */}
+              <div>
+                <div className="text-xs font-bold text-[#0ea5e9] tracking-wider uppercase mb-1">Tiến trình phỏng vấn</div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mb-4">
+                  <div 
+                    className="bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] h-full transition-all duration-300"
+                    style={{ width: `${Math.round(((currentQuestion + 1) / questions.length) * 100)}%` }}
+                  />
+                </div>
+                <div className="p-3 bg-sky-950/30 border border-sky-900/30 rounded-xl text-[10px] text-sky-400 leading-normal">
+                  💡 *Lưu ý:* Để kết quả phân tích đạt chất lượng tốt nhất, vui lòng luôn nhìn thẳng vào camera và trả lời tự nhiên.
+                </div>
+              </div>
+
+              {/* Câu hỏi chatbot box */}
+              <div className="flex-grow flex flex-col justify-center">
+                <div className="bg-slate-950 rounded-2xl p-5 border border-slate-800 shadow-inner space-y-3 relative overflow-hidden">
+                  <div className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">Câu hỏi {currentQuestion + 1}</div>
+                  <h3 className="text-sm font-bold text-white leading-relaxed">{questionText}</h3>
+                </div>
+              </div>
+
+              {/* Logic điều khiển Microphone & Trả lời */}
+              <div className="bg-slate-950 rounded-2xl p-4 border border-slate-800 space-y-4">
                 
-                {/* Case 0: AI is actively speaking TTS question */}
+                {/* Case 0: AI is speaking */}
                 {isAiSpeaking && (
-                  <div className="py-6 space-y-4">
+                  <div className="py-4">
                     <AiWaveform />
+                    <p className="text-[10px] text-center text-sky-400 animate-pulse mt-2">Trợ lý AI đang đọc câu hỏi...</p>
                   </div>
                 )}
 
                 {/* Case 1: Idle state (ready to record) */}
                 {!isAiSpeaking && !isRecording && !isTranscribing && !hasRecorded && (
-                  <div className="text-center py-6">
+                  <div className="text-center py-4 space-y-3">
                     <button
                       onClick={startRecording}
-                      className="w-20 h-20 mx-auto mb-4 bg-sky-50 hover:bg-[#f0f9ff] border border-sky-100 rounded-full flex items-center justify-center text-[#0ea5e9] hover:scale-105 transition-all shadow-md group"
+                      disabled={!isCameraActive}
+                      className="w-16 h-16 mx-auto bg-sky-950 hover:bg-sky-900/60 border border-sky-800/50 rounded-full flex items-center justify-center text-[#38bdf8] hover:scale-105 transition-all shadow-lg shadow-sky-950/50 group disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      <Mic className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                      <Mic className="w-7 h-7 group-hover:scale-115 transition-transform" />
                     </button>
-                    <p className="text-base font-bold text-gray-800">Nhấn để bắt đầu trả lời</p>
-                    <p className="text-xs text-gray-500 mt-1">AI đã đọc xong. Sẵn sàng ghi âm giọng nói của bạn</p>
+                    <div>
+                      <p className="text-xs font-bold text-white">Nhấp để bắt đầu trả lời</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Hệ thống sẽ ghi âm câu trả lời của bạn</p>
+                    </div>
                   </div>
                 )}
 
                 {/* Case 2: Recording state */}
                 {!isAiSpeaking && isRecording && (
-                  <div className="space-y-6">
-                    <div className="text-center py-4">
+                  <div className="space-y-4">
+                    <div className="text-center py-2 space-y-2">
                       <button
                         onClick={stopRecording}
-                        className="w-20 h-20 mx-auto mb-4 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-600 hover:scale-105 transition-all animate-pulse shadow-md relative"
+                        className="w-16 h-16 mx-auto bg-rose-950/80 hover:bg-rose-900 border border-rose-800 rounded-full flex items-center justify-center text-rose-400 hover:scale-105 transition-all animate-pulse shadow-lg relative"
                       >
-                        <MicOff className="w-8 h-8" />
-                        {/* Ocean blue waves around recording button */}
-                        <span className="absolute inset-0 rounded-full border-4 border-[#0ea5e9]/20 animate-ping" />
+                        <MicOff className="w-7 h-7" />
+                        <span className="absolute inset-0 rounded-full border-4 border-rose-500/20 animate-ping" />
                       </button>
-                      <p className="text-lg font-bold text-gray-800">Hệ thống đang ghi âm...</p>
-                      <p className="text-sm text-gray-500 mt-1">Nhấp nút ở trên để hoàn thành câu trả lời</p>
-                    </div>
-
-                    {/* Realtime voice visualizer */}
-                    <div className="max-w-xs mx-auto">
-                      <AudioVisualizer audioLevel={audioLevel} />
-                    </div>
-
-                    {/* Recording instructions */}
-                    <div className="p-4 bg-sky-50/50 border border-sky-100/50 rounded-2xl text-center">
-                      <span className="text-xs font-bold text-[#0ea5e9] uppercase block mb-1 animate-pulse">AI Đang Lắng Nghe:</span>
-                      <p className="text-xs text-gray-500 italic">
-                        Hãy trình bày câu trả lời của bạn qua microphone. Khi trả lời xong, bấm nút kết thúc để AI dịch chuẩn xác câu hỏi (hỗ trợ song ngữ Anh - Việt).
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Case 3: Transcribing (loading state) */}
-                {!isAiSpeaking && isTranscribing && (
-                  <div className="text-center py-10 space-y-4">
-                    <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mx-auto" />
-                    <p className="text-base font-bold text-gray-800">AI đang phân tích câu trả lời...</p>
-                    <p className="text-xs text-gray-500">Chuyển âm thanh thành văn bản qua Speech-to-Text</p>
-                  </div>
-                )}
-
-                {/* Case 4: Answer transcribing completed */}
-                {!isAiSpeaking && hasRecorded && !isTranscribing && (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                       <div>
-                        <h4 className="font-bold text-xs">Ghi âm thành công!</h4>
-                        <p className="text-xs text-emerald-700/80">AI đã chuyển đổi giọng thoại của bạn thành văn bản bên dưới.</p>
+                        <p className="text-xs font-bold text-rose-400">AI Đang Lắng Nghe...</p>
+                        <p className="text-[10px] text-gray-400">Hãy trình bày câu trả lời. Bấm nút dừng khi xong.</p>
                       </div>
                     </div>
 
-                    {/* Editable transcription result */}
+                    <div className="max-w-xs mx-auto">
+                      <AudioVisualizer audioLevel={audioLevel} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Case 3: Transcribing */}
+                {!isAiSpeaking && isTranscribing && (
+                  <div className="text-center py-6 space-y-3">
+                    <Loader2 className="w-8 h-8 text-[#0ea5e9] animate-spin mx-auto" />
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
-                        Nội dung câu trả lời của bạn
+                      <p className="text-xs font-bold text-white">AI đang phân tích câu trả lời...</p>
+                      <p className="text-[10px] text-gray-400">Dịch thuật giọng nói thành văn bản (STT)</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Case 4: Recorded completed */}
+                {!isAiSpeaking && hasRecorded && !isTranscribing && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        Nội dung đã dịch (Có thể chỉnh sửa)
                       </label>
                       <textarea
                         value={finalAnswer}
                         onChange={(e) => setFinalAnswer(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:outline-none text-gray-700 transition-all text-xs leading-relaxed"
-                        rows={4}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl focus:border-[#0ea5e9] focus:outline-none text-white transition-all text-xs leading-relaxed"
+                        rows={3}
                       />
                     </div>
 
-                  {/* Action buttons */}
-                  <div className="flex justify-between items-center gap-4">
-                    <button
-                      onClick={startRecording}
-                      className="px-5 py-2.5 border-2 border-gray-200 hover:border-[#0ea5e9] text-gray-600 hover:text-[#0ea5e9] hover:bg-sky-50/20 rounded-xl transition-all text-sm font-semibold"
-                    >
-                      Ghi âm lại
-                    </button>
-                    <button
-                      onClick={handleSaveAndNext}
-                      disabled={isSavingAnswer || !finalAnswer.trim()}
-                      className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
-                      <span>{currentQuestion < questions.length - 1 ? "Lưu & Tiếp Tục" : "Hoàn Thành"}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex justify-between items-center gap-3">
+                      <button
+                        onClick={startRecording}
+                        className="px-4 py-2 border border-slate-800 hover:border-sky-500/40 text-gray-400 hover:text-[#38bdf8] hover:bg-sky-950/20 rounded-xl transition-all text-xs font-semibold"
+                      >
+                        Ghi âm lại
+                      </button>
+                      <button
+                        onClick={handleSaveAndNext}
+                        disabled={isSavingAnswer || !finalAnswer.trim()}
+                        className="flex-1 py-2 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl text-xs font-bold hover:shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        {isSavingAnswer && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        <span>{currentQuestion < questions.length - 1 ? "Lưu & Tiếp Tục" : "Hoàn Thành"}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+              </div>
 
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </div>
 
       {/* Progress tracker footbar */}
       <div className="bg-gray-800 px-6 py-4">
