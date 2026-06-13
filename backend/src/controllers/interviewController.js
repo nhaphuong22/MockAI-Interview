@@ -44,7 +44,7 @@ export const startInterviewSession = async (req, res) => {
  */
 export const submitAnswer = async (req, res) => {
   try {
-    const { questionId, answerText, audioUrl, audio_url } = req.body;
+    const { questionId, answerText, audioUrl, audio_url, gazeViolations, gaze_violations } = req.body;
     
     if (!questionId) {
       return sendError(res, 400, 'questionId is required');
@@ -54,8 +54,9 @@ export const submitAnswer = async (req, res) => {
     }
 
     const actualAudioUrl = audioUrl || audio_url || null;
+    const actualGazeViolations = Number(gazeViolations || gaze_violations || 0);
 
-    const savedAnswer = await submitCandidateAnswer(questionId, answerText, actualAudioUrl);
+    const savedAnswer = await submitCandidateAnswer(questionId, answerText, actualAudioUrl, actualGazeViolations);
 
     return sendResponse(res, 200, {
       message: 'Candidate answer saved and graded successfully',

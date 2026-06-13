@@ -38,6 +38,17 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 - HR sẽ xem danh sách các ứng viên và đánh giá.
 - HR sẽ xem danh sách các bài đánh giá CV và chấm điểm CV.
 
+## 🧪 Lát cắt 5: Kiểm thử E2E & Nghiệm thu
+- [x] **Task 5.1**: Kiểm thử thủ công luồng bật webcam, phân tích hướng nhìn, hiển thị Warning đỏ và Pause Overlay khi tắt camera. (Đã tối ưu sửa lỗi nhấp nháy webcam do re-render loop).
+- [x] **Task 5.2**: Kiểm tra API và Database lưu kết quả chấm điểm bị trừ và hiển thị lý do trừ điểm trên HR Dashboard.
+- [x] **Task 5.3**: Chạy lệnh Lint và build ứng dụng frontend để đảm bảo không lỗi:
+  - [x] Chạy `pnpm -C frontend run lint` và sửa hết lỗi lint thành công (0 errors).
+
+## 🛠️ Lát cắt 6: Bổ sung phát hiện trống người & Hiển thị tên (Yêu cầu mới)
+- [x] **Task 6.1**: Cập nhật hook [useGazeTracker.js](file:///c:/Users/ADMIN/Desktop/SWP/MockAI-Interview/frontend/src/hooks/useGazeTracker.js) để trả về thêm state `isFaceDetected`, và khi không có khuôn mặt trong 1.5 giây thì cảnh báo + đếm vi phạm (cooldown 3s) tương tự lúc nhìn lệch.
+- [x] **Task 6.2**: Cập nhật component [InterviewSession.jsx](file:///c:/Users/ADMIN/Desktop/SWP/MockAI-Interview/frontend/src/components/interview/InterviewSession.jsx) lấy tên thật của ứng viên từ `useAuthStore` hiển thị lên badge Webcam, đồng thời đổi nội dung cảnh báo động dựa trên `isFaceDetected`.
+- [x] **Task 6.3**: Tìm, lấy và sao chép tệp mô hình 3D `ready_player_me_male_avatar__vrchatgame_ready.glb` từ thư mục `Downloads` của hệ thống vào thư mục `frontend/public/models/` trong dự án để thay thế robot fallback bằng mô hình avatar 3D người thật hoàn chỉnh.
+
 ### 4. Huy - Module Đánh giá CV, chấm điểm CV và gợi ý chỉnh sửa CV & Blog Cộng đồng
 - User sẽ upload CV lên hệ thống.
 - Hệ thống sẽ dựa vào CV và yêu cầu của vị trí ứng tuyển để đánh giá CV và chấm điểm CV.
