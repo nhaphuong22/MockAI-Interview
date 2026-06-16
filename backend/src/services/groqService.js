@@ -6,6 +6,39 @@
 
 import { safeParseJSON } from '../helper/jsonHelper.js';
 
+/**
+ * Helper function to perform fetch with retries and exponential backoff
+ * especially targeting HTTP 429 Rate Limit errors.
+ */
+const fetchWithRetry = async (url, options, maxRetries = 3, delayMs = 1500) => {
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    try {
+      const response = await fetch(url, options);
+      if (response.status === 429) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          return response;
+        }
+        const backoffDelay = delayMs * Math.pow(2, attempt - 1);
+        console.warn(`[Groq API] Rate Limited (429). Retrying in ${backoffDelay}ms... (Attempt ${attempt}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        continue;
+      }
+      return response;
+    } catch (error) {
+      attempt++;
+      if (attempt >= maxRetries) {
+        throw error;
+      }
+      const backoffDelay = delayMs * Math.pow(2, attempt - 1);
+      console.warn(`[Groq API] Network error: ${error.message}. Retrying in ${backoffDelay}ms... (Attempt ${attempt}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+    }
+  }
+};
+
+
 
 /**
  * Generate 8 dynamic, highly-customized interview questions using Qwen 3 32B on Groq
@@ -83,8 +116,8 @@ Dựa trên toàn bộ dữ liệu bối cảnh thực tế ở trên, hãy th�
   try {
     const url = 'https://api.groq.com/openai/v1/chat/completions';
     
-    // Call Groq API via Node.js global fetch
-    const response = await fetch(url, {
+    // Call Groq API via fetchWithRetry
+    const response = await fetchWithRetry(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -154,7 +187,7 @@ Câu trả lời thực tế của ứng viên:
 
   try {
     const url = 'https://api.groq.com/openai/v1/chat/completions';
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -294,7 +327,7 @@ Dựa trên toàn bộ kết quả phỏng vấn thực tế ở trên, hãy th�
 
   try {
     const url = 'https://api.groq.com/openai/v1/chat/completions';
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
