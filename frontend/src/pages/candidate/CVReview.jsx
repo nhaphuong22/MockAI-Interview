@@ -4,8 +4,10 @@ import { cvApi } from "../../api/cvApi";
 import { CVUploadArea } from "./components/CVUploadArea";
 import { CVAnalysisLoading } from "./components/CVAnalysisLoading";
 import { CVAnalysisResult } from "./components/CVAnalysisResult";
+import { useUiStore } from "../../store/useUiStore";
 
 export function CVReview() {
+  const showToast = useUiStore((state) => state.showToast);
   const [hasCV, setHasCV] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [cvText, setCvText] = useState("");
@@ -24,7 +26,7 @@ export function CVReview() {
       if (error.response?.status === 413) {
         errorMessage = 'File CV của bạn chứa dung lượng văn bản quá lớn, vui lòng rút gọn lại để hệ thống xử lý tốt nhất.';
       }
-      alert(errorMessage);
+      showToast({ message: errorMessage, type: 'error' });
       setHasCV(false);
     }
   });
@@ -44,7 +46,7 @@ export function CVReview() {
     onError: (error) => {
       console.error('Lỗi khi tải CV:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Tải lên CV thất bại!';
-      alert(errorMessage);
+      showToast({ message: errorMessage, type: 'error' });
     }
   });
 

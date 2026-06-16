@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { createDraft, submitForReview, uploadCoverImage, getPublishedBlogs, getBlogById } from '../controllers/blogController.js';
+import { createDraft, submitForReview, uploadCoverImage, getPublishedBlogs, getBlogById, getRelatedBlogs } from '../controllers/blogController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
 
@@ -153,5 +153,28 @@ router.get('/published', cacheMiddleware('blogs:published', 1800), getPublishedB
  *         description: Không tìm thấy bài viết.
  */
 router.get('/:id', cacheMiddleware('blogs:detail', 1800), getBlogById);
+
+/**
+ * @swagger
+ * /api/blogs/{id}/related:
+ *   get:
+ *     summary: Lấy danh sách bài viết liên quan
+ *     description: Lấy danh sách bài viết liên quan dựa vào tags của bài viết hiện tại.
+ *     tags:
+ *       - Community Blog
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài viết
+ *     responses:
+ *       200:
+ *         description: Lấy bài viết liên quan thành công.
+ *       404:
+ *         description: Không tìm thấy bài viết.
+ */
+router.get('/:id/related', getRelatedBlogs);
 
 export default router;
