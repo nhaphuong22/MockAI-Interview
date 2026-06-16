@@ -358,7 +358,7 @@ export function CVAnalysisResult({ aiResults, onReupload }) {
             </div>
 
             <LayoutGroup>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 items-start">
                 {aiResults.sections.map((section, index) => (
                   <SkillAccordion 
                     key={index}
