@@ -1,4 +1,4 @@
-import { saveDraftBlog, requestBlogReview, getPublishedBlogs as fetchPublishedBlogs, getBlogById as fetchBlogById } from '../services/blogService.js';
+import { saveDraftBlog, requestBlogReview, getPublishedBlogs as fetchPublishedBlogs, getBlogById as fetchBlogById, getRelatedBlogs as fetchRelatedBlogs } from '../services/blogService.js';
 
 /**
  * Lưu bài viết nháp (Draft Blog)
@@ -110,5 +110,26 @@ export const getBlogById = async (req, res) => {
     }
     console.error('Lỗi khi lấy chi tiết blog:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi tải chi tiết bài viết.' });
+  }
+};
+
+/**
+ * Lấy danh sách bài viết liên quan
+ */
+export const getRelatedBlogs = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blogs = await fetchRelatedBlogs(Number(id));
+
+    return res.status(200).json({
+      message: 'Lấy bài viết liên quan thành công.',
+      data: blogs
+    });
+  } catch (error) {
+    if (error.message === 'Không tìm thấy bài viết này.') {
+      return res.status(404).json({ message: error.message });
+    }
+    console.error('Lỗi khi lấy bài viết liên quan:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi tải bài viết liên quan.' });
   }
 };

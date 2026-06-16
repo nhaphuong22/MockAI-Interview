@@ -51,7 +51,8 @@ export const uploadCV = async (req, res) => {
     });
   } catch (error) {
     if (
-      error.message === 'File PDF chứa lượng văn bản quá lớn, không giống một CV thông thường. Vui lòng tải lên CV ngắn gọn hơn!'
+      error.message === 'File PDF chứa lượng văn bản quá lớn, không giống một CV thông thường. Vui lòng tải lên CV ngắn gọn hơn!' ||
+      error.message === 'File PDF không hợp lệ hoặc bị hỏng. Vui lòng kiểm tra lại định dạng file.'
     ) {
       return res.status(400).json({ message: error.message });
     }

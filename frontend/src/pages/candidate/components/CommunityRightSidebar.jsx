@@ -1,7 +1,7 @@
 import React from "react";
 import { PenSquare, Eye } from "lucide-react";
 
-export function CommunityRightSidebar({ trendingTags, onWritePost }) {
+export function CommunityRightSidebar({ trendingTags, onWritePost, selectedTag, setSelectedTag }) {
   return (
     <div className="sticky top-24 space-y-8">
       {/* Share story card */}
@@ -27,7 +27,12 @@ export function CommunityRightSidebar({ trendingTags, onWritePost }) {
           {trendingTags.map((tag) => (
             <button
               key={tag}
-              className="px-4 py-2 dark:bg-[#0f172a] bg-gray-50 dark:hover:bg-sky-900/30 hover:bg-sky-50 dark:text-slate-400 text-gray-600 dark:hover:text-[#38bdf8] hover:text-[#0ea5e9] rounded-2xl text-xs font-bold transition-all border border-transparent dark:hover:border-sky-900/50 hover:border-sky-100"
+              onClick={() => setSelectedTag && setSelectedTag(selectedTag === tag ? null : tag)}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all border ${
+                selectedTag === tag
+                  ? "bg-[#0ea5e9] text-white border-[#0ea5e9] shadow-lg shadow-sky-500/30"
+                  : "dark:bg-[#0f172a] bg-gray-50 dark:hover:bg-sky-900/30 hover:bg-sky-50 dark:text-slate-400 text-gray-600 dark:hover:text-[#38bdf8] hover:text-[#0ea5e9] border-transparent dark:hover:border-sky-900/50 hover:border-sky-100"
+              }`}
             >
               {tag}
             </button>
