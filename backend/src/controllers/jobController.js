@@ -8,6 +8,7 @@ import {
   updateJobApplicationService,
   getApplicationDetailById
 } from '../services/jobService.js';
+import { sendApplicationResultEmail } from '../services/emailService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
 /**
@@ -337,7 +338,7 @@ export const updateJobApplication = async (req, res) => {
       return sendError(res, 400, 'ID hồ sơ ứng tuyển không hợp lệ.');
     }
 
-    const { status, hr_tag, hr_notes } = req.body;
+    const { status, hr_tag, hr_notes, send_email, email_content } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role?.toUpperCase();
 
@@ -373,6 +374,20 @@ export const updateJobApplication = async (req, res) => {
       hrNotes: hr_notes !== undefined ? hr_notes : application.hr_notes,
       reviewedBy: userId
     });
+
+    // 4. Gửi email nếu được yêu cầu
+    if (send_email && email_content) {
+      try {
+        await sendApplicationResultEmail(
+          application.candidate_email,
+          application.candidate_name,
+          application.job_title,
+          email_content
+        );
+      } catch (emailError) {
+        console.error('Lỗi khi gửi email ứng viên:', emailError);
+      }
+    }
 
     return sendResponse(res, 200, result, 'Cập nhật hồ sơ ứng tuyển thành công.');
   } catch (error) {

@@ -309,8 +309,15 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
  */
 export const getApplicationDetailById = async (applicationId) => {
   return await db('applications')
-    .select('applications.*', 'jobs.hr_id as job_hr_id')
+    .select(
+      'applications.*', 
+      'jobs.hr_id as job_hr_id',
+      'jobs.title as job_title',
+      'users.full_name as candidate_name',
+      'users.email as candidate_email'
+    )
     .join('jobs', 'applications.job_id', 'jobs.id')
+    .join('users', 'applications.candidate_id', 'users.id')
     .where('applications.id', applicationId)
     .first();
 };
