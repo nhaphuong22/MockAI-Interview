@@ -8,6 +8,10 @@ import blogRoutes from './blogRoutes.js';
 import interviewRoutes from './interviewRoutes.js';
 import jobRoutes from './jobRoutes.js';
 import adminRoutes from './adminRoutes.js';
+import verificationRoutes from './verificationRoutes.js';
+import paymentRoutes from './paymentRoutes.js';
+import applicationRoutes from './applicationRoutes.js';
+import notificationRoutes from './notificationRoutes.js';
 
 const router = express.Router();
 
@@ -20,6 +24,10 @@ router.use('/blogs', blogRoutes);
 router.use('/interviews', interviewRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/admin', adminRoutes);
+router.use('/verification', verificationRoutes);
+router.use('/payments', paymentRoutes);
+router.use('/applications', applicationRoutes);
+router.use('/notifications', notificationRoutes);
 router.use('/', systemRoutes);
 
 export default router;

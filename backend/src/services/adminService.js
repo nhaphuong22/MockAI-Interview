@@ -1,8 +1,16 @@
 import db from '../db/knex.js';
+import { deleteCache, deleteCachePattern } from '../config/redis.js';
 import { updateJob } from '../models/jobModel.js';
 import { updateBlog, deleteBlog } from '../models/blogModel.js';
 import { formatSalary } from '../helper/salaryHelper.js';
-import { NotFoundError } from '../core/customErrors.js';
+import { NotFoundError, ValidationError } from '../core/customErrors.js';
+import {
+  getAllRoles,
+  getAllPermissions,
+  getPermissionIdsByRole,
+  clearRolePermissions,
+  insertRolePermissions
+} from '../models/rolePermissionModel.js';
 
 /**
  * Lấy danh sách tin tuyển dụng cho kiểm duyệt
@@ -64,6 +72,10 @@ export const approveOrRejectJob = async (jobId, status, adminUserId) => {
     throw new NotFoundError('Không tìm thấy tin tuyển dụng.');
   }
 
+  // Clear Jobs Cache
+  await deleteCachePattern('jobs:list:*');
+  await deleteCache(`jobs:detail:${jobId}`);
+
   return true;
 };
 
@@ -124,6 +136,10 @@ export const approveOrRejectBlog = async (blogId, status, rejectReason, adminUse
     throw new NotFoundError('Không tìm thấy bài viết.');
   }
 
+  // Clear Blogs Cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${blogId}`);
+
   return true;
 };
 
@@ -137,6 +153,10 @@ export const removeBlogByAdmin = async (blogId) => {
   if (!deletedRows) {
     throw new NotFoundError('Không tìm thấy bài viết để gỡ.');
   }
+
+  // Clear Blogs Cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${blogId}`);
 
   return true;
 };
@@ -221,29 +241,105 @@ export const generateDashboardAnalytics = async () => {
     ];
   }
 
-  // 4. Số liệu tăng trưởng theo thời gian (Trends)
+  // 4. Số liệu tăng trưởng thực tế theo thời gian (Trends - 7 ngày qua)
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 6);
+  startDate.setHours(0, 0, 0, 0); // Bắt đầu từ 00:00 của 6 ngày trước
+
+  // Lấy dữ liệu đăng ký mới theo ngày
+  const usersTrend = await db('users')
+    .where('created_at', '>=', startDate)
+    .select(db.raw("to_char(created_at, 'YYYY-MM-DD') as date"))
+    .count('id as count')
+    .groupByRaw("to_char(created_at, 'YYYY-MM-DD')");
+
+  // Lấy dữ liệu số lượt phỏng vấn theo ngày
+  const interviewsTrend = await db('interviews')
+    .where('created_at', '>=', startDate)
+    .select(db.raw("to_char(created_at, 'YYYY-MM-DD') as date"))
+    .count('id as count')
+    .groupByRaw("to_char(created_at, 'YYYY-MM-DD')");
+
+  // Lấy dữ liệu tin đăng tuyển dụng theo ngày
+  const jobsTrend = await db('jobs')
+    .where('created_at', '>=', startDate)
+    .select(db.raw("to_char(created_at, 'YYYY-MM-DD') as date"))
+    .count('id as count')
+    .groupByRaw("to_char(created_at, 'YYYY-MM-DD')");
+
+  // Lấy doanh thu theo ngày từ các giao dịch thành công
+  let revenueTrend = [];
+  try {
+    revenueTrend = await db('transactions')
+      .where('status', 'COMPLETED')
+      .where('created_at', '>=', startDate)
+      .select(db.raw("to_char(created_at, 'YYYY-MM-DD') as date"))
+      .sum('amount as total')
+      .groupByRaw("to_char(created_at, 'YYYY-MM-DD')");
+  } catch (e) {
+    console.log('Lỗi truy vấn doanh thu theo ngày:', e.message);
+  }
+
+  // Chuyển kết quả truy vấn thành Maps để tra cứu nhanh
+  const usersMap = {};
+  usersTrend.forEach(item => { usersMap[item.date] = parseInt(item.count || 0); });
+
+  const interviewsMap = {};
+  interviewsTrend.forEach(item => { interviewsMap[item.date] = parseInt(item.count || 0); });
+
+  const jobsMap = {};
+  jobsTrend.forEach(item => { jobsMap[item.date] = parseInt(item.count || 0); });
+
+  const revenueMap = {};
+  revenueTrend.forEach(item => { revenueMap[item.date] = parseFloat(item.total || 0); });
+
   const trends = [];
   const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-  
+
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     const dayName = daysOfWeek[d.getDay()];
 
-    const baseUsers = i === 0 ? totalUsers : Math.max(3, Math.floor(Math.random() * 5) + 2);
-    const baseInterviews = i === 0 ? totalInterviews : Math.max(5, Math.floor(Math.random() * 10) + 4);
-    const baseJobs = i === 0 ? totalJobs : Math.max(2, Math.floor(Math.random() * 4) + 1);
-    const baseRevenue = i === 0 ? (totalRevenue > 0 ? totalRevenue : 15000000) : (Math.floor(Math.random() * 3) + 1) * 3000000;
-
     trends.push({
       date: dateStr,
       dayLabel: dayName,
-      users: baseUsers,
-      interviews: baseInterviews,
-      jobs: baseJobs,
-      revenue: baseRevenue
+      users: usersMap[dateStr] || 0,
+      interviews: interviewsMap[dateStr] || 0,
+      jobs: jobsMap[dateStr] || 0,
+      revenue: revenueMap[dateStr] || 0
     });
+  }
+
+  // 5. Giao dịch gần đây (Recent Transactions)
+  let recentTransactions = [];
+  try {
+    const txnsRaw = await db('transactions')
+      .leftJoin('users', 'transactions.user_id', 'users.id')
+      .leftJoin('packages', 'transactions.package_id', 'packages.id')
+      .select(
+        'users.full_name as user',
+        'packages.name as package',
+        'transactions.amount',
+        'transactions.status',
+        'transactions.created_at'
+      )
+      .orderBy('transactions.created_at', 'desc')
+      .limit(5);
+
+    recentTransactions = txnsRaw.map(txn => {
+      const d = new Date(txn.created_at);
+      return {
+        user: txn.user || 'Người dùng ẩn danh',
+        package: txn.package || 'Gói nâng cấp',
+        amount: parseFloat(txn.amount || 0),
+        status: txn.status === 'COMPLETED' ? 'Success' : txn.status === 'FAILED' ? 'Failed' : 'Pending',
+        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      };
+    });
+  } catch (e) {
+    console.log('Lỗi khi lấy giao dịch gần đây:', e.message);
   }
 
   return {
@@ -252,12 +348,69 @@ export const generateDashboardAnalytics = async () => {
       totalJobs,
       totalInterviews,
       totalBlogs,
-      totalRevenue: totalRevenue > 0 ? totalRevenue : 45000000,
+      totalRevenue: totalRevenue,
       pendingJobs,
-      pendingBlogs
+      pendingBlogs,
+      totalCompanies: parseInt((await db('users').join('user_roles', 'users.id', 'user_roles.user_id').join('roles', 'user_roles.role_id', 'roles.id').where('roles.name', 'HR').count('users.id as count').first())?.count || 0)
     },
     trends,
     userRoles,
-    jobCategories
+    jobCategories,
+    recentTransactions
   };
+};
+
+/**
+ * Lấy ma trận phân quyền toàn bộ hệ thống:
+ * Trả về danh sách roles, danh sách permissions, và mapping role → [permissionIds]
+ */
+export const fetchPermissionsMatrix = async () => {
+  const [roles, permissions] = await Promise.all([
+    getAllRoles(),
+    getAllPermissions()
+  ]);
+
+  // Lấy permissions của từng role song song
+  const rolePermissionsMap = {};
+  await Promise.all(
+    roles.map(async (role) => {
+      const permIds = await getPermissionIdsByRole(role.id);
+      rolePermissionsMap[role.id] = permIds;
+    })
+  );
+
+  return { roles, permissions, rolePermissionsMap };
+};
+
+/**
+ * Cập nhật toàn bộ quyền hạn cho một role cụ thể
+ * Thực hiện transaction: xóa cũ → gán mới
+ */
+export const updateRolePermissionsMatrix = async (roleId, permissionIds) => {
+  // Kiểm tra role hợp lệ
+  const role = await db('roles').where({ id: roleId }).first();
+  if (!role) {
+    throw new NotFoundError('Không tìm thấy vai trò này trong hệ thống.');
+  }
+
+  // Không cho phép cập nhật quyền của ADMIN (luôn có full quyền)
+  if (role.name === 'ADMIN') {
+    throw new ValidationError('Không thể thay đổi quyền hạn của vai trò Quản trị viên.');
+  }
+
+  // Kiểm tra các permissionIds hợp lệ
+  if (permissionIds && permissionIds.length > 0) {
+    const validPerms = await db('permissions').whereIn('id', permissionIds).select('id');
+    if (validPerms.length !== permissionIds.length) {
+      throw new ValidationError('Một hoặc nhiều quyền hạn không hợp lệ.');
+    }
+  }
+
+  // Transaction: xóa toàn bộ quyền cũ → gán quyền mới
+  await db.transaction(async (trx) => {
+    await clearRolePermissions(roleId, trx);
+    await insertRolePermissions(roleId, permissionIds || [], trx);
+  });
+
+  return true;
 };

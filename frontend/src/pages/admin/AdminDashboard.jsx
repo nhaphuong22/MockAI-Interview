@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Users as UsersIcon, 
   Building as BuildingIcon, 
@@ -8,10 +9,10 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  ArrowUpRight,
   ShieldCheck,
   Check,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -24,55 +25,108 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { AdminSidebar } from "./AdminSidebar";
-import { mockUsers, mockCompanies, mockJobPosts, mockTransactions } from "./mockAdminData";
 import confetti from "canvas-confetti";
+import { getAdminAnalytics, getAllAdminJobs, updateJobApproval } from "../../api/adminApi";
+import { axiosClient } from "../../api/axiosClient";
+import { useUiStore } from "../../store/useUiStore";
 
-// Sample chart data
-const revenueData = [
-  { month: "T1", revenue: 45, users: 1200 },
-  { month: "T2", revenue: 52, users: 1800 },
-  { month: "T3", revenue: 78, users: 2400 },
-  { month: "T4", revenue: 95, users: 3100 },
-  { month: "T5", revenue: 145, users: 4500 },
-];
+// Hàm format tiền tệ (triệu, tỷ)
+const formatMoney = (amount) => {
+  if (amount >= 1e9) return (amount / 1e9).toFixed(1) + 'B';
+  if (amount >= 1e6) return (amount / 1e6).toFixed(1) + 'M';
+  return amount.toLocaleString('vi-VN');
+};
 
 export function AdminDashboard() {
-  const [pendingCompanies, setPendingCompanies] = useState(
-    mockCompanies.filter(c => c.status === "Pending" || !c.verified)
-  );
-  const [pendingJobs, setPendingJobs] = useState(
-    mockJobPosts.filter(j => j.status === "Pending")
-  );
+  const queryClient = useQueryClient();
+  const showToast = useUiStore((state) => state.showToast);
 
-  const handleVerifyCompany = (companyId, name) => {
-    setPendingCompanies(prev => prev.filter(c => c.id !== companyId));
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#0ea5e9', '#38bdf8', '#0284c7']
-    });
-  };
+  // 1. Fetch Analytics Data
+  const { data: analytics, isLoading: isAnalyticsLoading } = useQuery({
+    queryKey: ['adminAnalytics'],
+    queryFn: async () => {
+      const res = await getAdminAnalytics();
+      return res.data;
+    }
+  });
 
-  const handleApproveJob = (jobId) => {
-    setPendingJobs(prev => prev.filter(j => j.id !== jobId));
-    confetti({
-      particleCount: 50,
-      spread: 60,
-      origin: { y: 0.6 },
-      colors: ['#0ea5e9', '#10b981']
-    });
-  };
+  // 2. Fetch Pending Companies
+  const { data: pendingCompanies = [], isLoading: isCompaniesLoading } = useQuery({
+    queryKey: ['pendingVerificationsDashboard'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/verification/pending');
+      return res.data.map(u => ({
+        id: u.id,
+        name: u.company_name,
+        industry: "IT / Tech", // Mock industry for now
+        status: "Pending",
+        logo: "🏢",
+        employees: 50,
+      }));
+    }
+  });
 
-  const handleRejectJob = (jobId) => {
-    setPendingJobs(prev => prev.filter(j => j.id !== jobId));
-  };
+  // 3. Fetch Pending Jobs
+  const { data: pendingJobs = [], isLoading: isJobsLoading } = useQuery({
+    queryKey: ['pendingJobsDashboard'],
+    queryFn: async () => {
+      const res = await getAllAdminJobs();
+      return res.data.filter(j => j.approval_status === "PENDING").map(j => ({
+        id: j.id,
+        title: j.title,
+        company: j.company_name || "Công ty ẩn danh",
+        salary: j.salary_range || "Thỏa thuận"
+      }));
+    }
+  });
+
+  // Mutations
+  const verifyCompanyMutation = useMutation({
+    mutationFn: async (id) => {
+      await axiosClient.post(`/verification/${id}/review`, { status: 'APPROVED' });
+    },
+    onSuccess: () => {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#0ea5e9', '#38bdf8', '#0284c7'] });
+      queryClient.invalidateQueries(['pendingVerificationsDashboard']);
+      queryClient.invalidateQueries(['adminAnalytics']);
+    },
+    onError: () => showToast({ message: 'Lỗi duyệt công ty', type: 'error' })
+  });
+
+  const jobApprovalMutation = useMutation({
+    mutationFn: async ({ id, status }) => {
+      await updateJobApproval(id, status);
+    },
+    onSuccess: (data, variables) => {
+      if (variables.status === "APPROVED") {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 }, colors: ['#0ea5e9', '#10b981'] });
+      }
+      queryClient.invalidateQueries(['pendingJobsDashboard']);
+      queryClient.invalidateQueries(['adminAnalytics']);
+    },
+    onError: () => showToast({ message: 'Lỗi cập nhật trạng thái tin', type: 'error' })
+  });
+
+  const isLoading = isAnalyticsLoading || isCompaniesLoading || isJobsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-slate-50">
+        <AdminSidebar />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin" />
+        </main>
+      </div>
+    );
+  }
+
+  const { summary, trends, recentTransactions } = analytics || {};
 
   const kpis = [
     { 
       icon: UsersIcon, 
       label: "Tổng Người Dùng", 
-      value: mockUsers.length + 12450, 
+      value: summary?.totalUsers || 0, 
       trend: "+12.5%", 
       desc: "so với tháng trước",
       color: "bg-[#f0f9ff] text-[#0ea5e9]"
@@ -80,28 +134,35 @@ export function AdminDashboard() {
     { 
       icon: BuildingIcon, 
       label: "Doanh Nghiệp", 
-      value: mockCompanies.length + 380, 
+      value: summary?.totalCompanies || 0, 
       trend: "+8.2%", 
-      desc: "12 đối tác mới",
+      desc: "số liệu thực tế",
       color: "bg-emerald-50 text-emerald-600"
     },
     { 
       icon: FileTextIcon, 
       label: "Tin Tuyển Dụng", 
-      value: mockJobPosts.length + 1540, 
+      value: summary?.totalJobs || 0, 
       trend: "+15.4%", 
-      desc: "86 tin hoạt động",
+      desc: `${summary?.pendingJobs || 0} tin chờ duyệt`,
       color: "bg-amber-50 text-amber-600"
     },
     { 
       icon: DollarSign, 
       label: "Doanh Thu", 
-      value: "145.8M", 
+      value: formatMoney(summary?.totalRevenue || 0), 
       trend: "+23.1%", 
-      desc: "Mục tiêu: 150M",
+      desc: "tổng doanh thu",
       color: "bg-rose-50 text-rose-600"
     },
   ];
+
+  // Map trends to chart format
+  const revenueData = (trends || []).slice().reverse().map(t => ({
+    month: t.dayLabel,
+    revenue: (t.revenue / 1000000).toFixed(1), // convert to Millions
+    users: t.users
+  }));
 
   return (
     <div className="flex bg-slate-50 min-h-[calc(100vh-64px)]">
@@ -159,7 +220,7 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Doanh Thu & Tăng Trưởng Người Dùng</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Thống kê 5 tháng đầu năm 2026</p>
+                <p className="text-xs text-slate-400 mt-0.5">Thống kê 7 ngày gần nhất</p>
               </div>
               <div className="flex items-center gap-4 text-xs font-semibold">
                 <div className="flex items-center gap-1.5 text-[#0ea5e9]">
@@ -201,23 +262,29 @@ export function AdminDashboard() {
             animate={{ opacity: 1, x: 0 }}
             className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100/80 flex flex-col"
           >
-            <h2 className="text-lg font-bold text-slate-900 mb-6">Hoạt Động Gần Đây</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-6">Giao Dịch Gần Đây</h2>
             <div className="space-y-5 flex-1 overflow-y-auto max-h-[260px] pr-1">
-              {mockTransactions.slice(0, 4).map((txn, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
-                    txn.status === "Success" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                  }`}>
-                    {txn.status === "Success" ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              {recentTransactions && recentTransactions.length > 0 ? (
+                recentTransactions.map((txn, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                      txn.status === "Success" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                    }`}>
+                      {txn.status === "Success" ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-slate-800 truncate">
+                        {txn.user} <span className="font-normal text-slate-500">đã mua</span> {txn.package}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{txn.date} • <span className="font-semibold text-slate-600">{txn.amount.toLocaleString('vi-VN')}đ</span></p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-slate-800 truncate">
-                      {txn.user} <span className="font-normal text-slate-500">đã mua gói</span> {txn.package}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{txn.date} • <span className="font-semibold text-slate-600">{txn.amount.toLocaleString('vi-VN')}đ</span></p>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 text-xs text-slate-400 font-medium">
+                  Chưa có giao dịch nào gần đây.
                 </div>
-              ))}
+              )}
             </div>
           </motion.div>
         </div>
@@ -257,8 +324,9 @@ export function AdminDashboard() {
                         </div>
                       </div>
                       <button 
-                        onClick={() => handleVerifyCompany(comp.id, comp.name)}
-                        className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm active:scale-95 transition-all outline-none"
+                        onClick={() => verifyCompanyMutation.mutate(comp.id)}
+                        disabled={verifyCompanyMutation.isPending}
+                        className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm active:scale-95 transition-all outline-none disabled:opacity-50"
                       >
                         <ShieldCheck className="w-3.5 h-3.5" />
                         Xác Thực
@@ -303,15 +371,17 @@ export function AdminDashboard() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <button 
-                          onClick={() => handleRejectJob(job.id)}
-                          className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg active:scale-90 transition-all outline-none"
+                          onClick={() => jobApprovalMutation.mutate({ id: job.id, status: "REJECTED" })}
+                          disabled={jobApprovalMutation.isPending}
+                          className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg active:scale-90 transition-all outline-none disabled:opacity-50"
                           title="Từ chối"
                         >
                           <X className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => handleApproveJob(job.id)}
-                          className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm active:scale-95 transition-all outline-none"
+                          onClick={() => jobApprovalMutation.mutate({ id: job.id, status: "APPROVED" })}
+                          disabled={jobApprovalMutation.isPending}
+                          className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm active:scale-95 transition-all outline-none disabled:opacity-50"
                         >
                           <Check className="w-3.5 h-3.5" />
                           Duyệt Tin

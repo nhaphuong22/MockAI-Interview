@@ -112,11 +112,11 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
   const maxR = 100;
   
   const skillKeys = [
-    { key: "technical_depth", label: "Kỹ năng cứng" },
-    { key: "communication", label: "Giao tiếp" },
-    { key: "problem_solving", label: "Giải quyết v/đ" },
-    { key: "confidence", label: "Độ tự tin" },
-    { key: "star_structure", label: "Cấu trúc STAR" }
+    { key: "technical", label: "Kỹ Thuật" },
+    { key: "communication", label: "Giao Tiếp" },
+    { key: "problem_solving", label: "Giải Quyết Vấn Đề" },
+    { key: "teamwork", label: "Làm Việc Nhóm" },
+    { key: "culture_fit", label: "Phù Hợp Văn Hóa" }
   ];
 
   const getCoordinates = (index, valueRatio) => {
@@ -137,9 +137,15 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
     }).join(" ");
   });
 
-  // 2. Generate candidates score polygon coordinates
+  // 2. Generate candidates score polygon coordinates (with backward compatibility fallback)
   const candidatePoints = skillKeys.map((item, idx) => {
-    const score = Math.max(0, data.radar_skills[item.key] ?? 80);
+    const score = Math.max(0, 
+      data.radar_skills[item.key] ?? 
+      data.radar_skills[item.key === "technical" ? "technical_depth" : ""] ?? 
+      data.radar_skills[item.key === "teamwork" ? "confidence" : ""] ?? 
+      data.radar_skills[item.key === "culture_fit" ? "star_structure" : ""] ?? 
+      80
+    );
     const { x, y } = getCoordinates(idx, score / 100);
     return `${x},${y}`;
   }).join(" ");
@@ -148,11 +154,18 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
   const labelPositions = skillKeys.map((item, idx) => {
     // Extend radius slightly for text labels
     const { x, y } = getCoordinates(idx, 1.25);
+    const score = Math.max(0, 
+      data.radar_skills[item.key] ?? 
+      data.radar_skills[item.key === "technical" ? "technical_depth" : ""] ?? 
+      data.radar_skills[item.key === "teamwork" ? "confidence" : ""] ?? 
+      data.radar_skills[item.key === "culture_fit" ? "star_structure" : ""] ?? 
+      80
+    );
     return {
       x,
       y,
       label: item.label,
-      score: Math.max(0, data.radar_skills[item.key] ?? 80)
+      score
     };
   });
 

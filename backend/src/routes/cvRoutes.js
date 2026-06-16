@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { uploadCV, scoreCV } from '../controllers/cvController.js';
+import { uploadCV, scoreCV, exportPdf } from '../controllers/cvController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -92,5 +92,47 @@ router.post('/upload', authenticateToken, (req, res, next) => {
  *         description: Thiếu thông tin truyền vào.
  */
 router.post('/score', authenticateToken, scoreCV);
+
+/**
+ * @swagger
+ * /api/cv/export-pdf:
+ *   post:
+ *     summary: Xuất PDF báo cáo đánh giá CV
+ *     description: Tạo file PDF từ dữ liệu đánh giá CV được truyền lên.
+ *     tags:
+ *       - CV & Resume
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               overallScore:
+ *                 type: number
+ *               strengths:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               improvements:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               sections:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: Trả về luồng dữ liệu file PDF.
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+router.post('/export-pdf', authenticateToken, exportPdf);
 
 export default router;

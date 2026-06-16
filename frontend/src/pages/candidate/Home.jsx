@@ -1,9 +1,47 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Search, MapPin, Briefcase, Users, Building, TrendingUp, ArrowRight, Star, DollarSign } from "lucide-react";
 import { motion } from "framer-motion";
 import { AuroraBackground } from "../../components/ui/AuroraBackground";
 import { ShinyText } from "../../components/ui/ShinyText";
 import { useThemeStore } from "../../store/useThemeStore";
+
+const CITY_OPTIONS = [
+  "Thành phố Hà Nội",
+  "Thành phố Hồ Chí Minh",
+  "Thành phố Hải Phòng",
+  "Thành phố Đà Nẵng",
+  "Thành phố Cần Thơ",
+  "Thành phố Huế",
+  "Tỉnh Cao Bằng",
+  "Tỉnh Điện Biên",
+  "Tỉnh Hà Tĩnh",
+  "Tỉnh Lai Châu",
+  "Tỉnh Lạng Sơn",
+  "Tỉnh Nghệ An",
+  "Tỉnh Quảng Ninh",
+  "Tỉnh Thanh Hóa",
+  "Tỉnh Sơn La",
+  "Tỉnh Tuyên Quang",
+  "Tỉnh Lào Cai",
+  "Tỉnh Thái Nguyên",
+  "Tỉnh Phú Thọ",
+  "Tỉnh Bắc Ninh",
+  "Tỉnh Hưng Yên",
+  "Tỉnh Ninh Bình",
+  "Tỉnh Quảng Trị",
+  "Tỉnh Quảng Ngãi",
+  "Tỉnh Gia Lai",
+  "Tỉnh Khánh Hòa",
+  "Tỉnh Lâm Đồng",
+  "Tỉnh Đắk Lắk",
+  "Tỉnh Đồng Nai",
+  "Tỉnh Tây Ninh",
+  "Tỉnh Vĩnh Long",
+  "Tỉnh Đồng Tháp",
+  "Tỉnh Cà Mau",
+  "Tỉnh An Giang"
+].sort((a, b) => a.localeCompare(b, 'vi'));
 
 const popularTags = ["IT", "Marketing", "Design", "Finance", "Sales", "Nhà Tuyển Dụng"];
 
@@ -59,6 +97,27 @@ const stats = [
 
 export function Home() {
   const { theme } = useThemeStore();
+  const [provinces, setProvinces] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProvinces = async () => {
+      try {
+        const response = await fetch("https://provinces.open-api.vn/api/v2/p/");
+        if (response.ok && isMounted) {
+          const data = await response.json();
+          const sortedProvinces = data.map(p => p.name).sort((a, b) => a.localeCompare(b, 'vi'));
+          setProvinces(sortedProvinces);
+        }
+      } catch (error) {
+        console.error("Failed to fetch provinces from API v2 in Home:", error);
+      }
+    };
+    fetchProvinces();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   
   return (
     <div className="dark:bg-[#0a0f1c] bg-slate-50 transition-colors duration-500">
@@ -114,10 +173,12 @@ export function Home() {
               <div className="flex items-center gap-3 px-5 py-3 dark:bg-[#1e293b]/50 bg-white/50 backdrop-blur-md rounded-2xl border dark:border-white/5 border-white/50 focus-within:ring-2 focus-within:ring-[#0ea5e9]/20 transition-all md:w-64">
                 <MapPin className="w-5 h-5 text-slate-400" />
                 <select className="flex-1 bg-transparent outline-none dark:text-white text-slate-600 cursor-pointer dark:bg-[#1e293b] bg-transparent">
-                  <option>Tất cả thành phố</option>
-                  <option>Hà Nội</option>
-                  <option>TP.HCM</option>
-                  <option>Đà Nẵng</option>
+                  <option value="">Tất cả thành phố</option>
+                  {(provinces.length > 0 ? provinces : CITY_OPTIONS).map((city) => (
+                    <option key={city} value={city} className="dark:bg-[#1e293b] dark:text-white text-slate-700">
+                      {city}
+                    </option>
+                  ))}
                 </select>
               </div>
               <Link

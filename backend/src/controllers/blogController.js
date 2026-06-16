@@ -1,4 +1,4 @@
-import { saveDraftBlog, requestBlogReview } from '../services/blogService.js';
+import { saveDraftBlog, requestBlogReview, getPublishedBlogs as fetchPublishedBlogs, getBlogById as fetchBlogById } from '../services/blogService.js';
 
 /**
  * Lưu bài viết nháp (Draft Blog)
@@ -73,5 +73,42 @@ export const uploadCoverImage = async (req, res) => {
   } catch (error) {
     console.error('Lỗi khi tải ảnh bìa:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi tải ảnh bìa.' });
+  }
+};
+
+/**
+ * Lấy danh sách bài viết đã xuất bản
+ */
+export const getPublishedBlogs = async (req, res) => {
+  try {
+    const blogs = await fetchPublishedBlogs();
+    return res.status(200).json({
+      message: 'Lấy danh sách bài viết thành công.',
+      data: blogs
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách blog:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi tải bài viết.' });
+  }
+};
+
+/**
+ * Lấy chi tiết bài viết Blog theo ID
+ */
+export const getBlogById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await fetchBlogById(Number(id));
+
+    return res.status(200).json({
+      message: 'Lấy chi tiết bài viết thành công.',
+      data: blog
+    });
+  } catch (error) {
+    if (error.message === 'Không tìm thấy bài viết này.') {
+      return res.status(404).json({ message: error.message });
+    }
+    console.error('Lỗi khi lấy chi tiết blog:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi tải chi tiết bài viết.' });
   }
 };

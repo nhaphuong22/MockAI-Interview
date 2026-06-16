@@ -10,7 +10,7 @@ import {
   changePassword,
 } from '../services/authService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary from '../core/cloudinary.js';
 import fs from 'fs';
 
 // ─── Register ──────────────────────────────────────────────────────────────────
@@ -33,6 +33,18 @@ export const register = async (req, res) => {
         roleName = 'USER';
       } else if (normalizedRole === 'ADMIN') {
         roleName = 'ADMIN';
+      }
+    }
+
+    // Block public emails for HR
+    if (roleName === 'HR') {
+      const publicDomains = [
+        'gmail.com', 'yahoo.com', 'yahoo.com.vn', 'hotmail.com', 
+        'outlook.com', 'icloud.com', 'aol.com', 'protonmail.com'
+      ];
+      const emailDomain = email.split('@')[1]?.toLowerCase();
+      if (publicDomains.includes(emailDomain)) {
+        return sendError(res, 400, 'Vui lòng sử dụng email công ty để đăng ký tài khoản Nhà tuyển dụng.');
       }
     }
 
@@ -227,9 +239,9 @@ export const changePasswordController = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, phone, address, bio, avatarUrl } = req.body;
+    const { fullName, phone, address, bio, avatarUrl, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = req.body;
 
-    const result = await updateUserProfile(userId, { fullName, phone, address, bio, avatarUrl });
+    const result = await updateUserProfile(userId, { fullName, phone, address, bio, avatarUrl, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic });
     return sendResponse(res, 200, result);
   } catch (error) {
     if (error.message === 'User not found') {
@@ -248,26 +260,25 @@ export const uploadAvatarController = async (req, res) => {
       return sendError(res, 400, 'Vui lòng chọn một ảnh để tải lên');
     }
 
-    // Configure Cloudinary (automatically picks up CLOUDINARY_URL from env)
-    cloudinary.config();
-
-    // Upload local file to Cloudinary
+    // Upload local file to Cloudinary using shared configuration
     const uploadResult = await cloudinary.uploader.upload(req.file.path, {
       folder: 'avatars',
     });
-
-    // Delete temporary local file
-    try {
-      await fs.promises.unlink(req.file.path);
-    } catch (unlinkError) {
-      console.error('Failed to delete temporary local avatar file:', unlinkError);
-    }
 
     const avatarUrl = uploadResult.secure_url;
     return sendResponse(res, 200, { avatarUrl });
   } catch (error) {
     console.error('Upload avatar controller error:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi tải ảnh lên');
+  } finally {
+    // Ensure temporary local file is always cleaned up
+    if (req.file && req.file.path) {
+      try {
+        await fs.promises.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('Failed to delete temporary local avatar file:', unlinkError);
+      }
+    }
   }
 };
 

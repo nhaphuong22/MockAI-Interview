@@ -1,9 +1,43 @@
-import 'dotenv/config'; // Load env variables immediately before any other module is resolved
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import http from 'http';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env'), override: true });
+
+// Fail-fast environment check
+const requiredEnv = [
+  'DATABASE_URL',
+  'JWT_SECRET',
+  'GROQ_API_KEY',
+  'ELEVENLABS_API_KEY'
+];
+
+const missingEnv = requiredEnv.filter(key => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error('\n================================================================');
+  console.error('[FAIL-FAST] CRITICAL ERROR: Missing required environment variables:');
+  missingEnv.forEach(key => console.error(` - ${key}`));
+  console.error('The server cannot start without these configurations.');
+  console.error('================================================================\n');
+  process.exit(1);
+}
+
 import app from './src/app.js';
+
+import { setupSocket } from './src/socket.js';
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Khởi tạo Socket.io
+setupSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
@@ -18,4 +52,4 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
 
-// Trigger nodemon restart after ghost process killed
+// Trigger nodemon restart after order info fix

@@ -1,4 +1,5 @@
-import { Bookmark, MapPin, DollarSign, Briefcase } from "lucide-react";
+import { Bookmark } from "lucide-react";
+import { Link } from "react-router-dom";
 
 /**
  * JobDetailView Component
@@ -20,9 +21,12 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
         </div>
 
         <div className="flex gap-3">
-          <button className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white font-bold rounded-xl hover:shadow-lg transition-all hover:scale-[1.01]">
+          <Link 
+            to={`/jobs/${job.id}`}
+            className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white font-bold rounded-xl hover:shadow-lg transition-all hover:scale-[1.01] flex items-center justify-center text-center cursor-pointer"
+          >
             Nộp Đơn Ngay
-          </button>
+          </Link>
           <button 
             onClick={() => onToggleBookmark(job.id)}
             className="px-4 py-3 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] dark:text-slate-400 text-gray-400 hover:text-[#0ea5e9] transition-all"
@@ -58,28 +62,40 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
 
         <div>
           <h3 className="font-bold mb-3 uppercase text-xs tracking-wider dark:text-slate-400 text-gray-400">Mô Tả Công Việc</h3>
-          <div className="dark:text-slate-300 text-gray-700 text-sm leading-relaxed space-y-3">
-            <p>
-              Chúng tôi đang tìm kiếm một {job.title} để gia nhập đội ngũ phát triển
-              sản phẩm. Bạn sẽ làm việc với các công nghệ hiện đại và tham gia vào các dự án
-              thú vị của chúng tôi.
-            </p>
-            <ul className="list-disc list-inside space-y-1.5 ml-2">
-              <li>Phát triển và duy trì các tính năng mới trên các sản phẩm cốt lõi.</li>
-              <li>Làm việc chặt chẽ với team thiết kế và backend để đảm bảo chất lượng.</li>
-              <li>Tham gia code review và liên tục cập nhật/áp dụng các tiêu chuẩn chất lượng.</li>
-            </ul>
+          <div className="dark:text-slate-300 text-gray-700 text-sm leading-relaxed space-y-3 whitespace-pre-line">
+            {job.description ? (
+              <p>{job.description}</p>
+            ) : (
+              <>
+                <p>
+                  Chúng tôi đang tìm kiếm một {job.title} để gia nhập đội ngũ phát triển
+                  sản phẩm. Bạn sẽ làm việc với các công nghệ hiện đại và tham gia vào các dự án
+                  thú vị của chúng tôi.
+                </p>
+                <ul className="list-disc list-inside space-y-1.5 ml-2">
+                  <li>Phát triển và duy trì các tính năng mới trên các sản phẩm cốt lõi.</li>
+                  <li>Làm việc chặt chẽ với team thiết kế và backend để đảm bảo chất lượng.</li>
+                  <li>Tham gia code review và liên tục cập nhật/áp dụng các tiêu chuẩn chất lượng.</li>
+                </ul>
+              </>
+            )}
           </div>
         </div>
 
         <div>
           <h3 className="font-bold mb-3 uppercase text-xs tracking-wider dark:text-slate-400 text-gray-400">Yêu Cầu Công Việc</h3>
-          <ul className="list-disc list-inside space-y-1.5 dark:text-slate-300 text-gray-700 text-sm ml-2">
-            <li>Kinh nghiệm làm việc từ {job.experience}.</li>
-            <li>Thành thạo các công nghệ chính: {job.tags.join(", ")}.</li>
-            <li>Kỹ năng giao tiếp tốt, tư duy phản biện.</li>
-            <li>Tinh thần trách nhiệm và khả năng phối hợp đội nhóm tốt.</li>
-          </ul>
+          {job.requirements ? (
+            <div className="dark:text-slate-300 text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+              {job.requirements}
+            </div>
+          ) : (
+            <ul className="list-disc list-inside space-y-1.5 dark:text-slate-300 text-gray-700 text-sm ml-2">
+              <li>Kinh nghiệm làm việc từ {job.experience}.</li>
+              <li>Thành thạo các công nghệ chính: {job.tags?.join(", ") || ""}.</li>
+              <li>Kỹ năng giao tiếp tốt, tư duy phản biện.</li>
+              <li>Tinh thần trách nhiệm và khả năng phối hợp đội nhóm tốt.</li>
+            </ul>
+          )}
         </div>
 
         <div>

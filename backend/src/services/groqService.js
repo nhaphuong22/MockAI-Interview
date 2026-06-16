@@ -8,7 +8,7 @@ import { safeParseJSON } from '../helper/jsonHelper.js';
 
 
 /**
- * Generate 5 dynamic, highly-customized interview questions using Qwen 3 32B on Groq
+ * Generate 8 dynamic, highly-customized interview questions using Qwen 3 32B on Groq
  * 
  * @param {object} params
  * @param {string} params.position - Position title
@@ -31,22 +31,31 @@ export const generateQuestionsFromGroq = async ({
     throw new Error('GROQ_API_KEY chưa được cấu hình hoặc giá trị không hợp lệ trong file .env ở Backend! Vui lòng thiết lập key Groq thực tế để AI hoạt động.');
   }
 
-  // 2. Formulate Prompt
   const systemPrompt = `Bạn là một Chuyên gia Tuyển dụng AI cao cấp chuyên ngành Tech/HR. 
-Nhiệm vụ của bạn là dựa vào CV của ứng viên, vị trí tuyển dụng ứng tuyển và các kỹ năng chuyên môn được cung cấp để sinh ra chính xác 5 câu hỏi phỏng vấn độc bản, chuyên sâu và mang tính thực chiến cao.
+Nhiệm vụ của bạn là dựa vào CV của ứng viên, vị trí ứng tuyển và kỹ năng chuyên môn được cung cấp để sinh ra chính xác **8 câu hỏi phỏng vấn** theo lộ trình bắt buộc sau đây:
 
-Các câu hỏi phải tuân thủ nghiêm ngặt các quy tắc:
-1. May đo trực tiếp theo kinh nghiệm, dự án, công nghệ cốt lõi và các điểm nổi bật (hoặc điểm thiếu sót tiềm ẩn) trích xuất trực tiếp từ CV ứng viên.
-2. Xoay quanh vị trí ứng tuyển và mức độ kinh nghiệm được yêu cầu (Junior/Middle/Senior).
-3. Đánh giá sâu sắc các kỹ năng chuyên môn thực chiến thông qua các câu hỏi tình huống thực tế hoặc thiết kế hệ thống.
-4. KHÔNG đặt các câu hỏi lý thuyết suông dễ học vẹt (ví dụ: 'React là gì?' hay 'Khái niệm OOP'). Hãy đặt câu hỏi bắt đầu bằng tình huống hoặc yêu cầu so sánh/tối ưu.
+- **Câu 1 (Giai đoạn 1 - Small talk)**: Lời chào và gợi ý ứng viên bắt đầu bằng lời xã giao, làm quen và giới thiệu ngắn về bản thân.
+  - expected_answer: "Ứng viên cần chủ động thực hiện giao tiếp xã giao (small talk - ví dụ: chúc ngày tốt lành, hỏi thăm nhẹ nhàng) và giới thiệu ngắn gọn, lịch sự về bản thân."
+- **Câu 2 & 3 (Giai đoạn 2 - Phỏng vấn chi tiết dự án thực tế trong CV)**: Các câu hỏi khai thác sâu vào các dự án cụ thể và lịch sử làm việc được liệt kê trong CV của ứng viên. Bạn BẮT BUỘC phải trích xuất và gọi tên cụ thể dự án (ví dụ: "dự án website bán quần áo", "dự án quản lý nhân sự"...) hoặc tên công ty cũ có trong CV của ứng viên để làm bối cảnh câu hỏi.
+  - expected_answer: "Ứng viên giải trình chi tiết về công nghệ, kiến trúc sử dụng trong dự án của họ, mô tả rõ vai trò và nhiệm vụ cụ thể mà họ tham gia thực hiện."
+- **Câu 4, 5, 6, 7 (Giai đoạn 3 - Chuyên môn thực chiến gắn liền với dự án trong CV)**: Các câu hỏi kỹ thuật chuyên môn chuyên sâu liên quan đến vị trí ứng tuyển và các kỹ năng, nhưng phải được đặt trực tiếp vào ngữ cảnh của các dự án hoặc công việc cũ ứng viên đã làm trong CV. KHÔNG đặt câu hỏi lý thuyết suông dạng định nghĩa hoặc câu hỏi chung chung chung không có ngữ cảnh. 
+  *Ví dụ thay vì hỏi: "Làm thế nào để tối ưu hiệu năng component React?", hãy hỏi: "Trong dự án website bán quần áo X của bạn sử dụng ReactJS và NodeJS, bạn đã tối ưu hiệu năng hoặc tránh re-render cho các component hiển thị danh sách sản phẩm như thế nào?"*
+  - expected_answer: "Ứng viên đưa ra câu trả lời mang chiều sâu kỹ thuật, sử dụng thuật ngữ chuyên môn chính xác, phân tích các giải pháp và so sánh các ưu/nhược điểm rõ ràng."
+- **Câu 8 (Giai đoạn 4 - Cảm ơn & Chào tạm biệt)**: Lời kết luận từ người phỏng vấn thông báo rằng buổi phỏng vấn chuyên môn đã kết thúc, nhằm gợi ý và kiểm tra xem ứng viên có chủ động gửi lời cảm ơn và chào tạm biệt lịch thiệp hay không.
+  - expected_answer: "Ứng viên chủ động nói lời cảm ơn nhà tuyển dụng/AI và chào tạm biệt một cách chuyên nghiệp, lịch sự để kết thúc buổi phỏng vấn."
+
+Các câu hỏi phải tuân thủ nghiêm ngặt các quy tắc tuyệt đối sau:
+1. TUYỆT ĐỐI KHÔNG đặt câu hỏi hoặc đề cập đến bất kỳ chứng chỉ học thuật, chứng chỉ ngoại ngữ (như IELTS, TOEIC) hay chứng chỉ chuyên môn (như AWS, Azure, GCP, CCNA, PMP, Agile/Scrum...) của ứng viên. Hãy phớt lờ hoàn toàn các chứng chỉ này.
+2. BẮT BUỘC tất cả câu hỏi kỹ thuật và nghiệp vụ (từ Câu 2 đến Câu 7) phải chứa thông tin bối cảnh cụ thể trích xuất trực tiếp từ các DỰ ÁN (Projects) hoặc KINH NGHIỆM LÀM VIỆC (Work Experience) ghi trong CV của ứng viên. Bạn phải gọi tên các dự án này hoặc tên công ty cũ của họ trong câu hỏi.
+3. RÀO CHẮN DỰ PHÒNG: Chỉ khi CV thực sự trống rỗng, không thể bóc tách hoặc không chứa bất kỳ dự án/kinh nghiệm nào, bạn mới được phép đặt câu hỏi tình huống giả lập chung chung dựa trên vị trí ứng tuyển và kỹ năng chuyên môn yêu cầu. Trong trường hợp đó, hãy mở đầu câu hỏi bằng: "Vì CV của bạn chưa ghi chi tiết các dự án thực tế, tôi muốn hỏi bạn về..." để ứng viên rõ bối cảnh.
+4. Các câu hỏi chuyên môn phải xoay quanh vị trí ứng tuyển và mức độ kinh nghiệm được yêu cầu (Junior/Middle/Senior).
 5. Ngôn ngữ câu hỏi phải là tiếng Việt tự nhiên, chuyên nghiệp và chuẩn xác thuật ngữ chuyên ngành.
 
 Bạn PHẢI trả về kết quả ở định dạng JSON duy nhất, có cấu trúc như sau:
 {
   "questions": [
     {
-      "question_text": "Nội dung câu hỏi phỏng vấn chi tiết...",
+      "question_text": "Nội dung câu hỏi phỏng vấn...",
       "expected_answer": "Các ý chính, giải pháp kỹ thuật cụ thể mà ứng viên cần trình bày để đạt điểm tối đa...",
       "score_weight": 1
     }
@@ -66,10 +75,10 @@ Bạn PHẢI trả về kết quả ở định dạng JSON duy nhất, có cấ
 
 4. NỘI DUNG CHI TIẾT TỪ CV BÓC TÁCH CỦA ỨNG VIÊN (Candidate CV Raw Text):
 =========================================
-${cvText || "Không có CV tải lên (Hãy sinh câu hỏi thực chiến chuẩn hóa dựa trên Vị trí và Kỹ năng yêu cầu)"}
+${cvText || "Không có CV tải lên (Hãy sinh câu hỏi thực chiến chuẩn hóa dựa trên Vị trí và Kỹ năng chuyên môn yêu cầu)"}
 =========================================
 
-Dựa trên toàn bộ dữ liệu bối cảnh thực tế ở trên, hãy thực thi nhiệm vụ và sinh ra chính xác 5 câu hỏi phỏng vấn dưới dạng JSON theo đúng rào chắn cấu hình trong System Prompt!`;
+Dựa trên toàn bộ dữ liệu bối cảnh thực tế ở trên, hãy thực thi nhiệm vụ và sinh ra chính xác **8 câu hỏi phỏng vấn** dưới dạng JSON theo đúng rào chắn cấu hình trong System Prompt!`;
 
   try {
     const url = 'https://api.groq.com/openai/v1/chat/completions';
@@ -206,8 +215,17 @@ export const generateOverallAssessmentFromGroq = async ({
   const systemPrompt = `Bạn là một Chuyên gia Đánh giá Tuyển dụng AI cao cấp chuyên ngành Tech/HR.
 Nhiệm vụ của bạn là phân tích toàn bộ kết quả của cuộc phỏng vấn dựa trên thông tin ứng viên, vị trí tuyển dụng, các kỹ năng yêu cầu và danh sách chi tiết các câu trả lời thực tế của ứng viên kèm theo điểm số và nhận xét của từng câu.
 
+Bạn PHẢI phân tích, nhận xét và đánh giá toàn bộ quy trình phỏng vấn dựa trên 4 giai đoạn bắt buộc sau:
+1. **Giai đoạn 1: Small talk mở đầu**: Nhận xét ở câu trả lời đầu tiên (Câu 1) xem ứng viên có chủ động chào hỏi xã giao thân thiện, lịch thiệp và tự nhiên không.
+2. **Giai đoạn 2: Dự án trong CV**: Nhận xét các câu trả lời ở Câu 2 và Câu 3 xem ứng viên giải trình các dự án trong CV thế nào (về techstack, tính chi tiết của dự án, và vai trò thực tế của họ).
+3. **Giai đoạn 3: Chuyên môn & Vị trí**: Nhận xét các câu trả lời ở Câu 4, 5, 6, 7 về năng lực chuyên môn chuyên sâu của ứng viên, sự hiểu biết và mức độ phù hợp với vị trí ứng tuyển.
+4. **Giai đoạn 4: Cảm ơn & Chào tạm biệt**: Nhận xét ở câu trả lời cuối cùng (Câu 8) xem ứng viên có chủ động nói lời cảm ơn và chào tạm biệt lịch sự, chuyên nghiệp trước khi kết thúc không.
+
 Dựa vào đó, bạn PHẢI tạo ra một báo cáo đánh giá tổng quan cá nhân hóa 100% (KHÔNG SỬ DỤNG MẪU TĨNH), bao gồm:
-1. Nhận xét tổng quan (feedback_summary): Đánh giá chân thực, thẳng thắn nhưng mang tính xây dựng về năng lực của ứng viên qua buổi phỏng vấn này. Nhận xét cụ thể những điểm tốt và những câu trả lời còn thiếu sót kỹ thuật hoặc chưa cấu trúc tốt (khoảng 3-4 câu).
+1. Nhận xét tổng quan (feedback_summary): Viết bằng Tiếng Việt tự nhiên và chuyên nghiệp để nhận xét chi tiết toàn bộ các quy trình trên. Bạn PHẢI:
+   - Nhận xét chi tiết mức độ thể hiện của ứng viên qua từng quy trình phỏng vấn (từ Giai đoạn 1 đến Giai đoạn 4), nhấn mạnh rõ tính chủ động xã giao ở đầu buổi và tính chủ động cảm ơn/chào tạm biệt ở cuối buổi.
+   - Chỉ ra rõ các **Điểm mạnh** và **Điểm yếu** thực tế hiện tại của ứng viên thông qua các câu trả lời phỏng vấn.
+   - Đưa ra **Lời khuyên luyện tập** chi tiết để ứng viên cải thiện kỹ năng giao tiếp cũng như chuyên môn.
 2. Điểm số radar (radar_skills): Đánh giá 5 khía cạnh năng lực từ 0-100:
    - technical_depth (Kỹ năng cứng/chuyên môn): Phản ánh thực tế độ sâu kiến thức qua các câu trả lời kỹ thuật.
    - communication (Giao tiếp): Khả năng diễn đạt ý tưởng rõ ràng, súc tích.
@@ -221,7 +239,7 @@ Dựa vào đó, bạn PHẢI tạo ra một báo cáo đánh giá tổng quan c
 
 Bạn PHẢI trả về kết quả dưới định dạng JSON duy nhất như sau:
 {
-  "feedback_summary": "Nhận xét tổng quan...",
+  "feedback_summary": "Nhận xét tổng quan bao gồm nhận định 4 giai đoạn, điểm mạnh/yếu và lời khuyên...",
   "radar_skills": {
     "technical_depth": 80,
     "communication": 85,

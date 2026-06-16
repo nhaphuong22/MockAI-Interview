@@ -1,8 +1,12 @@
 import db from '../db/knex.js';
+import { deleteCache, deleteCachePattern } from '../config/redis.js';
 import { 
   findBlogWithOwner, 
   insertBlog, 
-  updateBlog 
+  updateBlog,
+  findPublishedBlogs,
+  findBlogWithAuthor,
+  incrementViewCount
 } from '../models/blogModel.js';
 import { NotFoundError } from '../core/customErrors.js';
 
@@ -12,18 +16,24 @@ import { NotFoundError } from '../core/customErrors.js';
 export const saveDraftBlog = async ({ authorId, title, content, tags = [], category = null, coverImageUrl = null }) => {
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Date.now();
 
+  // PostgreSQL text[] cần được truyền vào dưới dạng JS array bình thường qua knex
+  const tagsArray = Array.isArray(tags) ? tags : [];
+
   const [newArticle] = await insertBlog({
     author_id: authorId,
     title,
     slug,
     content,
     cover_image_url: coverImageUrl,
-    tags: tags,
-    category: category,
+    tags: tagsArray.length > 0 ? tagsArray : null,
+    category: category || null,
     status: 'DRAFT',
     created_at: db.fn.now(),
     updated_at: db.fn.now(),
   });
+
+  // Clear blogs cache list
+  await deleteCachePattern('blogs:published*');
 
   return newArticle;
 };
@@ -45,5 +55,35 @@ export const requestBlogReview = async (blogId, authorId) => {
     updated_at: db.fn.now()
   });
 
+  // Clear blogs cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${blogId}`);
+
   return updatedArticle;
+};
+
+/**
+ * Lấy danh sách bài viết đã xuất bản
+ */
+export const getPublishedBlogs = async () => {
+  const blogs = await findPublishedBlogs();
+  return blogs;
+};
+
+/**
+ * Lấy chi tiết bài viết Blog (cộng thêm 1 view)
+ */
+export const getBlogById = async (id) => {
+  const blog = await findBlogWithAuthor(id);
+  if (!blog) {
+    throw new NotFoundError('Không tìm thấy bài viết này.');
+  }
+
+  // Tăng lượt xem
+  await incrementViewCount(id);
+  
+  // Trả về dữ liệu đã cộng view
+  blog.view_count += 1;
+  
+  return blog;
 };

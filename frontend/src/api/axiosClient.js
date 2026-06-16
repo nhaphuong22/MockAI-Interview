@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "../store/useAuthStore";
 
 // Cấu hình Axios instance mặc định
 export const axiosClient = axios.create({
@@ -21,7 +22,15 @@ axiosClient.interceptors.request.use((config) => {
 axiosClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    // TODO: Xử lý các lỗi global như 401, 403, 500
+    // Xử lý lỗi 401 (Unauthorized) hoặc 403 (Forbidden) do JWT hết hạn
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.warn("Phiên đăng nhập đã hết hạn hoặc token không hợp lệ.");
+      useAuthStore.getState().logout();
+      alert("Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục sử dụng hệ thống!");
+      window.location.href = "/";
+    }
     return Promise.reject(error);
   }
 );
+
+export default axiosClient;

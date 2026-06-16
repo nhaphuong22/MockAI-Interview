@@ -1,10 +1,9 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon } from "lucide-react";
+import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon, Crown } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
-import { Toast } from "../ui/Toast";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { GlobalBackground } from "./GlobalBackground";
@@ -37,10 +36,6 @@ export function Layout() {
     authModalMode, 
     authRedirectTo, 
     closeAuthModal,
-    toastVisible,
-    toastMessage,
-    toastType,
-    hideToast,
   } = useUiStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -115,6 +110,9 @@ export function Layout() {
                     <Link to={recruiterBase} className={`text-sm font-medium transition-colors ${location.pathname === recruiterBase ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Dashboard
                     </Link>
+                    <Link to={`${recruiterBase}/manage-jobs`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/manage-jobs`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                      Quản Lý Tin
+                    </Link>
                     <Link to={`${recruiterBase}/post-job`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/post-job`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Đăng Tin
                     </Link>
@@ -147,6 +145,17 @@ export function Layout() {
             </div>
 
             <div className="flex items-center gap-4">
+              {!isUserAdmin && (
+                <ProtectedLink
+                  to="/payment"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-sky-50 to-white dark:from-slate-900/80 dark:to-slate-800/80 text-sky-700 dark:text-sky-400 border-sky-100 dark:border-sky-950 shadow-[0_2px_8px_rgba(14,165,233,0.08)] hover:shadow-[0_4px_12px_rgba(14,165,233,0.16)]"
+                >
+                  <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                  <span>
+                    {!isAuthenticated ? "Nâng cấp gói" : isUserRecruiter ? "Gói Business" : "Gói Free"}
+                  </span>
+                </ProtectedLink>
+              )}
               {isCandidate && (
                 <button 
                   onClick={toggleTheme}
@@ -193,7 +202,7 @@ export function Layout() {
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
                       >
                         {isUserRecruiter ? <Building className="w-4 h-4" /> : isUserAdmin ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                        <span>{isUserRecruiter ? "Công Ty" : isUserAdmin ? "Quản trị viên" : "Hồ Sơ Cá Nhân"}</span>
+                        <span>{isUserRecruiter ? "Hồ sơ Công ty" : isUserAdmin ? "Quản trị viên" : "Hồ sơ Cá nhân"}</span>
                       </Link>
                     </DropdownMenu.Item>
 
@@ -203,7 +212,7 @@ export function Layout() {
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
                       >
                         <Settings className="w-4 h-4" />
-                        <span>Cài Đặt</span>
+                        <span>{isUserRecruiter ? "Cài đặt tài khoản" : "Cài đặt"}</span>
                       </Link>
                     </DropdownMenu.Item>
 
@@ -266,16 +275,6 @@ export function Layout() {
 
       {isCandidate && <AIChatWidget />}
       
-      {/* Toast Notification */}
-      <Toast 
-        message={toastMessage}
-        type={toastType}
-        isVisible={toastVisible}
-        onClose={hideToast}
-        duration={4000}
-        position="top-right"
-      />
-      
       {/* Cửa sổ Đăng nhập / Đăng ký */}
       <AuthModal 
         isOpen={authModalOpen} 
@@ -286,3 +285,4 @@ export function Layout() {
     </div>
   );
 }
+

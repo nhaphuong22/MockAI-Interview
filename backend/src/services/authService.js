@@ -312,8 +312,8 @@ export const loginGoogleUser = async (idToken) => {
           full_name: fullName,
           avatar_url: avatarUrl || null,
           email_verified: true,
-          created_at: new Date(),
-          updated_at: new Date()
+          created_at: trx.fn.now(),
+          updated_at: trx.fn.now()
         })
         .returning('*');
 
@@ -327,8 +327,8 @@ export const loginGoogleUser = async (idToken) => {
       await trx('user_roles').insert({
         user_id: newUser.id,
         role_id: role.id,
-        created_at: new Date(),
-        updated_at: new Date()
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now()
       });
 
       return newUser;
@@ -362,7 +362,7 @@ export const loginGoogleUser = async (idToken) => {
  * @param {object} data
  */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl } = data;
+  const { fullName, phone, address, bio, avatarUrl, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = data;
 
   const updateData = {};
   if (fullName !== undefined) updateData.full_name = fullName;
@@ -370,8 +370,19 @@ export const updateUserProfile = async (userId, data) => {
   if (address !== undefined) updateData.address = address;
   if (bio !== undefined) updateData.bio = bio;
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
+  if (companyName !== undefined) updateData.company_name = companyName;
+  if (companyLogo !== undefined) updateData.company_logo = companyLogo;
+  if (companyWebsite !== undefined) updateData.company_website = companyWebsite;
+  if (companyDescription !== undefined) updateData.company_description = companyDescription;
+  if (companySize !== undefined) updateData.company_size = companySize;
+  if (companyIndustry !== undefined) updateData.company_industry = companyIndustry;
+  if (companyCity !== undefined) updateData.company_city = companyCity;
+  if (companyAddress !== undefined) updateData.company_address = companyAddress;
+  if (contactEmail !== undefined) updateData.contact_email = contactEmail;
+  if (contactPhone !== undefined) updateData.contact_phone = contactPhone;
+  if (contactPublic !== undefined) updateData.contact_public = contactPublic;
 
-  updateData.updated_at = new Date();
+  updateData.updated_at = db.fn.now();
 
   const [updatedUser] = await db('users')
     .where({ id: userId })

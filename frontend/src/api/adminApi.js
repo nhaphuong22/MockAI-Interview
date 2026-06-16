@@ -50,3 +50,19 @@ export const deleteBlog = (id) => {
 export const getAdminAnalytics = () => {
   return axiosClient.get("/admin/analytics");
 };
+
+/**
+ * Lấy ma trận phân quyền đầy đủ (roles × permissions)
+ */
+export const getPermissionsMatrix = () => {
+  return axiosClient.get("/admin/permissions");
+};
+
+/**
+ * Cập nhật danh sách quyền hạn cho một role
+ * @param {number} roleId - ID của role cần cập nhật
+ * @param {number[]} permissionIds - Danh sách permission IDs được gán
+ */
+export const updateRolePermissions = (roleId, permissionIds) => {
+  return axiosClient.put(`/admin/permissions/${roleId}`, { permissionIds });
+};

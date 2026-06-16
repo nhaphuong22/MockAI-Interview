@@ -15,5 +15,11 @@ export const blogApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
+  },
+  getPublishedBlogs: () => {
+    return axiosClient.get('/blogs/published');
+  },
+  getBlogById: (id) => {
+    return axiosClient.get(`/blogs/${id}`);
   }
 };

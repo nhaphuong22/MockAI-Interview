@@ -11,28 +11,22 @@ export function ProtectedRoute({ children, requiredRole = null }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user } = useAuthStore();
-  const { showToast } = useUiStore();
+  const addToast = useUiStore((state) => state.addToast);
 
   useEffect(() => {
     // Check authentication
     if (!isAuthenticated) {
-      showToast({
-        message: 'Yêu cầu đăng nhập để dùng được tính năng này',
-        type: 'warning',
-      });
+      addToast('Yêu cầu đăng nhập để dùng được tính năng này', 'warning');
       navigate('/', { replace: true });
       return;
     }
 
     // Check role if required
     if (requiredRole && user?.role?.toLowerCase() !== requiredRole.toLowerCase()) {
-      showToast({
-        message: 'Bạn không có quyền truy cập trang này',
-        type: 'error',
-      });
+      addToast('Bạn không có quyền truy cập trang này', 'error');
       navigate('/', { replace: true });
     }
-  }, [isAuthenticated, user, requiredRole, location.pathname, navigate, showToast]);
+  }, [isAuthenticated, user, requiredRole, location.pathname, navigate, addToast]);
 
   // Only render children if authenticated (and has correct role if required)
   if (!isAuthenticated) {
@@ -45,3 +39,4 @@ export function ProtectedRoute({ children, requiredRole = null }) {
 
   return children;
 }
+

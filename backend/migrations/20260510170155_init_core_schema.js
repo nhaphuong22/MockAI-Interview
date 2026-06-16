@@ -38,14 +38,6 @@ export async function up(knex) {
     table.timestamps(true, true);
   });
 
-  // 4. Bảng Interview Messages (Transcript hội thoại)
-  await knex.schema.createTable('interview_messages', (table) => {
-    table.increments('id').primary();
-    table.integer('interview_id').unsigned().references('id').inTable('interviews').onDelete('CASCADE');
-    table.string('role').notNullable(); // USER, AI
-    table.text('content').notNullable();
-    table.timestamps(true, true);
-  });
 
   // 5. Bảng Assessments (Dành cho Module của Huy & Phương)
   await knex.schema.createTable('assessments', (table) => {
@@ -76,7 +68,7 @@ export async function down(knex) {
   await knex.schema.dropTableIfExists('question_bank');
   await knex.schema.dropTableIfExists('assessments');
   await knex.schema.dropTableIfExists('code_submissions'); // Thêm dòng này để xóa bảng cũ
-  await knex.schema.dropTableIfExists('interview_messages');
+
   await knex.schema.dropTableIfExists('interviews');
   await knex.schema.dropTableIfExists('cvs');
   await knex.schema.dropTableIfExists('jobs');
