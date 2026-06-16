@@ -348,9 +348,6 @@ export function CVAnalysisResult({ aiResults, onReupload }) {
                   <motion.div animate={{ x: ["-100%", "200%"] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12 hidden group-hover:block" />
                   <Download className="w-5 h-5 relative z-10" /> <span className="relative z-10">Tải PDF</span>
                 </button>
-                <button className="px-6 py-4 dark:bg-[#0a0f1c] bg-white border-2 border-[#0ea5e9] text-[#0ea5e9] rounded-2xl shadow-[0_0_15px_rgba(14,165,233,0.2)] hover:bg-[#0ea5e9]/10 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 font-bold">
-                  <Eye className="w-5 h-5" /> Mẫu CV
-                </button>
                 <button onClick={onReupload} className="p-4 dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-slate-300 text-gray-600 rounded-2xl dark:hover:bg-white/10 hover:bg-gray-100 dark:hover:text-white hover:text-gray-900 hover:-translate-y-1 transition-all duration-300">
                   <FileText className="w-6 h-6" />
                 </button>
