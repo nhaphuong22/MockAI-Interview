@@ -391,9 +391,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                       </div>
                     </div>
                   )}
-                </div>
-
-                <div className="flex justify-end pt-2">
+              
 
                 <div className="flex justify-end gap-3 pt-2">
                   <button 
