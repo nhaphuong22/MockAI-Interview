@@ -1,15 +1,22 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle, Clock, Star, Edit, Save, Loader2, Tag } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
+import { inviteAIInterviewApi, getHRInterviewTranscriptApi } from "../../../api/hrInterviewApi";
 import { useUiStore } from "../../../store/useUiStore";
+import MDEditor from '@uiw/react-md-editor';
+import * as Tabs from "@radix-ui/react-tabs";
+import * as Accordion from "@radix-ui/react-accordion";
+import { MessageSquare, ChevronDown, CheckCircle2, AlertTriangle } from "lucide-react";
 
 const STATUS_OPTIONS = [
   { value: "SUBMITTED", label: "Đã nộp", color: "text-blue-600 bg-blue-50 border-blue-200" },
   { value: "AI_REVIEWED", label: "AI Đã duyệt", color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
   { value: "HR_REVIEWING", label: "HR Đang duyệt", color: "text-amber-600 bg-amber-50 border-amber-200" },
   { value: "SHORTLISTED", label: "Vào vòng trong", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+  { value: "AI_INTERVIEW_INVITED", label: "Đã mời PV AI", color: "text-orange-600 bg-orange-50 border-orange-200" },
+  { value: "INTERVIEWED", label: "Đã PV AI", color: "text-cyan-600 bg-cyan-50 border-cyan-200" },
   { value: "INTERVIEW_SCHEDULED", label: "Lịch phỏng vấn", color: "text-purple-600 bg-purple-50 border-purple-200" },
   { value: "HIRED", label: "Đã tuyển", color: "text-green-700 bg-green-100 border-green-300" },
   { value: "REJECTED", label: "Từ chối", color: "text-red-600 bg-red-50 border-red-200" }
@@ -47,6 +54,16 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     }
   }, [status]);
 
+  const { data: transcriptData, isLoading: isLoadingTranscript } = useQuery({
+    queryKey: ["hr-interview-transcript", application?.interview_id],
+    queryFn: async () => {
+      if (!application?.interview_id) return null;
+      const res = await getHRInterviewTranscriptApi(application.interview_id);
+      return res.data;
+    },
+    enabled: !!application?.interview_id
+  });
+
   const updateMutation = useMutation({
     mutationFn: (data) => jobApi.updateJobApplication(application.id, data),
     onSuccess: () => {
@@ -57,6 +74,19 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     onError: (error) => {
       console.error("Lỗi khi cập nhật hồ sơ:", error);
       showToast({ message: "Không thể cập nhật hồ sơ.", type: "error" });
+    }
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: () => inviteAIInterviewApi(application.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["manage-applications"]);
+      setStatus("AI_INTERVIEW_INVITED");
+      showToast({ message: "Đã gửi lời mời phỏng vấn AI đến ứng viên!", type: "success" });
+    },
+    onError: (error) => {
+      console.error("Lỗi khi mời phỏng vấn:", error);
+      showToast({ message: "Không thể gửi lời mời phỏng vấn.", type: "error" });
     }
   });
 
@@ -75,27 +105,27 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl z-50 p-0 animate-in zoom-in-95 duration-200 focus:outline-none">
+        <Dialog.Overlay className="fixed inset-0 bg-sky-900/40 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl z-50 p-0 animate-in zoom-in-95 duration-200 focus:outline-none flex flex-col">
           
           {/* Header */}
-          <div className="bg-sky-50 border-b border-sky-100 px-6 py-5 flex items-start justify-between sticky top-0 z-10">
+          <div className="bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] px-6 py-5 flex items-start justify-between sticky top-0 z-10 shadow-md">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-sm border border-sky-100 overflow-hidden">
+              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-inner border-2 border-white/20 overflow-hidden">
                 {application.candidate_avatar ? (
                   <img src={application.candidate_avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-6 h-6 text-sky-400" />
+                  <User className="w-6 h-6 text-sky-500" />
                 )}
               </div>
               <div>
-                <Dialog.Title className="text-xl font-bold text-gray-900">{application.candidate_name}</Dialog.Title>
-                <Dialog.Description className="text-sm text-sky-700 font-medium flex items-center gap-2 mt-1">
-                  <Briefcase className="w-4 h-4" /> Ứng tuyển: {application.job_title}
+                <Dialog.Title className="text-xl font-black text-white drop-shadow-sm">{application.candidate_name}</Dialog.Title>
+                <Dialog.Description className="text-sm text-sky-100 font-medium flex items-center gap-2 mt-1">
+                  <Briefcase className="w-4 h-4 opacity-80" /> Ứng tuyển: <span className="font-bold text-white">{application.job_title}</span>
                 </Dialog.Description>
               </div>
             </div>
-            <Dialog.Close className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-white/50">
+            <Dialog.Close className="text-white/70 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10">
               <X className="w-5 h-5" />
             </Dialog.Close>
           </div>
@@ -160,8 +190,8 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   </div>
 
                   <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-800">Match Score</span>
-                    <span className="text-lg font-black text-emerald-500">{application.match_score || 0}%</span>
+                    <span className="text-sm font-bold text-gray-800">Total Score</span>
+                    <span className="text-lg font-black text-emerald-500">{application.total_score || 0}%</span>
                   </div>
                 </div>
               </div>
@@ -170,15 +200,111 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
             {/* Cột phải: AI Summary & Thao tác HR */}
             <div className="md:col-span-2 space-y-6">
               
-              {/* AI Summary */}
-              <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-xl p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
-                  <Star className="w-4 h-4 text-indigo-500" /> Nhận xét từ AI (Summary)
-                </h3>
-                <div className="text-sm text-gray-700 leading-relaxed bg-white/60 p-4 rounded-lg border border-indigo-50 min-h-[100px]">
-                  {application.ai_summary ? application.ai_summary : <span className="text-gray-400 italic">AI chưa có nhận xét cho ứng viên này.</span>}
-                </div>
-              </div>
+              {/* AI Evaluation Tabs */}
+              <Tabs.Root defaultValue="transcript" className="flex flex-col h-full bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                <Tabs.List className="flex border-b border-gray-100 bg-gray-50/50">
+                  <Tabs.Trigger 
+                    value="summary" 
+                    className="flex-1 px-4 py-3 text-sm font-bold text-gray-500 data-[state=active]:text-sky-600 data-[state=active]:border-b-2 data-[state=active]:border-sky-500 data-[state=active]:bg-white transition-all flex items-center justify-center gap-2"
+                  >
+                    <Star className="w-4 h-4" /> Báo Cáo Tổng Quan
+                  </Tabs.Trigger>
+                  <Tabs.Trigger 
+                    value="transcript" 
+                    className="flex-1 px-4 py-3 text-sm font-bold text-gray-500 data-[state=active]:text-fuchsia-600 data-[state=active]:border-b-2 data-[state=active]:border-fuchsia-500 data-[state=active]:bg-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    disabled={!application.interview_id}
+                  >
+                    <MessageSquare className="w-4 h-4" /> Chi Tiết Trả Lời (Q&A)
+                  </Tabs.Trigger>
+                </Tabs.List>
+
+                <Tabs.Content value="summary" className="p-0 outline-none flex-1 flex flex-col min-h-[300px]">
+                  <div className="bg-gradient-to-br from-[#f8fafc] to-[#f0f9ff] flex-1">
+                    <div className="p-5 flex-1 h-full">
+                      {application.ai_summary ? (
+                        <div data-color-mode="light" className="text-sm">
+                          <MDEditor.Markdown 
+                            source={application.ai_summary} 
+                            style={{ background: 'transparent', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                          <Star className="w-10 h-10 mb-2 opacity-20" />
+                          <span className="italic">AI chưa có nhận xét cho ứng viên này.</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Tabs.Content>
+
+                <Tabs.Content value="transcript" className="p-0 outline-none flex-1 flex flex-col min-h-[300px] bg-gray-50/30">
+                  {isLoadingTranscript ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-fuchsia-500">
+                      <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                      <span className="text-sm font-medium">Đang tải lịch sử phỏng vấn...</span>
+                    </div>
+                  ) : transcriptData?.transcript?.length > 0 ? (
+                    <Accordion.Root type="single" collapsible className="w-full">
+                      {transcriptData.transcript.map((qa, i) => (
+                        <Accordion.Item key={i} value={`item-${i}`} className="border-b border-gray-100 last:border-0">
+                          <Accordion.Header>
+                            <Accordion.Trigger className="flex items-start justify-between w-full p-4 text-left hover:bg-gray-50/50 transition-colors group">
+                              <div className="flex items-start gap-3 flex-1 pr-4">
+                                <span className={`flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${qa.score >= 80 ? 'bg-emerald-100 text-emerald-700' : qa.score >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                  {i + 1}
+                                </span>
+                                <div>
+                                  <div className="text-sm font-bold text-gray-800 line-clamp-2">{qa.question}</div>
+                                  <div className="flex items-center gap-3 mt-1.5 text-xs font-semibold">
+                                    <span className={qa.score >= 80 ? 'text-emerald-600' : qa.score >= 50 ? 'text-amber-600' : 'text-red-600'}>
+                                      Điểm: {qa.score}/100
+                                    </span>
+                                    {qa.gazeViolations > 0 && (
+                                      <span className="text-red-500 flex items-center gap-1">
+                                        <AlertTriangle className="w-3 h-3" /> Vi phạm: {qa.gazeViolations} lần
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <ChevronDown className="w-5 h-5 text-gray-400 group-data-[state=open]:rotate-180 transition-transform mt-0.5" />
+                            </Accordion.Trigger>
+                          </Accordion.Header>
+                          <Accordion.Content className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                            <div className="p-4 bg-gray-50 border-t border-gray-100 space-y-4">
+                              <div>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-1.5 flex items-center gap-1.5">
+                                  <MessageSquare className="w-3.5 h-3.5" /> Trả lời của ứng viên
+                                </h4>
+                                <div className="text-sm text-gray-700 leading-relaxed bg-white p-3 rounded-lg border border-gray-200">
+                                  {qa.candidateAnswer}
+                                </div>
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-bold text-indigo-500 uppercase mb-1.5 flex items-center gap-1.5">
+                                  <Star className="w-3.5 h-3.5" /> AI Phân tích & Nhận xét
+                                </h4>
+                                <div className="text-sm text-gray-700 leading-relaxed bg-indigo-50/50 p-3 rounded-lg border border-indigo-100">
+                                  <MDEditor.Markdown 
+                                    source={qa.feedback} 
+                                    style={{ background: 'transparent', color: '#334155', fontSize: '13px' }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </Accordion.Content>
+                        </Accordion.Item>
+                      ))}
+                    </Accordion.Root>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                      <MessageSquare className="w-10 h-10 mb-2 opacity-20" />
+                      <span className="italic">Không tìm thấy dữ liệu trả lời chi tiết.</span>
+                    </div>
+                  )}
+                </Tabs.Content>
+              </Tabs.Root>
 
               {/* HR Actions */}
               <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm space-y-5">
@@ -229,6 +355,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   ></textarea>
                 </div>
 
+
                 {/* EMAIL TEMPLATE */}
                 <div className="bg-sky-50/50 p-4 rounded-xl border border-sky-100">
                   <div className="flex items-center justify-between mb-3">
@@ -267,6 +394,17 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 </div>
 
                 <div className="flex justify-end pt-2">
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button 
+                    onClick={() => inviteMutation.mutate()}
+                    disabled={inviteMutation.isPending || status === 'AI_INTERVIEW_INVITED' || status === 'INTERVIEWED'}
+                    className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-orange-600 hover:shadow-lg shadow-orange-100 transition-all disabled:opacity-50"
+                  >
+                    {inviteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
+                    Mời Phỏng Vấn AI
+                  </button>
+
                   <button 
                     onClick={handleSave}
                     disabled={updateMutation.isPending}

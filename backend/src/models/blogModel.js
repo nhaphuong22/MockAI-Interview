@@ -50,3 +50,21 @@ export const incrementViewCount = async (id) => {
     .increment('view_count', 1)
     .returning('view_count');
 };
+
+export const findRelatedBlogs = async (id, tags) => {
+  const query = db('blogs')
+    .join('users', 'blogs.author_id', '=', 'users.id')
+    .where('blogs.status', 'PUBLISHED')
+    .whereNot('blogs.id', id)
+    .select(
+      'blogs.*',
+      'users.full_name as author_name',
+      'users.avatar_url as author_avatar'
+    );
+
+  if (tags && tags.length > 0) {
+    query.whereRaw('blogs.tags && ?', [tags]); // && operator for array overlap in Postgres
+  }
+
+  return query.orderBy('blogs.created_at', 'desc').limit(3);
+};

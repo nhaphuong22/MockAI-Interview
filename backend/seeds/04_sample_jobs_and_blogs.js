@@ -314,4 +314,12 @@ export async function seed(knex) {
       updated_at: new Date()
     }
   ]);
+
+  // Reset sequence generators to prevent duplicate key errors in auto-increment
+  await knex.raw("SELECT setval('locations_id_seq', (SELECT MAX(id) FROM locations))");
+  await knex.raw("SELECT setval('job_types_id_seq', (SELECT MAX(id) FROM job_types))");
+  await knex.raw("SELECT setval('categories_id_seq', (SELECT MAX(id) FROM categories))");
+  await knex.raw("SELECT setval('companies_id_seq', (SELECT MAX(id) FROM companies))");
+  await knex.raw("SELECT setval('jobs_id_seq', (SELECT MAX(id) FROM jobs))");
+  await knex.raw("SELECT setval('blogs_id_seq', (SELECT MAX(id) FROM blogs))");
 };

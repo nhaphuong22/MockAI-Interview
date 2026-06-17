@@ -6,7 +6,9 @@ import {
   updateBlog,
   findPublishedBlogs,
   findBlogWithAuthor,
-  incrementViewCount
+  incrementViewCount,
+  findRelatedBlogs,
+  findBlogById
 } from '../models/blogModel.js';
 import { NotFoundError } from '../core/customErrors.js';
 
@@ -86,4 +88,17 @@ export const getBlogById = async (id) => {
   blog.view_count += 1;
   
   return blog;
+};
+
+/**
+ * Lấy danh sách bài viết liên quan
+ */
+export const getRelatedBlogs = async (id) => {
+  const blog = await findBlogById(id);
+  if (!blog) {
+    throw new NotFoundError('Không tìm thấy bài viết này.');
+  }
+
+  const relatedBlogs = await findRelatedBlogs(id, blog.tags || []);
+  return relatedBlogs;
 };

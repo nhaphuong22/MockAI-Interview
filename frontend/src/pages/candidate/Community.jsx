@@ -27,6 +27,7 @@ const trendingTags = ["#RemoteWork", "#AI", "#Startup", "#CareerGrowth", "#Netwo
 export function Community() {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedTag, setSelectedTag] = useState(null);
   const [likedPosts, setLikedPosts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -105,7 +106,9 @@ export function Community() {
       post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesCategory && matchesSearch;
+    const matchesTag = selectedTag ? postTags.some(tag => tag.toLowerCase() === selectedTag.replace('#', '').toLowerCase()) : true;
+
+    return matchesCategory && matchesSearch && matchesTag;
   });
 
   return (
@@ -168,6 +171,8 @@ export function Community() {
             <CommunityRightSidebar 
               trendingTags={trendingTags}
               onWritePost={handleWritePost}
+              selectedTag={selectedTag}
+              setSelectedTag={setSelectedTag}
             />
           </aside>
         </div>

@@ -11,7 +11,12 @@ const pdfParse = require('pdf-parse');
  * @returns {Promise<{text: string, pages: number, info: object}>} Văn bản bóc tách và thông tin trang
  */
 export const parseCVBuffer = async (fileBuffer) => {
-  const data = await pdfParse(fileBuffer);
+  let data;
+  try {
+    data = await pdfParse(fileBuffer);
+  } catch (error) {
+    throw new Error('File PDF không hợp lệ hoặc bị hỏng. Vui lòng kiểm tra lại định dạng file.');
+  }
   const extractedText = data.text.trim();
 
   // Kiểm tra kích thước văn bản

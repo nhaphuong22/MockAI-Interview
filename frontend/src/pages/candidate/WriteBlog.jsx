@@ -17,6 +17,7 @@ export function WriteBlog() {
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [coverImagePreview, setCoverImagePreview] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   
   const fileInputRef = useRef(null);
 
@@ -47,6 +48,35 @@ export function WriteBlog() {
       alert("Đã xảy ra lỗi khi đăng bài.");
     }
   });
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith("image/")) {
+        setCoverImageFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setCoverImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert("Vui lòng chọn file hình ảnh hợp lệ.");
+      }
+    }
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -220,8 +250,13 @@ export function WriteBlog() {
               <motion.div 
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="border-2 border-dashed dark:border-white/10 border-gray-300 rounded-2xl p-4 text-center cursor-pointer hover:border-[#0ea5e9] transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden group"
+                className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden group ${
+                  isDragging ? "border-[#0ea5e9] bg-[#0ea5e9]/5" : "dark:border-white/10 border-gray-300 hover:border-[#0ea5e9]"
+                }`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
                 style={{ minHeight: '200px' }}
               >
                 {coverImagePreview ? (

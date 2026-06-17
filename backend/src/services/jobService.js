@@ -297,6 +297,33 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
     .returning('*');
 
   if (application) {
+    // Check vacancy count to automatically close job if enough candidates are accepted/hired
+    const dbStatus = updateData.status;
+    if (dbStatus === 'ACCEPTED' || dbStatus === 'HIRED') {
+      const jobInfo = await db('jobs').where({ id: application.job_id }).first();
+      if (jobInfo && jobInfo.vacancy_count !== null && jobInfo.vacancy_count > 0) {
+        const acceptedCountRes = await db('applications')
+          .where({ job_id: application.job_id })
+          .whereIn('status', ['ACCEPTED', 'HIRED'])
+          .count('id as count')
+          .first();
+        const acceptedCount = parseInt(acceptedCountRes.count || 0);
+
+        if (acceptedCount >= jobInfo.vacancy_count) {
+          await db('jobs')
+            .where({ id: application.job_id })
+            .update({
+              status: 'CLOSED',
+              updated_at: new Date()
+            });
+          // Invalidate cache for job list and detail since status changed to CLOSED
+          await deleteCachePattern('jobs:list:*');
+          await deleteCache(`jobs:detail:${application.job_id}`);
+          console.log(`[Job Status] Job ID ${application.job_id} ("${jobInfo.title}") has been automatically CLOSED. Accepted count (${acceptedCount}) reached vacancy count (${jobInfo.vacancy_count}).`);
+        }
+      }
+    }
+
     // Clear HR applications list cache
     await deleteCachePattern(`applications:hr:${application.job_hr_id}:*`);
   }
