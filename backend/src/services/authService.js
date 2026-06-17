@@ -401,3 +401,27 @@ export const updateUserProfile = async (userId, data) => {
 
   return userInfo;
 };
+
+/**
+ * Fetch user profile information including package name.
+ * @param {number} userId
+ */
+export const getUserProfile = async (userId) => {
+  const user = await db('users')
+    .select('users.*', 'packages.name as package_name')
+    .leftJoin('packages', 'users.package_id', 'packages.id')
+    .where({ 'users.id': userId })
+    .first();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const roleName = await getUserRole(user.id);
+
+  const { password_hash, verification_token, verification_token_expires_at,
+          reset_password_token, reset_password_expires_at, ...userInfo } = user;
+  userInfo.role = roleName;
+
+  return userInfo;
+};

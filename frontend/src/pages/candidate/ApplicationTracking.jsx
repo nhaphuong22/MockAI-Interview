@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, CheckCircle2, XCircle, Info, Loader2 } from "lucide-react";
+import { Bot, Clock, CheckCircle2, XCircle, Info, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { applicationApi } from "../../api/applicationApi";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -10,6 +10,7 @@ import AtsReportDashboard from "./components/AtsReportDashboard";
 
 const statusConfig = {
   reviewing: { label: "Đang Xem", color: "dark:bg-yellow-900/30 dark:text-yellow-400 bg-yellow-100 text-yellow-700", icon: Clock },
+  ai_interview_invited: { label: "Mời PV AI", color: "dark:bg-orange-900/30 dark:text-orange-400 bg-orange-100 text-orange-700", icon: Bot },
   interview: { label: "Phỏng Vấn", color: "dark:bg-blue-900/30 dark:text-blue-400 bg-blue-100 text-blue-700", icon: Info },
   accepted: { label: "Đã Tuyển", color: "dark:bg-green-900/30 dark:text-green-400 bg-green-100 text-green-700", icon: CheckCircle2 },
   rejected: { label: "Từ Chối", color: "dark:bg-red-900/30 dark:text-red-400 bg-red-100 text-red-700", icon: XCircle },
@@ -37,10 +38,10 @@ export function ApplicationTracking() {
     let status = "reviewing";
     const rawStatus = app.status?.toLowerCase();
     if (rawStatus === "submitted" || rawStatus === "reviewing") status = "reviewing";
+    else if (rawStatus === "ai_interview_invited") status = "ai_interview_invited";
     else if (rawStatus === "interviewed") status = "interview";
     else if (rawStatus === "accepted") status = "accepted";
     else if (rawStatus === "rejected") status = "rejected";
-
     // Sinh timeline động dựa trên trạng thái
     const timeline = [
       { step: "Nộp hồ sơ", completed: true, date: new Date(app.appliedDate).toLocaleDateString("vi-VN") },
@@ -57,6 +58,7 @@ export function ApplicationTracking() {
       logo: app.companyName?.substring(0, 1).toUpperCase() || "🚀",
       appliedDate: app.appliedDate,
       status,
+      rawStatus,
       timeline,
       aiScore: app.aiScore
     };

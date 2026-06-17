@@ -100,3 +100,10 @@ export const changePasswordApi = async (currentPassword, newPassword) => {
 export const updateProfileApi = async (data) => {
   return axiosClient.put("/auth/profile", data);
 };
+
+/**
+ * Fetch full user profile including package_name
+ */
+export const getProfileApi = async () => {
+  return axiosClient.get("/auth/profile");
+};

@@ -67,7 +67,11 @@ export const submitAnswer = async (req, res) => {
     if (error.message === 'Interview question not found') {
       return sendError(res, 404, error.message);
     }
-    console.error('Submit answer error:', error);
+    console.error('submitAnswer error:', error);
+    try {
+      const fs = await import('fs');
+      fs.appendFileSync('ERRORS.md', `\n## [${new Date().toISOString()}] - submitAnswer Error\n- **Error Message**:\n\`\`\`\n${error.stack || error.message}\n\`\`\`\n---\n`);
+    } catch(e) {}
     return sendError(res, 500, 'Failed to save and grade candidate answer');
   }
 };
