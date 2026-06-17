@@ -15,7 +15,9 @@ import { Settings } from "../pages/candidate/Settings";
 import { Payment } from "../pages/shared/Payment";
 import { PaymentSuccess } from "../pages/shared/PaymentSuccess";
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
-
+import HRInterviewPrep from "../pages/candidate/HRInterviewPrep";
+import HRInterviewRoom from "../pages/candidate/HRInterviewRoom";
+import HRInterviewResult from "../pages/candidate/HRInterviewResult";
 export const candidateRoutes = [
   { index: true, Component: Home }, // Public: Landing Page
   { 
@@ -77,5 +79,17 @@ export const candidateRoutes = [
   { 
     path: "payment-success", 
     element: <ProtectedRoute><PaymentSuccess /></ProtectedRoute>
+  },
+  { 
+    path: "hr-interview/prep/:applicationId", 
+    element: <ProtectedRoute><HRInterviewPrep /></ProtectedRoute>
+  },
+  { 
+    path: "hr-interview/room/:interviewId", 
+    element: <ProtectedRoute><HRInterviewRoom /></ProtectedRoute>
+  },
+  { 
+    path: "hr-interview/result/:interviewId", 
+    element: <ProtectedRoute><HRInterviewResult /></ProtectedRoute>
   },
 ];

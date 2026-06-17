@@ -8,6 +8,7 @@ import {
   forgotPassword,
   resetPassword,
   changePassword,
+  getUserProfile,
 } from '../services/authService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -248,6 +249,22 @@ export const updateProfile = async (req, res) => {
       return sendError(res, 404, 'User not found');
     }
     console.error('Update profile controller error:', error);
+    return sendError(res, 500, 'Internal server error');
+  }
+};
+
+// ─── Profile Fetch ─────────────────────────────────────────────────────────────
+
+export const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await getUserProfile(userId);
+    return sendResponse(res, 200, result);
+  } catch (error) {
+    if (error.message === 'User not found') {
+      return sendError(res, 404, 'User not found');
+    }
+    console.error('Get profile controller error:', error);
     return sendError(res, 500, 'Internal server error');
   }
 };

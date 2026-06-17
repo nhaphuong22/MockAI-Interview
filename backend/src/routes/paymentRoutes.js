@@ -1,8 +1,22 @@
 import express from 'express';
-import { createPaymentUrl, handleVnpayIpn } from '../controllers/paymentController.js';
+import { createPaymentUrl, handleVnpayIpn, getPackages } from '../controllers/paymentController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
+
+/**
+ * @swagger
+ * /api/payments/packages:
+ *   get:
+ *     summary: Lấy danh sách gói thanh toán theo vai trò người dùng
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách gói cước
+ */
+router.get('/packages', authenticateToken, getPackages);
 
 /**
  * @swagger

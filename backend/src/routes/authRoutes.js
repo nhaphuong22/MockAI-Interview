@@ -11,6 +11,7 @@ import {
   resetPasswordController,
   changePasswordController,
   uploadAvatarController,
+  getProfile,
 } from '../controllers/authController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
@@ -259,6 +260,14 @@ router.post('/change-password', authenticateToken, changePasswordController);
 /**
  * @swagger
  * /api/auth/profile:
+ *   get:
+ *     summary: Lấy thông tin hồ sơ cá nhân hiện tại
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lấy thông tin thành công.
  *   put:
  *     summary: Cập nhật thông tin hồ sơ cá nhân
  *     tags: [Authentication]
@@ -268,6 +277,7 @@ router.post('/change-password', authenticateToken, changePasswordController);
  *       200:
  *         description: Cập nhật thành công.
  */
+router.get('/profile', authenticateToken, getProfile);
 router.put('/profile', authenticateToken, updateProfile);
 
 // ─── Avatar Upload ─────────────────────────────────────────────────────────────

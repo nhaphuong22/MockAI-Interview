@@ -193,12 +193,6 @@ export function JobDetail() {
                 >
                   Nộp Đơn Ngay
                 </button>
-                <Link 
-                  to="/interview-practice"
-                  className="flex-1 py-3 border-2 border-[#0ea5e9] text-[#0ea5e9] rounded-xl font-bold hover:bg-[#f0f9ff] transition-all text-center"
-                >
-                  Phỏng Vấn AI Trước
-                </Link>
               </div>
 
               <div className="flex items-center gap-3">

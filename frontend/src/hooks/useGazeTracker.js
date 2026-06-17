@@ -153,12 +153,14 @@ export function useGazeTracker({
       if (video && video.readyState >= 2 && landmarker) {
         const videoTime = video.currentTime;
         
-        // Process only when frame updates to save CPU cycles
-        if (videoTime !== lastVideoTime) {
+        // Process only when frame updates to save CPU cycles and throttle to 10 FPS (100ms)
+        const now = performance.now();
+        if (videoTime !== lastVideoTime && now - (video.lastDetectTime || 0) >= 100) {
           lastVideoTime = videoTime;
+          video.lastDetectTime = now;
           
           try {
-            const results = landmarker.detectForVideo(video, performance.now());
+            const results = landmarker.detectForVideo(video, now);
             
             if (results && results.faceLandmarks && results.faceLandmarks.length > 0) {
               setIsFaceDetected((prev) => prev === true ? prev : true);

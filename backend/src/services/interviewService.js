@@ -1,5 +1,6 @@
 import db from '../db/knex.js';
 import { generateQuestionsFromGroq, evaluateCandidateAnswer } from './groqService.js';
+import { evaluateCandidateAnswerGemini } from './geminiService.js';
 import { 
   findInterviewWithOwner, 
   insertInterview, 
@@ -99,13 +100,23 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     throw new NotFoundError('Interview question not found');
   }
 
-  // 2. Perform AI evaluation using Groq Qwen 3 32B model
-  console.log('Evaluating candidate answer using Qwen 3 32B...');
-  const evaluation = await evaluateCandidateAnswer(
-    question.question_text,
-    question.expected_answer,
-    answerText.trim()
-  );
+  // 1.5. Determine interview mode
+  const interviewId = question.interview_id;
+  const interview = await db('interviews').where({ id: interviewId }).first();
+  const isHRInterview = interview && interview.job_id != null;
+
+  let evaluation;
+  if (isHRInterview) {
+    console.log(`Skipping Gemini evaluation for HR interview (will bulk evaluate at the end).`);
+    evaluation = { score: null, feedback: null };
+  } else {
+    console.log(`Evaluating candidate answer using Groq...`);
+    evaluation = await evaluateCandidateAnswer(
+      question.question_text,
+      question.expected_answer,
+      answerText.trim()
+    );
+  }
 
   // Tính toán trừ điểm vi phạm ánh mắt
   const penalty = Math.min(50, (gazeViolations || 0) * 10);

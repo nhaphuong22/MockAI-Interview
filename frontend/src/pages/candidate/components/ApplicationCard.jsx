@@ -1,4 +1,5 @@
-import { Eye, Calendar, Sparkles } from "lucide-react";
+import { Eye, Calendar, Sparkles, Bot } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function ApplicationCard({ app, statusConfig, onViewAtsReport }) {
   const config = statusConfig[app.status] || {
@@ -38,6 +39,15 @@ export function ApplicationCard({ app, statusConfig, onViewAtsReport }) {
                 <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse fill-yellow-300" />
                 <span>Xem Phân Tích ATS ({app.aiScore} điểm)</span>
               </button>
+            )}
+            
+            {app.rawStatus === 'ai_interview_invited' && (
+              <Link to={`/hr-interview/prep/${app.id}`}>
+                <button className="mt-4 ml-0 sm:ml-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border-none">
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>Vào phỏng vấn AI →</span>
+                </button>
+              </Link>
             )}
           </div>
         </div>

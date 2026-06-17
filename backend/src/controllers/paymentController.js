@@ -1,6 +1,31 @@
 import { paymentService } from '../services/paymentService.js';
 
 /**
+ * Lấy danh sách gói thanh toán theo Role
+ */
+export const getPackages = async (req, res) => {
+  try {
+    const role = req.user?.role?.toUpperCase() === 'HR' ? 'HR' : 'CANDIDATE';
+    const db = (await import('../db/knex.js')).default;
+    
+    const packages = await db('packages')
+      .where({ is_active: true, target_role: role })
+      .orderBy('sort_order', 'asc');
+
+    return res.status(200).json({
+      success: true,
+      data: packages
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách packages:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi hệ thống khi tải gói cước.'
+    });
+  }
+};
+
+/**
  * Controller xử lý các yêu cầu thanh toán
  */
 export const createPaymentUrl = async (req, res) => {

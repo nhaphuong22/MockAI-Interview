@@ -11,6 +11,7 @@ const STATUS_BADGES = {
   HR_REVIEWING: { label: "HR Đang duyệt", color: "text-amber-600 bg-amber-50" },
   SHORTLISTED: { label: "Vào vòng trong", color: "text-emerald-600 bg-emerald-50" },
   INTERVIEW_SCHEDULED: { label: "Phỏng vấn", color: "text-purple-600 bg-purple-50" },
+  ACCEPTED: { label: "Đã trúng tuyển", color: "text-emerald-700 bg-emerald-100" },
   HIRED: { label: "Đã tuyển", color: "text-green-700 bg-green-100" },
   REJECTED: { label: "Từ chối", color: "text-red-600 bg-red-50" }
 };
@@ -118,7 +119,11 @@ export function ManageApplications() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {applicationsList.map((app) => (
-                    <tr key={app.id} className="hover:bg-sky-50/20 transition-colors group">
+                    <tr 
+                      key={app.id} 
+                      onClick={() => handleViewDetails(app)}
+                      className="hover:bg-sky-50/40 transition-all group cursor-pointer"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
@@ -148,8 +153,8 @@ export function ManageApplications() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 font-black text-sm" title="Match Score">
-                            {app.match_score || 0}
+                          <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 font-black text-sm" title="Total Score">
+                            {app.total_score || 0}
                           </div>
                           <div className="flex flex-col gap-1">
                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex gap-1 items-center">
@@ -176,12 +181,21 @@ export function ManageApplications() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleViewDetails(app)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-sky-600 bg-sky-50 hover:bg-[#0ea5e9] hover:text-white rounded-lg transition-all"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> Chi tiết
-                        </button>
+                        {app.status === "INTERVIEWED" || app.status === "ACCEPTED" || app.status === "HIRED" ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleViewDetails(app); }}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-200 hover:bg-fuchsia-600 hover:text-white rounded-xl transition-all shadow-sm"
+                          >
+                            <Star className="w-3.5 h-3.5 fill-current" /> Đánh giá AI
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleViewDetails(app); }}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 hover:bg-[#0ea5e9] hover:text-white rounded-xl transition-all shadow-sm"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Duyệt Hồ Sơ
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
