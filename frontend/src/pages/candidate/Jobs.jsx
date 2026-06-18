@@ -1,32 +1,20 @@
 import { SlidersHorizontal, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { JobFilters } from "./components/JobFilters";
 import { JobCard } from "./components/JobCard";
-import { JobDetailView } from "./components/JobDetailView";
 import { jobApi } from "../../api/jobApi";
 
-const formatTime = (timeStr) => {
-  if (!timeStr) return "Vừa xong";
-  const date = new Date(timeStr);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
-  if (diffMins < 60) return `${diffMins || 1} phút trước`;
-  if (diffHours < 24) return `${diffHours} giờ trước`;
-  if (diffDays < 30) return `${diffDays} ngày trước`;
-  return date.toLocaleDateString("vi-VN");
-};
+
 
 /**
  * Jobs Page
  * Manages job listings, filtering by various criteria, and viewing detailed descriptions.
  */
 export function Jobs() {
-  const [selectedJob, setSelectedJob] = useState(null);
+  const navigate = useNavigate();
   const [bookmarked, setBookmarked] = useState([]);
   const [salaryRange, setSalaryRange] = useState([10, 50]);
   const [showFilters, setShowFilters] = useState(true);
@@ -93,10 +81,6 @@ export function Jobs() {
     if (location.trim() === "") return true;
     return job.location.toLowerCase().includes(location.toLowerCase());
   });
-
-  // Tự động xác định Job đang được chọn (pure state logic, không sử dụng useEffect gây cascading render)
-  const activeJobId = selectedJob || (filteredJobs.length > 0 ? filteredJobs[0].id : null);
-  const selectedJobData = filteredJobs.find((job) => job.id === activeJobId);
 
   const handleClearFilters = () => {
     setSearch("");
@@ -176,28 +160,39 @@ export function Jobs() {
               </button>
             </div>
           ) : (
-            <>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-transparent bg-gray-50/50">
-                {filteredJobs.map((job) => (
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 overflow-y-auto flex-1 dark:bg-transparent bg-gray-50/50"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.05
+                  }
+                }
+              }}
+            >
+              {filteredJobs.map((job) => (
+                <motion.div
+                  key={job.id}
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    visible: { opacity: 1, y: 0 }
+                  }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                >
                   <JobCard
-                    key={job.id}
                     job={job}
-                    isSelected={activeJobId === job.id}
+                    isSelected={false}
                     isBookmarked={bookmarked.includes(job.id)}
-                    onSelect={() => setSelectedJob(job.id)}
+                    onSelect={() => navigate(`/jobs/${job.id}`)}
                     onToggleBookmark={toggleBookmark}
                   />
-                ))}
-              </div>
-
-              {selectedJobData && (
-                <JobDetailView 
-                  job={selectedJobData}
-                  onToggleBookmark={toggleBookmark}
-                  isBookmarked={bookmarked.includes(selectedJobData.id)}
-                />
-              )}
-            </>
+                </motion.div>
+              ))}
+            </motion.div>
           )}
         </div>
       </main>

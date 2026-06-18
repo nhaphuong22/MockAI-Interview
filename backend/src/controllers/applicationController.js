@@ -57,7 +57,7 @@ const uploadReportToCloudinary = (fileBuffer, candidateName) => {
 export const applyJob = async (req, res) => {
   try {
     const jobId = parseInt(req.params.jobId);
-    const { cv_text, cv_url, cover_letter } = req.body;
+    const { cv_text, cv_url, cover_letter, candidate_name, candidate_email, candidate_phone, portfolio_url } = req.body;
     const candidateId = req.user.id;
     console.log("[Apply Job] Nhận được cv_url từ frontend body:", cv_url);
 
@@ -90,11 +90,12 @@ export const applyJob = async (req, res) => {
 
     // 3. Đánh giá CV bằng AI dựa trên JD và yêu cầu công việc
     const jobJD = `${job.title}\n${job.description || ''}\n${job.requirements || ''}`;
-    console.log(`[Application] Đang chấm điểm CV cho ứng viên ${req.user.full_name} với JD của Job ${job.title}...`);
+    const formattedName = candidate_name || req.user.full_name || req.user.email;
+    console.log(`[Application] Đang chấm điểm CV cho ứng viên ${formattedName} với JD của Job ${job.title}...`);
     const evaluation = await evaluateCV(sanitizedCvText, jobJD);
 
     // 3.1. Tạo PDF báo cáo và tải lên Cloudinary
-    const candidateName = req.user.full_name || req.user.email;
+    const candidateName = candidate_name || req.user.full_name || req.user.email;
     console.log(`[Application] Đang tạo báo cáo đánh giá PDF cho ứng viên ${candidateName}...`);
     const pdfReportBuffer = await generatePDFReportBuffer(evaluation, candidateName, job.title);
     
@@ -107,7 +108,7 @@ export const applyJob = async (req, res) => {
     let application;
 
     if (existingApp) {
-      console.log(`[Application] Ứng viên ${req.user.full_name} cập nhật CV/đơn ứng tuyển cho Job ${job.title}...`);
+      console.log(`[Application] Ứng viên ${formattedName} cập nhật CV/đơn ứng tuyển cho Job ${job.title}...`);
       
       // Lưu thông tin CV mới vào bảng `cvs`
       const [newCv] = await db('cvs')
@@ -133,6 +134,10 @@ export const applyJob = async (req, res) => {
           cv_score: evaluation.overallScore || 0,
           total_score: evaluation.overallScore || 0,
           cover_letter: cover_letter || null,
+          candidate_name: candidate_name || null,
+          candidate_email: candidate_email || null,
+          candidate_phone: candidate_phone || null,
+          portfolio_url: portfolio_url || null,
           ai_summary: extractSkillsFromText(sanitizedCvText).slice(0, 3).join(', '),
           updated_at: new Date(),
           created_at: new Date() // Đẩy lên đầu danh sách HR
@@ -165,6 +170,10 @@ export const applyJob = async (req, res) => {
           cv_score: evaluation.overallScore || 0,
           total_score: evaluation.overallScore || 0,
           cover_letter: cover_letter || null,
+          candidate_name: candidate_name || null,
+          candidate_email: candidate_email || null,
+          candidate_phone: candidate_phone || null,
+          portfolio_url: portfolio_url || null,
           ai_summary: extractSkillsFromText(sanitizedCvText).slice(0, 3).join(', '),
           created_at: new Date(),
           updated_at: new Date()
@@ -281,8 +290,9 @@ export const getApplications = async (req, res) => {
       .leftJoin('cvs', 'applications.cv_id', 'cvs.id') // Join bảng cvs để lấy cv file url
       .select(
         'applications.*',
-        'users.full_name as candidate_name',
-        'users.email as candidate_email',
+        db.raw('COALESCE(applications.candidate_name, users.full_name) as candidate_name'),
+        db.raw('COALESCE(applications.candidate_email, users.email) as candidate_email'),
+        'users.phone as user_phone',
         'users.avatar_url as candidate_avatar',
         'jobs.title as job_title',
         'jobs.hr_id as job_hr_id',
@@ -331,6 +341,8 @@ export const getApplications = async (req, res) => {
       companyName: item.company_name || 'MockAI Company',
       candidateName: item.candidate_name,
       candidateEmail: item.candidate_email,
+      candidatePhone: item.candidate_phone || item.user_phone,
+      portfolioUrl: item.portfolio_url,
       candidateAvatar: item.candidate_avatar || '👨‍💻',
       cvId: item.cv_id,
       cvUrl: item.cv_url, // Lấy file url CV thực tế trả về cho frontend
