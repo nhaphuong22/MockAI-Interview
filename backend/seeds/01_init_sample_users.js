@@ -8,6 +8,7 @@ export async function seed(knex) {
   // Deletes blogs, jobs, user_roles first, then users to respect foreign keys
   await knex('blogs').del();
   await knex('jobs').del();
+  await knex('job_posts').del();
   await knex('user_roles').del();
   await knex('users').del();
   
