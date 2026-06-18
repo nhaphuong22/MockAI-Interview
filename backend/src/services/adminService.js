@@ -17,7 +17,8 @@ import {
  */
 export const fetchJobsForApproval = async () => {
   const jobs = await db('jobs')
-    .leftJoin('companies', 'jobs.company_id', 'companies.id')
+    .leftJoin('job_posts', 'jobs.job_post_id', 'job_posts.id')
+    .leftJoin('companies', 'job_posts.company_id', 'companies.id')
     .leftJoin('locations', 'jobs.location_id', 'locations.id')
     .leftJoin('job_types', 'jobs.job_type_id', 'job_types.id')
     .select([

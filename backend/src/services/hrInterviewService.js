@@ -11,7 +11,8 @@ export const initHRInterviewSession = async ({ userId, applicationId }) => {
   // 1. Lấy application + join jobs + cvs + companies
   const application = await db('applications')
     .join('jobs', 'applications.job_id', 'jobs.id')
-    .leftJoin('companies', 'jobs.company_id', 'companies.id')
+    .leftJoin('job_posts', 'jobs.job_post_id', 'job_posts.id')
+    .leftJoin('companies', 'job_posts.company_id', 'companies.id')
     .leftJoin('cvs', 'applications.cv_id', 'cvs.id')
     .select(
       'applications.id as application_id',
@@ -105,7 +106,8 @@ export const initHRInterviewSession = async ({ userId, applicationId }) => {
 export const getHRInterviewResult = async ({ interviewId, userId }) => {
   const interview = await db('interviews')
     .leftJoin('jobs', 'interviews.job_id', 'jobs.id')
-    .leftJoin('companies', 'jobs.company_id', 'companies.id')
+    .leftJoin('job_posts', 'jobs.job_post_id', 'job_posts.id')
+    .leftJoin('companies', 'job_posts.company_id', 'companies.id')
     .select(
       'interviews.id',
       'interviews.user_id',

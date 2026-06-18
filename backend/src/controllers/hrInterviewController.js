@@ -60,10 +60,11 @@ export const inviteForAIInterview = async (req, res) => {
     // Lấy application + verify HR ownership
     const app = await db('applications')
       .join('jobs', 'applications.job_id', 'jobs.id')
+      .join('job_posts', 'jobs.job_post_id', 'job_posts.id')
       .join('users', 'applications.candidate_id', 'users.id')
       .select(
         'applications.*',
-        'jobs.hr_id as job_hr_id',
+        'job_posts.hr_id as job_hr_id',
         'jobs.title as job_title',
         'users.full_name as candidate_name'
       )

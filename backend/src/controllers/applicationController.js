@@ -79,8 +79,9 @@ export const applyJob = async (req, res) => {
 
     // 2. Lấy thông tin công việc và thông tin HR tạo tin
     const job = await db('jobs')
-      .leftJoin('companies', 'jobs.company_id', 'companies.id')
-      .select('jobs.*', 'companies.name as company_name')
+      .join('job_posts', 'jobs.job_post_id', 'job_posts.id')
+      .leftJoin('companies', 'job_posts.company_id', 'companies.id')
+      .select('jobs.*', 'job_posts.hr_id', 'companies.name as company_name')
       .where('jobs.id', jobId)
       .first();
 
@@ -277,7 +278,8 @@ export const getApplications = async (req, res) => {
     let query = db('applications')
       .join('users', 'applications.candidate_id', 'users.id')
       .join('jobs', 'applications.job_id', 'jobs.id')
-      .leftJoin('companies', 'jobs.company_id', 'companies.id')
+      .join('job_posts', 'jobs.job_post_id', 'job_posts.id')
+      .leftJoin('companies', 'job_posts.company_id', 'companies.id')
       .leftJoin('cvs', 'applications.cv_id', 'cvs.id') // Join bảng cvs để lấy cv file url
       .select(
         'applications.*',
@@ -285,7 +287,7 @@ export const getApplications = async (req, res) => {
         'users.email as candidate_email',
         'users.avatar_url as candidate_avatar',
         'jobs.title as job_title',
-        'jobs.hr_id as job_hr_id',
+        'job_posts.hr_id as job_hr_id',
         'companies.name as company_name',
         'cvs.file_url as cv_url',
         'cvs.pdf_report_url as pdf_report_url',
@@ -294,7 +296,7 @@ export const getApplications = async (req, res) => {
 
     if (role === 'HR') {
       // HR chỉ xem các ứng đơn nộp vào công việc của HR đó tạo
-      query.where('jobs.hr_id', userId);
+      query.where('job_posts.hr_id', userId);
     } else if (role === 'USER') {
       // Candidate chỉ xem các ứng đơn của chính họ nộp
       query.where('applications.candidate_id', userId);
@@ -373,10 +375,11 @@ export const updateApplicationStatus = async (req, res) => {
     // Lấy thông tin đơn ứng tuyển hiện tại cùng thông tin ứng viên
     const app = await db('applications')
       .join('jobs', 'applications.job_id', 'jobs.id')
+      .join('job_posts', 'jobs.job_post_id', 'job_posts.id')
       .join('users', 'applications.candidate_id', 'users.id')
       .select(
         'applications.*', 
-        'jobs.hr_id as job_hr_id', 
+        'job_posts.hr_id as job_hr_id', 
         'jobs.title as job_title',
         'users.email as candidate_email',
         'users.full_name as candidate_name'
