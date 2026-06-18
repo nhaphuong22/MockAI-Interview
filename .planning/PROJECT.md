@@ -8,6 +8,15 @@ MockAI-Interview là một nền tảng hỗ trợ việc làm toàn diện (Job
 
 Cung cấp trải nghiệm luyện tập phỏng vấn ảo bằng AI 3D trực quan sinh động và hệ thống tự động chấm điểm, đánh giá năng lực ứng viên chính xác giúp rút ngắn thời gian tuyển dụng.
 
+## Current Milestone: v5.0 HR Dashboard Enhancements & Job-grouped Applications
+
+**Goal:** Hiển thị chi tiết thông tin cá nhân tùy chỉnh của ứng viên trên giao diện HR, đồng thời cấu trúc lại giao diện quản lý của nhà tuyển dụng để gom nhóm các đơn ứng tuyển theo từng tin tuyển dụng mà HR đã đăng.
+
+**Target features:**
+- Hiển thị đầy đủ Họ tên, Email, Số điện thoại và Portfolio URL tùy chỉnh của đơn ứng tuyển trong Modal chi tiết ứng viên.
+- Gom nhóm và hiển thị danh sách đơn ứng tuyển của ứng viên theo từng Job của nhà tuyển dụng đã đăng.
+- API Backend hỗ trợ lọc đơn ứng tuyển theo jobId của HR đã đăng nhập.
+
 ## Requirements
 
 ### Validated
@@ -35,7 +44,9 @@ Cung cấp trải nghiệm luyện tập phỏng vấn ảo bằng AI 3D trực 
 
 ### Active
 
-- *(None - Tất cả các yêu cầu của v1.0, v3.0 và v4.0 đã được hoàn thành)*
+- [ ] **HR-04**: Hiển thị Họ tên, Email, Số điện thoại và Portfolio URL tùy chỉnh của đơn ứng tuyển trong Modal chi tiết ứng viên (`ApplicationDetailModal.jsx`) của HR.
+- [ ] **HR-05**: Gom nhóm các đơn ứng tuyển của Candidate theo từng Job mà HR đã đăng trên giao diện quản lý.
+- [ ] **HR-06**: Cấu hình endpoint API backend để hỗ trợ lọc ứng viên theo `jobId` và bảo mật theo `hrId` của HR.
 
 ### Out of Scope
 

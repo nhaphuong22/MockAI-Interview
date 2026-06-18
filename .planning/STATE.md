@@ -1,19 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Job Search & Application UI
-current_phase: 0
-status: Awaiting next milestone
-stopped_at: Phase 6 plan completed
-last_updated: "2026-06-18T15:17:46.889Z"
+milestone: v5.0
+milestone_name: HR Dashboard Enhancements & Job-grouped Applications
+status: planning
+last_updated: "2026-06-18T15:24:01.831Z"
 last_activity: 2026-06-18
-last_activity_desc: Milestone v4.0 completed and archived
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: MockAI-Interview
@@ -27,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-18)
 
 ## Current Position
 
-Phase: Milestone v4.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-18 — Milestone v4.0 completed and archived
+Status: Defining requirements
+Last activity: 2026-06-18 — Milestone v5.0 started
 
 ## Performance Metrics
 
