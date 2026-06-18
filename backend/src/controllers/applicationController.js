@@ -337,7 +337,13 @@ export const getApplications = async (req, res) => {
       cvId: item.cv_id,
       cvUrl: item.cv_url, // Lấy file url CV thực tế trả về cho frontend
       pdfReportUrl: item.pdf_report_url,
-      aiFeedback: item.ai_feedback ? JSON.parse(item.ai_feedback) : null,
+      aiFeedback: (() => {
+        try {
+          return item.ai_feedback ? JSON.parse(item.ai_feedback) : null;
+        } catch (e) {
+          return item.ai_feedback;
+        }
+      })(),
       status: item.status.toLowerCase(), // frontend match: 'new', 'reviewed', 'interviewed', 'accepted', 'rejected'
       aiScore: item.cv_score || 0,
       appliedDate: item.created_at,
