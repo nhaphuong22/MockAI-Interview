@@ -155,7 +155,9 @@ export const finishHRInterviewSession = async ({ interviewId, userId, totalTabVi
   const user = await db('users').where({ id: userId }).first();
 
   // 1. Fetch all questions and answers
-  const questions = await db('interview_questions').where({ interview_id: interviewId });
+  const questions = await db('interview_questions')
+    .where({ interview_id: interviewId })
+    .orderBy('order_index', 'asc');
   const answers = await db('candidate_answers')
     .whereIn('interview_question_id', questions.map(q => q.id));
 
@@ -269,7 +271,7 @@ export const getHRInterviewTranscript = async ({ interviewId, hrId }) => {
   // 2. Lấy toàn bộ Questions + Answers
   const questions = await db('interview_questions')
     .where({ interview_id: interviewId })
-    .orderBy('id', 'asc');
+    .orderBy('order_index', 'asc');
 
   const answers = await db('candidate_answers')
     .whereIn('interview_question_id', questions.map(q => q.id));
