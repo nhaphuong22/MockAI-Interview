@@ -128,8 +128,12 @@ export function InterviewPractice() {
     }
   };
 
-  const handleNextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
+  const handleNextQuestion = (newQuestions) => {
+    const activeQuestions = newQuestions || questions;
+    if (newQuestions) {
+      setQuestions(newQuestions);
+    }
+    if (currentQuestion < activeQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       setMode("feedback");

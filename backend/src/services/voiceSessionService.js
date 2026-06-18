@@ -156,11 +156,13 @@ export const assessAndPackageResult = async (sessionId, userId) => {
     .select(
       'interview_questions.id as question_id',
       'interview_questions.question_text',
+      'interview_questions.order_index',
       'candidate_answers.answer_text',
       'candidate_answers.audio_url',
       'candidate_answers.score',
       'candidate_answers.ai_feedback'
-    );
+    )
+    .orderBy('interview_questions.order_index', 'asc');
 
   // 3. Calculate metrics
   let totalScore = 0;

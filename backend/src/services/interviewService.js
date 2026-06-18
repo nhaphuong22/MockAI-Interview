@@ -77,11 +77,13 @@ export const initInterviewSession = async ({
     question_text: q.question_text,
     expected_answer: q.expected_answer,
     score_weight: q.score_weight || 1,
+    order_index: (index + 1) * 10, // 10, 20, 30, 40, 50, 60, 70, 80
     created_at: new Date(),
     updated_at: new Date()
   }));
 
   const insertedQuestions = await insertQuestions(questionsToInsert);
+  insertedQuestions.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
 
   return {
     ...interview,
@@ -164,7 +166,46 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     savedAnswer = inserted;
   }
 
-  return savedAnswer;
+  // 4. Dynamic follow-up question logic (only for PRACTICE mode)
+  if (interview && interview.type === 'PRACTICE' && evaluation.is_generic && evaluation.follow_up_question) {
+    // Check total questions count
+    const allQuestions = await db('interview_questions')
+      .where({ interview_id: interviewId })
+      .orderBy('order_index', 'asc');
+
+    if (allQuestions.length < 10) {
+      // Find index of current question in the sorted array
+      const currentIndex = allQuestions.findIndex(q => q.id === question.id);
+      let newOrderIndex;
+      if (currentIndex !== -1 && currentIndex < allQuestions.length - 1) {
+        newOrderIndex = (allQuestions[currentIndex].order_index + allQuestions[currentIndex + 1].order_index) / 2;
+      } else {
+        newOrderIndex = (question.order_index || 0) + 10;
+      }
+
+      const [followUpQuestion] = await db('interview_questions').insert({
+        interview_id: interviewId,
+        question_text: evaluation.follow_up_question.question_text,
+        expected_answer: evaluation.follow_up_question.expected_answer || 'Ứng viên giải thích chi tiết hơn câu trả lời.',
+        score_weight: 1,
+        order_index: newOrderIndex,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning('*');
+
+      console.log(`[Follow-up AI] Created dynamic follow-up question ID ${followUpQuestion.id} with order_index ${newOrderIndex} because candidate's answer was generic.`);
+    }
+  }
+
+  // Fetch updated list of questions sorted by order_index
+  const updatedQuestions = await db('interview_questions')
+    .where({ interview_id: interviewId })
+    .orderBy('order_index', 'asc');
+
+  return {
+    ...savedAnswer,
+    updatedQuestions
+  };
 };
 
 /**
