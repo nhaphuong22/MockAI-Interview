@@ -301,11 +301,17 @@ const HRInterviewRoom = () => {
                 </span>
                 <button
                   onClick={handleSubmitAnswer}
-                  disabled={isSubmitting || isFinishing || (!transcript.trim() && !interimTranscript.trim())}
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white px-6 py-3 rounded-xl font-semibold transition-colors shadow-lg"
+                  disabled={isSubmitting || isFinishing}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-colors shadow-lg ${
+                    (!transcript.trim() && !interimTranscript.trim())
+                      ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-300'
+                      : 'bg-slate-800 hover:bg-slate-900 text-white dark:bg-sky-600 dark:hover:bg-sky-500'
+                  } disabled:opacity-50`}
                 >
                   {isSubmitting || isFinishing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                  {currentIndex === questions.length - 1 ? 'Hoàn Thành' : 'Câu Tiếp Theo'}
+                  {currentIndex === questions.length - 1 
+                    ? (transcript.trim() || interimTranscript.trim() ? 'Hoàn Thành' : 'Kết Thúc') 
+                    : (transcript.trim() || interimTranscript.trim() ? 'Câu Tiếp Theo' : 'Bỏ Qua Câu Này')}
                 </button>
               </div>
             </div>

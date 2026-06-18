@@ -231,10 +231,10 @@ export function useGazeTracker({
                     
                     // If looking away for continuous 1.5 seconds
                     if (elapsed >= 1500) {
-                      if (!isWarningActive) {
-                        setIsWarningActive(true);
-                        onWarningRef.current(true);
-                      }
+                      setIsWarningActive((prev) => {
+                        if (!prev) onWarningRef.current(true);
+                        return true;
+                      });
 
                       // Check cooldown before incrementing violations
                       const now = Date.now();
@@ -254,10 +254,10 @@ export function useGazeTracker({
                   if (violationStartTimestampRef.current) {
                     violationStartTimestampRef.current = null;
                   }
-                  if (isWarningActive) {
-                    setIsWarningActive(false);
-                    onWarningRef.current(false);
-                  }
+                  setIsWarningActive((prev) => {
+                    if (prev) onWarningRef.current(false);
+                    return false;
+                  });
                 }
               }
             } else {
@@ -271,10 +271,10 @@ export function useGazeTracker({
                 
                 // If face not detected for continuous 1.5 seconds
                 if (elapsed >= 1500) {
-                  if (!isWarningActive) {
-                    setIsWarningActive(true);
-                    onWarningRef.current(true);
-                  }
+                  setIsWarningActive((prev) => {
+                    if (!prev) onWarningRef.current(true);
+                    return true;
+                  });
 
                   // Check cooldown before incrementing violations
                   const now = Date.now();
@@ -309,7 +309,7 @@ export function useGazeTracker({
         clearTimeout(violationTimerRef.current);
       }
     };
-  }, [isActive, isCameraActive, isWarningActive]);
+  }, [isActive, isCameraActive, isLoadingModel]);
 
   const resetViolations = () => {
     setGazeViolations(0);

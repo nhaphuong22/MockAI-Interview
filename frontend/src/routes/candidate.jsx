@@ -18,6 +18,8 @@ import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 import HRInterviewPrep from "../pages/candidate/HRInterviewPrep";
 import HRInterviewRoom from "../pages/candidate/HRInterviewRoom";
 import HRInterviewResult from "../pages/candidate/HRInterviewResult";
+import { CVBuilder } from "../pages/candidate/cv-builder/CVBuilder";
+
 export const candidateRoutes = [
   { index: true, Component: Home }, // Public: Landing Page
   { 
@@ -91,5 +93,9 @@ export const candidateRoutes = [
   { 
     path: "hr-interview/result/:interviewId", 
     element: <ProtectedRoute><HRInterviewResult /></ProtectedRoute>
+  },
+  { 
+    path: "cv-builder", 
+    element: <ProtectedRoute><CVBuilder /></ProtectedRoute>
   },
 ];

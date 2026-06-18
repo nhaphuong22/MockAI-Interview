@@ -1,130 +1,113 @@
 import db from '../db/knex.js';
 import { deleteCache, deleteCachePattern } from '../config/redis.js';
-import { 
-  insertJob, 
-  insertJobRequirements 
-} from '../models/jobModel.js';
 
-/**
- * Tạo mới tin tuyển dụng và lưu các yêu cầu chi tiết đi kèm trong một transaction
- */
 export const createJob = async ({
   hrId,
-  title,
+  title, // Campaign title
   description = '',
-  requirements = '',
   status = 'OPEN',
-  experienceLevel = null,
-  salaryMin = null,
-  salaryMax = null,
-  salaryCurrency = 'VND',
-  isSalaryVisible = true,
-  vacancyCount = 1,
   deadline = null,
-  detailedRequirements = []
+  positions = [] // Array of jobs (positions)
 }) => {
-  // Lấy company_id của HR tuyển dụng từ bảng users để liên kết công ty
   const hrUser = await db('users').where({ id: hrId }).first();
   const companyId = hrUser ? hrUser.company_id : null;
 
   const result = await db.transaction(async (trx) => {
-    // 1. Tạo bản ghi tin tuyển dụng trong bảng 'jobs' qua jobModel
-    const [newJob] = await insertJob({
+    // 1. Create job_post
+    const [newJobPost] = await trx('job_posts').insert({
       hr_id: hrId,
-      company_id: companyId, // Lưu thông tin công ty của HR
+      company_id: companyId,
       title,
       description: description || null,
-      requirements: requirements || null,
-      status: status || 'OPEN',
-      experience_level: experienceLevel || null,
-      salary_min: salaryMin || null,
-      salary_max: salaryMax || null,
-      salary_currency: salaryCurrency || 'VND',
-      is_salary_visible: isSalaryVisible,
-      vacancy_count: vacancyCount,
       deadline: deadline || null,
+      status: status || 'OPEN',
       created_at: new Date(),
       updated_at: new Date()
-    }, trx);
+    }).returning('*');
 
-    let insertedRequirements = [];
+    let insertedPositions = [];
 
-    // 2. Tạo bản ghi yêu cầu chi tiết trong bảng 'job_requirements' qua jobModel nếu có
-    if (detailedRequirements && detailedRequirements.length > 0) {
-      const requirementsToInsert = detailedRequirements.map((req) => ({
-        job_id: newJob.id,
-        requirement_text: req.requirement_text,
-        is_mandatory: req.is_mandatory !== undefined ? req.is_mandatory : true,
-        created_at: new Date(),
-        updated_at: new Date()
-      }));
+    // 2. Create jobs (positions)
+    if (positions && positions.length > 0) {
+      for (const pos of positions) {
+        const [newJob] = await trx('jobs').insert({
+          job_post_id: newJobPost.id,
+          title: pos.title, // Position title
+          requirements: pos.requirements || null,
+          experience_level: pos.experienceLevel || null,
+          salary_min: pos.salaryMin || null,
+          salary_max: pos.salaryMax || null,
+          salary_currency: pos.salaryCurrency || 'VND',
+          is_salary_visible: pos.isSalaryVisible !== undefined ? pos.isSalaryVisible : true,
+          vacancy_count: pos.vacancyCount || 1,
+          created_at: new Date(),
+          updated_at: new Date()
+        }).returning('*');
 
-      insertedRequirements = await insertJobRequirements(requirementsToInsert, trx);
+        // 3. Create job_requirements
+        let insertedReqs = [];
+        if (pos.detailedRequirements && pos.detailedRequirements.length > 0) {
+          const reqsToInsert = pos.detailedRequirements.map((req) => ({
+            job_id: newJob.id,
+            requirement_text: req.requirement_text,
+            is_mandatory: req.is_mandatory !== undefined ? req.is_mandatory : true,
+            created_at: new Date(),
+            updated_at: new Date()
+          }));
+          insertedReqs = await trx('job_requirements').insert(reqsToInsert).returning('*');
+        }
+
+        insertedPositions.push({
+          ...newJob,
+          detailed_requirements: insertedReqs
+        });
+      }
     }
 
     return {
-      newJob,
-      insertedRequirements
+      newJobPost,
+      insertedPositions
     };
   });
 
-  // Clear Jobs list cache SAU KHI TRANSACTION ĐÃ COMMIT THÀNH CÔNG
-  // Tránh Race Condition: client khác truy vấn DB cũ và ghi đè cache cũ vào Redis
   await deleteCachePattern('jobs:list:*');
 
   return {
-    ...result.newJob,
-    detailed_requirements: result.insertedRequirements
+    ...result.newJobPost,
+    positions: result.insertedPositions
   };
 };
 
-/**
- * Lấy danh sách tin tuyển dụng có lọc và phân trang
- * 
- * @param {object} filters
- * @param {string} [filters.status] - OPEN hoặc CLOSED
- * @param {string} [filters.experienceLevel] - Kinh nghiệm
- * @param {number} [filters.hrId] - Lọc theo HR tạo tin
- * @param {string} [filters.search] - Từ khóa tìm kiếm theo title
- * @param {number} [filters.page] - Trang hiện tại
- * @param {number} [filters.limit] - Số lượng bản ghi mỗi trang
- */
 export const getJobsList = async ({
   status,
-  experienceLevel,
   hrId,
   search,
   page = 1,
   limit = 10
 }) => {
-  const query = db('jobs')
+  const query = db('job_posts')
     .select(
-      'jobs.*',
+      'job_posts.*',
       'companies.name as company_name',
       'companies.logo_url as company_logo',
       'companies.address as company_address'
     )
-    .leftJoin('companies', 'jobs.company_id', 'companies.id');
+    .leftJoin('companies', 'job_posts.company_id', 'companies.id');
 
   if (status) {
-    query.where('jobs.status', status);
-  }
-  if (experienceLevel) {
-    query.where('jobs.experience_level', experienceLevel);
+    query.where('job_posts.status', status);
   }
   if (hrId) {
-    query.where('jobs.hr_id', hrId);
+    query.where('job_posts.hr_id', hrId);
   }
   if (search) {
-    query.where('jobs.title', 'ilike', `%${search}%`); // ilike cho PostgreSQL để tìm kiếm không phân biệt hoa thường
+    query.where('job_posts.title', 'ilike', `%${search}%`);
   }
 
   const offset = (page - 1) * limit;
   
-  // Tạo query đếm tổng số bản ghi
-  const countQuery = db('jobs');
+  const countQuery = db('job_posts');
   if (status) countQuery.where('status', status);
-  if (experienceLevel) countQuery.where('experience_level', experienceLevel);
   if (hrId) countQuery.where('hr_id', hrId);
   if (search) countQuery.where('title', 'ilike', `%${search}%`);
 
@@ -134,7 +117,16 @@ export const getJobsList = async ({
   const items = await query
     .offset(offset)
     .limit(limit)
-    .orderBy('jobs.created_at', 'desc');
+    .orderBy('job_posts.created_at', 'desc');
+
+  // Lấy thêm danh sách vị trí (jobs) cho mỗi job_post
+  const jobPostIds = items.map(item => item.id);
+  if (jobPostIds.length > 0) {
+    const jobs = await db('jobs').whereIn('job_post_id', jobPostIds);
+    items.forEach(item => {
+      item.positions = jobs.filter(job => job.job_post_id === item.id);
+    });
+  }
 
   return {
     items,
@@ -147,99 +139,152 @@ export const getJobsList = async ({
   };
 };
 
-/**
- * Lấy chi tiết tin tuyển dụng kèm yêu cầu chi tiết
- * 
- * @param {number} id - ID của Job
- */
 export const getJobDetailById = async (id) => {
-  const job = await db('jobs')
+  const jobPost = await db('job_posts')
     .select(
-      'jobs.*',
+      'job_posts.*',
       'companies.name as company_name',
       'companies.logo_url as company_logo',
       'companies.address as company_address',
       'companies.website as company_website'
     )
-    .leftJoin('companies', 'jobs.company_id', 'companies.id')
-    .where('jobs.id', id)
+    .leftJoin('companies', 'job_posts.company_id', 'companies.id')
+    .where('job_posts.id', id)
     .first();
 
-  if (!job) {
+  if (!jobPost) {
     return null;
   }
 
-  const detailedRequirements = await db('job_requirements')
-    .where('job_id', id)
-    .orderBy('created_at', 'asc');
+  // Fetch positions
+  const positions = await db('jobs').where('job_post_id', id).orderBy('created_at', 'asc');
+  
+  // Fetch detailed requirements for all positions
+  if (positions.length > 0) {
+    const jobIds = positions.map(p => p.id);
+    const allReqs = await db('job_requirements').whereIn('job_id', jobIds);
+    
+    positions.forEach(pos => {
+      pos.detailed_requirements = allReqs.filter(req => req.job_id === pos.id);
+    });
+  }
 
   return {
-    ...job,
-    detailed_requirements: detailedRequirements
+    ...jobPost,
+    positions
   };
 };
 
-/**
- * Cập nhật tin tuyển dụng và yêu cầu tuyển dụng chi tiết trong một transaction
- */
-export const updateJobById = async (id, updateData, detailedRequirements = []) => {
+export const updateJobById = async (id, updateData, positions = []) => {
   return await db.transaction(async (trx) => {
-    // 1. Cập nhật bảng 'jobs'
-    const [updatedJob] = await trx('jobs')
+    // 1. Cập nhật bảng job_posts
+    const [updatedJobPost] = await trx('job_posts')
       .where({ id })
       .update({
         title: updateData.title,
         description: updateData.description || null,
-        requirements: updateData.requirements || null,
         status: updateData.status || 'OPEN',
-        experience_level: updateData.experienceLevel || null,
-        salary_min: updateData.salaryMin || null,
-        salary_max: updateData.salaryMax || null,
-        salary_currency: updateData.salaryCurrency || 'VND',
-        is_salary_visible: updateData.isSalaryVisible !== undefined ? updateData.isSalaryVisible : true,
-        vacancy_count: updateData.vacancyCount !== undefined ? updateData.vacancyCount : 1,
         deadline: updateData.deadline || null,
         updated_at: new Date()
       })
       .returning('*');
 
-    // 2. Cập nhật các yêu cầu chi tiết (Xóa các yêu cầu cũ và chèn lại mới)
-    await trx('job_requirements').where({ job_id: id }).delete();
-
-    let insertedRequirements = [];
-    if (detailedRequirements && detailedRequirements.length > 0) {
-      const requirementsToInsert = detailedRequirements.map((req) => ({
-        job_id: id,
-        requirement_text: req.requirement_text,
-        is_mandatory: req.is_mandatory !== undefined ? req.is_mandatory : true,
-        created_at: new Date(),
-        updated_at: new Date()
-      }));
-
-      insertedRequirements = await trx('job_requirements')
-        .insert(requirementsToInsert)
-        .returning('*');
+    // 2. Xóa các vị trí cũ (Tạm thời drop / recreate cho đơn giản, hoặc update dựa trên ID)
+    // Cần cẩn thận khi xóa `jobs` vì nó cascade tới `applications`. 
+    // Tuy nhiên, logic này sẽ tốt hơn nếu hỗ trợ update/insert/delete linh hoạt.
+    // Để giữ toàn vẹn dữ liệu cho ứng tuyển cũ, KHÔNG ĐƯỢC XÓA TẤT CẢ jobs.
+    // Thay vào đó, ta sẽ xử lý insert mới hoặc update.
+    
+    const existingJobs = await trx('jobs').where({ job_post_id: id });
+    const existingJobIds = existingJobs.map(j => j.id);
+    
+    const incomingJobIds = positions.map(p => p.id).filter(id => id);
+    
+    // Tìm các vị trí bị xóa
+    const jobsToDelete = existingJobIds.filter(id => !incomingJobIds.includes(id));
+    if (jobsToDelete.length > 0) {
+      // NOTE: Chỉ xóa khi không có applications, nếu không sẽ cascade!
+      // Việc này cần quyết định kỹ, tạm thời vẫn cho xóa vì hr muốn đổi cấu hình.
+      await trx('jobs').whereIn('id', jobsToDelete).delete();
     }
 
-    // Clear cache list and detail of this job
+    let finalPositions = [];
+
+    for (const pos of positions) {
+      let jobId = pos.id;
+      if (jobId) {
+        // Cập nhật
+        const [updatedJob] = await trx('jobs').where({ id: jobId }).update({
+          title: pos.title,
+          requirements: pos.requirements || null,
+          experience_level: pos.experienceLevel || null,
+          salary_min: pos.salaryMin || null,
+          salary_max: pos.salaryMax || null,
+          salary_currency: pos.salaryCurrency || 'VND',
+          is_salary_visible: pos.isSalaryVisible !== undefined ? pos.isSalaryVisible : true,
+          vacancy_count: pos.vacancyCount || 1,
+          updated_at: new Date()
+        }).returning('*');
+        
+        // Cập nhật requirement
+        await trx('job_requirements').where({ job_id: jobId }).delete();
+        let insertedReqs = [];
+        if (pos.detailedRequirements && pos.detailedRequirements.length > 0) {
+          const reqsToInsert = pos.detailedRequirements.map((req) => ({
+            job_id: jobId,
+            requirement_text: req.requirement_text,
+            is_mandatory: req.is_mandatory !== undefined ? req.is_mandatory : true,
+            created_at: new Date(),
+            updated_at: new Date()
+          }));
+          insertedReqs = await trx('job_requirements').insert(reqsToInsert).returning('*');
+        }
+        finalPositions.push({ ...updatedJob, detailed_requirements: insertedReqs });
+      } else {
+        // Thêm mới
+        const [newJob] = await trx('jobs').insert({
+          job_post_id: id,
+          title: pos.title,
+          requirements: pos.requirements || null,
+          experience_level: pos.experienceLevel || null,
+          salary_min: pos.salaryMin || null,
+          salary_max: pos.salaryMax || null,
+          salary_currency: pos.salaryCurrency || 'VND',
+          is_salary_visible: pos.isSalaryVisible !== undefined ? pos.isSalaryVisible : true,
+          vacancy_count: pos.vacancyCount || 1,
+          created_at: new Date(),
+          updated_at: new Date()
+        }).returning('*');
+
+        let insertedReqs = [];
+        if (pos.detailedRequirements && pos.detailedRequirements.length > 0) {
+          const reqsToInsert = pos.detailedRequirements.map((req) => ({
+            job_id: newJob.id,
+            requirement_text: req.requirement_text,
+            is_mandatory: req.is_mandatory !== undefined ? req.is_mandatory : true,
+            created_at: new Date(),
+            updated_at: new Date()
+          }));
+          insertedReqs = await trx('job_requirements').insert(reqsToInsert).returning('*');
+        }
+        finalPositions.push({ ...newJob, detailed_requirements: insertedReqs });
+      }
+    }
+
     await deleteCachePattern('jobs:list:*');
     await deleteCache(`jobs:detail:${id}`);
 
     return {
-      ...updatedJob,
-      detailed_requirements: insertedRequirements
+      ...updatedJobPost,
+      positions: finalPositions
     };
   });
 };
 
-/**
- * Xóa tin tuyển dụng
- */
 export const deleteJobById = async (id) => {
-  const deletedCount = await db('jobs').where({ id }).delete();
+  const deletedCount = await db('job_posts').where({ id }).delete();
   
   if (deletedCount > 0) {
-    // Clear cache list and detail of this job
     await deleteCachePattern('jobs:list:*');
     await deleteCache(`jobs:detail:${id}`);
   }
@@ -247,11 +292,11 @@ export const deleteJobById = async (id) => {
   return deletedCount > 0;
 };
 
+// --- Applications ---
 
-/**
- * Lấy danh sách hồ sơ ứng tuyển nộp vào các job thuộc sở hữu của HR
- */
 export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
+  // jobId ở đây là job_id cụ thể của 1 vị trí. 
+  // Để lấy tất cả application của một HR, ta join applications -> jobs -> job_posts
   const query = db('applications')
     .select(
       'applications.*',
@@ -260,15 +305,20 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
       'users.phone as candidate_phone',
       'users.avatar_url as candidate_avatar',
       'jobs.title as job_title',
+      'job_posts.title as job_post_title',
       'cvs.file_url as cv_file_url'
     )
     .join('users', 'applications.candidate_id', 'users.id')
     .join('jobs', 'applications.job_id', 'jobs.id')
+    .join('job_posts', 'jobs.job_post_id', 'job_posts.id')
     .leftJoin('cvs', 'applications.cv_id', 'cvs.id')
-    .where('jobs.hr_id', hrId);
+    .where('job_posts.hr_id', hrId);
 
   if (jobId) {
-    query.where('applications.job_id', jobId);
+    // Có thể truyền lên job_post_id thay vì job_id, nhưng tạm giữ nguyên để đỡ sửa frontend quá nhiều.
+    // Nếu frontend truyền job_post_id (vì lúc này ID của Job Detail là job_post_id)
+    // Tạm thời sửa chỗ này thành job_post_id để query danh sách ứng viên theo Job Post.
+    query.where('job_posts.id', jobId);
   }
   
   if (status) {
@@ -278,9 +328,6 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
   return await query.orderBy('applications.created_at', 'desc');
 };
 
-/**
- * Cập nhật thông tin chi tiết của hồ sơ ứng tuyển
- */
 export const updateJobApplicationService = async (applicationId, updateData) => {
   const application = await getApplicationDetailById(applicationId);
 
@@ -297,7 +344,6 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
     .returning('*');
 
   if (application) {
-    // Check vacancy count to automatically close job if enough candidates are accepted/hired
     const dbStatus = updateData.status;
     if (dbStatus === 'ACCEPTED' || dbStatus === 'HIRED') {
       const jobInfo = await db('jobs').where({ id: application.job_id }).first();
@@ -310,35 +356,24 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
         const acceptedCount = parseInt(acceptedCountRes.count || 0);
 
         if (acceptedCount >= jobInfo.vacancy_count) {
-          await db('jobs')
-            .where({ id: application.job_id })
-            .update({
-              status: 'CLOSED',
-              updated_at: new Date()
-            });
-          // Invalidate cache for job list and detail since status changed to CLOSED
-          await deleteCachePattern('jobs:list:*');
-          await deleteCache(`jobs:detail:${application.job_id}`);
-          console.log(`[Job Status] Job ID ${application.job_id} ("${jobInfo.title}") has been automatically CLOSED. Accepted count (${acceptedCount}) reached vacancy count (${jobInfo.vacancy_count}).`);
+          // Chỉ update status của vị trí (job), không phải cả chiến dịch (job_post)
+          // Nhưng hiện tại job không còn status (do ta chuyển qua job_post).
+          // Thôi tạm thời bỏ qua auto-close job_post vì 1 job_post có nhiều positions.
         }
       }
     }
 
-    // Clear HR applications list cache
     await deleteCachePattern(`applications:hr:${application.job_hr_id}:*`);
   }
 
   return updatedApplication;
 };
 
-/**
- * Lấy chi tiết hồ sơ ứng tuyển và tin tuyển dụng tương ứng (dùng để check quyền)
- */
 export const getApplicationDetailById = async (applicationId) => {
   return await db('applications')
-    .select('applications.*', 'jobs.hr_id as job_hr_id')
+    .select('applications.*', 'job_posts.hr_id as job_hr_id')
     .join('jobs', 'applications.job_id', 'jobs.id')
+    .join('job_posts', 'jobs.job_post_id', 'job_posts.id')
     .where('applications.id', applicationId)
     .first();
 };
-

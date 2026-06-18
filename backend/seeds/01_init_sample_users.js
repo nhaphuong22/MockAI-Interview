@@ -59,18 +59,31 @@ export async function seed(knex) {
     { user_id: 3, role_id: roleMap['HR'], created_at: new Date(), updated_at: new Date() }
   ]);
 
-  // Đảm bảo xóa jobs cũ trước khi chèn mới để tránh lỗi khóa chính nếu chạy lại seed
+  // Đảm bảo xóa job_posts và jobs cũ trước khi chèn mới
   await knex('jobs').del();
+  await knex('job_posts').del();
   
-  // Insert sample Job
-  await knex('jobs').insert([
+  // Insert sample Job Post
+  const [jobPostId] = await knex('job_posts').insert([
     {
       id: 1,
       hr_id: 3,
-      title: 'Frontend Developer (React)',
-      description: 'Chúng tôi đang tìm kiếm một Frontend Developer đam mê React...',
-      requirements: 'ReactJS, Tailwind CSS, JavaScript ES6+',
+      title: 'Tuyển dụng nhân sự IT Q3/2026',
+      description: 'Chúng tôi đang tìm kiếm các ứng viên tài năng cho dự án mới.',
       status: 'OPEN',
+      approval_status: 'APPROVED',
+      created_at: new Date(),
+      updated_at: new Date()
+    }
+  ]).returning('id');
+
+  // Insert sample Job (Position)
+  await knex('jobs').insert([
+    {
+      id: 1,
+      job_post_id: typeof jobPostId === 'object' ? jobPostId.id : jobPostId || 1, // Handle postgres returning array of objects or ids
+      title: 'Frontend Developer (React)',
+      requirements: 'ReactJS, Tailwind CSS, JavaScript ES6+',
       created_at: new Date(),
       updated_at: new Date()
     }

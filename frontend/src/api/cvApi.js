@@ -17,5 +17,16 @@ export const cvApi = {
     return axiosClient.post('/cv/export-pdf', aiResults, {
       responseType: 'blob'
     });
-  }
+  },
+  
+  // --- CV Drag & Drop Builder API ---
+  getProjects: () => axiosClient.get('/cv-projects'),
+  getProjectById: (id) => axiosClient.get(`/cv-projects/${id}`),
+  saveProject: (data) => {
+    if (data.id && data.id.startsWith('new-')) {
+      return axiosClient.post('/cv-projects', data);
+    }
+    return axiosClient.put(`/cv-projects/${data.id}`, data);
+  },
+  scoreCVBuilder: (cvData) => axiosClient.post('/cv/builder-score', { cvData }),
 };

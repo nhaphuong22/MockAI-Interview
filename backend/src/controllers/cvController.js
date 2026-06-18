@@ -212,3 +212,117 @@ export const exportPdf = async (req, res) => {
     }
   }
 };
+
+/**
+ * Lấy danh sách mẫu CV có phân trang
+ */
+export const getTemplates = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 16;
+    
+    const manifestPath = path.resolve(process.cwd(), '../cv_template/manifest.json');
+    if (!fs.existsSync(manifestPath)) {
+      return res.status(404).json({ message: 'Không tìm thấy dữ liệu template' });
+    }
+
+    const manifestData = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const templates = manifestData.templates || [];
+    
+    // Phân trang
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedTemplates = templates.slice(startIndex, endIndex);
+
+    return res.status(200).json({
+      data: paginatedTemplates,
+      pagination: {
+        total: templates.length,
+        page,
+        limit,
+        totalPages: Math.ceil(templates.length / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách template:', error);
+    return res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+/**
+ * Lấy nội dung HTML của một mẫu CV cụ thể
+ */
+export const getTemplateById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const manifestPath = path.resolve(process.cwd(), '../cv_template/manifest.json');
+    
+    if (!fs.existsSync(manifestPath)) {
+      return res.status(404).json({ message: 'Không tìm thấy dữ liệu template' });
+    }
+
+    const manifestData = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const template = manifestData.templates.find(t => t.id === id);
+
+    if (!template) {
+      return res.status(404).json({ message: 'Không tìm thấy mẫu CV' });
+    }
+
+    const htmlPathStr = template.html.replace('vietcv_f12_templates', 'cv_template');
+    const htmlPath = path.resolve(process.cwd(), '../', htmlPathStr);
+    if (!fs.existsSync(htmlPath)) {
+      return res.status(404).json({ message: 'Không tìm thấy file HTML của mẫu này' });
+    }
+
+    const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
+    return res.status(200).json({
+      data: {
+        id: template.id,
+        title: template.title,
+        html: htmlContent
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy nội dung template:', error);
+    return res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+/**
+ * Lưu chuỗi HTML CV do người dùng chỉnh sửa vào DB
+ */
+export const saveCVHtml = async (req, res) => {
+  try {
+    const { html_content, template_id } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Vui lòng đăng nhập' });
+    }
+
+    if (!html_content) {
+      return res.status(400).json({ message: 'Nội dung CV không được để trống' });
+    }
+
+    const db = (await import('../db/db.js')).default;
+
+    // Kiểm tra xem user đã có CV nào được tạo từ builder chưa, hoặc chỉ tạo mới
+    // Ở đây ta có thể chèn mới luôn để họ có nhiều CV, hoặc cập nhật CV cũ
+    // Để đơn giản, chèn mới 1 bản ghi vào bảng cvs.
+    const [insertedCv] = await db('cvs').insert({
+      user_id: userId,
+      html_content: html_content,
+      template_id: template_id || null,
+    }).returning('*');
+
+    return res.status(200).json({
+      message: 'Lưu CV thành công',
+      data: insertedCv
+    });
+  } catch (error) {
+    console.error('Lỗi khi lưu HTML CV:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi lưu CV' });
+  }
+};
+

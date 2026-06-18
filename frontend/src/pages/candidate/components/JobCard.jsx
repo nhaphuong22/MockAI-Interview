@@ -1,4 +1,5 @@
 import { MapPin, DollarSign, Briefcase, Clock, Bookmark } from "lucide-react";
+import { Link } from "react-router-dom";
 
 /**
  * JobCard Component
@@ -6,19 +7,13 @@ import { MapPin, DollarSign, Briefcase, Clock, Bookmark } from "lucide-react";
  */
 export function JobCard({ 
   job, 
-  isSelected, 
   isBookmarked, 
-  onSelect, 
   onToggleBookmark 
 }) {
   return (
-    <div
-      onClick={onSelect}
-      className={`dark:bg-[#0a0f1c]/80 bg-white rounded-xl p-6 border-2 cursor-pointer transition-all ${
-        isSelected
-          ? "border-[#0ea5e9] shadow-lg shadow-sky-50/50 dark:shadow-[#0ea5e9]/20"
-          : "border-gray-100 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20"
-      }`}
+    <Link
+      to={`/jobs/${job.id}`}
+      className="block dark:bg-[#0a0f1c]/80 bg-white rounded-2xl p-6 border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-sky-300 dark:hover:border-sky-500/50 transition-all cursor-pointer group"
     >
       <div className="flex gap-4">
         {/* Company Logo Icon */}
@@ -40,6 +35,7 @@ export function JobCard({
               </div>
               <button
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onToggleBookmark(job.id);
                 }}
@@ -96,6 +92,6 @@ export function JobCard({
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

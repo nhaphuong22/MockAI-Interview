@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { uploadCV, scoreCV, exportPdf } from '../controllers/cvController.js';
+import { uploadCV, scoreCV, exportPdf, getTemplates, getTemplateById, saveCVHtml } from '../controllers/cvController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -134,5 +134,83 @@ router.post('/score', authenticateToken, scoreCV);
  *               format: binary
  */
 router.post('/export-pdf', authenticateToken, exportPdf);
+
+/**
+ * @swagger
+ * /api/cv/templates:
+ *   get:
+ *     summary: Lấy danh sách mẫu CV (Templates)
+ *     description: Lấy danh sách template CV, có hỗ trợ phân trang.
+ *     tags:
+ *       - CV & Resume
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Số trang hiện tại
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số lượng template mỗi trang
+ *     responses:
+ *       200:
+ *         description: Danh sách mẫu CV thành công.
+ */
+router.get('/templates', getTemplates);
+
+/**
+ * @swagger
+ * /api/cv/templates/{id}:
+ *   get:
+ *     summary: Lấy chi tiết nội dung HTML của mẫu CV
+ *     tags:
+ *       - CV & Resume
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của template
+ *     responses:
+ *       200:
+ *         description: Trả về nội dung HTML của template.
+ *       404:
+ *         description: Không tìm thấy template.
+ */
+router.get('/templates/:id', getTemplateById);
+
+/**
+ * @swagger
+ * /api/cv/save-html:
+ *   post:
+ *     summary: Lưu CV HTML
+ *     description: Lưu nội dung HTML của CV sau khi ứng viên chỉnh sửa vào Database.
+ *     tags:
+ *       - CV & Resume
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               html_content:
+ *                 type: string
+ *                 description: Nội dung HTML của CV
+ *               template_id:
+ *                 type: string
+ *                 description: ID của mẫu CV gốc
+ *     responses:
+ *       200:
+ *         description: Lưu CV thành công.
+ *       401:
+ *         description: Chưa đăng nhập.
+ */
+router.post('/save-html', authenticateToken, saveCVHtml);
 
 export default router;

@@ -47,6 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static uploads
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/cv_template', express.static(path.join(process.cwd(), '../cv_template')));
 
 // Swagger Integration
 setupSwagger(app);

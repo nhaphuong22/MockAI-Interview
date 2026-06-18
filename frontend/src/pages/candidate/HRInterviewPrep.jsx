@@ -92,8 +92,8 @@ const HRInterviewPrep = () => {
             Chuẩn bị Phỏng Vấn HR Ảo
           </h1>
           <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">
-            Vị trí: <span className="font-semibold text-sky-600 dark:text-sky-400">{appDetail.job?.title}</span>
-            {appDetail.job?.company?.name && ` tại ${appDetail.job.company.name}`}
+            Vị trí: <span className="font-semibold text-sky-600 dark:text-sky-400">{appDetail.jobTitle}</span>
+            {appDetail.companyName && ` tại ${appDetail.companyName}`}
           </p>
         </div>
 
@@ -145,7 +145,7 @@ const HRInterviewPrep = () => {
                   'Bật camera và microphone trong suốt quá trình.',
                   'Không rời mắt khỏi màn hình (AI Gaze Tracking được bật).',
                   'Có 5 phút cho mỗi câu hỏi, hết giờ tự động chuyển.',
-                  'Không thể quay lại hoặc bỏ qua câu hỏi.',
+                  'Không thể quay lại câu hỏi cũ. Bạn có thể chủ động chuyển sang câu tiếp theo.',
                   'Hệ thống sẽ lưu mọi câu trả lời và số lần vi phạm gửi cho HR.'
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-start">

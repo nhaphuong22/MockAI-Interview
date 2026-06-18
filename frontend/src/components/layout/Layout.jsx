@@ -116,6 +116,9 @@ export function Layout() {
                     <ProtectedLink to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       AI CV
                     </ProtectedLink>
+                    <ProtectedLink to="/cv-builder" className={`text-sm font-medium transition-colors ${isActive('/cv-builder') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                      Tạo CV
+                    </ProtectedLink>
                     <ProtectedLink to="/interview-practice" className={`text-sm font-medium transition-colors ${isActive('/interview-practice') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                       Practice
                     </ProtectedLink>

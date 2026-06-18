@@ -1,0 +1,670 @@
+{
+  "generatedAt": "2026-06-17T17:52:50.630Z",
+  "count": 83,
+  "templates": [
+    {
+      "id": "template_16",
+      "title": "CV Phong cách",
+      "package": "cv_template_packages/template_16-cv-phong-cach",
+      "html": "vietcv_f12_templates/templates/template_16-cv-phong-cach.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717910170.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_17",
+      "title": "CV Hacker",
+      "package": "cv_template_packages/template_17-cv-hacker",
+      "html": "vietcv_f12_templates/templates/template_17-cv-hacker.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717902788.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_18",
+      "title": "CV Nhẹ nhàng",
+      "package": "cv_template_packages/template_18-cv-nhe-nhang",
+      "html": "vietcv_f12_templates/templates/template_18-cv-nhe-nhang.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717893180.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_19",
+      "title": "CV Cách điệu",
+      "package": "cv_template_packages/template_19-cv-cach-dieu",
+      "html": "vietcv_f12_templates/templates/template_19-cv-cach-dieu.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717880497.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_20",
+      "title": "CV Thanh lịch",
+      "package": "cv_template_packages/template_20-cv-thanh-lich",
+      "html": "vietcv_f12_templates/templates/template_20-cv-thanh-lich.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717874148.json",
+      "fieldCount": 51
+    },
+    {
+      "id": "template_21",
+      "title": "CV Năng động",
+      "package": "cv_template_packages/template_21-cv-nang-dong",
+      "html": "vietcv_f12_templates/templates/template_21-cv-nang-dong.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717869381.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_22",
+      "title": "CV Cơ bản 2",
+      "package": "cv_template_packages/template_22-cv-co-ban-2",
+      "html": "vietcv_f12_templates/templates/template_22-cv-co-ban-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717861217.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_23",
+      "title": "CV Nhã nhặn",
+      "package": "cv_template_packages/template_23-cv-nha-nhan",
+      "html": "vietcv_f12_templates/templates/template_23-cv-nha-nhan.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717854771.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_24",
+      "title": "CV Tinh tế 2",
+      "package": "cv_template_packages/template_24-cv-tinh-te-2",
+      "html": "vietcv_f12_templates/templates/template_24-cv-tinh-te-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717842951.json",
+      "fieldCount": 50
+    },
+    {
+      "id": "template_25",
+      "title": "CV Dịu dàng",
+      "package": "cv_template_packages/template_25-cv-diu-dang",
+      "html": "vietcv_f12_templates/templates/template_25-cv-diu-dang.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717831477.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_26",
+      "title": "CV Rực rỡ",
+      "package": "cv_template_packages/template_26-cv-ruc-ro",
+      "html": "vietcv_f12_templates/templates/template_26-cv-ruc-ro.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717823551.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_27",
+      "title": "CV Cổ điển",
+      "package": "cv_template_packages/template_27-cv-co-dien",
+      "html": "vietcv_f12_templates/templates/template_27-cv-co-dien.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717814168.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_28",
+      "title": "CV Sắc màu",
+      "package": "cv_template_packages/template_28-cv-sac-mau",
+      "html": "vietcv_f12_templates/templates/template_28-cv-sac-mau.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717808099.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_29",
+      "title": "CV Chỉn chu",
+      "package": "cv_template_packages/template_29-cv-chin-chu",
+      "html": "vietcv_f12_templates/templates/template_29-cv-chin-chu.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717798562.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_30",
+      "title": "CV Hài Hòa",
+      "package": "cv_template_packages/template_30-cv-hai-hoa",
+      "html": "vietcv_f12_templates/templates/template_30-cv-hai-hoa.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717789574.json",
+      "fieldCount": 51
+    },
+    {
+      "id": "template_31",
+      "title": "CV Kết nối",
+      "package": "cv_template_packages/template_31-cv-ket-noi",
+      "html": "vietcv_f12_templates/templates/template_31-cv-ket-noi.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717781904.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_32",
+      "title": "CV Tri thức",
+      "package": "cv_template_packages/template_32-cv-tri-thuc",
+      "html": "vietcv_f12_templates/templates/template_32-cv-tri-thuc.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717772497.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_33",
+      "title": "CV Đa sắc",
+      "package": "cv_template_packages/template_33-cv-da-sac",
+      "html": "vietcv_f12_templates/templates/template_33-cv-da-sac.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717764814.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_34",
+      "title": "CV Nữ tính",
+      "package": "cv_template_packages/template_34-cv-nu-tinh",
+      "html": "vietcv_f12_templates/templates/template_34-cv-nu-tinh.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717757959.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_35",
+      "title": "CV Cao cấp",
+      "package": "cv_template_packages/template_35-cv-cao-cap",
+      "html": "vietcv_f12_templates/templates/template_35-cv-cao-cap.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717750554.json",
+      "fieldCount": 51
+    },
+    {
+      "id": "template_36",
+      "title": "CV Hồ sơ",
+      "package": "cv_template_packages/template_36-cv-ho-so",
+      "html": "vietcv_f12_templates/templates/template_36-cv-ho-so.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717744574.json",
+      "fieldCount": 50
+    },
+    {
+      "id": "template_37",
+      "title": "CV Đơn giản 1",
+      "package": "cv_template_packages/template_37-cv-don-gian-1",
+      "html": "vietcv_f12_templates/templates/template_37-cv-don-gian-1.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717737383.json",
+      "fieldCount": 50
+    },
+    {
+      "id": "template_38",
+      "title": "CV Rõ ràng 2",
+      "package": "cv_template_packages/template_38-cv-ro-rang-2",
+      "html": "vietcv_f12_templates/templates/template_38-cv-ro-rang-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717728530.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_39",
+      "title": "CV Ngắn gọn",
+      "package": "cv_template_packages/template_39-cv-ngan-gon",
+      "html": "vietcv_f12_templates/templates/template_39-cv-ngan-gon.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717715650.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_40",
+      "title": "CV Thiên nhiên",
+      "package": "cv_template_packages/template_40-cv-thien-nhien",
+      "html": "vietcv_f12_templates/templates/template_40-cv-thien-nhien.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717446589.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_41",
+      "title": "CV Đột phá",
+      "package": "cv_template_packages/template_41-cv-dot-pha",
+      "html": "vietcv_f12_templates/templates/template_41-cv-dot-pha.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717707392.json",
+      "fieldCount": 46
+    },
+    {
+      "id": "template_42",
+      "title": "CV Dễ chịu",
+      "package": "cv_template_packages/template_42-cv-de-chiu",
+      "html": "vietcv_f12_templates/templates/template_42-cv-de-chiu.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717697840.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_43",
+      "title": "CV Hoa lá",
+      "package": "cv_template_packages/template_43-cv-hoa-la",
+      "html": "vietcv_f12_templates/templates/template_43-cv-hoa-la.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717689678.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_44",
+      "title": "CV Đối xứng",
+      "package": "cv_template_packages/template_44-cv-doi-xung",
+      "html": "vietcv_f12_templates/templates/template_44-cv-doi-xung.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717680058.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_45",
+      "title": "CV Đơn sắc",
+      "package": "cv_template_packages/template_45-cv-don-sac",
+      "html": "vietcv_f12_templates/templates/template_45-cv-don-sac.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717671897.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_46",
+      "title": "CV Hòa sắc",
+      "package": "cv_template_packages/template_46-cv-hoa-sac",
+      "html": "vietcv_f12_templates/templates/template_46-cv-hoa-sac.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717660729.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_47",
+      "title": "CV Chuyên nghiệp",
+      "package": "cv_template_packages/template_47-cv-chuyen-nghiep",
+      "html": "vietcv_f12_templates/templates/template_47-cv-chuyen-nghiep.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717649769.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_48",
+      "title": "CV Thư pháp",
+      "package": "cv_template_packages/template_48-cv-thu-phap",
+      "html": "vietcv_f12_templates/templates/template_48-cv-thu-phap.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717643140.json",
+      "fieldCount": 51
+    },
+    {
+      "id": "template_49",
+      "title": "CV Dấu ấn",
+      "package": "cv_template_packages/template_49-cv-dau-an",
+      "html": "vietcv_f12_templates/templates/template_49-cv-dau-an.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717637600.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_50",
+      "title": "CV Dịu nhẹ",
+      "package": "cv_template_packages/template_50-cv-diu-nhe",
+      "html": "vietcv_f12_templates/templates/template_50-cv-diu-nhe.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717630941.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_51",
+      "title": "CV Tươi tắn",
+      "package": "cv_template_packages/template_51-cv-tuoi-tan",
+      "html": "vietcv_f12_templates/templates/template_51-cv-tuoi-tan.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717625397.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_52",
+      "title": "CV Photographer",
+      "package": "cv_template_packages/template_52-cv-photographer",
+      "html": "vietcv_f12_templates/templates/template_52-cv-photographer.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717619379.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_53",
+      "title": "CV Đơn giản 2",
+      "package": "cv_template_packages/template_53-cv-don-gian-2",
+      "html": "vietcv_f12_templates/templates/template_53-cv-don-gian-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717612231.json",
+      "fieldCount": 51
+    },
+    {
+      "id": "template_54",
+      "title": "CV Hiện đại",
+      "package": "cv_template_packages/template_54-cv-hien-dai",
+      "html": "vietcv_f12_templates/templates/template_54-cv-hien-dai.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717607527.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_55",
+      "title": "CV Nhẹ nhàng 2",
+      "package": "cv_template_packages/template_55-cv-nhe-nhang-2",
+      "html": "vietcv_f12_templates/templates/template_55-cv-nhe-nhang-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717602085.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_56",
+      "title": "CV Đường kẻ",
+      "package": "cv_template_packages/template_56-cv-duong-ke",
+      "html": "vietcv_f12_templates/templates/template_56-cv-duong-ke.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717595980.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_57",
+      "title": "CV Tươi sáng",
+      "package": "cv_template_packages/template_57-cv-tuoi-sang",
+      "html": "vietcv_f12_templates/templates/template_57-cv-tuoi-sang.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717588701.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_58",
+      "title": "CV Lịch lãm",
+      "package": "cv_template_packages/template_58-cv-lich-lam",
+      "html": "vietcv_f12_templates/templates/template_58-cv-lich-lam.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717581817.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_59",
+      "title": "CV Quý phái",
+      "package": "cv_template_packages/template_59-cv-quy-phai",
+      "html": "vietcv_f12_templates/templates/template_59-cv-quy-phai.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717574463.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_60",
+      "title": "CV Cơ bản 3",
+      "package": "cv_template_packages/template_60-cv-co-ban-3",
+      "html": "vietcv_f12_templates/templates/template_60-cv-co-ban-3.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717568494.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_61",
+      "title": "CV Đơn giản 3",
+      "package": "cv_template_packages/template_61-cv-don-gian-3",
+      "html": "vietcv_f12_templates/templates/template_61-cv-don-gian-3.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717561311.json",
+      "fieldCount": 51
+    },
+    {
+      "id": "template_62",
+      "title": "CV Trẻ trung",
+      "package": "cv_template_packages/template_62-cv-tre-trung",
+      "html": "vietcv_f12_templates/templates/template_62-cv-tre-trung.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717555424.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_63",
+      "title": "CV Chuyên nghiệp 2",
+      "package": "cv_template_packages/template_63-cv-chuyen-nghiep-2",
+      "html": "vietcv_f12_templates/templates/template_63-cv-chuyen-nghiep-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717507628.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_63",
+      "title": "CV Chuyên nghiệp 2",
+      "package": "cv_template_packages/template_63-cv-chuyen-nghiep-2-2",
+      "html": "vietcv_f12_templates/templates/template_63-cv-chuyen-nghiep-2-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717542638.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_64",
+      "title": "CV Mới mẻ",
+      "package": "cv_template_packages/template_64-cv-moi-me",
+      "html": "vietcv_f12_templates/templates/template_64-cv-moi-me.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717498735.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_67",
+      "title": "CV Tối giản 2",
+      "package": "cv_template_packages/template_67-cv-toi-gian-2",
+      "html": "vietcv_f12_templates/templates/template_67-cv-toi-gian-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717482275.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_69",
+      "title": "CV Điểm nhấn",
+      "package": "cv_template_packages/template_69-cv-diem-nhan",
+      "html": "vietcv_f12_templates/templates/template_69-cv-diem-nhan.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717475498.json",
+      "fieldCount": 57
+    },
+    {
+      "id": "template_70",
+      "title": "CV Ngăn nắp",
+      "package": "cv_template_packages/template_70-cv-ngan-nap",
+      "html": "vietcv_f12_templates/templates/template_70-cv-ngan-nap.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717469362.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_72",
+      "title": "CV Nhẹ nhàng 3",
+      "package": "cv_template_packages/template_72-cv-nhe-nhang-3",
+      "html": "vietcv_f12_templates/templates/template_72-cv-nhe-nhang-3.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717456142.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_73",
+      "title": "CV Phong cách 2",
+      "package": "cv_template_packages/template_73-cv-phong-cach-2",
+      "html": "vietcv_f12_templates/templates/template_73-cv-phong-cach-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717439957.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_74",
+      "title": "CV Rực rỡ 2",
+      "package": "cv_template_packages/template_74-cv-ruc-ro-2",
+      "html": "vietcv_f12_templates/templates/template_74-cv-ruc-ro-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717432721.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_75",
+      "title": "CV Dễ thương 2",
+      "package": "cv_template_packages/template_75-cv-de-thuong-2",
+      "html": "vietcv_f12_templates/templates/template_75-cv-de-thuong-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717420517.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_76",
+      "title": "CV Nổi bật",
+      "package": "cv_template_packages/template_76-cv-noi-bat",
+      "html": "vietcv_f12_templates/templates/template_76-cv-noi-bat.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717412974.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_77",
+      "title": "CV Cv Basic",
+      "package": "cv_template_packages/template_77-cv-cv-basic",
+      "html": "vietcv_f12_templates/templates/template_77-cv-cv-basic.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717402188.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_78",
+      "title": "CV Ngăn nắp 2",
+      "package": "cv_template_packages/template_78-cv-ngan-nap-2",
+      "html": "vietcv_f12_templates/templates/template_78-cv-ngan-nap-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717396113.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_79",
+      "title": "CV Chuyên nghiệp 3",
+      "package": "cv_template_packages/template_79-cv-chuyen-nghiep-3",
+      "html": "vietcv_f12_templates/templates/template_79-cv-chuyen-nghiep-3.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717389083.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_80",
+      "title": "CV Cao cấp 2",
+      "package": "cv_template_packages/template_80-cv-cao-cap-2",
+      "html": "vietcv_f12_templates/templates/template_80-cv-cao-cap-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717384085.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_81",
+      "title": "CV Tối giản 3",
+      "package": "cv_template_packages/template_81-cv-toi-gian-3",
+      "html": "vietcv_f12_templates/templates/template_81-cv-toi-gian-3.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717379567.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_82",
+      "title": "CV Tối giản 5",
+      "package": "cv_template_packages/template_82-cv-toi-gian-5",
+      "html": "vietcv_f12_templates/templates/template_82-cv-toi-gian-5.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717369843.json",
+      "fieldCount": 50
+    },
+    {
+      "id": "template_83",
+      "title": "CV Ngăn nắp 3",
+      "package": "cv_template_packages/template_83-cv-ngan-nap-3",
+      "html": "vietcv_f12_templates/templates/template_83-cv-ngan-nap-3.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717362074.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_84",
+      "title": "CV Rực rỡ 3",
+      "package": "cv_template_packages/template_84-cv-ruc-ro-3",
+      "html": "vietcv_f12_templates/templates/template_84-cv-ruc-ro-3.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717356326.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_85",
+      "title": "CV Ấn tượng 2",
+      "package": "cv_template_packages/template_85-cv-an-tuong-2",
+      "html": "vietcv_f12_templates/templates/template_85-cv-an-tuong-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717351049.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_86",
+      "title": "CV Nổi bật 2",
+      "package": "cv_template_packages/template_86-cv-noi-bat-2",
+      "html": "vietcv_f12_templates/templates/template_86-cv-noi-bat-2.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717345933.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_92",
+      "title": "CV Shabby Chic",
+      "package": "cv_template_packages/template_92-cv-shabby-chic",
+      "html": "vietcv_f12_templates/templates/template_92-cv-shabby-chic.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717268741.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_93",
+      "title": "CV Minimalism",
+      "package": "cv_template_packages/template_93-cv-minimalism",
+      "html": "vietcv_f12_templates/templates/template_93-cv-minimalism.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717278078.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_94",
+      "title": "CV Sierra Blue",
+      "package": "cv_template_packages/template_94-cv-sierra-blue",
+      "html": "vietcv_f12_templates/templates/template_94-cv-sierra-blue.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717259787.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_95",
+      "title": "CV Bordeaux",
+      "package": "cv_template_packages/template_95-cv-bordeaux",
+      "html": "vietcv_f12_templates/templates/template_95-cv-bordeaux.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717252471.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_96",
+      "title": "CV Graphite",
+      "package": "cv_template_packages/template_96-cv-graphite",
+      "html": "vietcv_f12_templates/templates/template_96-cv-graphite.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717246186.json",
+      "fieldCount": 46
+    },
+    {
+      "id": "template_97",
+      "title": "CV Pastel",
+      "package": "cv_template_packages/template_97-cv-pastel",
+      "html": "vietcv_f12_templates/templates/template_97-cv-pastel.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717236350.json",
+      "fieldCount": 46
+    },
+    {
+      "id": "template_98",
+      "title": "CV Cerulean Blue",
+      "package": "cv_template_packages/template_98-cv-cerulean-blue",
+      "html": "vietcv_f12_templates/templates/template_98-cv-cerulean-blue.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717210719.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_99",
+      "title": "CV Dashed",
+      "package": "cv_template_packages/template_99-cv-dashed",
+      "html": "vietcv_f12_templates/templates/template_99-cv-dashed.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717220614.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_100",
+      "title": "CV Simplicated",
+      "package": "cv_template_packages/template_100-cv-simplicated",
+      "html": "vietcv_f12_templates/templates/template_100-cv-simplicated.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717227880.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_101",
+      "title": "CV Cloudy",
+      "package": "cv_template_packages/template_101-cv-cloudy",
+      "html": "vietcv_f12_templates/templates/template_101-cv-cloudy.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717201918.json",
+      "fieldCount": 45
+    },
+    {
+      "id": "template_102",
+      "title": "CV Deluxe",
+      "package": "cv_template_packages/template_102-cv-deluxe",
+      "html": "vietcv_f12_templates/templates/template_102-cv-deluxe.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717186626.json",
+      "fieldCount": 50
+    },
+    {
+      "id": "template_103",
+      "title": "CV Smoky",
+      "package": "cv_template_packages/template_103-cv-smoky",
+      "html": "vietcv_f12_templates/templates/template_103-cv-smoky.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717195024.json",
+      "fieldCount": 48
+    },
+    {
+      "id": "template_104",
+      "title": "CV Circum",
+      "package": "cv_template_packages/template_104-cv-circum",
+      "html": "vietcv_f12_templates/templates/template_104-cv-circum.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717167357.json",
+      "fieldCount": 43
+    },
+    {
+      "id": "template_105",
+      "title": "CV Abstraction",
+      "package": "cv_template_packages/template_105-cv-abstraction",
+      "html": "vietcv_f12_templates/templates/template_105-cv-abstraction.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717161209.json",
+      "fieldCount": 49
+    },
+    {
+      "id": "template_106",
+      "title": "CV Elegent",
+      "package": "cv_template_packages/template_106-cv-elegent",
+      "html": "vietcv_f12_templates/templates/template_106-cv-elegent.html",
+      "source": "D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717144890.json",
+      "fieldCount": 49
+    }
+  ]
+}

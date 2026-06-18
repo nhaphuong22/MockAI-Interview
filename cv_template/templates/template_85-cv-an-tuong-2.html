@@ -1,0 +1,1806 @@
+<!doctype html>
+<html><head><div><link crossorigin="anonymous" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" rel="stylesheet"><link href="https://static.vietcv.io/assets/vcv_cv_icons-cdb8e3615d782f0d29f4c1f66cdbad71250df9446c39e3272d73adb44dc5f762.css" rel="stylesheet"></div></head><body><div class="frame-root"><div class="frame-content"><div id="wp-white_desk"><style scoped="">@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,600,700,800");@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap");body{margin:0;-webkit-text-size-adjust:100%;font-family:'Open Sans', sans-serif
+}
+.editable.input-field{outline:1px dashed #f6f6f6
+}
+.editable.empty-field{outline:1px dashed #e94033
+}
+.wallpaper-container{position:fixed;top:0;left:0;right:0;bottom:0;background-color:#1F2327
+}
+.cv-container{position:absolute;margin-bottom:50px;user-select:inherit !important;-webkit-user-select:inherit !important;-moz-user-select:inherit !important;-ms-user-select:inherit !important
+}
+.navbar{height:100%;background-color:#16191C;color:white;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font-family:'Open Sans', sans-serif;font-size:14px;transition:transform 0.5s
+}
+.navbar.collapsed{transform:translateY(-100%)
+}
+.navbar .cv-name{font-weight:600
+}
+.navbar .num-pages{position:absolute;display:flex;justify-content:center;align-items:center;top:0;left:40%;right:40%;bottom:0
+}
+.navbar .edit-portfolio-btn{display:flex;color:#fff;text-decoration:none
+}
+.navbar .edit-portfolio-btn .edit-portfolio-icon{width:16px;height:16px;background-image:url("https://static.vietcv.io/vcv_portfolio/ic-edit-white.svg");margin-right:12px;background-size:contain
+}
+@media (max-width: 420px){.navbar .edit-portfolio-btn .edit-portfolio-icon{margin-right:6px
+}
+
+}
+.navbar .edit-portfolio-btn:hover{text-decoration:underline
+}
+@media (max-width: 210mm){.portfolio-container .page-container{overflow-x:unset
+}
+
+}
+.download-button{display:flex;flex-direction:row;height:40px;border-radius:20px;background:#242D33;color:#fff;align-items:center;justify-content:space-between;position:fixed;bottom:20px;right:220px;font-size:13px;box-shadow:0 3px 12px rgba(0,0,0,0.3);padding:0 30px 0 20px;z-index:1;cursor:pointer
+}
+.download-button i{margin-right:12px
+}
+.download-button:hover{background-color:#000
+}
+.zoom-slider-container{display:flex;flex-direction:row;height:40px;min-width:100px;border-radius:20px;background:#242D33;color:#fff;align-items:center;justify-content:space-between;position:fixed;bottom:20px;right:100px;font-size:13px;box-shadow:0 3px 12px rgba(0,0,0,0.3);z-index:1
+}
+@media all and (min-width: 1200px){.zoom-slider-container.editor-zoomer{right:calc(100% - 1200px + 330px)
+}
+
+}
+@media all and (min-width: 1300px){.zoom-slider-container.editor-zoomer{right:410px
+}
+
+}
+.zoom-slider-container .zoom-out-btn,.zoom-slider-container .zoom-in-btn{width:24px;height:24px;border-radius:12px;background-color:unset;border:none;outline:none;cursor:pointer;color:#fff;display:flex;justify-content:center;align-content:center;margin:0 5px;font-size:16px
+}
+.zoom-slider-container .zoom-out-btn:not(.disabled):hover,.zoom-slider-container .zoom-in-btn:not(.disabled):hover{background-color:#000
+}
+.zoom-slider-container .disabled{opacity:0.3;cursor:no-drop
+}
+.zoom-slider-container .zs-slider{width:0;visibility:hidden;transition:width 0.5s, visibility 0.3s
+}
+.zoom-slider-container .zs-slider .zs-tick{position:absolute;left:70%;top:calc(100% - 3px);height:6px;width:1px;background-color:white
+}
+.zoom-slider-container:hover .zs-title{display:none
+}
+.zoom-slider-container:hover .zs-slider{width:133px;visibility:visible
+}
+.zoom-slider-container .zoomslider-slider-container{display:flex;align-items:center
+}
+.zoom-slider-container .zoomslider-slider-container .zoomslider-slider-wrapper{flex:1;position:relative
+}
+.zoom-slider-container .zoomslider-slider-container .zoomslider-slider-wrapper .zoomslider-slider{position:relative;z-index:1;display:block;-webkit-appearance:none;background-color:#bdc3c7;width:100%;height:5px;border-radius:5px;margin:0 auto;outline:0
+}
+.zoom-slider-container .zoomslider-slider-container .zoomslider-slider-wrapper .zoomslider-slider:after{display:none;content:attr(value);position:absolute;bottom:calc(100% + 2px);left:calc(((var(--value) - var(--min)) / (var(--max) - var(--min))) * 100% - 16px);width:32px;text-align:center;background-color:rgba(0,0,0,0.8);color:white;font-size:12px;padding:2px 0;border-radius:4px
+}
+.zoom-slider-container .zoomslider-slider-container .zoomslider-slider-wrapper .zoomslider-slider::-webkit-slider-thumb{-webkit-appearance:none;background-color:#0069db;width:24px;height:24px;border-radius:50%;border:2px solid white;cursor:pointer;transition:.3s ease-in-out
+}
+.zoom-slider-container .zoomslider-slider-container .zoomslider-slider-wrapper .zoomslider-slider::-webkit-slider-thumb:hover{background-color:white;border:2px solid #0069db
+}
+.zoom-slider-container .zoomslider-slider-container .zoomslider-slider-wrapper datalist{display:block;position:absolute;font-size:10px
+}
+.zoom-slider-container .zoomslider-slider-container:hover .slider:after{display:block
+}
+.select-banner-button{cursor:pointer;position:absolute;display:flex;align-items:center;padding:5px 10px;background:#fff;color:#f06061;font-size:14px
+}
+.select-banner-button .banner-caption{margin-left:4px
+}
+.bg-color-0 {
+        background-color:  !important;
+      
+}
+.text-color-0 {
+        color:  !important;
+      
+}
+.bg-color-1 {
+        background-color:  !important;
+      
+}
+.text-color-1 {
+        color:  !important;
+      
+}
+.portfolio-container .wallpaper-container h1,.portfolio-container .wallpaper-container h6{font-family:'Open Sans';font-weight:300;text-align:center;position:absolute;top:45%;right:0;left:0
+}
+.portfolio-container .cv-container{margin-top:70px
+}
+.portfolio-container .page-container .page{margin:30px auto;-webkit-box-shadow:rgba(0,0,0,0.3) 0 1px 3px;box-shadow:rgba(0,0,0,0.3) 0 1px 3px
+}
+.portfolio-container .page-container .page:first-child{margin-top:0
+}
+.box{position:fixed;width:100%;top:0px;bottom:0px;z-index:0
+}
+.banner-with-headline{position:fixed;top:0px;right:0px;width:100%;height:100%;background:linear-gradient(to bottom right, #97c6d5, #6f9da6, #4b767a, #295150, #0a2e2a)
+}
+.coffee{width:17%;height:auto;position:absolute;bottom:0px;left:0px
+}
+@media (max-width: 425px){.coffee{width:20%
+}
+
+}
+.tree-pot{width:45%;height:auto;position:fixed;top:0px;right:0px
+}
+@media (max-width: 425px){.tree-pot{width:60%
+}
+
+}
+.pencil{width:14%;position:absolute;bottom:18px;right:100px;height:auto
+}
+@media (max-width: 425px){.pencil{width:25%;bottom:25%;right:-30px;transform:rotate(23.5deg)
+}
+
+}
+</style><div id="in-editor-modal-container"></div><div class="jsx-parser"><div class="portfolio-container"><div style="position: fixed; top: 0px; left: 0px; right: 0px; z-index: 1; height: 40px; visibility: hidden;"><div class="navbar portfolio-navbar  "><div class="cv-name"></div><div class="num-pages">1 / 2</div></div></div><div class="wallpaper-container"><div><div class="banner-with-headline" style="background-image: url(&quot;/wallpaper/white-desk/bg-white-wooden.jpg&quot;); background-size: cover; background-repeat: no-repeat; background-position: center center;"></div></div><div class="box"><img class="coffee" src="https://static.vietcv.io/wallpaper/white-desk/coffee-cup.png"><img class="pencil" src="https://static.vietcv.io/wallpaper/white-desk/pencil.png"></div></div><div class="cv-container" style="transform: scale(0.9); transform-origin: 50% 0px; left: calc(50% - 396.85px); top: inherit; touch-action: auto; user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"><div><div id="te-template_85"><style scoped="">@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,600,700,800");@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap");@import url("https://fonts.googleapis.com/css?family=Roboto:400,600,700,800");@import url("https://fonts.googleapis.com/css?family=Montserrat");@font-face{font-family:'Calibri';src:url("https://static.vietcv.io/fonts/calibri.woff2") format("woff2")
+}
+.DraftEditor-editorContainer,.DraftEditor-root,.public-DraftEditor-content{height:inherit;text-align:inherit
+}
+.public-DraftEditor-content[contenteditable=true]{-webkit-user-modify:read-write-plaintext-only
+}
+.DraftEditor-root{position:relative
+}
+.DraftEditor-editorContainer{background-color:rgba(255,255,255,0);border-left:.1px solid transparent;position:relative;z-index:1
+}
+.public-DraftEditor-block{position:relative
+}
+.DraftEditor-alignLeft .public-DraftStyleDefault-block{text-align:left
+}
+.DraftEditor-alignLeft .public-DraftEditorPlaceholder-root{left:0;text-align:left
+}
+.DraftEditor-alignCenter .public-DraftStyleDefault-block{text-align:center
+}
+.DraftEditor-alignCenter .public-DraftEditorPlaceholder-root{margin:0 auto;text-align:center;width:100%
+}
+.DraftEditor-alignRight .public-DraftStyleDefault-block{text-align:right
+}
+.DraftEditor-alignRight .public-DraftEditorPlaceholder-root{right:0;text-align:right
+}
+.public-DraftEditorPlaceholder-root{color:#9197a3;position:relative;width:100%;z-index:1
+}
+.public-DraftEditorPlaceholder-hasFocus{color:#bdc1c9
+}
+.DraftEditorPlaceholder-hidden{display:none
+}
+.public-DraftStyleDefault-block{position:relative;white-space:pre-wrap
+}
+.public-DraftStyleDefault-ltr{direction:ltr;text-align:inherit
+}
+.public-DraftStyleDefault-rtl{direction:rtl;text-align:inherit
+}
+.public-DraftStyleDefault-listLTR{direction:ltr
+}
+.public-DraftStyleDefault-listRTL{direction:rtl
+}
+.public-DraftStyleDefault-ol,.public-DraftStyleDefault-ul{margin:16px 0;padding:0
+}
+.public-DraftStyleDefault-depth0.public-DraftStyleDefault-listLTR{margin-left:1.5em
+}
+.public-DraftStyleDefault-depth0.public-DraftStyleDefault-listRTL{margin-right:1.5em
+}
+.public-DraftStyleDefault-depth1.public-DraftStyleDefault-listLTR{margin-left:3em
+}
+.public-DraftStyleDefault-depth1.public-DraftStyleDefault-listRTL{margin-right:3em
+}
+.public-DraftStyleDefault-depth2.public-DraftStyleDefault-listLTR{margin-left:4.5em
+}
+.public-DraftStyleDefault-depth2.public-DraftStyleDefault-listRTL{margin-right:4.5em
+}
+.public-DraftStyleDefault-depth3.public-DraftStyleDefault-listLTR{margin-left:6em
+}
+.public-DraftStyleDefault-depth3.public-DraftStyleDefault-listRTL{margin-right:6em
+}
+.public-DraftStyleDefault-depth4.public-DraftStyleDefault-listLTR{margin-left:7.5em
+}
+.public-DraftStyleDefault-depth4.public-DraftStyleDefault-listRTL{margin-right:7.5em
+}
+.public-DraftStyleDefault-unorderedListItem{list-style-type:square;position:relative
+}
+.public-DraftStyleDefault-unorderedListItem.public-DraftStyleDefault-depth0{list-style-type:disc
+}
+.public-DraftStyleDefault-unorderedListItem.public-DraftStyleDefault-depth1{list-style-type:circle
+}
+.public-DraftStyleDefault-orderedListItem{list-style-type:none;position:relative
+}
+.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-listLTR:before{left:-36px;position:absolute;text-align:right;width:30px
+}
+.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-listRTL:before{position:absolute;right:-36px;text-align:left;width:30px
+}
+.public-DraftStyleDefault-orderedListItem:before{content:counter(ol0) ". ";counter-increment:ol0
+}
+.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth1:before{content:counter(ol1, lower-alpha) ". ";counter-increment:ol1
+}
+.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth2:before{content:counter(ol2, lower-roman) ". ";counter-increment:ol2
+}
+.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth3:before{content:counter(ol3) ". ";counter-increment:ol3
+}
+.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth4:before{content:counter(ol4, lower-alpha) ". ";counter-increment:ol4
+}
+.public-DraftStyleDefault-depth0.public-DraftStyleDefault-reset{counter-reset:ol0
+}
+.public-DraftStyleDefault-depth1.public-DraftStyleDefault-reset{counter-reset:ol1
+}
+.public-DraftStyleDefault-depth2.public-DraftStyleDefault-reset{counter-reset:ol2
+}
+.public-DraftStyleDefault-depth3.public-DraftStyleDefault-reset{counter-reset:ol3
+}
+.public-DraftStyleDefault-depth4.public-DraftStyleDefault-reset{counter-reset:ol4
+}
+.RichEditor-hidePlaceholder .public-DraftEditorPlaceholder-root,.RichEditor-root:not(.editable) .public-DraftEditorPlaceholder-root{display:none
+}
+.RichEditor-root:not(.RichEditor-hidePlaceholder) .public-DraftEditorPlaceholder-root ~ .DraftEditor-editorContainer{position:absolute;top:0;right:0;bottom:0;left:0
+}
+.editor-text-font-size.root-font-size-120 .font-size-1{font-size:24px
+}
+.editor-text-font-size.root-font-size-120 .font-size-2{font-size:16.5px
+}
+.editor-text-font-size.root-font-size-120 .font-size-3{font-size:12px
+}
+.editor-text-font-size.root-font-size-120 .font-size-4{font-size:10.5px
+}
+.editor-text-font-size.root-font-size-120 .font-size-5{font-size:10.5px
+}
+.editor-text-font-size.root-font-size-125 .font-size-1{font-size:25px
+}
+.editor-text-font-size.root-font-size-125 .font-size-2{font-size:17.1875px
+}
+.editor-text-font-size.root-font-size-125 .font-size-3{font-size:12.5px
+}
+.editor-text-font-size.root-font-size-125 .font-size-4{font-size:10.9375px
+}
+.editor-text-font-size.root-font-size-125 .font-size-5{font-size:10.9375px
+}
+.editor-text-font-size.root-font-size-130 .font-size-1{font-size:26px
+}
+.editor-text-font-size.root-font-size-130 .font-size-2{font-size:17.875px
+}
+.editor-text-font-size.root-font-size-130 .font-size-3{font-size:13px
+}
+.editor-text-font-size.root-font-size-130 .font-size-4{font-size:11.375px
+}
+.editor-text-font-size.root-font-size-130 .font-size-5{font-size:11.375px
+}
+.editor-text-font-size.root-font-size-135 .font-size-1{font-size:27px
+}
+.editor-text-font-size.root-font-size-135 .font-size-2{font-size:18.5625px
+}
+.editor-text-font-size.root-font-size-135 .font-size-3{font-size:13.5px
+}
+.editor-text-font-size.root-font-size-135 .font-size-4{font-size:11.8125px
+}
+.editor-text-font-size.root-font-size-135 .font-size-5{font-size:11.8125px
+}
+.editor-text-font-size.root-font-size-140 .font-size-1{font-size:28px
+}
+.editor-text-font-size.root-font-size-140 .font-size-2{font-size:19.25px
+}
+.editor-text-font-size.root-font-size-140 .font-size-3{font-size:14px
+}
+.editor-text-font-size.root-font-size-140 .font-size-4{font-size:12.25px
+}
+.editor-text-font-size.root-font-size-140 .font-size-5{font-size:12.25px
+}
+.editor-text-font-size.root-font-size-145 .font-size-1{font-size:29px
+}
+.editor-text-font-size.root-font-size-145 .font-size-2{font-size:19.9375px
+}
+.editor-text-font-size.root-font-size-145 .font-size-3{font-size:14.5px
+}
+.editor-text-font-size.root-font-size-145 .font-size-4{font-size:12.6875px
+}
+.editor-text-font-size.root-font-size-145 .font-size-5{font-size:12.6875px
+}
+.editor-text-font-size.root-font-size-150 .font-size-1{font-size:30px
+}
+.editor-text-font-size.root-font-size-150 .font-size-2{font-size:20.625px
+}
+.editor-text-font-size.root-font-size-150 .font-size-3{font-size:15px
+}
+.editor-text-font-size.root-font-size-150 .font-size-4{font-size:13.125px
+}
+.editor-text-font-size.root-font-size-150 .font-size-5{font-size:13.125px
+}
+.editor-text-font-size.root-font-size-155 .font-size-1{font-size:31px
+}
+.editor-text-font-size.root-font-size-155 .font-size-2{font-size:21.3125px
+}
+.editor-text-font-size.root-font-size-155 .font-size-3{font-size:15.5px
+}
+.editor-text-font-size.root-font-size-155 .font-size-4{font-size:13.5625px
+}
+.editor-text-font-size.root-font-size-155 .font-size-5{font-size:13.5625px
+}
+.editor-text-font-size.root-font-size-160 .font-size-1{font-size:32px
+}
+.editor-text-font-size.root-font-size-160 .font-size-2{font-size:22px
+}
+.editor-text-font-size.root-font-size-160 .font-size-3{font-size:16px
+}
+.editor-text-font-size.root-font-size-160 .font-size-4{font-size:14px
+}
+.editor-text-font-size.root-font-size-160 .font-size-5{font-size:14px
+}
+.editor-text-font-size.root-font-size-165 .font-size-1{font-size:33px
+}
+.editor-text-font-size.root-font-size-165 .font-size-2{font-size:22.6875px
+}
+.editor-text-font-size.root-font-size-165 .font-size-3{font-size:16.5px
+}
+.editor-text-font-size.root-font-size-165 .font-size-4{font-size:14.4375px
+}
+.editor-text-font-size.root-font-size-165 .font-size-5{font-size:14.4375px
+}
+.editor-text-font-size.root-font-size-170 .font-size-1{font-size:34px
+}
+.editor-text-font-size.root-font-size-170 .font-size-2{font-size:23.375px
+}
+.editor-text-font-size.root-font-size-170 .font-size-3{font-size:17px
+}
+.editor-text-font-size.root-font-size-170 .font-size-4{font-size:14.875px
+}
+.editor-text-font-size.root-font-size-170 .font-size-5{font-size:14.875px
+}
+.editor-text-font-size.root-font-size-175 .font-size-1{font-size:35px
+}
+.editor-text-font-size.root-font-size-175 .font-size-2{font-size:24.0625px
+}
+.editor-text-font-size.root-font-size-175 .font-size-3{font-size:17.5px
+}
+.editor-text-font-size.root-font-size-175 .font-size-4{font-size:15.3125px
+}
+.editor-text-font-size.root-font-size-175 .font-size-5{font-size:15.3125px
+}
+.editor-text-font-size.root-font-size-180 .font-size-1{font-size:36px
+}
+.editor-text-font-size.root-font-size-180 .font-size-2{font-size:24.75px
+}
+.editor-text-font-size.root-font-size-180 .font-size-3{font-size:18px
+}
+.editor-text-font-size.root-font-size-180 .font-size-4{font-size:15.75px
+}
+.editor-text-font-size.root-font-size-180 .font-size-5{font-size:15.75px
+}
+.editor-text-font-size.root-font-size-185 .font-size-1{font-size:37px
+}
+.editor-text-font-size.root-font-size-185 .font-size-2{font-size:25.4375px
+}
+.editor-text-font-size.root-font-size-185 .font-size-3{font-size:18.5px
+}
+.editor-text-font-size.root-font-size-185 .font-size-4{font-size:16.1875px
+}
+.editor-text-font-size.root-font-size-185 .font-size-5{font-size:16.1875px
+}
+.editor-text-font-size.root-font-size-190 .font-size-1{font-size:38px
+}
+.editor-text-font-size.root-font-size-190 .font-size-2{font-size:26.125px
+}
+.editor-text-font-size.root-font-size-190 .font-size-3{font-size:19px
+}
+.editor-text-font-size.root-font-size-190 .font-size-4{font-size:16.625px
+}
+.editor-text-font-size.root-font-size-190 .font-size-5{font-size:16.625px
+}
+.editor-text-font-size.root-font-size-195 .font-size-1{font-size:39px
+}
+.editor-text-font-size.root-font-size-195 .font-size-2{font-size:26.8125px
+}
+.editor-text-font-size.root-font-size-195 .font-size-3{font-size:19.5px
+}
+.editor-text-font-size.root-font-size-195 .font-size-4{font-size:17.0625px
+}
+.editor-text-font-size.root-font-size-195 .font-size-5{font-size:17.0625px
+}
+.editor-text-font-size.root-font-size-200 .font-size-1{font-size:40px
+}
+.editor-text-font-size.root-font-size-200 .font-size-2{font-size:27.5px
+}
+.editor-text-font-size.root-font-size-200 .font-size-3{font-size:20px
+}
+.editor-text-font-size.root-font-size-200 .font-size-4{font-size:17.5px
+}
+.editor-text-font-size.root-font-size-200 .font-size-5{font-size:17.5px
+}
+.editor-text-font-size.root-font-size-205 .font-size-1{font-size:41px
+}
+.editor-text-font-size.root-font-size-205 .font-size-2{font-size:28.1875px
+}
+.editor-text-font-size.root-font-size-205 .font-size-3{font-size:20.5px
+}
+.editor-text-font-size.root-font-size-205 .font-size-4{font-size:17.9375px
+}
+.editor-text-font-size.root-font-size-205 .font-size-5{font-size:17.9375px
+}
+.editor-text-font-size.root-font-size-210 .font-size-1{font-size:42px
+}
+.editor-text-font-size.root-font-size-210 .font-size-2{font-size:28.875px
+}
+.editor-text-font-size.root-font-size-210 .font-size-3{font-size:21px
+}
+.editor-text-font-size.root-font-size-210 .font-size-4{font-size:18.375px
+}
+.editor-text-font-size.root-font-size-210 .font-size-5{font-size:18.375px
+}
+.editor-text-font-size.root-font-size-215 .font-size-1{font-size:43px
+}
+.editor-text-font-size.root-font-size-215 .font-size-2{font-size:29.5625px
+}
+.editor-text-font-size.root-font-size-215 .font-size-3{font-size:21.5px
+}
+.editor-text-font-size.root-font-size-215 .font-size-4{font-size:18.8125px
+}
+.editor-text-font-size.root-font-size-215 .font-size-5{font-size:18.8125px
+}
+.editor-text-font-size.root-font-size-220 .font-size-1{font-size:44px
+}
+.editor-text-font-size.root-font-size-220 .font-size-2{font-size:30.25px
+}
+.editor-text-font-size.root-font-size-220 .font-size-3{font-size:22px
+}
+.editor-text-font-size.root-font-size-220 .font-size-4{font-size:19.25px
+}
+.editor-text-font-size.root-font-size-220 .font-size-5{font-size:19.25px
+}
+.editor-text-font-size.root-font-size-225 .font-size-1{font-size:45px
+}
+.editor-text-font-size.root-font-size-225 .font-size-2{font-size:30.9375px
+}
+.editor-text-font-size.root-font-size-225 .font-size-3{font-size:22.5px
+}
+.editor-text-font-size.root-font-size-225 .font-size-4{font-size:19.6875px
+}
+.editor-text-font-size.root-font-size-225 .font-size-5{font-size:19.6875px
+}
+.editor-text-font-size.root-font-size-230 .font-size-1{font-size:46px
+}
+.editor-text-font-size.root-font-size-230 .font-size-2{font-size:31.625px
+}
+.editor-text-font-size.root-font-size-230 .font-size-3{font-size:23px
+}
+.editor-text-font-size.root-font-size-230 .font-size-4{font-size:20.125px
+}
+.editor-text-font-size.root-font-size-230 .font-size-5{font-size:20.125px
+}
+.editor-text-font-size.root-font-size-235 .font-size-1{font-size:47px
+}
+.editor-text-font-size.root-font-size-235 .font-size-2{font-size:32.3125px
+}
+.editor-text-font-size.root-font-size-235 .font-size-3{font-size:23.5px
+}
+.editor-text-font-size.root-font-size-235 .font-size-4{font-size:20.5625px
+}
+.editor-text-font-size.root-font-size-235 .font-size-5{font-size:20.5625px
+}
+.editor-text-font-size.root-font-size-240 .font-size-1{font-size:48px
+}
+.editor-text-font-size.root-font-size-240 .font-size-2{font-size:33px
+}
+.editor-text-font-size.root-font-size-240 .font-size-3{font-size:24px
+}
+.editor-text-font-size.root-font-size-240 .font-size-4{font-size:21px
+}
+.editor-text-font-size.root-font-size-240 .font-size-5{font-size:21px
+}
+.editor-text-font-size.root-font-size-245 .font-size-1{font-size:49px
+}
+.editor-text-font-size.root-font-size-245 .font-size-2{font-size:33.6875px
+}
+.editor-text-font-size.root-font-size-245 .font-size-3{font-size:24.5px
+}
+.editor-text-font-size.root-font-size-245 .font-size-4{font-size:21.4375px
+}
+.editor-text-font-size.root-font-size-245 .font-size-5{font-size:21.4375px
+}
+.editor-text-font-size.root-font-size-250 .font-size-1{font-size:50px
+}
+.editor-text-font-size.root-font-size-250 .font-size-2{font-size:34.375px
+}
+.editor-text-font-size.root-font-size-250 .font-size-3{font-size:25px
+}
+.editor-text-font-size.root-font-size-250 .font-size-4{font-size:21.875px
+}
+.editor-text-font-size.root-font-size-250 .font-size-5{font-size:21.875px
+}
+.editor-text-font-size.root-font-size-255 .font-size-1{font-size:51px
+}
+.editor-text-font-size.root-font-size-255 .font-size-2{font-size:35.0625px
+}
+.editor-text-font-size.root-font-size-255 .font-size-3{font-size:25.5px
+}
+.editor-text-font-size.root-font-size-255 .font-size-4{font-size:22.3125px
+}
+.editor-text-font-size.root-font-size-255 .font-size-5{font-size:22.3125px
+}
+.editor-text-font-size.root-font-size-260 .font-size-1{font-size:52px
+}
+.editor-text-font-size.root-font-size-260 .font-size-2{font-size:35.75px
+}
+.editor-text-font-size.root-font-size-260 .font-size-3{font-size:26px
+}
+.editor-text-font-size.root-font-size-260 .font-size-4{font-size:22.75px
+}
+.editor-text-font-size.root-font-size-260 .font-size-5{font-size:22.75px
+}
+.editor-text-font-size.root-font-size-265 .font-size-1{font-size:53px
+}
+.editor-text-font-size.root-font-size-265 .font-size-2{font-size:36.4375px
+}
+.editor-text-font-size.root-font-size-265 .font-size-3{font-size:26.5px
+}
+.editor-text-font-size.root-font-size-265 .font-size-4{font-size:23.1875px
+}
+.editor-text-font-size.root-font-size-265 .font-size-5{font-size:23.1875px
+}
+.editor-text-font-size.root-font-size-270 .font-size-1{font-size:54px
+}
+.editor-text-font-size.root-font-size-270 .font-size-2{font-size:37.125px
+}
+.editor-text-font-size.root-font-size-270 .font-size-3{font-size:27px
+}
+.editor-text-font-size.root-font-size-270 .font-size-4{font-size:23.625px
+}
+.editor-text-font-size.root-font-size-270 .font-size-5{font-size:23.625px
+}
+.editor-text-font-size.root-line-height-115{line-height:1.15
+}
+.editor-text-font-size.root-line-height-120{line-height:1.2
+}
+.editor-text-font-size.root-line-height-125{line-height:1.25
+}
+.editor-text-font-size.root-line-height-130{line-height:1.3
+}
+.editor-text-font-size.root-line-height-135{line-height:1.35
+}
+.editor-text-font-size.root-line-height-140{line-height:1.4
+}
+.editor-text-font-size.root-line-height-145{line-height:1.45
+}
+.editor-text-font-size.root-line-height-150{line-height:1.5
+}
+.editor-text-font-size.root-line-height-155{line-height:1.55
+}
+.editor-text-font-size.root-line-height-160{line-height:1.6
+}
+.editor-text-font-size.root-line-height-165{line-height:1.65
+}
+.editor-text-font-size.root-line-height-170{line-height:1.7
+}
+.editor-text-font-size.root-line-height-175{line-height:1.75
+}
+.editor-text-font-family.arial{font-family:'Arial'
+}
+.editor-text-font-family.calibri{font-family:'Calibri'
+}
+.editor-text-font-family.roboto{font-family:'Roboto', sans-serif
+}
+.editor-text-font-family.times-new-roman{font-family:'Times New Roman'
+}
+.editor-text-font-family.open-sans{font-family:'Open Sans', sans-serif
+}
+.page{cursor:text;display:flex;flex:1;position:relative;tap-highlight-color:initial;white-space:normal;width:210mm;height:297mm;background-color:#fff
+}
+.page:hover .watermark.active{background-color:rgba(44,190,96,0.8);border-radius:2px;color:#fff;cursor:pointer
+}
+.page:hover .watermark.active:hover{background-color:#2cbe60
+}
+.page .footer-page{position:absolute;bottom:10px;right:10px;display:flex;align-items:center;font-size:14px;font-family:'Montserrat';color:#909395;z-index:2
+}
+.page .footer-page .hyphen{margin:0 10px
+}
+.page .footer-page .hyphen:first-child,.page .footer-page .hyphen:last-child,.page .footer-page .hyphen.dismiss{display:none
+}
+.text-font-family-option{margin-left:5px
+}
+.section{position:relative
+}
+.section.index-1 .section-header,.section.index-2 .section-header,.section.index-3 .section-header,.section.index-4 .section-header,.section.index-5 .section-header{display:none
+}
+.content-field[visible='false']{display:none
+}
+.text-field{white-space:pre-wrap
+}
+.text-field ul,.text-field ol{margin-top:3px;margin-bottom:3px
+}
+.text-field ul:not([class^='public-DraftStyleDefault']),.text-field ol:not([class^='public-DraftStyleDefault']){padding-left:20px
+}
+.input-field[contenteditable="true"]:empty:after,.select-field[contenteditable="true"]:empty:after,.text-field[contenteditable="true"]:empty:after{content:'\00a0'
+}
+.input-field.masked{background-color:yellow
+}
+.avatar-img-container.masked:after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:yellow
+}
+.cv-progress-bar-flow{background-color:#f8ca04;color:#f8ca04
+}
+.cv-progress-bar-flow.level-inactive:not(.high-light){background-color:#ededed !important;color:#ededed !important
+}
+.cv-progress-bar{height:20px;position:relative;display:flex;justify-content:space-between
+}
+.cv-progress-bar.skill-level{background-color:transparent !important
+}
+.cv-progress-bar .linear-bar-animation{transition:color 2s linear, border-color 2s linear, background-color 2s linear;-webkit-transition:color 2s linear, border-color 2s linear, background-color 2s linear
+}
+.cv-progress-bar-circle{font-size:10em
+}
+.cv-progress-bar-circle:after{clear:both;content:'';display:table
+}
+.cv-progress-bar-circle *,.cv-progress-bar-circle *:before,.cv-progress-bar-circle *:after{box-sizing:border-box
+}
+.cv-progress-bar-circle .pie-wrapper{height:1em;width:1em;float:left;position:relative;overflow:hidden
+}
+.cv-progress-bar-circle .pie-wrapper:nth-child(3n+1){clear:both
+}
+.cv-progress-bar-circle .pie-wrapper .pie{height:100%;width:100%;clip:rect(0, 1em, 1em, .5em);left:0;position:absolute;top:0;z-index:0
+}
+.cv-progress-bar-circle .pie-wrapper .pie .half-circle{height:100%;width:100%;border:.1em solid;border-radius:50%;clip:rect(0, .5em, 1em, 0);left:0;position:absolute;top:0
+}
+.cv-progress-bar-circle .pie-wrapper .circular-bar-label{border-radius:50%;top:.1em;right:.1em;bottom:.1em;left:.1em;cursor:default;display:flex;flex-direction:column;align-items:center;justify-content:center;position:absolute;z-index:2
+}
+.cv-progress-bar-circle .pie-wrapper .circular-bar-label .circular-bar-level{font-size:.25em
+}
+.cv-progress-bar-circle .pie-wrapper .circular-bar-label .circular-bar-level:after{content:'%';font-size:.45em;vertical-align:super
+}
+.cv-progress-bar-circle .pie-wrapper .circular-bar-shadow{height:100%;width:100%;border:.1em solid #bdc3c7;border-radius:50%
+}
+.cv-progress-bar-circle .pie-wrapper .circular-bar-shadow.high-light{border-color:#ffcfcf !important
+}
+.cv-progress-bar-circle .pie-wrapper .circular-bar-flow-wrapper{z-index:1;position:absolute;width:100%;height:100%;border-radius:50%;overflow:hidden
+}
+.cv-progress-bar-circle .pie-wrapper .circular-bar-flow-wrapper .circular-bar-flow{overflow:hidden;position:absolute;top:0;left:0;right:50%;bottom:50%;transform-origin:100% 100%;cursor:pointer
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-0 .pie .circular-bar-left-side{transform:rotate(0deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-0 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-1 .pie .circular-bar-left-side{transform:rotate(3.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-1 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-2 .pie .circular-bar-left-side{transform:rotate(7.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-2 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-3 .pie .circular-bar-left-side{transform:rotate(10.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-3 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-4 .pie .circular-bar-left-side{transform:rotate(14.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-4 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-5 .pie .circular-bar-left-side{transform:rotate(18deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-5 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-6 .pie .circular-bar-left-side{transform:rotate(21.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-6 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-7 .pie .circular-bar-left-side{transform:rotate(25.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-7 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-8 .pie .circular-bar-left-side{transform:rotate(28.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-8 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-9 .pie .circular-bar-left-side{transform:rotate(32.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-9 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-10 .pie .circular-bar-left-side{transform:rotate(36deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-10 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-11 .pie .circular-bar-left-side{transform:rotate(39.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-11 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-12 .pie .circular-bar-left-side{transform:rotate(43.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-12 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-13 .pie .circular-bar-left-side{transform:rotate(46.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-13 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-14 .pie .circular-bar-left-side{transform:rotate(50.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-14 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-15 .pie .circular-bar-left-side{transform:rotate(54deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-15 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-16 .pie .circular-bar-left-side{transform:rotate(57.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-16 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-17 .pie .circular-bar-left-side{transform:rotate(61.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-17 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-18 .pie .circular-bar-left-side{transform:rotate(64.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-18 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-19 .pie .circular-bar-left-side{transform:rotate(68.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-19 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-20 .pie .circular-bar-left-side{transform:rotate(72deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-20 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-21 .pie .circular-bar-left-side{transform:rotate(75.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-21 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-22 .pie .circular-bar-left-side{transform:rotate(79.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-22 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-23 .pie .circular-bar-left-side{transform:rotate(82.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-23 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-24 .pie .circular-bar-left-side{transform:rotate(86.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-24 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-25 .pie .circular-bar-left-side{transform:rotate(90deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-25 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-26 .pie .circular-bar-left-side{transform:rotate(93.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-26 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-27 .pie .circular-bar-left-side{transform:rotate(97.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-27 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-28 .pie .circular-bar-left-side{transform:rotate(100.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-28 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-29 .pie .circular-bar-left-side{transform:rotate(104.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-29 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-30 .pie .circular-bar-left-side{transform:rotate(108deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-30 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-31 .pie .circular-bar-left-side{transform:rotate(111.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-31 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-32 .pie .circular-bar-left-side{transform:rotate(115.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-32 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-33 .pie .circular-bar-left-side{transform:rotate(118.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-33 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-34 .pie .circular-bar-left-side{transform:rotate(122.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-34 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-35 .pie .circular-bar-left-side{transform:rotate(126deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-35 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-36 .pie .circular-bar-left-side{transform:rotate(129.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-36 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-37 .pie .circular-bar-left-side{transform:rotate(133.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-37 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-38 .pie .circular-bar-left-side{transform:rotate(136.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-38 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-39 .pie .circular-bar-left-side{transform:rotate(140.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-39 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-40 .pie .circular-bar-left-side{transform:rotate(144deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-40 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-41 .pie .circular-bar-left-side{transform:rotate(147.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-41 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-42 .pie .circular-bar-left-side{transform:rotate(151.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-42 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-43 .pie .circular-bar-left-side{transform:rotate(154.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-43 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-44 .pie .circular-bar-left-side{transform:rotate(158.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-44 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-45 .pie .circular-bar-left-side{transform:rotate(162deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-45 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-46 .pie .circular-bar-left-side{transform:rotate(165.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-46 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-47 .pie .circular-bar-left-side{transform:rotate(169.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-47 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-48 .pie .circular-bar-left-side{transform:rotate(172.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-48 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-49 .pie .circular-bar-left-side{transform:rotate(176.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-49 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-50 .pie .circular-bar-left-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-50 .pie .circular-bar-right-side{display:none
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-51 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-51 .pie .circular-bar-left-side{transform:rotate(183.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-51 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-52 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-52 .pie .circular-bar-left-side{transform:rotate(187.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-52 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-53 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-53 .pie .circular-bar-left-side{transform:rotate(190.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-53 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-54 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-54 .pie .circular-bar-left-side{transform:rotate(194.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-54 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-55 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-55 .pie .circular-bar-left-side{transform:rotate(198deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-55 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-56 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-56 .pie .circular-bar-left-side{transform:rotate(201.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-56 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-57 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-57 .pie .circular-bar-left-side{transform:rotate(205.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-57 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-58 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-58 .pie .circular-bar-left-side{transform:rotate(208.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-58 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-59 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-59 .pie .circular-bar-left-side{transform:rotate(212.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-59 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-60 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-60 .pie .circular-bar-left-side{transform:rotate(216deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-60 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-61 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-61 .pie .circular-bar-left-side{transform:rotate(219.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-61 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-62 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-62 .pie .circular-bar-left-side{transform:rotate(223.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-62 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-63 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-63 .pie .circular-bar-left-side{transform:rotate(226.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-63 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-64 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-64 .pie .circular-bar-left-side{transform:rotate(230.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-64 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-65 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-65 .pie .circular-bar-left-side{transform:rotate(234deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-65 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-66 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-66 .pie .circular-bar-left-side{transform:rotate(237.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-66 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-67 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-67 .pie .circular-bar-left-side{transform:rotate(241.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-67 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-68 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-68 .pie .circular-bar-left-side{transform:rotate(244.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-68 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-69 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-69 .pie .circular-bar-left-side{transform:rotate(248.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-69 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-70 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-70 .pie .circular-bar-left-side{transform:rotate(252deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-70 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-71 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-71 .pie .circular-bar-left-side{transform:rotate(255.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-71 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-72 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-72 .pie .circular-bar-left-side{transform:rotate(259.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-72 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-73 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-73 .pie .circular-bar-left-side{transform:rotate(262.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-73 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-74 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-74 .pie .circular-bar-left-side{transform:rotate(266.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-74 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-75 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-75 .pie .circular-bar-left-side{transform:rotate(270deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-75 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-76 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-76 .pie .circular-bar-left-side{transform:rotate(273.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-76 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-77 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-77 .pie .circular-bar-left-side{transform:rotate(277.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-77 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-78 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-78 .pie .circular-bar-left-side{transform:rotate(280.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-78 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-79 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-79 .pie .circular-bar-left-side{transform:rotate(284.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-79 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-80 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-80 .pie .circular-bar-left-side{transform:rotate(288deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-80 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-81 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-81 .pie .circular-bar-left-side{transform:rotate(291.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-81 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-82 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-82 .pie .circular-bar-left-side{transform:rotate(295.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-82 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-83 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-83 .pie .circular-bar-left-side{transform:rotate(298.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-83 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-84 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-84 .pie .circular-bar-left-side{transform:rotate(302.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-84 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-85 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-85 .pie .circular-bar-left-side{transform:rotate(306deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-85 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-86 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-86 .pie .circular-bar-left-side{transform:rotate(309.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-86 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-87 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-87 .pie .circular-bar-left-side{transform:rotate(313.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-87 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-88 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-88 .pie .circular-bar-left-side{transform:rotate(316.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-88 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-89 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-89 .pie .circular-bar-left-side{transform:rotate(320.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-89 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-90 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-90 .pie .circular-bar-left-side{transform:rotate(324deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-90 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-91 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-91 .pie .circular-bar-left-side{transform:rotate(327.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-91 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-92 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-92 .pie .circular-bar-left-side{transform:rotate(331.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-92 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-93 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-93 .pie .circular-bar-left-side{transform:rotate(334.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-93 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-94 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-94 .pie .circular-bar-left-side{transform:rotate(338.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-94 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-95 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-95 .pie .circular-bar-left-side{transform:rotate(342deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-95 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-96 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-96 .pie .circular-bar-left-side{transform:rotate(345.6deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-96 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-97 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-97 .pie .circular-bar-left-side{transform:rotate(349.2deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-97 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-98 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-98 .pie .circular-bar-left-side{transform:rotate(352.8deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-98 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-99 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-99 .pie .circular-bar-left-side{transform:rotate(356.4deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-99 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-100 .pie{clip:rect(auto, auto, auto, auto)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-100 .pie .circular-bar-left-side{transform:rotate(360deg)
+}
+.cv-progress-bar-circle .pie-wrapper.circular-progress-100 .pie .circular-bar-right-side{transform:rotate(180deg)
+}
+.cv-progress-bar-circle .circular-bar-animation{transition:display 2s, transform 2s;-webkit-transition:display 2s, -webkit-transform 2s
+}
+.align-left .public-DraftStyleDefault-block{text-align:left
+}
+.align-center .public-DraftStyleDefault-block{text-align:center
+}
+.align-right .public-DraftStyleDefault-block{text-align:right
+}
+.align-justify .public-DraftStyleDefault-block{text-align:justify
+}
+img.twemoji{height:1em;width:1em;margin:0 .05em 0 .1em;vertical-align:-0.1em
+}
+.bg-primary {
+      background-color: #000000 !important;
+    
+}
+.bg-opaque-primary {
+      background-color: rgba(0, 0, 0, 0.12890625) !important;
+    
+}
+.bg-secondary {
+      background-color: #F80040 !important;
+    
+}
+.bg-vertical-linear-gradient {
+      background-image: linear-gradient(#000000, #F80040) !important;
+    
+}
+.bg-horizontal-linear-gradient {
+      background-image: linear-gradient(to right, #F80040, #000000) !important;
+    
+}
+.text-primary {
+      color: #000000 !important;
+    
+}
+.text-secondary {
+      color: #F80040 !important;
+    
+}
+.fill-primary {
+      fill: #000000 !important;
+    
+}
+.fill-secondary {
+      fill: #F80040 !important;
+    
+}
+.socials-sections,.socials-sections .social-field-group{display:flex;justify-content:center;align-items:center
+}
+.about-user-container,.column-0 .content-field:not(:last-child),.column-1 .content-field:not(:last-child),.section-contacts{position:relative
+}
+.about-user-container::after,.column-0 .content-field:not(:last-child)::after,.column-1 .content-field:not(:last-child)::after,.section-contacts::after{content:'';display:block;width:calc(100% - 50px);height:1px;padding:0 5px;position:absolute;bottom:-4px;left:50%;transform:translateX(-50%)
+}
+.column-0 .layout-margin-0 .content-field:not(:last-child)::after,.column-1 .layout-margin-0 .content-field:not(:last-child)::after,.layout-margin-0 .about-user-container::after,.layout-margin-0 .column-0 .content-field:not(:last-child)::after,.layout-margin-0 .column-1 .content-field:not(:last-child)::after,.layout-margin-0 .section-contacts::after{width:calc(100% - 40px)
+}
+.column-0 .layout-margin-10 .content-field:not(:last-child)::after,.column-1 .layout-margin-10 .content-field:not(:last-child)::after,.layout-margin-10 .about-user-container::after,.layout-margin-10 .column-0 .content-field:not(:last-child)::after,.layout-margin-10 .column-1 .content-field:not(:last-child)::after,.layout-margin-10 .section-contacts::after{width:calc(100% - 42px)
+}
+.column-0 .layout-margin-20 .content-field:not(:last-child)::after,.column-1 .layout-margin-20 .content-field:not(:last-child)::after,.layout-margin-20 .about-user-container::after,.layout-margin-20 .column-0 .content-field:not(:last-child)::after,.layout-margin-20 .column-1 .content-field:not(:last-child)::after,.layout-margin-20 .section-contacts::after{width:calc(100% - 44px)
+}
+.column-0 .layout-margin-30 .content-field:not(:last-child)::after,.column-1 .layout-margin-30 .content-field:not(:last-child)::after,.layout-margin-30 .about-user-container::after,.layout-margin-30 .column-0 .content-field:not(:last-child)::after,.layout-margin-30 .column-1 .content-field:not(:last-child)::after,.layout-margin-30 .section-contacts::after{width:calc(100% - 46px)
+}
+.column-0 .layout-margin-40 .content-field:not(:last-child)::after,.column-1 .layout-margin-40 .content-field:not(:last-child)::after,.layout-margin-40 .about-user-container::after,.layout-margin-40 .column-0 .content-field:not(:last-child)::after,.layout-margin-40 .column-1 .content-field:not(:last-child)::after,.layout-margin-40 .section-contacts::after{width:calc(100% - 48px)
+}
+.column-0 .layout-margin-50 .content-field:not(:last-child)::after,.column-1 .layout-margin-50 .content-field:not(:last-child)::after,.layout-margin-50 .about-user-container::after,.layout-margin-50 .column-0 .content-field:not(:last-child)::after,.layout-margin-50 .column-1 .content-field:not(:last-child)::after,.layout-margin-50 .section-contacts::after{width:calc(100% - 50px)
+}
+.column-0 .layout-margin-60 .content-field:not(:last-child)::after,.column-1 .layout-margin-60 .content-field:not(:last-child)::after,.layout-margin-60 .about-user-container::after,.layout-margin-60 .column-0 .content-field:not(:last-child)::after,.layout-margin-60 .column-1 .content-field:not(:last-child)::after,.layout-margin-60 .section-contacts::after{width:calc(100% - 52px)
+}
+.column-0 .layout-margin-70 .content-field:not(:last-child)::after,.column-1 .layout-margin-70 .content-field:not(:last-child)::after,.layout-margin-70 .about-user-container::after,.layout-margin-70 .column-0 .content-field:not(:last-child)::after,.layout-margin-70 .column-1 .content-field:not(:last-child)::after,.layout-margin-70 .section-contacts::after{width:calc(100% - 54px)
+}
+.column-0 .layout-margin-80 .content-field:not(:last-child)::after,.column-1 .layout-margin-80 .content-field:not(:last-child)::after,.layout-margin-80 .about-user-container::after,.layout-margin-80 .column-0 .content-field:not(:last-child)::after,.layout-margin-80 .column-1 .content-field:not(:last-child)::after,.layout-margin-80 .section-contacts::after{width:calc(100% - 56px)
+}
+.column-0 .layout-margin-90 .content-field:not(:last-child)::after,.column-1 .layout-margin-90 .content-field:not(:last-child)::after,.layout-margin-90 .about-user-container::after,.layout-margin-90 .column-0 .content-field:not(:last-child)::after,.layout-margin-90 .column-1 .content-field:not(:last-child)::after,.layout-margin-90 .section-contacts::after{width:calc(100% - 58px)
+}
+.column-0 .layout-margin-100 .content-field:not(:last-child)::after,.column-1 .layout-margin-100 .content-field:not(:last-child)::after,.layout-margin-100 .about-user-container::after,.layout-margin-100 .column-0 .content-field:not(:last-child)::after,.layout-margin-100 .column-1 .content-field:not(:last-child)::after,.layout-margin-100 .section-contacts::after{width:calc(100% - 60px)
+}
+.column-0 .skills-sections{display:flex;justify-content:space-between;align-items:center
+}
+.about-user-container{text-align:justify
+}
+.introduce-header{position:relative
+}
+.introduce-header .section-header{padding-bottom:15px
+}
+.introduce-header .underline{position:absolute;display:block;width:105%;height:3px;bottom:0;left:15px
+}
+.column-0-page-n,.column-0-with-user-profile{position:relative;padding-left:22.5px
+}
+.layout-margin-0 .column-0-page-n,.layout-margin-0 .column-0-with-user-profile{padding-left:15px
+}
+.layout-margin-10 .column-0-page-n,.layout-margin-10 .column-0-with-user-profile{padding-left:16.5px
+}
+.layout-margin-20 .column-0-page-n,.layout-margin-20 .column-0-with-user-profile{padding-left:18px
+}
+.layout-margin-30 .column-0-page-n,.layout-margin-30 .column-0-with-user-profile{padding-left:19.5px
+}
+.layout-margin-40 .column-0-page-n,.layout-margin-40 .column-0-with-user-profile{padding-left:21px
+}
+.layout-margin-50 .column-0-page-n,.layout-margin-50 .column-0-with-user-profile{padding-left:22.5px
+}
+.layout-margin-60 .column-0-page-n,.layout-margin-60 .column-0-with-user-profile{padding-left:24px
+}
+.layout-margin-70 .column-0-page-n,.layout-margin-70 .column-0-with-user-profile{padding-left:25.5px
+}
+.layout-margin-80 .column-0-page-n,.layout-margin-80 .column-0-with-user-profile{padding-left:27px
+}
+.layout-margin-90 .column-0-page-n,.layout-margin-90 .column-0-with-user-profile{padding-left:28.5px
+}
+.layout-margin-100 .column-0-page-n,.layout-margin-100 .column-0-with-user-profile{padding-left:30px
+}
+.column-0-page-n .boder-top-column,.column-0-with-user-profile .boder-top-column{position:absolute;height:3px;width:100%;left:0;top:0
+}
+.column-0-page-n .boder-right-column,.column-0-with-user-profile .boder-right-column{position:absolute;height:100%;width:3px;right:-3px;top:0
+}
+.column-0-page-n .underline,.column-0-with-user-profile .underline{position:absolute;display:block;width:105%;height:3px;left:15px;top:35px
+}
+.about-user .details-wrapper{margin:0 15px;word-break:break-word;white-space:pre-wrap;text-align:left
+}
+.bg-avt{overflow:hidden;width:100%;height:100%
+}
+.bg-avt-tranpsarent,.heart-vector{overflow:hidden;width:480px;height:510px;position:absolute;z-index:0;right:-28%;border:0;top:-21%
+}
+.heart-vector{width:460px;height:auto;z-index:1;right:-20%;top:16%
+}
+.page-column .bg-avt>svg path{fill:currentColor
+}
+.avatar-container{margin-top:40px;margin-bottom:10px;position:absolute;height:200px;width:300px;right:0;top:-20px
+}
+.layout-margin-0 .avatar-container{margin-bottom:0
+}
+.layout-margin-10 .avatar-container{margin-bottom:2px
+}
+.layout-margin-20 .avatar-container{margin-bottom:4px
+}
+.layout-margin-30 .avatar-container{margin-bottom:6px
+}
+.layout-margin-40 .avatar-container{margin-bottom:8px
+}
+.layout-margin-50 .avatar-container{margin-bottom:10px
+}
+.layout-margin-60 .avatar-container{margin-bottom:12px
+}
+.layout-margin-70 .avatar-container{margin-bottom:14px
+}
+.layout-margin-80 .avatar-container{margin-bottom:16px
+}
+.layout-margin-90 .avatar-container{margin-bottom:18px
+}
+.layout-margin-100 .avatar-container{margin-bottom:20px
+}
+.avatar-container .avatar-box{width:280px;height:160px;right:-20px;bottom:-10px;position:absolute
+}
+.avatar-container .avatar-img-container{max-height:305px
+}
+.avatar-container .avatar-img-container img{border-radius:30% 70% 70% 30%/30% 30% 70% 70%!important
+}
+.avatar-container .avatar-group{position:absolute
+}
+.avt-main-box{position:relative;width:500px;height:500px
+}
+.avt-box{position:absolute;top:-40px;left:-100px;transform:scale(.6);width:100%;height:100%;touch-action:pan-x pan-y pinch-zoom;clip-path:path("m 370.8 30.1 c -60.7 -31.8 -117.1 4.5 -162.2 4.5 c -35 0 -101 -87.6 -179.8 15.9 s 19.4 200.9 107.7 286 s 208.3 83.7 277.6 -17.4 c 46.8 -68.2 26.4 -252.4 -43.3 -289 Z")
+}
+.avatar,.avatar-action-modal{z-index:1;width:230px;height:230px;color:#000;object-fit:cover;border-radius:30% 70% 70% 30%/30% 30% 70% 70%!important
+}
+.certificates-sections{display:flex;flex-wrap:wrap
+}
+.certificates-sections .content-certificate,.certificates-sections .sub-section{width:100%
+}
+.certificate-style-detail .cert-info{display:inline-block
+}
+.certificate-style-detail .cert-info>div{display:inline
+}
+.certificate-style-detail .cert-info>div:first-child{margin-right:4px
+}
+.certificate-style-simple .cert-info{display:block;word-break:break-word;width:100%
+}
+.certificate-style-simple .cert-received-date-group{margin:0 5px 0 0;font-style:normal;float:left;display:flex;align-items:center
+}
+.certificate-style-simple .cert-received-date{font-style:normal;font-weight:700;margin:0!important;color:#000
+}
+.certificate-style-simple .cert-name{font-weight:400;text-transform:unset;margin:0!important
+}
+.certificate-style-simple .cert-name:empty{float:left
+}
+.awards-sections,.cert-info{justify-content:flex-start;flex-direction:column;align-items:flex-start;display:flex!important
+}
+.awards-sections .section-period,.cert-info .section-period{line-height:1
+}
+.awards-sections .duration-hyphen-lg,.cert-info .duration-hyphen-lg{display:none!important
+}
+.column-1 .cert-info{flex-direction:row
+}
+.column-1 .awards-sections .title-container,.column-1 .cert-info{justify-content:flex-start;align-items:center;display:flex!important
+}
+.column-1 .awards-sections .title-container .duration-hyphen-lg,.column-1 .cert-info .duration-hyphen-lg{display:block!important
+}
+.awards-sections .title-container{display:inline-block;line-height:1;padding:5px 0
+}
+.awards-sections .title-container .section-period,.awards-sections .title-container .section-text-info,.awards-sections .title-container .section-text-info>div{display:inline;margin-right:4px;padding-bottom:5px
+}
+.awards-sections .name{font-weight:400
+}
+.column-1 .awards-sections .title-container{line-height:1;padding:5px 0;flex-direction:row
+}
+.column-1 .awards-sections .title-container .section-period,.column-1 .awards-sections .title-container .section-text-info,.column-1 .awards-sections .title-container .section-text-info>div{display:inline;margin-right:0;padding-bottom:0
+}
+.cert-received-date-group{margin:3px 0
+}
+.column-0{width:320px
+}
+.column-0 .interests-sections{margin:0 15px
+}
+.column-0 .reference-info{display:flex;flex-wrap:wrap;align-items:baseline
+}
+.column-0 .seperator{line-height:.85;margin:0 5px;color:#c5c5c5
+}
+.column-0 .skills-sections{flex-wrap:wrap
+}
+.column-0 .skills-sections .sub-section{width:100%
+}
+.mb-sub-section .cert-info .cert-received-date-group .parentheses,.mb-sub-section .seperator{display:none
+}
+.mb-sub-section .cert-info{display:flex;flex-wrap:nowrap;align-items:baseline
+}
+.mb-sub-section .cert-info .name{flex:1
+}
+.mb-sub-section .certificate-style-detail .cert-received-date-group{margin:0 0 0 16px
+}
+.mb-sub-section .content-certificate{width:100%
+}
+.column-1{width:400px;margin-right:20px
+}
+.column-1 .title-container{flex-wrap:wrap;flex-direction:column;justify-content:flex-start;align-items:flex-start
+}
+.column-1 .cert-detail{margin-top:5px
+}
+.column-1 .seperator,.page-0 .column-0::before{display:none
+}
+.column-0 .content-language>h4,.column-1 .content-language>h4{margin-top:0!important;margin-bottom:5px!important
+}
+.column-0 .section-header,.column-0-with-user-profile .section-header{color:#000!important;margin-bottom:10px
+}
+.column-0 .cert-info,.column-0 .title-container,.column-0-with-user-profile .cert-info,.column-0-with-user-profile .title-container{color:#000!important
+}
+.content-interest h4{margin:0
+}
+.section-contacts .section-header-container{margin-bottom:5px
+}
+.column-0 .section-title{font-weight:700
+}
+.section-subtitle{margin-top:0;margin-bottom:0
+}
+.details-wrapper{margin-top:3px
+}
+.contacts-sections .header-field-group{display:flex;align-items:center
+}
+.contacts-sections .header-field-group .header-field-icon{flex:0 0 auto;font-weight:700;text-align:left
+}
+.contacts-sections .header-field-group>i{width:15px;margin-right:5px
+}
+.contacts-sections .header-field-group>h4{font-weight:400;margin:0
+}
+.contacts-sections .input-field{text-align:left
+}
+.page:not(.page-0) .column-0,.page:not(.page-0) .column-1{padding-top:15px
+}
+.cv-progress-bar{height:8px
+}
+.cv-progress-bar .cv-progress-bar-flow{background-color:none;width:100%
+}
+.duration-hyphen{margin:0 4px
+}
+#header{display:flex;flex-wrap:nowrap;width:100%;max-height:300px;justify-content:space-between;position:relative
+}
+#header>div{width:50%
+}
+#header .content-socials{margin:15px 5px;padding:0
+}
+.layout-margin-0 #header .content-socials{margin:10px 5px
+}
+.layout-margin-10 #header .content-socials{margin:11px 5px
+}
+.layout-margin-20 #header .content-socials{margin:12px 5px
+}
+.layout-margin-30 #header .content-socials{margin:13px 5px
+}
+.layout-margin-40 #header .content-socials{margin:14px 5px
+}
+.layout-margin-50 #header .content-socials{margin:15px 5px
+}
+.layout-margin-60 #header .content-socials{margin:16px 5px
+}
+.layout-margin-70 #header .content-socials{margin:17px 5px
+}
+.layout-margin-80 #header .content-socials{margin:18px 5px
+}
+.layout-margin-90 #header .content-socials{margin:19px 5px
+}
+.layout-margin-100 #header .content-socials{margin:20px 5px
+}
+.interests-sections{display:flex;flex-wrap:wrap
+}
+.interests-sections .sub-section{padding:0;margin:5px
+}
+.column-0 .interests-sections .sub-section{margin:5px 10px 5px 0
+}
+.interest-name{font-weight:400
+}
+.interest-style-pill{border:.5px solid #dedede;width:fit-content;padding:5px
+}
+.interest-style-bullet-point{display:flex;align-items:baseline;padding-right:20px
+}
+.interest-style-bullet-point:before{content:'';display:block;width:8px;height:8px;border-radius:50%;background:#000;margin-right:8px
+}
+.main{display:flex;height:100%
+}
+.mb-skills .cv-progress-bar{height:14px;margin-top:15px
+}
+#name-and-title{margin:25px 37.5px 0
+}
+.layout-margin-0 #name-and-title{margin:15px 30px 0
+}
+.layout-margin-10 #name-and-title{margin:17px 31.5px 0
+}
+.layout-margin-20 #name-and-title{margin:19px 33px 0
+}
+.layout-margin-30 #name-and-title{margin:21px 34.5px 0
+}
+.layout-margin-40 #name-and-title{margin:23px 36px 0
+}
+.layout-margin-50 #name-and-title{margin:25px 37.5px 0
+}
+.layout-margin-60 #name-and-title{margin:27px 39px 0
+}
+.layout-margin-70 #name-and-title{margin:29px 40.5px 0
+}
+.layout-margin-80 #name-and-title{margin:31px 42px 0
+}
+.layout-margin-90 #name-and-title{margin:33px 43.5px 0
+}
+.layout-margin-100 #name-and-title{margin:35px 45px 0
+}
+#name-and-title .background-circle{display:flex
+}
+.background-circle{width:85%;height:20px;position:relative;display:flex;margin-left:2px
+}
+.background-circle .bg-line-top{position:absolute;width:333px;height:15px;top:-15px;margin-left:-5px;background-color:#fff
+}
+.background-circle .circle{width:20px;height:20px;margin-top:-10px;border-radius:50%;margin-left:-2px;border:2px solid transparent
+}
+.background-circle .circle-child{width:100%;height:100%;border-radius:50%;background-color:#fff!important
+}
+.bg-circle-bottom{transform:rotate(180deg);width:600px;bottom:10px;right:-5px;position:absolute;justify-content:flex-end
+}
+.bg-circle-bottom .circle{width:25px;height:25px;margin-top:-10px;border-radius:50%;margin-left:-2px;border:3px solid transparent
+}
+.bg-circle-bottom .bg-line-top{width:600px;top:-12px;right:-3px
+}
+.bg-bottom,.page-0 .bg-bottom,.page-0 .bg-bottom1{position:absolute;width:20px;height:100px;bottom:-1px;z-index:2;left:0
+}
+.bg-bottom1{height:100px;position:absolute;bottom:-50px;left:-30px
+}
+.page-0 .bg-bottom,.page-0 .bg-bottom1{bottom:-20px;left:-20px
+}
+.bg-bottom1,.page-0 .bg-bottom1{width:100px;z-index:0;transform:rotate(45deg)
+}
+.page-0 .bg-bottom1{bottom:-70px;left:-50px
+}
+.bg-img{top:0;width:100%;height:100%;position:absolute
+}
+.page{color:#000;flex-direction:column;box-sizing:border-box;overflow:hidden
+}
+.projects-sections .section-title{margin-bottom:1px
+}
+.content-qrcode>div:nth-child(2){max-width:120px;max-height:120px
+}
+.qrcode-name{margin:0 0 10px
+}
+.section-header{margin-left:15px;margin-bottom:0;padding-bottom:10px;text-align:left
+}
+.section-header-intro,.skills-sections .input-field{margin-bottom:5px
+}
+.section.index-1 .underline,.section.index-2 .underline,.section.index-3 .underline,.section.index-4 .underline,.section.index-5 .underline{display:none
+}
+.section-period{flex:0 0 auto;display:inline-block
+}
+.section-period .input-field:nth-child(1),.section-period .input-field:nth-child(3){display:inline-block
+}
+.section-text-info,.sub-section{word-break:break-word
+}
+.skills-sections .skill-style-detail .skill-name{font-weight:700
+}
+.social-and-about{display:flex;margin-top:30px
+}
+.socials-sections{border:1px solid #dedede;border-left:0;border-right:0;flex-wrap:wrap;padding:5px;margin:15px 20px
+}
+.layout-margin-0 .socials-sections{margin:10px
+}
+.layout-margin-10 .socials-sections{margin:11px 12px
+}
+.layout-margin-20 .socials-sections{margin:12px 14px
+}
+.layout-margin-30 .socials-sections{margin:13px 16px
+}
+.layout-margin-40 .socials-sections{margin:14px 18px
+}
+.layout-margin-50 .socials-sections{margin:15px 20px
+}
+.layout-margin-60 .socials-sections{margin:16px 22px
+}
+.layout-margin-70 .socials-sections{margin:17px 24px
+}
+.layout-margin-80 .socials-sections{margin:18px 26px
+}
+.layout-margin-90 .socials-sections{margin:19px 28px
+}
+.layout-margin-100 .socials-sections{margin:20px 30px
+}
+.socials-sections .social-field-group>i{margin-right:5px
+}
+.socials-sections .social-field-group>h4{margin:0
+}
+.socials-sections .sub-section{flex:1;word-break:break-word;margin:0 10px
+}
+.socials-sections .input-field{margin-bottom:0
+}
+.sub-section{padding:5px 15px
+}
+.user-name{font-size:40px;font-weight:900
+}
+.user-title{margin-left:3px;font-size:20px;margin-top:7.5px;margin-bottom:40px
+}
+.layout-margin-0 .user-title{margin-top:5px
+}
+.layout-margin-10 .user-title{margin-top:5.5px
+}
+.layout-margin-20 .user-title{margin-top:6px
+}
+.layout-margin-30 .user-title{margin-top:6.5px
+}
+.layout-margin-40 .user-title{margin-top:7px
+}
+.layout-margin-50 .user-title{margin-top:7.5px
+}
+.layout-margin-60 .user-title{margin-top:8px
+}
+.layout-margin-70 .user-title{margin-top:8.5px
+}
+.layout-margin-80 .user-title{margin-top:9px
+}
+.layout-margin-90 .user-title{margin-top:9.5px
+}
+.layout-margin-100 .user-title{margin-top:10px
+}
+.layout-margin-0 .user-title{margin-bottom:35px
+}
+.layout-margin-10 .user-title{margin-bottom:36px
+}
+.layout-margin-20 .user-title{margin-bottom:37px
+}
+.layout-margin-30 .user-title{margin-bottom:38px
+}
+.layout-margin-40 .user-title{margin-bottom:39px
+}
+.layout-margin-50 .user-title{margin-bottom:40px
+}
+.layout-margin-60 .user-title{margin-bottom:41px
+}
+.layout-margin-70 .user-title{margin-bottom:42px
+}
+.layout-margin-80 .user-title{margin-bottom:43px
+}
+.layout-margin-90 .user-title{margin-bottom:44px
+}
+.layout-margin-100 .user-title{margin-bottom:45px
+}
+.content-reference .name{margin:0 0 5px
+}
+.details-references{font-weight:400;margin:0
+}
+.reference-info{margin-top:5px
+}
+.reference-info .contact_mail,.reference-info .contact_phone{margin:0 0 0 5px!important;font-weight:400
+}
+.reference-info .title{margin:0;font-weight:400
+}
+.reference-info .detail-name{font-weight:700
+}
+.reference-info .detail-group{display:flex;align-items:baseline;margin-bottom:5px
+}
+.reference-info .input-field{margin:5px 0
+}
+.page>div{height:100%
+}
+.page .page-column{height:100%;position:relative
+}
+.page .columns{display:flex;justify-content:space-between;flex:1;height:100%
+}
+.column-0-with-user-profile{padding-top:10px;width:320px
+}
+.column-0 .content-qrcode{background-color:#fff;margin-left:0
+}
+.content-qrcode{width:150px;height:150px;max-width:224px
+}
+.content-qrcode .qrcode-name{display:block;width:224px
+}
+.content-qrcode .qrcode-cell.fill-primary{opacity:.8
+}
+.content-qrcode .qrcode-cell.fill-secondary{opacity:.05
+}
+.info-box{display:flex;align-items:baseline;padding:3px 0
+}
+.page-n-bg{bottom:30px;right:18px
+}
+.background-circle>svg path{fill:currentColor;display:block
+}
+.column-1-with-contacts{width:400px;margin-right:15px;margin-top:127.5px
+}
+.layout-margin-0 .column-1-with-contacts{margin-right:20px
+}
+.layout-margin-10 .column-1-with-contacts{margin-right:19px
+}
+.layout-margin-20 .column-1-with-contacts{margin-right:18px
+}
+.layout-margin-30 .column-1-with-contacts{margin-right:17px
+}
+.layout-margin-40 .column-1-with-contacts{margin-right:16px
+}
+.layout-margin-50 .column-1-with-contacts{margin-right:15px
+}
+.layout-margin-60 .column-1-with-contacts{margin-right:14px
+}
+.layout-margin-70 .column-1-with-contacts{margin-right:13px
+}
+.layout-margin-80 .column-1-with-contacts{margin-right:12px
+}
+.layout-margin-90 .column-1-with-contacts{margin-right:11px
+}
+.layout-margin-100 .column-1-with-contacts{margin-right:10px
+}
+.layout-margin-0 .column-1-with-contacts{margin-top:165px
+}
+.layout-margin-10 .column-1-with-contacts{margin-top:157.5px
+}
+.layout-margin-20 .column-1-with-contacts{margin-top:150px
+}
+.layout-margin-30 .column-1-with-contacts{margin-top:142.5px
+}
+.layout-margin-40 .column-1-with-contacts{margin-top:135px
+}
+.layout-margin-50 .column-1-with-contacts{margin-top:127.5px
+}
+.layout-margin-60 .column-1-with-contacts{margin-top:120px
+}
+.layout-margin-70 .column-1-with-contacts{margin-top:112.5px
+}
+.layout-margin-80 .column-1-with-contacts{margin-top:105px
+}
+.layout-margin-90 .column-1-with-contacts{margin-top:97.5px
+}
+.layout-margin-100 .column-1-with-contacts{margin-top:90px
+}
+.page .footer-page{bottom:5px;right:0;-webkit-flex-direction:row-reverse;flex-direction:row-reverse;width:calc(100% - 10px);color:#000;padding-right:10px;z-index:1!important;position:relaive
+}
+.duration-hyphen-lg{margin:-1px 5px 0;align-self:center
+}
+</style><div id="InlineCss-16"><style scoped="">@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam:wght@100;200;300;400;500;600;700;800;900&display=block');</style><div class="editor-text-font-size
+        root-font-size-150
+        root-line-height-140
+        layout-margin-50
+        preview-mode
+        template-1896
+        editor-text-font-family be-vietnam" style="font-family: &quot;Be Vietnam&quot;, sans-serif;"><div class="page-container pages"><div class="page page-0 column"><span class="page-index-waypoint"><span style="font-size: 0px;"></span></span><div class="jsx-parser"><div class="page-column"><div class="bg-avt-tranpsarent"><div class="bg-avt text-secondary"><svg width="450" height="auto" viewBox="0 0 494 564" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.432 369.771C3.08829 352.235 -3.62323 333.635 4.43205 311.771C10.9983 293.949 31.4321 286.657 44.4321 285.771C61.9321 284.578 83.1824 290.313 86.9321 289.771C128.432 283.771 229.432 234.764 296.432 254.771C338.157 267.231 383.163 298.771 413.932 336.271C461.932 394.771 467.311 471 451.432 504.271C440.932 526.271 411.093 571.814 373.432 561.771C350.932 555.771 339.836 506.277 317.432 471.271C293.432 433.771 266.678 417.259 235.932 408.271C203.432 398.771 162.432 394.771 118.932 398.771C80.5938 402.297 39.432 393.771 18.432 369.771Z" fill="#150941"></path><mask id="mask0_117_7391" maskUnits="userSpaceOnUse" x="0" y="0" width="494" height="386" style="mask-type: alpha;"><path d="M86 31.1961C103.246 17.9354 113.93 10.1135 135 4.69608C171.316 -4.64144 195 4.696 229.5 21.6961C248.779 31.1961 265.562 77.0497 276 117.196C289 167.196 290.629 198.361 328.5 229.196C359.5 254.436 411.268 230.651 452 258.696C482.5 279.696 502.97 312.696 488 346.196C479.733 364.696 452.981 381.403 424 384.696C380 389.696 305 343.667 246.5 348.696C213.413 351.54 192.533 361.279 159.5 364.696C116 369.196 79 349.696 61.5 336.696C20.3227 306.107 1.00003 274.196 1 235.696C0.999974 197.196 10.0067 165.986 27.5 124.696C44.4014 84.8034 51.6539 57.605 86 31.1961Z" fill="#C4C4C4" stroke="black"></path></mask><g mask="url(#mask0_117_7391)"><rect x="55.7938" y="-141.557" width="15.4317" height="554.683" transform="rotate(20.4704 55.7938 -141.557)" fill="#8E0440"></rect><rect x="84.7083" y="-130.764" width="15.4317" height="554.683" transform="rotate(20.4704 84.7083 -130.764)" fill="#8E0440"></rect><rect x="113.623" y="-119.97" width="15.4317" height="554.683" transform="rotate(20.4704 113.623 -119.97)" fill="#8E0440"></rect><rect x="142.537" y="-109.176" width="15.4317" height="554.683" transform="rotate(20.4704 142.537 -109.176)" fill="#8E0440"></rect><rect x="171.452" y="-98.3827" width="15.4317" height="554.683" transform="rotate(20.4704 171.452 -98.3827)" fill="#8E0440"></rect><rect x="200.366" y="-87.5891" width="15.4317" height="554.683" transform="rotate(20.4704 200.366 -87.5891)" fill="#8E0440"></rect><rect x="229.28" y="-76.7955" width="15.4317" height="554.683" transform="rotate(20.4704 229.28 -76.7955)" fill="#8E0440"></rect><rect x="258.195" y="-66.0019" width="15.4317" height="554.683" transform="rotate(20.4704 258.195 -66.0019)" fill="#8E0440"></rect><rect x="287.109" y="-55.2083" width="15.4317" height="554.683" transform="rotate(20.4704 287.109 -55.2083)" fill="#8E0440"></rect><rect x="316.024" y="-44.4146" width="15.4317" height="554.683" transform="rotate(20.4704 316.024 -44.4146)" fill="#8E0440"></rect><rect x="344.938" y="-33.621" width="15.4317" height="554.683" transform="rotate(20.4704 344.938 -33.621)" fill="#8E0440"></rect><rect x="373.852" y="-22.8274" width="15.4317" height="554.683" transform="rotate(20.4704 373.852 -22.8274)" fill="#8E0440"></rect><rect x="402.767" y="-12.0338" width="15.4317" height="554.683" transform="rotate(20.4704 402.767 -12.0338)" fill="#8E0440"></rect><rect x="431.681" y="-1.24007" width="15.4317" height="554.683" transform="rotate(20.4704 431.681 -1.24007)" fill="#8E0440"></rect><rect x="460.596" y="9.5535" width="15.4317" height="554.683" transform="rotate(20.4704 460.596 9.5535)" fill="#8E0440"></rect><rect x="489.51" y="20.3472" width="15.4317" height="554.683" transform="rotate(20.4704 489.51 20.3472)" fill="#8E0440"></rect><rect x="518.425" y="31.1408" width="15.4317" height="554.683" transform="rotate(20.4704 518.425 31.1408)" fill="#8E0440"></rect><rect x="547.339" y="41.9344" width="15.4317" height="554.683" transform="rotate(20.4704 547.339 41.9344)" fill="#8E0440"></rect><rect x="576.253" y="52.728" width="15.4317" height="554.683" transform="rotate(20.4704 576.253 52.728)" fill="#8E0440"></rect><rect x="605.168" y="63.5217" width="15.4317" height="554.683" transform="rotate(20.4704 605.168 63.5217)" fill="#8E0440"></rect></g><path d="M212.717 492.991C192.217 487.491 186.61 499.513 177.717 492.991C170.217 487.491 188.836 459.618 203.725 449.467C214.725 441.967 242.217 438.191 258.717 447.491C286.217 462.991 292.217 518.491 271.217 518.491C254.217 518.491 236.426 499.352 212.717 492.991Z" fill="#9C0441"></path></svg></div></div><div class="heart-vector"><div class="bg-avt text-secondary"><svg width="65" height="77" viewBox="0 0 65 77" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.88148 49.8945C3.38152 42.3945 11.1815 40.3945 12.3815 34.3945C14.5815 23.3946 2.9074 17.1115 13.3815 6.89457C22.5 -2 33.3211 -1.14582 43.8815 5.89448C55.8815 13.8946 63.2883 25.289 64.3815 32.3945C65.4746 39.5 63 43.5 59.3815 49.8945C55.469 56.8085 48.5 71.1308 33.8815 75.3945C24.9112 78.0108 19.8963 76.1519 11.3815 71.8945C2.86662 67.637 -2.12903 58.9258 0.88148 49.8945Z" fill="#8A0440"></path></svg></div></div><div id="header"><div id="name-and-title"><div content-placeholder="Full name" content-required-message="Full Name cannot be blank" class="input-field name  user-name text-secondary    " contenteditable="true" data-field-key="name_user_name_text_secondary_1">Thao Dinh</div><div content-placeholder="Position" content-required-message="Position cannot be blank" class="input-field title  user-title text-primary   " contenteditable="true" data-field-key="title_user_title_text_primary_2">Digital Marketing Manager</div></div></div><div class="avatar-container"><div class="avatar-group"><div class="avatar-img-container "><img class="avatar uploaded " src="https://static.vietcv.io/examples/my.jpg" alt="avatar"></div></div></div><div class="columns"><div class="column-0-with-user-profile"><div class="boder-top-column bg-secondary"></div><div class="boder-right-column bg-secondary"></div><div class="about-user-container"><div class="about-user font-size-2"><div class="section-header-container text-secondary"><div class="introduce-header"><h2 class="section-header section-header-intro font-size-2" contenteditable="true">About me</h2><div class="bg-secondary underline"></div></div></div><div class=""><div class="details-wrapper js-text-field text-field about-me-input font-size-5   RichEditor-root"><div class="DraftEditor-root"><div class="DraftEditor-editorContainer"><div class="public-DraftEditor-content" contenteditable="true" spellcheck="false" style="outline: none; user-select: text; white-space: pre-wrap; overflow-wrap: break-word;" data-field-key="public_drafteditor_content_3"><div data-contents="true"><div data-block="true" data-editor="8tb7a" data-offset-key="4pevt-0-0"><div data-offset-key="4pevt-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="4pevt-0-0"><span data-text="true">Gained 2 years of experience as a Digital Marketing Manager in B2C. Proven ability to succeed in fast-paced and deadline-driven environment. Always learn and update new knowledge.</span></span></div></div></div></div></div></div></div></div></div><div class="section-contacts"><div class="content-field content-contacts index-0 last-index section  "><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Contact</h2><div class="bg-secondary underline"></div></div> <div class="contacts-sections"><div class="sub-section-dnd sub-section "><div><div><div class="jsx-parser"><div class="header-field-group"><i class="fa fa-birthday-cake header-field-icon font-size-5 text-secondary"></i><h4 focus-index="header.0.1" content-placeholder="mm/dd/yyyy" content-required-message="Date of birth cannot be blank" class="input-field focus-able date_of_birth  font-size-5   " contenteditable="true" data-field-key="date_of_birth_4">Nov 06th, 1989</h4></div></div></div></div></div><div class="sub-section-dnd sub-section "><div><div><div class="jsx-parser"><div class="header-field-group"><i class="fa fa-envelope header-field-icon font-size-5 text-secondary"></i><h4 focus-index="header.0.2" content-placeholder="Email" content-required-message="Email cannot be blank" class="input-field focus-able email  font-size-5   " contenteditable="true" data-field-key="email_5"><a href="mailto:thao@viecv.io" target="_blank">thao@viecv.io</a></h4></div></div></div></div></div><div class="sub-section-dnd sub-section "><div><div><div class="jsx-parser"><div class="header-field-group"><i class="fa fa-map-marker header-field-icon font-size-5 text-secondary"></i><h4 focus-index="header.0.3" content-placeholder="Address" content-required-message="Address cannot be blank" class="input-field focus-able address  font-size-5   " contenteditable="true" data-field-key="address_6">Nguyen Dinh Chieu Street, Ward 6, District 3, HCMC</h4></div></div></div></div></div><div class="sub-section-dnd sub-section "><div><div><div class="jsx-parser"><div class="header-field-group"><i class="fa fa-phone header-field-icon font-size-5 text-secondary"></i><h4 focus-index="header.0.4" content-placeholder="(Mobile) Phone number" content-required-message="Phone cannot be blank" class="input-field focus-able phone  font-size-5   " contenteditable="true" data-field-key="phone_7">09067999xx</h4></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="header-field-group"><i class="fa fa-skype header-field-icon font-size-5 text-secondary" style="cursor: unset;"></i><h4 content-placeholder="Social username" content-required-message="Username cannot be blank" class="input-field value  font-size-5   " contenteditable="true" data-field-key="value_8">thao_s_example</h4></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="header-field-group"><i class="fa fa-facebook-square header-field-icon font-size-5 text-secondary" style="cursor: unset;"></i><h4 content-placeholder="Social username" content-required-message="Username cannot be blank" class="input-field value  font-size-5   " contenteditable="true" data-field-key="value_9">thao_f_example</h4></div></div></div></div></div></div></div></div></div></div><div class="column-0"><div><div class="content-field content-skills index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Skills</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections skills-sections"><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-skill"><div focus-index="skills.0.1" content-placeholder="Soft/Technical/Language Skill" content-required-message="Skill cannot be blank" class="input-field focus-able name  skill-name details-field-input font-size-5   " contenteditable="true" data-field-key="name_skill_name_details_field_input_10">HTML, CSS</div><div content-required-message="Level cannot be blank" class="cv-progress-bar skill-level "><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-skill"><div focus-index="skills.1.1" content-placeholder="Soft/Technical/Language Skill" content-required-message="Skill cannot be blank" class="input-field focus-able name  skill-name details-field-input font-size-5   " contenteditable="true" data-field-key="name_skill_name_details_field_input_11">SEO optimizing</div><div content-required-message="Level cannot be blank" class="cv-progress-bar skill-level "><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-skill"><div focus-index="skills.2.1" content-placeholder="Soft/Technical/Language Skill" content-required-message="Skill cannot be blank" class="input-field focus-able name  skill-name details-field-input font-size-5   " contenteditable="true" data-field-key="name_skill_name_details_field_input_12">Email Marketing</div><div content-required-message="Level cannot be blank" class="cv-progress-bar skill-level "><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-skill"><div focus-index="skills.3.1" content-placeholder="Soft/Technical/Language Skill" content-required-message="Skill cannot be blank" class="input-field focus-able name  skill-name details-field-input font-size-5   " contenteditable="true" data-field-key="name_skill_name_details_field_input_13">Google AdWords</div><div content-required-message="Level cannot be blank" class="cv-progress-bar skill-level "><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-skill"><div focus-index="skills.4.1" content-placeholder="Soft/Technical/Language Skill" content-required-message="Skill cannot be blank" class="input-field focus-able name  skill-name details-field-input font-size-5   " contenteditable="true" data-field-key="name_skill_name_details_field_input_14">Content Marketing</div><div content-required-message="Level cannot be blank" class="cv-progress-bar skill-level "><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-skill"><div focus-index="skills.5.1" content-placeholder="Soft/Technical/Language Skill" content-required-message="Skill cannot be blank" class="input-field focus-able name  skill-name details-field-input font-size-5   " contenteditable="true" data-field-key="name_skill_name_details_field_input_15">Work independently</div><div content-required-message="Level cannot be blank" class="cv-progress-bar skill-level "><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-skill"><div focus-index="skills.6.1" content-placeholder="Soft/Technical/Language Skill" content-required-message="Skill cannot be blank" class="input-field focus-able name  skill-name details-field-input font-size-5   " contenteditable="true" data-field-key="name_skill_name_details_field_input_16">Customer Analysis</div><div content-required-message="Level cannot be blank" class="cv-progress-bar skill-level "><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-skill"><div focus-index="skills.7.1" content-placeholder="Soft/Technical/Language Skill" content-required-message="Skill cannot be blank" class="input-field focus-able name  skill-name details-field-input font-size-5   " contenteditable="true" data-field-key="name_skill_name_details_field_input_17">Problem-solving</div><div content-required-message="Level cannot be blank" class="cv-progress-bar skill-level "><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary    "></div><div class="cv-progress-bar-flow bg-primary level-inactive   "></div></div></div></div></div></div></div></div></div></div></div><div class="content-field content-languages index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Languages</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections languages-sections"></div></div></div></div></div></div></div><div class="column-1-with-contacts"><div class="column-1"><div><div class="content-field content-experiences index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Work Experiences</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections experiences-sections"><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="title-container"><div class="section-text-info"><h4 content-placeholder="Job role" content-required-message="Role cannot be blank" class="input-field title  section-subtitle font-size-3   " contenteditable="true" data-field-key="title_section_subtitle_18">Digital Marketing Manager</h4></div><div class="info-box text-secondary"><div content-placeholder="Company name" content-required-message="Company Name cannot be blank" class="input-field company  section-title font-size-3   " contenteditable="true" data-field-key="company_section_title_19">VIETCV 2 COMPANY</div><div class="duration-hyphen-lg font-size-4">/</div><div class="section-period"><span content-placeholder="Start date" content-required-message="Start Date cannot be blank" class="input-field from  experience-from details-field-input font-size-3   " contenteditable="true" data-field-key="from_experience_from_details_field_input_20">10/2013</span><span class="duration-hyphen font-size-5">-</span><span content-placeholder="End date" content-required-message="End Date cannot be blank" class="input-field to  experience-to details-field-input font-size-3   " contenteditable="true" data-field-key="to_experience_to_details_field_input_21">present</span></div></div></div> <div class="experience-info"><div class=""><div class="details-wrapper js-text-field text-field experience-details details-field-input font-size-5   RichEditor-root"><div class="DraftEditor-root"><div class="DraftEditor-editorContainer"><div class="public-DraftEditor-content" contenteditable="true" spellcheck="false" style="outline: none; user-select: text; white-space: pre-wrap; overflow-wrap: break-word;" data-field-key="public_drafteditor_content_22"><div data-contents="true"><ul class="public-DraftStyleDefault-ul" data-offset-key="8vt2h-0-0"><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-reset public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="508kf" data-offset-key="8vt2h-0-0"><div data-offset-key="8vt2h-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="8vt2h-0-0"><span data-text="true">Redesigned SEM campaign that increased 150% conversion rate in the first 3 months.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="508kf" data-offset-key="be7nd-0-0"><div data-offset-key="be7nd-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="be7nd-0-0"><span data-text="true">Optimized landing pages, website and page content.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="508kf" data-offset-key="9uc5m-0-0"><div data-offset-key="9uc5m-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="9uc5m-0-0"><span data-text="true">Planed and executed email campaigns, Facebook and Youtube advertising campaigns.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="508kf" data-offset-key="dq9kp-0-0"><div data-offset-key="dq9kp-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="dq9kp-0-0"><span data-text="true">Set KPIs for all digital marketing activities.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="508kf" data-offset-key="f6t6r-0-0"><div data-offset-key="f6t6r-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="f6t6r-0-0"><span data-text="true">Created monthly and yearly reports and presented to Head of Marketing.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="508kf" data-offset-key="e77bu-0-0"><div data-offset-key="e77bu-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="e77bu-0-0"><span data-text="true">Recruited, trained and supervised Marketing staff and ensure high productivity among employees.</span></span></div></li></ul></div></div></div></div></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="title-container"><div class="section-text-info"><h4 content-placeholder="Job role" content-required-message="Role cannot be blank" class="input-field title  section-subtitle font-size-3   " contenteditable="true" data-field-key="title_section_subtitle_23">Marketing Manager Assistant</h4></div><div class="info-box text-secondary"><div content-placeholder="Company name" content-required-message="Company Name cannot be blank" class="input-field company  section-title font-size-3   " contenteditable="true" data-field-key="company_section_title_24">VIETCV 1 COMPANY</div><div class="duration-hyphen-lg font-size-4">/</div><div class="section-period"><span content-placeholder="Start date" content-required-message="Start Date cannot be blank" class="input-field from  experience-from details-field-input font-size-3   " contenteditable="true" data-field-key="from_experience_from_details_field_input_25">11/2010</span><span class="duration-hyphen font-size-5">-</span><span content-placeholder="End date" content-required-message="End Date cannot be blank" class="input-field to  experience-to details-field-input font-size-3   " contenteditable="true" data-field-key="to_experience_to_details_field_input_26">09/2013</span></div></div></div> <div class="experience-info"><div class=""><div class="details-wrapper js-text-field text-field experience-details details-field-input font-size-5   RichEditor-root"><div class="DraftEditor-root"><div class="DraftEditor-editorContainer"><div class="public-DraftEditor-content" contenteditable="true" spellcheck="false" style="outline: none; user-select: text; white-space: pre-wrap; overflow-wrap: break-word;" data-field-key="public_drafteditor_content_27"><div data-contents="true"><ul class="public-DraftStyleDefault-ul" data-offset-key="8hoh0-0-0"><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-reset public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="btr0k" data-offset-key="8hoh0-0-0"><div data-offset-key="8hoh0-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="8hoh0-0-0"><span data-text="true">Conducted primary research into the most popular sold items and discovered new customer behaviour patterns that will be implemented in the next marketing campaign.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="btr0k" data-offset-key="9ksjp-0-0"><div data-offset-key="9ksjp-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="9ksjp-0-0"><span data-text="true">Assist in the creation of press releases and new catalouges.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="btr0k" data-offset-key="6m5j6-0-0"><div data-offset-key="6m5j6-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="6m5j6-0-0"><span data-text="true">Create weekly, monthly and yearly sales report.</span></span></div></li></ul></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div><div class="content-field content-educations index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Education</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections educations-sections"><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="title-container"><div class="section-text-info"><h4 content-placeholder="Major" content-required-message="Major cannot be blank" class="input-field major  section-subtitle font-size-3   " contenteditable="true" data-field-key="major_section_subtitle_28">Major in Business Administration</h4></div><div class="info-box text-secondary"><div content-placeholder="School name" content-required-message="School Name cannot be blank" class="input-field school  section-title font-size-3   " contenteditable="true" data-field-key="school_section_title_29">VietCV 2 University</div><div class="duration-hyphen-lg font-size-4">/</div><div class="section-period"><span content-placeholder="Start date" content-required-message="Start date cannot be blank" class="input-field from  education-from details-field-input font-size-3   " contenteditable="true" data-field-key="from_education_from_details_field_input_30">07/2014</span><span class="duration-hyphen font-size-5">-</span><span content-placeholder="End date" content-required-message="End date cannot be blank" class="input-field to  education-to details-field-input font-size-3   " contenteditable="true" data-field-key="to_education_to_details_field_input_31">07/2015</span></div></div></div> <div class="education-info"><div class=""><div class="details-wrapper js-text-field text-field education-details details-field-input font-size-5   RichEditor-root"><div class="DraftEditor-root"><div class="DraftEditor-editorContainer"><div class="public-DraftEditor-content" contenteditable="true" spellcheck="false" style="outline: none; user-select: text; white-space: pre-wrap; overflow-wrap: break-word;" data-field-key="public_drafteditor_content_32"><div data-contents="true"><ul class="public-DraftStyleDefault-ul" data-offset-key="etafi-0-0"><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-reset public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="fpt0f" data-offset-key="etafi-0-0"><div data-offset-key="etafi-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="etafi-0-0"><span data-text="true">Earn a Marketing diploma. GPA: 8.1/10</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="fpt0f" data-offset-key="7hb0v-0-0"><div data-offset-key="7hb0v-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="7hb0v-0-0"><span data-text="true">Have background knowledge of Business, Sales, Marketing, Customer Relationship Management, etc.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="fpt0f" data-offset-key="ef6cn-0-0"><div data-offset-key="ef6cn-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="ef6cn-0-0"><span data-text="true">Use effectively tools for online marketing.</span></span></div></li><li class="public-DraftStyleDefault-unorderedListItem public-DraftStyleDefault-depth0 public-DraftStyleDefault-listLTR" data-block="true" data-editor="fpt0f" data-offset-key="esgoe-0-0"><div data-offset-key="esgoe-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="esgoe-0-0"><span data-text="true">Understand customers' behavior, build marketing strategies.</span></span></div></li></ul></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div><div class="content-field content-organizations index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Activities</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections organizations-sections"></div></div></div></div></div></div></div></div></div> <div class="footer-page"><div class="hyphen"> - </div><span>1 of 2</span></div></div></div><div class="page page-1 column"><span class="page-index-waypoint"><span style="font-size: 0px;"></span></span><div class="jsx-parser"><div class="page-column"><div class="columns"><div class="column-0-page-n"><div class="column-0"><div><div class="content-field content-awards index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Prizes and Awards</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections awards-sections font-size-3"></div></div></div></div><div class="content-field content-certificates index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Certificates</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections certificates-sections"><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-certificate certificate-style-detail"><div class="cert-info text-secondary"><div content-placeholder="Certificate name" content-required-message="Certificate name cannot be blank" class="input-field name  section-title font-size-3   " contenteditable="true" data-field-key="name_section_title_33">IELTS</div><div class="duration-hyphen-lg font-size-4">/</div><div class="cert-received-date-group font-size-3"><span content-placeholder="Issued date" content-required-message="Issued date cannot be blank" class="input-field received_date  cert-received-date font-size-3   " contenteditable="true" data-field-key="received_date_cert_received_date_34">01/2011</span></div></div><div class="cert-detail"><div class=""><div class="details-wrapper js-text-field text-field font-size-5   RichEditor-root"><div class="DraftEditor-root"><div class="DraftEditor-editorContainer"><div class="public-DraftEditor-content" contenteditable="true" spellcheck="false" style="outline: none; user-select: text; white-space: pre-wrap; overflow-wrap: break-word;" data-field-key="public_drafteditor_content_35"><div data-contents="true"><div data-block="true" data-editor="bieq" data-offset-key="6rv13-0-0"><div data-offset-key="6rv13-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="6rv13-0-0"><span data-text="true">Point: 7.5 Issued by British Council</span></span></div></div></div></div></div></div></div></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-certificate certificate-style-detail"><div class="cert-info text-secondary"><div content-placeholder="Certificate name" content-required-message="Certificate name cannot be blank" class="input-field name  section-title font-size-3   " contenteditable="true" data-field-key="name_section_title_36">IC3</div><div class="duration-hyphen-lg font-size-4">/</div><div class="cert-received-date-group font-size-3"><span content-placeholder="Issued date" content-required-message="Issued date cannot be blank" class="input-field received_date  cert-received-date font-size-3   " contenteditable="true" data-field-key="received_date_cert_received_date_37">02/2013</span></div></div><div class="cert-detail"><div class=""><div class="details-wrapper js-text-field text-field font-size-5   RichEditor-root"><div class="DraftEditor-root"><div class="DraftEditor-editorContainer"><div class="public-DraftEditor-content" contenteditable="true" spellcheck="false" style="outline: none; user-select: text; white-space: pre-wrap; overflow-wrap: break-word;" data-field-key="public_drafteditor_content_38"><div data-contents="true"><div data-block="true" data-editor="8d8u6" data-offset-key="nt6u-0-0"><div data-offset-key="nt6u-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="nt6u-0-0"><span data-text="true">Certification of computer and Internet literacy Issued by IIG Viet Nam</span></span></div></div></div></div></div></div></div></div></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-certificate certificate-style-detail"><div class="cert-info text-secondary"><div content-placeholder="Certificate name" content-required-message="Certificate name cannot be blank" class="input-field name  section-title font-size-3   " contenteditable="true" data-field-key="name_section_title_39">Google AdWords</div><div class="duration-hyphen-lg font-size-4">/</div><div class="cert-received-date-group font-size-3"><span content-placeholder="Issued date" content-required-message="Issued date cannot be blank" class="input-field received_date  cert-received-date font-size-3   " contenteditable="true" data-field-key="received_date_cert_received_date_40">12/2012</span></div></div><div class="cert-detail"><div class=""><div class="details-wrapper js-text-field text-field font-size-5   RichEditor-root"><div class="DraftEditor-root"><div class="DraftEditor-editorContainer"><div class="public-DraftEditor-content" contenteditable="true" spellcheck="false" style="outline: none; user-select: text; white-space: pre-wrap; overflow-wrap: break-word;" data-field-key="public_drafteditor_content_41"><div data-contents="true"><div data-block="true" data-editor="745th" data-offset-key="4hc52-0-0"><div data-offset-key="4hc52-0-0" class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr"><span data-offset-key="4hc52-0-0"><span data-text="true">Google Partner AdWords Certification Proficient in using Google AdWords to increase the generation of new leads and conversions</span></span></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div><div class="content-field content-references index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">References</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections references-sections"><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-reference"><h4 content-placeholder="Reference name" content-required-message="Name cannot be blank" class="input-field name  section-title-light font-size-3   " contenteditable="true" data-field-key="name_section_title_light_42">Kazki Matz</h4><h4 content-placeholder="Role - Company" content-required-message="Role and Company cannot be blank" class="input-field title  details-references font-size-5   " contenteditable="true" data-field-key="title_details_references_43">CTO - VietCV 2</h4><div class="reference-info"><div class="detail-group"><i class="detail-icon details-field-input fa fa-phone-square font-size-5" aria-hidden="true"></i><h4 content-placeholder="Phone number" content-required-message="Phone cannot be blank" class="input-field contact_phone  details-references font-size-5   " contenteditable="true" data-field-key="contact_phone_details_references_44">03 322 442 xx</h4></div><div class="seperator font-size-5">|</div><div class="detail-group"><i class="detail-icon details-field-input fa fa-envelope font-size-5" aria-hidden="true"></i><h4 content-placeholder="Email address" content-required-message="Email cannot be blank" class="input-field contact_mail  details-references font-size-5   " contenteditable="true" data-field-key="contact_mail_details_references_45"><a href="mailto:kazki_example@vietcv.io" target="_blank">kazki_example@vietcv.io</a></h4></div></div></div></div></div></div></div></div></div></div></div><div class="content-field content-interests index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header col-0-header col-1-header font-size-2" contenteditable="true">Interests</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections interests-sections"><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-interest"><div class="interest-style-pill"><h4 focus-index="interests.0.1" content-placeholder="Interest" content-required-message="Interest cannot be blank" class="input-field focus-able name  interest-name font-size-5   " contenteditable="true" data-field-key="name_interest_name_46">Learn English</h4></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-interest"><div class="interest-style-pill"><h4 focus-index="interests.1.1" content-placeholder="Interest" content-required-message="Interest cannot be blank" class="input-field focus-able name  interest-name font-size-5   " contenteditable="true" data-field-key="name_interest_name_47">Play baseball</h4></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-interest"><div class="interest-style-pill"><h4 focus-index="interests.2.1" content-placeholder="Interest" content-required-message="Interest cannot be blank" class="input-field focus-able name  interest-name font-size-5   " contenteditable="true" data-field-key="name_interest_name_48">Read books, articles about business</h4></div></div></div></div></div></div><div class="sub-section "><div style="visibility: inherit;"><div><div class="jsx-parser"><div class="content-interest"><div class="interest-style-pill"><h4 focus-index="interests.3.1" content-placeholder="Interest" content-required-message="Interest cannot be blank" class="input-field focus-able name  interest-name font-size-5   " contenteditable="true" data-field-key="name_interest_name_49">Listen to music</h4></div></div></div></div></div></div></div></div></div></div></div></div><div class="boder-right-column bg-secondary"></div></div><div class="column-1"><div><div class="content-field content-projects index-0 last-index section   "><div style="visibility: inherit;"><div class="jsx-parser"><div class="section-header-container text-secondary"><h2 class="section-header font-size-2" contenteditable="true">Projects</h2><div class="bg-secondary underline"></div></div> <div class="sub-sections projects-sections"></div></div></div></div></div></div></div></div> <div class="footer-page"><div class="hyphen"> - </div><span>2 of 2</span></div></div></div></div></div></div></div></div></div><div style="visibility: hidden;"><div class="download-button"><i class="fa fa-file-pdf-o" aria-hidden="true"></i>Tải CV</div></div><div class="zoom-slider-container" style="visibility: hidden;"><button class="zoom-out-btn ">-</button><span class="zs-title">90%</span><div class="zs-slider"><div class="zoomslider-slider-container"><div class="zoomslider-slider-wrapper"><input class="zoomslider-slider" type="range" min="35" max="125" value="90" style="--value: 90; --min: 35; --max: 125;"><span class="zs-tick"></span></div></div></div><button class="zoom-in-btn ">+</button></div><img class="tree-pot" src="https://static.vietcv.io/wallpaper/white-desk/small-tree.png"></div></div></div></div></div>
+<style id="local-vietcv-helper">
+  html, body { min-height: 100%; background: #e9edf2 !important; overflow: auto !important; }
+  .wallpaper-container, .navbar, .download-button, .zoom-slider-container, .select-banner-button, #in-editor-modal-container { display: none !important; }
+  .portfolio-container { min-height: 100vh !important; padding: 24px 0 !important; }
+  .cv-container { position: static !important; transform: none !important; transform-origin: initial !important; left: auto !important; top: auto !important; margin: 0 auto 40px !important; width: 793.7px !important; user-select: text !important; -webkit-user-drag: auto !important; }
+  .page-container .page { margin: 0 auto 24px !important; box-shadow: 0 18px 46px rgba(20,30,45,.18) !important; }
+  [contenteditable="true"] { cursor: text; outline: none; -webkit-user-modify: read-write-plaintext-only; }
+  [contenteditable="true"]:focus { outline: 1px dashed rgba(36,96,190,.45) !important; outline-offset: 1px; }
+  @media print { html, body { background: white !important; } .portfolio-container { padding: 0 !important; } .page-container .page { margin: 0 !important; box-shadow: none !important; } #local-vietcv-config-panel { display: none !important; } }
+</style>
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("[disabled]").forEach((node) => node.removeAttribute("disabled"));
+    document.querySelectorAll(".input-field, .text-field, .select-field, .public-DraftEditor-content").forEach((node) => node.setAttribute("contenteditable", "true"));
+  });
+</script>
+<style id="local-vietcv-config-controls">
+  :root { --vcv-primary: #000000; --vcv-secondary: #f80040; }
+  .bg-primary { background-color: var(--vcv-primary) !important; }
+  .bg-opaque-primary { background-color: color-mix(in srgb, var(--vcv-primary) 26%, transparent) !important; }
+  .bg-secondary { background-color: var(--vcv-secondary) !important; }
+  .bg-gradient { background-image: linear-gradient(var(--vcv-primary), var(--vcv-secondary)) !important; }
+  .bg-gradient-horizontal { background-image: linear-gradient(to right, var(--vcv-secondary), var(--vcv-primary)) !important; }
+  .text-primary { color: var(--vcv-primary) !important; }
+  .text-secondary { color: var(--vcv-secondary) !important; }
+  .fill-primary { fill: var(--vcv-primary) !important; }
+  .fill-secondary { fill: var(--vcv-secondary) !important; }
+  #local-vietcv-config-panel { position: fixed; z-index: 99999; right: 18px; top: 18px; width: 260px; max-height: calc(100vh - 36px); overflow: auto; background: rgba(255,255,255,.96); border: 1px solid rgba(15,23,42,.12); box-shadow: 0 18px 46px rgba(20,30,45,.18); border-radius: 8px; padding: 14px; font-family: Arial, Helvetica, sans-serif; color: #1f2937; }
+  #local-vietcv-config-panel h3 { margin: 0 0 12px; font-size: 16px; line-height: 1.2; }
+  #local-vietcv-config-panel h4 { margin: 14px 0 8px; font-size: 12px; text-transform: uppercase; color: #64748b; }
+  #local-vietcv-config-panel .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  #local-vietcv-config-panel button { cursor: pointer; border: 1px solid rgba(15,23,42,.16); background: white; border-radius: 6px; }
+  #local-vietcv-config-panel .swatch { display: flex; justify-content: center; gap: 2px; padding: 5px; height: 32px; }
+  #local-vietcv-config-panel .swatch.active, #local-vietcv-config-panel .lang.active { outline: 2px solid #2563eb; outline-offset: 1px; }
+  #local-vietcv-config-panel .dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(15,23,42,.18); }
+  #local-vietcv-config-panel select { width: 100%; height: 34px; border: 1px solid rgba(15,23,42,.18); border-radius: 6px; padding: 0 8px; background: white; }
+  #local-vietcv-config-panel .languages { display: flex; gap: 8px; }
+  #local-vietcv-config-panel .lang { flex: 1; height: 32px; font-weight: 700; }
+  #local-vietcv-config-panel .hint { margin-top: 12px; color: #64748b; font-size: 11px; line-height: 1.35; }
+</style>
+<div id="local-vietcv-config-panel">
+  <h3>CV Ấn tượng 2</h3>
+  <h4>Color</h4>
+  <div class="swatches"><button class="swatch active" data-color-index="0" title="#000000 / #f80040"><span class="dot" style="background:#000000"></span><span class="dot" style="background:#f80040"></span></button><button class="swatch" data-color-index="1" title="#0b2d41 / #2daf85"><span class="dot" style="background:#0b2d41"></span><span class="dot" style="background:#2daf85"></span></button><button class="swatch" data-color-index="2" title="#333236 / #3997cb"><span class="dot" style="background:#333236"></span><span class="dot" style="background:#3997cb"></span></button><button class="swatch" data-color-index="3" title="#333236 / #aab933"><span class="dot" style="background:#333236"></span><span class="dot" style="background:#aab933"></span></button><button class="swatch" data-color-index="4" title="#333236 / #bc4b65"><span class="dot" style="background:#333236"></span><span class="dot" style="background:#bc4b65"></span></button><button class="swatch" data-color-index="5" title="#333236 / #da6e08"><span class="dot" style="background:#333236"></span><span class="dot" style="background:#da6e08"></span></button><button class="swatch" data-color-index="6" title="#333236 / #6d8b94"><span class="dot" style="background:#333236"></span><span class="dot" style="background:#6d8b94"></span></button><button class="swatch" data-color-index="7" title="#293a3b / #6db174"><span class="dot" style="background:#293a3b"></span><span class="dot" style="background:#6db174"></span></button><button class="swatch" data-color-index="8" title="#351241 / #e27b54"><span class="dot" style="background:#351241"></span><span class="dot" style="background:#e27b54"></span></button><button class="swatch" data-color-index="9" title="#053234 / #c298bf"><span class="dot" style="background:#053234"></span><span class="dot" style="background:#c298bf"></span></button><button class="swatch" data-color-index="10" title="#512c44 / #d99b92"><span class="dot" style="background:#512c44"></span><span class="dot" style="background:#d99b92"></span></button><button class="swatch" data-color-index="11" title="#1f6097 / #01013d"><span class="dot" style="background:#1f6097"></span><span class="dot" style="background:#01013d"></span></button><button class="swatch" data-color-index="12" title="#011d33 / #c10328"><span class="dot" style="background:#011d33"></span><span class="dot" style="background:#c10328"></span></button><button class="swatch" data-color-index="13" title="#ca6a9f / #368b9f"><span class="dot" style="background:#ca6a9f"></span><span class="dot" style="background:#368b9f"></span></button><button class="swatch" data-color-index="14" title="#063124 / #de486d"><span class="dot" style="background:#063124"></span><span class="dot" style="background:#de486d"></span></button><button class="swatch" data-color-index="15" title="#416cb1 / #f77421"><span class="dot" style="background:#416cb1"></span><span class="dot" style="background:#f77421"></span></button><button class="swatch" data-color-index="16" title="#9d345c / #401328"><span class="dot" style="background:#9d345c"></span><span class="dot" style="background:#401328"></span></button><button class="swatch" data-color-index="17" title="#4c2a85 / #d41d58"><span class="dot" style="background:#4c2a85"></span><span class="dot" style="background:#d41d58"></span></button><button class="swatch" data-color-index="18" title="#364b46 / #ff8b00"><span class="dot" style="background:#364b46"></span><span class="dot" style="background:#ff8b00"></span></button><button class="swatch" data-color-index="19" title="#34999a / #e6969c"><span class="dot" style="background:#34999a"></span><span class="dot" style="background:#e6969c"></span></button></div>
+  <h4>Font</h4>
+  <select id="local-vietcv-font"><option value="Roboto">Roboto</option><option value="Open Sans">Open Sans</option><option value="Libre Franklin">Libre Franklin</option><option value="Source Sans Pro">Source Sans Pro</option><option value="Monda">Monda</option><option value="Baloo 2">Baloo 2</option><option value="Be Vietnam" selected>Be Vietnam</option><option value="Sarabun">Sarabun</option><option value="Montserrat">Montserrat</option><option value="Noto Sans">Noto Sans</option><option value="Roboto Mono">Roboto Mono</option><option value="Nunito">Nunito</option><option value="Lora">Lora</option><option value="Nunito Sans">Nunito Sans</option><option value="Fira Sans">Fira Sans</option></select>
+  <h4>Language</h4>
+  <div class="languages"><button class="lang" data-lang="vi">VI</button><button class="lang active" data-lang="en">EN</button><button class="lang" data-lang="ja">JA</button></div>
+  <div class="hint">Color and font apply instantly. Language changes labels only unless each language DOM is exported separately.</div>
+</div>
+<script id="local-vietcv-config-script">
+(() => {
+  const config = {"source":"D:\\DuAnCaNhan\\Tamquan\\File_json\\vietcv-editor-rendered-1781717351049.json","sourceUrl":"https://vietcv.io/en/templates/cv/an-tuong-2","exportedAt":"2026-06-17T17:29:11.040Z","template":{"id":"template_85","title":"CV Ấn tượng 2"},"colors":[{"index":0,"active":true,"colors":[{"rgb":"rgb(0, 0, 0)","hex":"#000000"},{"rgb":"rgb(248, 0, 64)","hex":"#f80040"}]},{"index":1,"active":false,"colors":[{"rgb":"rgb(11, 45, 65)","hex":"#0b2d41"},{"rgb":"rgb(45, 175, 133)","hex":"#2daf85"}]},{"index":2,"active":false,"colors":[{"rgb":"rgb(51, 50, 54)","hex":"#333236"},{"rgb":"rgb(57, 151, 203)","hex":"#3997cb"}]},{"index":3,"active":false,"colors":[{"rgb":"rgb(51, 50, 54)","hex":"#333236"},{"rgb":"rgb(170, 185, 51)","hex":"#aab933"}]},{"index":4,"active":false,"colors":[{"rgb":"rgb(51, 50, 54)","hex":"#333236"},{"rgb":"rgb(188, 75, 101)","hex":"#bc4b65"}]},{"index":5,"active":false,"colors":[{"rgb":"rgb(51, 50, 54)","hex":"#333236"},{"rgb":"rgb(218, 110, 8)","hex":"#da6e08"}]},{"index":6,"active":false,"colors":[{"rgb":"rgb(51, 50, 54)","hex":"#333236"},{"rgb":"rgb(109, 139, 148)","hex":"#6d8b94"}]},{"index":7,"active":false,"colors":[{"rgb":"rgb(41, 58, 59)","hex":"#293a3b"},{"rgb":"rgb(109, 177, 116)","hex":"#6db174"}]},{"index":8,"active":false,"colors":[{"rgb":"rgb(53, 18, 65)","hex":"#351241"},{"rgb":"rgb(226, 123, 84)","hex":"#e27b54"}]},{"index":9,"active":false,"colors":[{"rgb":"rgb(5, 50, 52)","hex":"#053234"},{"rgb":"rgb(194, 152, 191)","hex":"#c298bf"}]},{"index":10,"active":false,"colors":[{"rgb":"rgb(81, 44, 68)","hex":"#512c44"},{"rgb":"rgb(217, 155, 146)","hex":"#d99b92"}]},{"index":11,"active":false,"colors":[{"rgb":"rgb(31, 96, 151)","hex":"#1f6097"},{"rgb":"rgb(1, 1, 61)","hex":"#01013d"}]},{"index":12,"active":false,"colors":[{"rgb":"rgb(1, 29, 51)","hex":"#011d33"},{"rgb":"rgb(193, 3, 40)","hex":"#c10328"}]},{"index":13,"active":false,"colors":[{"rgb":"rgb(202, 106, 159)","hex":"#ca6a9f"},{"rgb":"rgb(54, 139, 159)","hex":"#368b9f"}]},{"index":14,"active":false,"colors":[{"rgb":"rgb(6, 49, 36)","hex":"#063124"},{"rgb":"rgb(222, 72, 109)","hex":"#de486d"}]},{"index":15,"active":false,"colors":[{"rgb":"rgb(65, 108, 177)","hex":"#416cb1"},{"rgb":"rgb(247, 116, 33)","hex":"#f77421"}]},{"index":16,"active":false,"colors":[{"rgb":"rgb(157, 52, 92)","hex":"#9d345c"},{"rgb":"rgb(64, 19, 40)","hex":"#401328"}]},{"index":17,"active":false,"colors":[{"rgb":"rgb(76, 42, 133)","hex":"#4c2a85"},{"rgb":"rgb(212, 29, 88)","hex":"#d41d58"}]},{"index":18,"active":false,"colors":[{"rgb":"rgb(54, 75, 70)","hex":"#364b46"},{"rgb":"rgb(255, 139, 0)","hex":"#ff8b00"}]},{"index":19,"active":false,"colors":[{"rgb":"rgb(52, 153, 154)","hex":"#34999a"},{"rgb":"rgb(230, 150, 156)","hex":"#e6969c"}]}],"fonts":{"selected":"Be Vietnam","googleFontsUrl":"https://fonts.googleapis.com/css2?family=Roboto&family=Open+Sans&family=Libre+Franklin&family=Source+Sans Pro&family=Monda&family=Baloo+2&family=Be+Vietnam&family=Sarabun&family=Montserrat&family=Noto+Sans&family=Roboto+Mono&family=Nunito&family=Lora&family=Nunito+Sans&family=Fira+Sans&display=swap","families":["Roboto","Open Sans","Libre Franklin","Source Sans Pro","Monda","Baloo 2","Be Vietnam","Sarabun","Montserrat","Noto Sans","Roboto Mono","Nunito","Lora","Nunito Sans","Fira Sans"]},"languages":[{"index":0,"code":"vi","active":false},{"index":1,"code":"en","active":true},{"index":2,"code":"ja","active":false}],"applyHref":"//en/cvs/new/template_85?color=%23000000%3B%23F80040&language=en&font_code=BE_VIETNAM"};
+  const root = document.documentElement;
+  const sectionText = {
+    en: {"About me":"About me","Work Experiences":"Work Experiences","Education":"Education","Contact":"Contact","Certificates":"Certificates","Skills":"Skills","Languages":"Languages","Prizes and Awards":"Prizes and Awards","Activities":"Activities","Projects":"Projects","References":"References","Interests":"Interests"},
+    vi: {"About me":"Giới thiệu","Work Experiences":"Kinh nghiệm làm việc","Education":"Học vấn","Contact":"Liên hệ","Certificates":"Chứng chỉ","Skills":"Kỹ năng","Languages":"Ngôn ngữ","Prizes and Awards":"Giải thưởng","Activities":"Hoạt động","Projects":"Dự án","References":"Người tham chiếu","Interests":"Sở thích"},
+    ja: {"About me":"自己紹介","Work Experiences":"職務経歴","Education":"学歴","Contact":"連絡先","Certificates":"資格","Skills":"スキル","Languages":"言語","Prizes and Awards":"受賞歴","Activities":"活動","Projects":"プロジェクト","References":"推薦者","Interests":"興味"}
+  };
+  const reverse = new Map();
+  Object.values(sectionText).forEach((dict) => Object.entries(dict).forEach(([key, value]) => reverse.set(value, key)));
+  document.querySelectorAll("#local-vietcv-config-panel .swatch").forEach((button) => button.addEventListener("click", () => {
+    const item = config.colors.find((color) => String(color.index) === button.dataset.colorIndex);
+    if (!item) return;
+    root.style.setProperty("--vcv-primary", item.colors[0]?.hex || "#ebd7b5");
+    root.style.setProperty("--vcv-secondary", item.colors[1]?.hex || item.colors[0]?.hex || "#d9d9d9");
+    document.querySelectorAll("#local-vietcv-config-panel .swatch").forEach((node) => node.classList.toggle("active", node === button));
+  }));
+  document.querySelector("#local-vietcv-font")?.addEventListener("change", (event) => {
+    const font = event.target.value;
+    const target = document.querySelector(".editor-text-font-family") || document.body;
+    target.style.fontFamily = "'" + font.replace(/'/g, "\\'") + "', sans-serif";
+  });
+  document.querySelectorAll("#local-vietcv-config-panel .lang").forEach((button) => button.addEventListener("click", () => {
+    const lang = button.dataset.lang;
+    const dict = sectionText[lang] || sectionText.en;
+    document.documentElement.lang = lang;
+    document.querySelectorAll(".section-header").forEach((node) => {
+      const current = node.textContent.trim();
+      const key = reverse.get(current) || current;
+      if (dict[key]) node.textContent = dict[key];
+    });
+    document.querySelectorAll("#local-vietcv-config-panel .lang").forEach((node) => node.classList.toggle("active", node === button));
+  }));
+})();
+</script></body></html>

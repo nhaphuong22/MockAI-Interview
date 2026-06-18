@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { JobFilters } from "./components/JobFilters";
 import { JobCard } from "./components/JobCard";
-import { JobDetailView } from "./components/JobDetailView";
 import { jobApi } from "../../api/jobApi";
 
 const formatTime = (timeStr) => {
@@ -26,22 +25,20 @@ const formatTime = (timeStr) => {
  * Manages job listings, filtering by various criteria, and viewing detailed descriptions.
  */
 export function Jobs() {
-  const [selectedJob, setSelectedJob] = useState(null);
   const [bookmarked, setBookmarked] = useState([]);
   const [salaryRange, setSalaryRange] = useState([10, 50]);
   const [showFilters, setShowFilters] = useState(true);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
 
-  // 1. Gọi API lấy danh sách tin tuyển dụng từ DB
   const { data: response, isLoading, isError, refetch } = useQuery({
     queryKey: ["candidate-jobs-list", search, location],
     queryFn: async () => {
       const res = await jobApi.getJobs({
-        status: "OPEN", // Ứng viên chỉ xem các job đang tuyển dụng
+        status: "OPEN",
         search: search.trim() || undefined,
       });
-      return res; // interceptor đã bóc tách res.data
+      return res; 
     }
   });
 
@@ -53,7 +50,6 @@ export function Jobs() {
     );
   };
 
-  // Định dạng hiển thị mức lương
   const formatSalary = (min, max, currency, visible) => {
     if (!visible) return "Thương lượng (Ẩn)";
     if (!min && !max) return "Thương lượng";
@@ -69,34 +65,44 @@ export function Jobs() {
     return `Lên đến ${formatNumber(max)} ${currency}`;
   };
 
-  // 2. Mapping dữ liệu thật từ DB sang format của JobCard & JobDetailView
-  const formattedJobs = jobsList.map((job) => ({
-    id: job.id,
-    title: job.title,
-    company: job.company_name || "Công ty chưa xác minh",
-    logo: job.company_logo || job.company_name?.substring(0, 1).toUpperCase() || "J",
-    location: job.company_address || "Việt Nam",
-    salary: formatSalary(job.salary_min, job.salary_max, job.salary_currency, job.is_salary_visible),
-    type: job.experience_level || "Không yêu cầu", 
-    remote: job.vacancy_count ? `${job.vacancy_count} chỉ tiêu` : "1 chỉ tiêu",
-    experience: job.experience_level || "Không yêu cầu",
-    tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
-    aiMatch: job.aiMatch || (80 + (job.id % 16)), // Sử dụng phép toán Pure thay vì Math.random để qua kiểm tra Lint
-    posted: job.created_at ? new Date(job.created_at).toLocaleDateString("vi-VN") : "Gần đây",
-    applicants: job.applicants_count || 0,
-    description: job.description,
-    requirements: job.requirements,
-  }));
+  const formattedJobs = jobsList.map((jobPost) => {
+    let minSalary = null;
+    let maxSalary = null;
+    let currency = "VND";
+    let isVisible = true;
+    
+    if (jobPost.positions && jobPost.positions.length > 0) {
+        const mins = jobPost.positions.map(p => p.salary_min).filter(Boolean);
+        const maxs = jobPost.positions.map(p => p.salary_max).filter(Boolean);
+        if (mins.length > 0) minSalary = Math.min(...mins);
+        if (maxs.length > 0) maxSalary = Math.max(...maxs);
+        currency = jobPost.positions[0].salary_currency || "VND";
+        isVisible = jobPost.positions.some(p => p.is_salary_visible);
+    }
 
-  // Lọc thêm theo địa điểm tại client
+    return {
+      id: jobPost.id,
+      title: jobPost.title,
+      company: jobPost.company_name || "Công ty chưa xác minh",
+      logo: jobPost.company_logo || jobPost.company_name?.substring(0, 1).toUpperCase() || "J",
+      location: jobPost.company_address || "Việt Nam",
+      salary: formatSalary(minSalary, maxSalary, currency, isVisible),
+      type: "Chiến dịch", 
+      remote: jobPost.positions ? `${jobPost.positions.length} vị trí` : "0 vị trí",
+      experience: "Tùy vị trí",
+      tags: ["Tuyển dụng"],
+      aiMatch: 80,
+      posted: jobPost.created_at ? new Date(jobPost.created_at).toLocaleDateString("vi-VN") : "Gần đây",
+      applicants: 0,
+      description: jobPost.description,
+      positions: jobPost.positions || [],
+    };
+  });
+
   const filteredJobs = formattedJobs.filter(job => {
     if (location.trim() === "") return true;
     return job.location.toLowerCase().includes(location.toLowerCase());
   });
-
-  // Tự động xác định Job đang được chọn (pure state logic, không sử dụng useEffect gây cascading render)
-  const activeJobId = selectedJob || (filteredJobs.length > 0 ? filteredJobs[0].id : null);
-  const selectedJobData = filteredJobs.find((job) => job.id === activeJobId);
 
   const handleClearFilters = () => {
     setSearch("");
@@ -106,7 +112,6 @@ export function Jobs() {
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
-      {/* Sidebar Filter Options */}
       <JobFilters 
         showFilters={showFilters}
         onHideFilters={() => setShowFilters(false)}
@@ -120,22 +125,21 @@ export function Jobs() {
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Control Bar */}
         <div className="p-6 dark:bg-[#0a0f1c]/50 bg-white border-b dark:border-white/10 border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {!showFilters && (
                 <button
                   onClick={() => setShowFilters(true)}
-                  className="flex items-center gap-2 px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] transition-all font-semibold dark:text-slate-300 text-gray-700 cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all font-semibold text-slate-700 shadow-sm"
                 >
-                  <SlidersHorizontal className="w-5 h-5" />
+                  <SlidersHorizontal className="w-4 h-4" />
                   <span>Bộ lọc</span>
                 </button>
               )}
               <div>
                 <p className="text-sm dark:text-slate-400 text-gray-500">
-                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{filteredJobs.length}</span> công việc
+                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{filteredJobs.length}</span> chiến dịch
                 </p>
               </div>
             </div>
@@ -147,7 +151,6 @@ export function Jobs() {
           </div>
         </div>
 
-        {/* Double Pane List & Details Layout */}
         <div className="flex-1 flex overflow-hidden">
           {isLoading ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 dark:bg-transparent bg-gray-50/50">
@@ -176,28 +179,18 @@ export function Jobs() {
               </button>
             </div>
           ) : (
-            <>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-transparent bg-gray-50/50">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50">
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6 max-w-[1600px] mx-auto">
                 {filteredJobs.map((job) => (
                   <JobCard
                     key={job.id}
                     job={job}
-                    isSelected={activeJobId === job.id}
                     isBookmarked={bookmarked.includes(job.id)}
-                    onSelect={() => setSelectedJob(job.id)}
                     onToggleBookmark={toggleBookmark}
                   />
                 ))}
               </div>
-
-              {selectedJobData && (
-                <JobDetailView 
-                  job={selectedJobData}
-                  onToggleBookmark={toggleBookmark}
-                  isBookmarked={bookmarked.includes(selectedJobData.id)}
-                />
-              )}
-            </>
+            </div>
           )}
         </div>
       </main>

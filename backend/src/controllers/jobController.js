@@ -10,98 +10,74 @@ import {
 } from '../services/jobService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
-/**
- * Đăng tin tuyển dụng mới kèm theo các yêu cầu chi tiết
- */
 export const createNewJob = async (req, res) => {
   try {
     const { 
       title, 
       description, 
-      requirements, 
       status, 
-      experience_level,
-      salary_min,
-      salary_max,
-      salary_currency,
-      is_salary_visible,
-      vacancy_count,
       deadline,
-      detailed_requirements 
+      positions 
     } = req.body;
     const hrId = req.user.id;
 
-    // 1. Kiểm tra validation cơ bản cho job title
     if (!title || typeof title !== 'string' || title.trim() === '') {
       return sendError(res, 400, 'Tiêu đề tin tuyển dụng (title) là bắt buộc và không được để trống.');
     }
 
-    // 2. Kiểm tra validation cho status nếu có
     const VALID_STATUSES = ['OPEN', 'CLOSED'];
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
       return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN hoặc CLOSED.');
     }
 
-    // Validation bổ sung cho các trường số liệu
-    let parsedSalaryMin = null;
-    if (salary_min !== undefined && salary_min !== null && salary_min !== '') {
-      parsedSalaryMin = parseInt(salary_min);
-      if (isNaN(parsedSalaryMin) || parsedSalaryMin < 0) {
-        return sendError(res, 400, 'Mức lương tối thiểu (salary_min) phải là số nguyên dương.');
-      }
+    if (!Array.isArray(positions) || positions.length === 0) {
+      return sendError(res, 400, 'Phải có ít nhất một vị trí tuyển dụng (positions).');
     }
 
-    let parsedSalaryMax = null;
-    if (salary_max !== undefined && salary_max !== null && salary_max !== '') {
-      parsedSalaryMax = parseInt(salary_max);
-      if (isNaN(parsedSalaryMax) || parsedSalaryMax < 0) {
-        return sendError(res, 400, 'Mức lương tối đa (salary_max) phải là số nguyên dương.');
+    for (let i = 0; i < positions.length; i++) {
+      const pos = positions[i];
+      if (!pos.title || typeof pos.title !== 'string' || pos.title.trim() === '') {
+        return sendError(res, 400, `Tiêu đề vị trí tại index ${i} là bắt buộc.`);
       }
-      if (parsedSalaryMin !== null && parsedSalaryMax < parsedSalaryMin) {
-        return sendError(res, 400, 'Mức lương tối đa không được nhỏ hơn mức lương tối thiểu.');
-      }
-    }
-
-    let parsedVacancyCount = 1;
-    if (vacancy_count !== undefined && vacancy_count !== null && vacancy_count !== '') {
-      parsedVacancyCount = parseInt(vacancy_count);
-      if (isNaN(parsedVacancyCount) || parsedVacancyCount <= 0) {
-        return sendError(res, 400, 'Số lượng tuyển dụng (vacancy_count) phải là số nguyên lớn hơn 0.');
-      }
-    }
-
-    // 3. Kiểm tra validation cho detailed_requirements nếu có
-    if (detailed_requirements !== undefined) {
-      if (!Array.isArray(detailed_requirements)) {
-        return sendError(res, 400, 'Yêu cầu chi tiết (detailed_requirements) phải là một mảng.');
-      }
-
-      for (let i = 0; i < detailed_requirements.length; i++) {
-        const reqItem = detailed_requirements[i];
-        if (!reqItem.requirement_text || typeof reqItem.requirement_text !== 'string' || reqItem.requirement_text.trim() === '') {
-          return sendError(res, 400, `Yêu cầu chi tiết tại vị trí ${i} thiếu nội dung (requirement_text) hợp lệ.`);
-        }
-        if (reqItem.is_mandatory !== undefined && typeof reqItem.is_mandatory !== 'boolean') {
-          return sendError(res, 400, `Trường bắt buộc (is_mandatory) tại vị trí ${i} phải là kiểu boolean.`);
+      
+      let parsedVacancyCount = 1;
+      if (pos.vacancyCount !== undefined && pos.vacancyCount !== null && pos.vacancyCount !== '') {
+        parsedVacancyCount = parseInt(pos.vacancyCount);
+        if (isNaN(parsedVacancyCount) || parsedVacancyCount <= 0) {
+          return sendError(res, 400, `Số lượng tuyển dụng tại vị trí ${i} phải là số nguyên lớn hơn 0.`);
         }
       }
+      pos.vacancyCount = parsedVacancyCount;
+      
+      let parsedSalaryMin = null;
+      if (pos.salaryMin !== undefined && pos.salaryMin !== null && pos.salaryMin !== '') {
+        parsedSalaryMin = parseInt(pos.salaryMin);
+        if (isNaN(parsedSalaryMin) || parsedSalaryMin < 0) {
+          return sendError(res, 400, `Mức lương tối thiểu vị trí ${i} phải là số nguyên dương.`);
+        }
+      }
+      pos.salaryMin = parsedSalaryMin;
+
+      let parsedSalaryMax = null;
+      if (pos.salaryMax !== undefined && pos.salaryMax !== null && pos.salaryMax !== '') {
+        parsedSalaryMax = parseInt(pos.salaryMax);
+        if (isNaN(parsedSalaryMax) || parsedSalaryMax < 0) {
+          return sendError(res, 400, `Mức lương tối đa vị trí ${i} phải là số nguyên dương.`);
+        }
+        if (parsedSalaryMin !== null && parsedSalaryMax < parsedSalaryMin) {
+          return sendError(res, 400, `Mức lương tối đa không được nhỏ hơn mức lương tối thiểu tại vị trí ${i}.`);
+        }
+      }
+      pos.salaryMax = parsedSalaryMax;
     }
 
-    // 4. Gọi service tạo job
     const result = await createJob({
       hrId,
       title: title.trim(),
       description,
-      requirements,
       status,
-      experienceLevel: experience_level || null,
-      salaryMin: parsedSalaryMin,
-      salaryMax: parsedSalaryMax,
-      salaryCurrency: salary_currency || 'VND',
-      isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
-      vacancyCount: parsedVacancyCount,
       deadline: deadline || null,
-      detailedRequirements: detailed_requirements || []
+      positions
     });
 
     return sendResponse(res, 201, result);
@@ -111,16 +87,12 @@ export const createNewJob = async (req, res) => {
   }
 };
 
-/**
- * Lấy danh sách tin tuyển dụng có lọc và phân trang
- */
 export const getJobs = async (req, res) => {
   try {
-    const { status, experience_level, hr_id, search, page = 1, limit = 10 } = req.query;
+    const { status, hr_id, search, page = 1, limit = 10 } = req.query;
 
     const filters = {
       status,
-      experienceLevel: experience_level,
       hrId: hr_id ? parseInt(hr_id) : null,
       search,
       page: parseInt(page),
@@ -135,9 +107,6 @@ export const getJobs = async (req, res) => {
   }
 };
 
-/**
- * Lấy chi tiết tin tuyển dụng
- */
 export const getJobById = async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
@@ -157,9 +126,6 @@ export const getJobById = async (req, res) => {
   }
 };
 
-/**
- * Cập nhật tin tuyển dụng
- */
 export const updateJob = async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
@@ -170,33 +136,23 @@ export const updateJob = async (req, res) => {
     const { 
       title, 
       description, 
-      requirements, 
       status, 
-      experience_level,
-      salary_min,
-      salary_max,
-      salary_currency,
-      is_salary_visible,
-      vacancy_count,
       deadline,
-      detailed_requirements 
+      positions 
     } = req.body;
 
-    // Kiểm tra xem job có tồn tại không
-    const job = await getJobDetailById(jobId);
-    if (!job) {
+    const jobPost = await getJobDetailById(jobId);
+    if (!jobPost) {
       return sendError(res, 404, 'Không tìm thấy tin tuyển dụng để cập nhật.');
     }
 
-    // Kiểm quyền sở hữu: Chỉ chủ sở hữu (HR tạo tin) hoặc ADMIN mới được cập nhật
     const userId = req.user.id;
     const userRole = req.user.role?.toUpperCase();
     
-    if (job.hr_id !== userId && userRole !== 'ADMIN') {
+    if (jobPost.hr_id !== userId && userRole !== 'ADMIN') {
       return sendError(res, 403, 'Bạn không có quyền chỉnh sửa tin tuyển dụng này.');
     }
 
-    // Validation
     if (!title || typeof title !== 'string' || title.trim() === '') {
       return sendError(res, 400, 'Tiêu đề tin tuyển dụng (title) là bắt buộc.');
     }
@@ -206,62 +162,53 @@ export const updateJob = async (req, res) => {
       return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN hoặc CLOSED.');
     }
 
-    let parsedSalaryMin = null;
-    if (salary_min !== undefined && salary_min !== null && salary_min !== '') {
-      parsedSalaryMin = parseInt(salary_min);
-      if (isNaN(parsedSalaryMin) || parsedSalaryMin < 0) {
-        return sendError(res, 400, 'Mức lương tối thiểu (salary_min) phải là số nguyên dương.');
-      }
+    if (!Array.isArray(positions) || positions.length === 0) {
+      return sendError(res, 400, 'Phải có ít nhất một vị trí tuyển dụng (positions).');
     }
 
-    let parsedSalaryMax = null;
-    if (salary_max !== undefined && salary_max !== null && salary_max !== '') {
-      parsedSalaryMax = parseInt(salary_max);
-      if (isNaN(parsedSalaryMax) || parsedSalaryMax < 0) {
-        return sendError(res, 400, 'Mức lương tối đa (salary_max) phải là số nguyên dương.');
+    for (let i = 0; i < positions.length; i++) {
+      const pos = positions[i];
+      if (!pos.title || typeof pos.title !== 'string' || pos.title.trim() === '') {
+        return sendError(res, 400, `Tiêu đề vị trí tại index ${i} là bắt buộc.`);
       }
-      if (parsedSalaryMin !== null && parsedSalaryMax < parsedSalaryMin) {
-        return sendError(res, 400, 'Mức lương tối đa không được nhỏ hơn mức lương tối thiểu.');
-      }
-    }
-
-    let parsedVacancyCount = 1;
-    if (vacancy_count !== undefined && vacancy_count !== null && vacancy_count !== '') {
-      parsedVacancyCount = parseInt(vacancy_count);
-      if (isNaN(parsedVacancyCount) || parsedVacancyCount <= 0) {
-        return sendError(res, 400, 'Số lượng tuyển dụng (vacancy_count) phải là số nguyên lớn hơn 0.');
-      }
-    }
-
-    if (detailed_requirements !== undefined) {
-      if (!Array.isArray(detailed_requirements)) {
-        return sendError(res, 400, 'Yêu cầu chi tiết (detailed_requirements) phải là một mảng.');
-      }
-
-      for (let i = 0; i < detailed_requirements.length; i++) {
-        const reqItem = detailed_requirements[i];
-        if (!reqItem.requirement_text || typeof reqItem.requirement_text !== 'string' || reqItem.requirement_text.trim() === '') {
-          return sendError(res, 400, `Yêu cầu chi tiết tại vị trí ${i} thiếu nội dung (requirement_text) hợp lệ.`);
-        }
-        if (reqItem.is_mandatory !== undefined && typeof reqItem.is_mandatory !== 'boolean') {
-          return sendError(res, 400, `Trường bắt buộc (is_mandatory) tại vị trí ${i} phải là kiểu boolean.`);
+      
+      let parsedVacancyCount = 1;
+      if (pos.vacancyCount !== undefined && pos.vacancyCount !== null && pos.vacancyCount !== '') {
+        parsedVacancyCount = parseInt(pos.vacancyCount);
+        if (isNaN(parsedVacancyCount) || parsedVacancyCount <= 0) {
+          return sendError(res, 400, `Số lượng tuyển dụng tại vị trí ${i} phải là số nguyên lớn hơn 0.`);
         }
       }
+      pos.vacancyCount = parsedVacancyCount;
+      
+      let parsedSalaryMin = null;
+      if (pos.salaryMin !== undefined && pos.salaryMin !== null && pos.salaryMin !== '') {
+        parsedSalaryMin = parseInt(pos.salaryMin);
+        if (isNaN(parsedSalaryMin) || parsedSalaryMin < 0) {
+          return sendError(res, 400, `Mức lương tối thiểu vị trí ${i} phải là số nguyên dương.`);
+        }
+      }
+      pos.salaryMin = parsedSalaryMin;
+
+      let parsedSalaryMax = null;
+      if (pos.salaryMax !== undefined && pos.salaryMax !== null && pos.salaryMax !== '') {
+        parsedSalaryMax = parseInt(pos.salaryMax);
+        if (isNaN(parsedSalaryMax) || parsedSalaryMax < 0) {
+          return sendError(res, 400, `Mức lương tối đa vị trí ${i} phải là số nguyên dương.`);
+        }
+        if (parsedSalaryMin !== null && parsedSalaryMax < parsedSalaryMin) {
+          return sendError(res, 400, `Mức lương tối đa không được nhỏ hơn mức lương tối thiểu tại vị trí ${i}.`);
+        }
+      }
+      pos.salaryMax = parsedSalaryMax;
     }
 
     const result = await updateJobById(jobId, {
       title: title.trim(),
       description,
-      requirements,
       status,
-      experienceLevel: experience_level || null,
-      salaryMin: parsedSalaryMin,
-      salaryMax: parsedSalaryMax,
-      salaryCurrency: salary_currency || 'VND',
-      isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
-      vacancyCount: parsedVacancyCount,
       deadline: deadline || null
-    }, detailed_requirements || []);
+    }, positions);
 
     return sendResponse(res, 200, result);
   } catch (error) {
@@ -270,9 +217,6 @@ export const updateJob = async (req, res) => {
   }
 };
 
-/**
- * Xóa tin tuyển dụng
- */
 export const deleteJob = async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
@@ -280,16 +224,15 @@ export const deleteJob = async (req, res) => {
       return sendError(res, 400, 'ID công việc không hợp lệ.');
     }
 
-    const job = await getJobDetailById(jobId);
-    if (!job) {
+    const jobPost = await getJobDetailById(jobId);
+    if (!jobPost) {
       return sendError(res, 404, 'Không tìm thấy tin tuyển dụng.');
     }
 
-    // Kiểm quyền sở hữu: Chỉ chủ sở hữu (HR tạo tin) hoặc ADMIN mới được xóa
     const userId = req.user.id;
     const userRole = req.user.role?.toUpperCase();
 
-    if (job.hr_id !== userId && userRole !== 'ADMIN') {
+    if (jobPost.hr_id !== userId && userRole !== 'ADMIN') {
       return sendError(res, 403, 'Bạn không có quyền xóa tin tuyển dụng này.');
     }
 
@@ -301,9 +244,6 @@ export const deleteJob = async (req, res) => {
   }
 };
 
-/**
- * Lấy danh sách hồ sơ ứng tuyển của HR
- */
 export const getJobApplications = async (req, res) => {
   try {
     const hrId = req.user.id;
@@ -327,9 +267,6 @@ export const getJobApplications = async (req, res) => {
   }
 };
 
-/**
- * Cập nhật trạng thái duyệt/nhãn/ghi chú của hồ sơ ứng tuyển
- */
 export const updateJobApplication = async (req, res) => {
   try {
     const applicationId = parseInt(req.params.id);
@@ -341,18 +278,15 @@ export const updateJobApplication = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role?.toUpperCase();
 
-    // 1. Kiểm tra sự tồn tại của hồ sơ
     const application = await getApplicationDetailById(applicationId);
     if (!application) {
       return sendError(res, 404, 'Không tìm thấy hồ sơ ứng tuyển.');
     }
 
-    // 2. Kiểm tra quyền sở hữu của HR tương ứng hoặc Admin
     if (application.job_hr_id !== userId && userRole !== 'ADMIN') {
       return sendError(res, 403, 'Bạn không có quyền chỉnh sửa hồ sơ ứng tuyển này.');
     }
 
-    // 3. Validation cho status nếu có
     const VALID_STATUSES = [
       'SUBMITTED', 
       'AI_INTERVIEW', 
