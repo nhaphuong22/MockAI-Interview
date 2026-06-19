@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Users, User, FileText, Filter, Eye, Star, Briefcase, ChevronRight } from "lucide-react";
+import { Loader2, Users, User, FileText, Filter, Eye, Star, Briefcase, ChevronRight, Sparkles } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ApplicationDetailModal } from "./components/ApplicationDetailModal";
@@ -20,15 +21,41 @@ export function ManageApplications() {
   const { user } = useAuthStore();
   const currentHrId = user?.id;
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const jobId = searchParams.get("jobId");
+
+  // Fetch list of HR's jobs for the dropdown filter
+  const { data: hrJobsResponse } = useQuery({
+    queryKey: ["hr-jobs-dropdown", currentHrId],
+    queryFn: async () => {
+      const res = await jobApi.getJobs({ hr_id: currentHrId, limit: 100 });
+      return res.data;
+    },
+    enabled: !!currentHrId
+  });
+  const hrJobs = hrJobsResponse?.items || [];
+
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Fetch job details to display title
+  const { data: jobData } = useQuery({
+    queryKey: ["job-detail", jobId],
+    queryFn: async () => {
+      const res = await jobApi.getJobById(jobId);
+      return res.data;
+    },
+    enabled: !!jobId
+  });
+  const jobTitle = jobData?.title;
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["manage-applications", currentHrId, filterStatus],
+    queryKey: ["manage-applications", currentHrId, filterStatus, jobId],
     queryFn: async () => {
       const response = await jobApi.getJobApplications({
-        status: filterStatus || undefined
+        status: filterStatus || undefined,
+        job_id: jobId || undefined
       });
       return response.data; // Because response.data contains the array directly
     },
@@ -50,13 +77,28 @@ export function ManageApplications() {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-              Quản Lý Ứng Viên
+              {jobTitle ? `Chiến dịch: ${jobTitle}` : "Hộp Thư Ứng Viên Tổng"}
               <span className="px-3 py-1 bg-sky-100 text-[#0ea5e9] text-sm font-bold rounded-full">
                 {applicationsList.length} hồ sơ
               </span>
             </h1>
-            <p className="text-gray-500 mt-2 font-medium">Theo dõi và đánh giá ứng viên cho các vị trí tuyển dụng</p>
+            <p className="text-gray-500 mt-2 font-medium">
+              {jobTitle 
+                ? "Danh sách hồ sơ ứng viên nộp vào chiến dịch này" 
+                : "Theo dõi và đánh giá ứng viên cho tất cả các vị trí tuyển dụng"}
+            </p>
           </div>
+          
+          {/* Nút Xem Báo Cáo AI (Chỉ hiện khi có jobId) */}
+          {jobId && jobTitle && (
+            <Link
+              to={`/hr/dashboard/campaign/${jobId}`}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
+            >
+              <Sparkles className="w-5 h-5 animate-pulse" />
+              Xem Báo Cáo Chiến Dịch (AI)
+            </Link>
+          )}
         </div>
 
         {/* Filters */}
@@ -64,6 +106,32 @@ export function ManageApplications() {
           <div className="flex items-center gap-2 text-gray-500 mr-2 text-sm font-bold">
             <Filter className="w-4 h-4" /> Bộ lọc:
           </div>
+
+          {/* Lọc theo Chiến dịch */}
+          <select
+            value={jobId || ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              const newParams = new URLSearchParams(searchParams);
+              if (val) {
+                newParams.set("jobId", val);
+              } else {
+                newParams.delete("jobId");
+              }
+              setSearchParams(newParams);
+            }}
+            className="px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-gray-50 hover:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 outline-none transition-all mr-2 cursor-pointer"
+          >
+            <option value="">Tất cả chiến dịch</option>
+            {hrJobs.map(job => (
+              <option key={job.id} value={job.id}>
+                {job.title}
+              </option>
+            ))}
+          </select>
+
+          <div className="w-px h-6 bg-gray-200 mx-1"></div>
+
           <button
             onClick={() => setFilterStatus("")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === "" ? "bg-[#0ea5e9] text-white shadow-md shadow-sky-100" : "text-gray-600 hover:bg-gray-50"}`}
