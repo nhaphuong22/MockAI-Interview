@@ -1,11 +1,23 @@
 import { SlidersHorizontal, Loader2, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { JobFilters } from "./components/JobFilters";
 import { JobCard } from "./components/JobCard";
 import { jobApi } from "../../api/jobApi";
+
+const cleanLocationName = (str) => {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .replace(/thành phố/g, "")
+    .replace(/tp\.?/g, "")
+    .replace(/tỉnh/g, "")
+    .replace(/hồ chí minh/g, "hcm")
+    .replace(/\s+/g, "")
+    .trim();
+};
 
 
 
@@ -15,11 +27,32 @@ import { jobApi } from "../../api/jobApi";
  */
 export function Jobs() {
   const navigate = useNavigate();
+  const routeLocation = useLocation();
   const [bookmarked, setBookmarked] = useState([]);
   const [salaryRange, setSalaryRange] = useState([10, 50]);
   const [showFilters, setShowFilters] = useState(true);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
+
+  const [selectedFields, setSelectedFields] = useState([]);
+  const [selectedExperiences, setSelectedExperiences] = useState([]);
+  const [selectedFormats, setSelectedFormats] = useState([]);
+  const [sortBy, setSortBy] = useState("Phù hợp nhất");
+
+
+  // Đồng bộ hóa thông tin tìm kiếm khi được chuyển hướng từ Dashboard
+  useEffect(() => {
+    if (routeLocation.state) {
+      if (routeLocation.state.search !== undefined) {
+        setSearch(routeLocation.state.search);
+      }
+      if (routeLocation.state.location !== undefined) {
+        setLocation(routeLocation.state.location);
+      }
+      // Dọn dẹp state để không tự động điền lại khi reload
+      window.history.replaceState({}, document.title);
+    }
+  }, [routeLocation]);
 
   // 1. Gọi API lấy danh sách tin tuyển dụng từ DB
   const { data: response, isLoading, isError, refetch } = useQuery({
@@ -69,27 +102,120 @@ export function Jobs() {
     remote: job.vacancy_count ? `${job.vacancy_count} chỉ tiêu` : "1 chỉ tiêu",
     experience: job.experience_level || "Không yêu cầu",
     tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
-    aiMatch: job.aiMatch || (80 + (job.id % 16)), // Sử dụng phép toán Pure thay vì Math.random để qua kiểm tra Lint
+    salaryMin: Number(job.salary_min || 0),
+    salaryMax: Number(job.salary_max || 999999999),
+    isSalaryVisible: job.is_salary_visible !== false,
+    aiMatch: job.aiMatch || (82 + (job.id % 14)),
     posted: job.created_at ? new Date(job.created_at).toLocaleDateString("vi-VN") : "Gần đây",
     applicants: job.applicants_count || 0,
-    description: job.description,
-    requirements: job.requirements,
+    createdAt: job.created_at,
   }));
 
-  // Lọc thêm theo địa điểm tại client
+  // Lọc nâng cao tại client-side
   const filteredJobs = formattedJobs.filter(job => {
-    if (location.trim() === "") return true;
-    return job.location.toLowerCase().includes(location.toLowerCase());
+    // 1. Lọc theo từ khóa tìm kiếm (nếu search từ dashboard)
+    if (search.trim() !== "") {
+      const searchLower = search.toLowerCase();
+      const matchTitle = job.title.toLowerCase().includes(searchLower);
+      const matchCompany = job.company.toLowerCase().includes(searchLower);
+      const matchDesc = (job.description || "").toLowerCase().includes(searchLower);
+      const matchReq = (job.requirements || "").toLowerCase().includes(searchLower);
+      if (!matchTitle && !matchCompany && !matchDesc && !matchReq) return false;
+    }
+
+    // 2. Lọc theo địa điểm (so sánh thông minh bỏ các tiền tố/viết tắt như TP, Tỉnh)
+    if (location.trim() !== "") {
+      const jobLocClean = cleanLocationName(job.location);
+      const searchLocClean = cleanLocationName(location);
+      if (!jobLocClean.includes(searchLocClean) && !searchLocClean.includes(jobLocClean)) return false;
+    }
+
+    // 3. Lọc theo mức lương (triệu VND)
+    const minLimit = salaryRange[0] * 1000000;
+    const maxLimit = salaryRange[1] * 1000000;
+    if (job.isSalaryVisible && (job.salaryMin > 0 || job.salaryMax < 999999999)) {
+      if (salaryRange[1] < 50) {
+        if (job.salaryMax < minLimit || job.salaryMin > maxLimit) return false;
+      } else {
+        if (job.salaryMax < minLimit) return false;
+      }
+    }
+
+    // 4. Lọc theo Lĩnh vực (IT, Marketing, Design, Finance, Sales)
+    if (selectedFields.length > 0) {
+      const jobText = `${job.title} ${job.description || ""} ${job.requirements || ""}`.toLowerCase();
+      const matchesField = selectedFields.some(field => {
+        if (field === "IT") {
+          return jobText.includes("it") || jobText.includes("software") || jobText.includes("developer") || jobText.includes("web") || jobText.includes("technology") || jobText.includes("coder");
+        }
+        return jobText.includes(field.toLowerCase());
+      });
+      if (!matchesField) return false;
+    }
+
+    // 5. Lọc theo Kinh nghiệm ("0-1 năm", "1-3 năm", "3-5 năm", "5+ năm")
+    if (selectedExperiences.length > 0) {
+      const expText = job.experience.toLowerCase();
+      const matchesExp = selectedExperiences.some(exp => {
+        if (exp === "0-1 năm") {
+          return expText.includes("0-1") || expText.includes("không yêu cầu") || expText.includes("dưới 1") || expText.includes("fresher") || expText.includes("intern") || expText.includes("junior");
+        }
+        if (exp === "1-3 năm") {
+          return expText.includes("1-3") || expText.includes("1 đến 3") || expText.includes("junior") || expText.includes("mid");
+        }
+        if (exp === "3-5 năm") {
+          return expText.includes("3-5") || expText.includes("3 đến 5") || expText.includes("senior") || expText.includes("mid");
+        }
+        if (exp === "5+ năm") {
+          return expText.includes("5+") || expText.includes("trên 5") || expText.includes("5 năm") || expText.includes("senior") || expText.includes("lead") || expText.includes("manager");
+        }
+        return false;
+      });
+      if (!matchesExp) return false;
+    }
+
+    // 6. Lọc theo Hình thức ("Full-time", "Part-time", "Remote", "Hybrid", "Office")
+    if (selectedFormats.length > 0) {
+      const jobText = `${job.title} ${job.description || ""} ${job.requirements || ""}`.toLowerCase();
+      const matchesFormat = selectedFormats.some(format => {
+        return jobText.includes(format.toLowerCase());
+      });
+      if (!matchesFormat) return false;
+    }
+
+    return true;
+  });
+
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    if (sortBy === "Mới nhất") {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    }
+    if (sortBy === "Lương cao nhất") {
+      const salaryA = a.salaryMax || 0;
+      const salaryB = b.salaryMax || 0;
+      if (salaryB !== salaryA) {
+        return salaryB - salaryA;
+      }
+      return (b.salaryMin || 0) - (a.salaryMin || 0);
+    }
+    // "Phù hợp nhất" (Mặc định)
+    return b.aiMatch - a.aiMatch;
   });
 
   const handleClearFilters = () => {
     setSearch("");
     setLocation("");
     setSalaryRange([10, 50]);
+    setSelectedFields([]);
+    setSelectedExperiences([]);
+    setSelectedFormats([]);
+    setSortBy("Phù hợp nhất");
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
       {/* Sidebar Filter Options */}
       <JobFilters 
         showFilters={showFilters}
@@ -100,46 +226,57 @@ export function Jobs() {
         onSearchChange={setSearch}
         location={location}
         onLocationChange={setLocation}
+        selectedFields={selectedFields}
+        onFieldsChange={setSelectedFields}
+        selectedExperiences={selectedExperiences}
+        onExperiencesChange={setSelectedExperiences}
+        selectedFormats={selectedFormats}
+        onFormatsChange={setSelectedFormats}
         onClearFilters={handleClearFilters}
       />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col gap-6">
         {/* Top Control Bar */}
-        <div className="p-6 dark:bg-[#0a0f1c]/50 bg-white border-b dark:border-white/10 border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {!showFilters && (
-                <button
-                  onClick={() => setShowFilters(true)}
-                  className="flex items-center gap-2 px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] transition-all font-semibold dark:text-slate-300 text-gray-700 cursor-pointer"
-                >
-                  <SlidersHorizontal className="w-5 h-5" />
-                  <span>Bộ lọc</span>
-                </button>
-              )}
-              <div>
-                <p className="text-sm dark:text-slate-400 text-gray-500">
-                  Tìm thấy <span className="font-semibold text-[#0ea5e9]">{filteredJobs.length}</span> công việc
-                </p>
-              </div>
+        <div className="p-6 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border dark:border-white/5 border-gray-100 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.02)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {!showFilters && (
+              <button
+                onClick={() => setShowFilters(true)}
+                className="flex items-center gap-2 px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] dark:hover:bg-[#0ea5e9]/10 hover:bg-[#f0f9ff] transition-all font-semibold dark:text-slate-300 text-gray-700 cursor-pointer"
+              >
+                <SlidersHorizontal className="w-5 h-5" />
+                <span>Bộ lọc</span>
+              </button>
+            )}
+            <div>
+              <p className="text-sm dark:text-slate-400 text-gray-500 font-medium">
+                Tìm thấy <span className="font-semibold text-[#0ea5e9]">{filteredJobs.length}</span> công việc phù hợp
+              </p>
             </div>
-            <select className="px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none text-sm dark:text-slate-300 text-gray-700 font-medium">
-              <option>Phù hợp nhất</option>
-              <option>Mới nhất</option>
-              <option>Lương cao nhất</option>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs dark:text-slate-400 text-gray-500 font-semibold shrink-0">Sắp xếp theo:</span>
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border-2 dark:border-white/10 border-gray-200 rounded-xl dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none text-sm dark:text-slate-300 text-gray-700 font-semibold cursor-pointer"
+            >
+              <option value="Phù hợp nhất">Phù hợp nhất</option>
+              <option value="Mới nhất">Mới nhất</option>
+              <option value="Lương cao nhất">Lương cao nhất</option>
             </select>
           </div>
         </div>
 
-        {/* Double Pane List & Details Layout */}
-        <div className="flex-1 flex overflow-hidden">
+        {/* Job List Container */}
+        <div>
           {isLoading ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 dark:bg-transparent bg-gray-50/50">
+            <div className="flex flex-col items-center justify-center p-12 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border dark:border-white/5 border-gray-100 rounded-3xl min-h-[300px]">
               <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mb-4" />
-              <p className="text-gray-500 dark:text-slate-400 text-sm">Đang tải danh sách công việc từ hệ thống...</p>
+              <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">Đang tải danh sách công việc từ hệ thống...</p>
             </div>
           ) : isError ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 dark:bg-transparent bg-gray-50/50 text-center">
+            <div className="flex flex-col items-center justify-center p-12 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border dark:border-white/5 border-gray-100 rounded-3xl min-h-[300px] text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
               <p className="text-red-500 font-bold mb-2">Đã xảy ra lỗi khi kết nối dữ liệu!</p>
               <button 
@@ -149,8 +286,8 @@ export function Jobs() {
                 Thử lại
               </button>
             </div>
-          ) : filteredJobs.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 dark:bg-transparent bg-gray-50/50 text-center">
+          ) : sortedJobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border dark:border-white/5 border-gray-100 rounded-3xl min-h-[300px] text-center">
               <p className="text-gray-500 dark:text-slate-400 font-medium mb-2">Không tìm thấy công việc nào phù hợp.</p>
               <button 
                 onClick={handleClearFilters}
@@ -161,7 +298,7 @@ export function Jobs() {
             </div>
           ) : (
             <motion.div 
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 overflow-y-auto flex-1 dark:bg-transparent bg-gray-50/50"
+              className="flex flex-col gap-4"
               initial="hidden"
               animate="visible"
               variants={{
@@ -174,7 +311,7 @@ export function Jobs() {
                 }
               }}
             >
-              {filteredJobs.map((job) => (
+              {sortedJobs.map((job) => (
                 <motion.div
                   key={job.id}
                   variants={{
@@ -195,7 +332,7 @@ export function Jobs() {
             </motion.div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

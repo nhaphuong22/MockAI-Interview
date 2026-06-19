@@ -30,6 +30,17 @@
     3. Modal chi tiết ứng viên hiển thị chính xác Họ tên, Email, Số điện thoại, link Portfolio tùy chỉnh từ bảng `applications`.
     4. API backend hỗ trợ lọc đơn tuyển theo `jobId` và đảm bảo an toàn phân quyền `hrId`.
 
+### Phase 8: Tái cấu trúc giao diện Candidate Dashboard theo phong cách TopCV
+
+**Goal:** Tái cấu trúc trang chủ của Candidate sau khi đăng nhập thành một Candidate Dashboard chuyên nghiệp theo phong cách TopCV, tích hợp trạng thái tìm việc lưu vào CSDL và hiển thị các chỉ số ATS CV, lịch sử ứng tuyển.
+**Requirements**: USER-01, USER-02
+**Depends on:** Phase 7
+**Plans:** 1/1 plans complete
+
+Plans:
+
+- [x] 01: Thiết kế giao diện Candidate Dashboard và tích hợp APIs (Cột trái main, Cột phải sidebar, switch toggle và radial ATS CV progress)
+
 ---
 
 ## Progress
@@ -43,3 +54,4 @@
 | 5. Eye-Tracking AI | v3.0 | 1/1 | Complete | 2026-06-13 |
 | 6. Jobs UI & Apply Form | v4.0 | 1/1 | Complete | 2026-06-18 |
 | 7. HR Grouped Applications | v5.0 | 0/1 | Planned | |
+| 8. Candidate Dashboard theo phong cách TopCV | v5.0 | 1/1 | Complete | 2026-06-19 |

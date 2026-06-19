@@ -30,10 +30,18 @@ export function Settings() {
 
   const activeMenu = menuItems.find(item => item.id === activeTab);
   const fullName = user?.full_name || user?.fullName || "";
-  const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || "";
+  const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || localStorage.getItem("googleAvatar") || "";
+  const getAbsoluteAvatarUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    const backendUrl = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace("/api", "")
+      : "http://localhost:5000";
+    return `${backendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
   const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
     ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
-    : rawAvatarUrl;
+    : getAbsoluteAvatarUrl(rawAvatarUrl);
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-10">

@@ -1,16 +1,19 @@
 ---
 gsd_state_version: 1.0
 milestone: v5.0
-milestone_name: HR Dashboard Enhancements & Job-grouped Applications
+milestone_name: HR Dashboard Enhancements
+current_phase_name: defining requirements
 status: planning
-last_updated: "2026-06-18T15:24:01.831Z"
+stopped_at: Phase 8 complete
+last_updated: "2026-06-19T15:54:09.069Z"
 last_activity: 2026-06-18
+last_activity_desc: Milestone v5.0 started
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 2
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State: MockAI-Interview
@@ -20,22 +23,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-18)
 
 **Core value:** Cung cấp trải nghiệm luyện tập phỏng vấn ảo bằng AI 3D trực quan sinh động và hệ thống tự động chấm điểm, đánh giá năng lực ứng viên chính xác giúp rút ngắn thời gian tuyển dụng.
-**Current focus:** Phase 6 (Jobs UI & Apply Form)
+**Current focus:** Phase 8 (Tái cấu trúc giao diện Candidate Dashboard theo phong cách TopCV)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-18 — Milestone v5.0 started
+Phase: Phase 8 (Tái cấu trúc giao diện Candidate Dashboard theo phong cách TopCV)
+Plan: 01
+Status: Completed
+Last activity: 2026-06-19 — Phase 8 completed successfully
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 3
-- Average duration: 120 min
-- Total execution time: 4 hours
+- Total plans completed: 4
+- Average duration: 95 min
+- Total execution time: 6.3 hours
 
 **By Phase:**
 
@@ -44,6 +47,7 @@ Last activity: 2026-06-18 — Milestone v5.0 started
 | 03.2 | 1 | 120m | 120m |
 | 5 | 1 | 120m | 120m |
 | 6 | 1 | - | - |
+| 8 | 1 | 20m | 20m |
 
 **Recent Trend:**
 
@@ -51,6 +55,10 @@ Last activity: 2026-06-18 — Milestone v5.0 started
 - Trend: Stable
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 8 added: Tái cấu trúc giao diện Candidate Dashboard theo phong cách TopCV
 
 ### Decisions
 
@@ -73,9 +81,9 @@ Last activity: 2026-06-18 — Milestone v5.0 started
 
 ## Session Continuity
 
-Last session: 2026-06-18T15:01:11.272Z
-Stopped at: Phase 6 plan completed
-Resume file: .planning/phases/06-thi-t-k-giao-di-n-t-m-vi-c-form-apply-job/06-01-PLAN.md
+Last session: 2026-06-19T15:54:09.056Z
+Stopped at: Phase 8 complete
+Resume file: .planning/phases/08-t-i-c-u-tr-c-giao-di-n-candidate-dashboard-theo-phong-c-ch-t/08-01-PLAN.md
 
 ## Operator Next Steps
 

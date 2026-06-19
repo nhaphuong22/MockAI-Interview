@@ -62,6 +62,9 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
       if (res.success && res.data) {
         const { token, user } = res.data;
         localStorage.setItem("token", token);
+        if (user.avatar_url && user.avatar_url.includes("googleusercontent.com")) {
+          localStorage.setItem("googleAvatar", user.avatar_url);
+        }
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();

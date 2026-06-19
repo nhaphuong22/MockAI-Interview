@@ -9,7 +9,18 @@ export function AccountSettings({ user, onUpdateUser }) {
   const [phone, setPhone] = useState(() => user?.phone || "");
   const [address, setAddress] = useState(() => user?.address || "");
   const [bio, setBio] = useState(() => user?.bio || "");
-  const [avatarUrl, setAvatarUrl] = useState(() => user?.avatar_url || user?.avatarUrl || "");
+  const getAbsoluteAvatarUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    const backendUrl = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace("/api", "")
+      : "http://localhost:5000";
+    return `${backendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    const raw = user?.avatar_url || user?.avatarUrl || localStorage.getItem("googleAvatar") || "";
+    return getAbsoluteAvatarUrl(raw);
+  });
 
   // Loading & Message states
   const [isSubmitting, setIsSubmitting] = useState(false);
