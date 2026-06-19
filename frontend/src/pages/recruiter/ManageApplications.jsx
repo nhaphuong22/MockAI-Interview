@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Users, User, FileText, Filter, Eye, Star, Briefcase } from "lucide-react";
+import { Loader2, Users, User, FileText, Filter, Eye, Star, Briefcase, Sparkles } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ApplicationDetailModal } from "./components/ApplicationDetailModal";
@@ -20,8 +21,11 @@ export function ManageApplications() {
   const { user } = useAuthStore();
   const currentHrId = user?.id;
 
+  const [searchParams] = useSearchParams();
+  const jobId = searchParams.get("jobId");
+
   const [filterStatus, setFilterStatus] = useState("");
-  const [selectedJobId, setSelectedJobId] = useState("all");
+  const [selectedJobId, setSelectedJobId] = useState(jobId || "all");
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -77,6 +81,7 @@ export function ManageApplications() {
 
   // Lấy thông tin Job đang được chọn
   const activeJobInfo = jobsList.find(job => job.id === selectedJobId);
+  const jobTitle = selectedJobId !== "all" ? activeJobInfo?.title : null;
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-8">
@@ -86,13 +91,28 @@ export function ManageApplications() {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-              Quản Lý Ứng Viên
+              {jobTitle ? `Chiến dịch: ${jobTitle}` : "Hộp Thư Ứng Viên Tổng"}
               <span className="px-3 py-1 bg-sky-100 text-[#0ea5e9] text-sm font-bold rounded-full">
                 {allApplications.length} hồ sơ
               </span>
             </h1>
-            <p className="text-gray-500 mt-2 font-medium">Theo dõi và đánh giá ứng viên cho các vị trí tuyển dụng</p>
+            <p className="text-gray-500 mt-2 font-medium">
+              {jobTitle 
+                ? "Danh sách hồ sơ ứng viên nộp vào chiến dịch này" 
+                : "Theo dõi và đánh giá ứng viên cho tất cả các vị trí tuyển dụng"}
+            </p>
           </div>
+          
+          {/* Nút Xem Báo Cáo AI (Chỉ hiện khi chọn 1 chiến dịch cụ thể) */}
+          {selectedJobId !== "all" && jobTitle && (
+            <Link
+              to={`/hr/dashboard/campaign/${selectedJobId}`}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
+            >
+              <Sparkles className="w-5 h-5 animate-pulse" />
+              Xem Báo Cáo Chiến Dịch (AI)
+            </Link>
+          )}
         </div>
 
         {/* Main Content Layout - Split-pane */}

@@ -58,7 +58,13 @@ export const jobApi = {
    */
   updateJobApplication: (id, data) => {
     return axiosClient.put(`/jobs/applications/${id}`, data);
+  },
 
-
+  /**
+   * Tổng hợp báo cáo chiến dịch Boss AI
+   * @param {number|string} jobId - ID của Job
+   */
+  getJobCampaignReport: (jobId) => {
+    return axiosClient.get(`/jobs/${jobId}/campaign-report`);
   }
 };
