@@ -1,8 +1,38 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
-import { Sparkles, Users, UserCheck, UserX, Target, Loader2, ShieldAlert } from "lucide-react";
+import { Sparkles, Users, UserCheck, UserX, Target, Loader2, ShieldAlert, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { useState } from "react";
 
 export function CampaignAIReport({ jobId }) {
+  const queryClient = useQueryClient();
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => jobApi.updateJobApplication(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["manage-applications"]);
+      showToast("Đã cập nhật trạng thái ứng viên thành công!", "success");
+    },
+    onError: (error) => {
+      console.error("Lỗi cập nhật trạng thái:", error);
+      showToast("Lỗi khi cập nhật trạng thái!", "error");
+    }
+  });
+
+  const handleAction = (id, status) => {
+    if (!id) {
+      showToast("Lỗi: Không tìm thấy ID ứng viên (Cần tạo lại báo cáo mới)", "error");
+      return;
+    }
+    updateStatusMutation.mutate({ id, status });
+  };
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["campaign-ai-report", jobId],
     queryFn: async () => {
@@ -43,7 +73,28 @@ export function CampaignAIReport({ jobId }) {
   const stats = report?.statistics;
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+      {/* Toast Notification */}
+      {toast.show && (
+        <div
+          className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-lg border backdrop-blur-md transition-all duration-500 transform ${
+            toast.show ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
+          } ${
+            toast.type === "success" 
+              ? "bg-emerald-50/90 border-emerald-200 text-emerald-800" 
+              : "bg-rose-50/90 border-rose-200 text-rose-800"
+          }`}
+        >
+          {toast.type === "success" ? (
+            <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
+              <span className="text-rose-500 font-bold text-sm">!</span>
+            </div>
+          )}
+          <p className="font-bold text-sm">{toast.message}</p>
+        </div>
+      )}
       
       {/* 0. Cache Header (Nếu có) */}
       {report?.is_cached && report?.generated_at && (
@@ -139,12 +190,20 @@ export function CampaignAIReport({ jobId }) {
             {report?.action_categories?.interview_now?.length > 0 ? (
               <div className="space-y-4">
                 {report.action_categories.interview_now.map((c, i) => (
-                  <div key={i} className="bg-white border border-emerald-100 p-4 rounded-2xl shadow-sm">
+                  <div key={i} className="bg-white border border-emerald-100 p-4 rounded-2xl shadow-sm flex flex-col">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-gray-900">{c.name}</span>
-                      <span className="text-xs font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg">{c.score} đ</span>
+                      <span className="font-bold text-gray-900 line-clamp-1 flex-1 pr-2">{c.name}</span>
+                      <span className="text-xs font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg shrink-0">{c.score} đ</span>
                     </div>
-                    <p className="text-xs text-gray-600 leading-relaxed">{c.reason}</p>
+                    <p className="text-xs text-gray-600 leading-relaxed flex-1 mb-3">{c.reason}</p>
+                    <button
+                      onClick={() => handleAction(c.id, "ACCEPTED")}
+                      disabled={updateStatusMutation.isPending}
+                      className="mt-auto w-full flex items-center justify-center gap-2 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl text-xs font-bold transition-all border border-emerald-200"
+                    >
+                      {updateStatusMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      Duyệt Phỏng Vấn
+                    </button>
                   </div>
                 ))}
               </div>
@@ -166,12 +225,20 @@ export function CampaignAIReport({ jobId }) {
             {report?.action_categories?.keep_in_pool?.length > 0 ? (
               <div className="space-y-4">
                 {report.action_categories.keep_in_pool.map((c, i) => (
-                  <div key={i} className="bg-white border border-amber-100 p-4 rounded-2xl shadow-sm">
+                  <div key={i} className="bg-white border border-amber-100 p-4 rounded-2xl shadow-sm flex flex-col">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-gray-900">{c.name}</span>
-                      <span className="text-xs font-black bg-amber-100 text-amber-700 px-2 py-1 rounded-lg">{c.score} đ</span>
+                      <span className="font-bold text-gray-900 line-clamp-1 flex-1 pr-2">{c.name}</span>
+                      <span className="text-xs font-black bg-amber-100 text-amber-700 px-2 py-1 rounded-lg shrink-0">{c.score} đ</span>
                     </div>
-                    <p className="text-xs text-gray-600 leading-relaxed">{c.reason}</p>
+                    <p className="text-xs text-gray-600 leading-relaxed flex-1 mb-3">{c.reason}</p>
+                    <button
+                      onClick={() => handleAction(c.id, "SHORTLISTED")}
+                      disabled={updateStatusMutation.isPending}
+                      className="mt-auto w-full flex items-center justify-center gap-2 py-2 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-xl text-xs font-bold transition-all border border-amber-200"
+                    >
+                      {updateStatusMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5" />}
+                      Chờ Xem Xét
+                    </button>
                   </div>
                 ))}
               </div>
@@ -193,12 +260,20 @@ export function CampaignAIReport({ jobId }) {
             {report?.action_categories?.reject_immediately?.length > 0 ? (
               <div className="space-y-4">
                 {report.action_categories.reject_immediately.map((c, i) => (
-                  <div key={i} className="bg-white border border-rose-100 p-4 rounded-2xl shadow-sm">
+                  <div key={i} className="bg-white border border-rose-100 p-4 rounded-2xl shadow-sm flex flex-col">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-gray-900">{c.name}</span>
-                      <span className="text-xs font-black bg-rose-100 text-rose-700 px-2 py-1 rounded-lg">{c.score} đ</span>
+                      <span className="font-bold text-gray-900 line-clamp-1 flex-1 pr-2">{c.name}</span>
+                      <span className="text-xs font-black bg-rose-100 text-rose-700 px-2 py-1 rounded-lg shrink-0">{c.score} đ</span>
                     </div>
-                    <p className="text-xs text-rose-600 leading-relaxed font-medium bg-rose-50 p-2 rounded-xl">{c.reason}</p>
+                    <p className="text-xs text-rose-600 leading-relaxed font-medium bg-rose-50 p-2 rounded-xl flex-1 mb-3">{c.reason}</p>
+                    <button
+                      onClick={() => handleAction(c.id, "REJECTED")}
+                      disabled={updateStatusMutation.isPending}
+                      className="mt-auto w-full flex items-center justify-center gap-2 py-2 bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-bold transition-all border border-rose-200"
+                    >
+                      {updateStatusMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                      Từ Chối Ứng Viên
+                    </button>
                   </div>
                 ))}
               </div>

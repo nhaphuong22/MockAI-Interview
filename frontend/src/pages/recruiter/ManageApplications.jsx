@@ -76,9 +76,9 @@ export function ManageApplications() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-              {jobTitle ? `Chiến dịch: ${jobTitle}` : "Hộp Thư Ứng Viên Tổng"}
-              <span className="px-3 py-1 bg-sky-100 text-[#0ea5e9] text-sm font-bold rounded-full">
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight flex flex-wrap items-center gap-3">
+              <span>{jobTitle ? `Chiến dịch: ${jobTitle}` : "Hộp Thư Ứng Viên Tổng"}</span>
+              <span className="shrink-0 whitespace-nowrap px-3 py-1 bg-sky-100 text-[#0ea5e9] text-sm font-bold rounded-full">
                 {applicationsList.length} hồ sơ
               </span>
             </h1>
