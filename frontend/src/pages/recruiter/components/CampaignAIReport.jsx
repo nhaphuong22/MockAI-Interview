@@ -9,34 +9,9 @@ export function CampaignAIReport({ jobId }) {
       const response = await jobApi.getJobCampaignReport(jobId);
       return response.data;
     },
-    enabled: false, // Không tự động chạy, HR phải bấm nút
+    enabled: true, // Tự động chạy
     retry: false
   });
-
-  if (!data && !isLoading && !isFetching) {
-    return (
-      <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-50/50 to-sky-50/50 -z-10" />
-        <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-sky-400 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-200 mb-6 transform rotate-3">
-          <Sparkles className="w-10 h-10 text-white" />
-        </div>
-        <h3 className="text-2xl font-black text-gray-900 mb-2">Phân Tích Chiến Dịch Tuyển Dụng</h3>
-        <p className="text-gray-500 text-center max-w-md mb-8">
-          Hệ thống Phân Tích Tổng Hợp (AI) sẽ đọc toàn bộ dữ liệu ứng viên đã hoàn thành phỏng vấn và sinh báo cáo đánh giá chuyên sâu để bạn đưa ra quyết định cuối cùng.
-        </p>
-        <button
-          onClick={() => refetch()}
-          className="group relative px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl overflow-hidden hover:scale-[1.02] transition-all shadow-xl shadow-gray-200"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <span className="relative flex items-center gap-2">
-            <Sparkles className="w-5 h-5" />
-            Khởi Động Quá Trình Phân Tích AI
-          </span>
-        </button>
-      </div>
-    );
-  }
 
   if (isLoading || isFetching) {
     return (
