@@ -1,5 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle, Clock, Star, Edit, Save, Loader2, Tag } from "lucide-react";
+import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle, Clock, Star, Edit, Save, Loader2, Tag, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
@@ -76,6 +76,30 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
 
   if (!application) return null;
 
+  // Extract data from parsed CV text if available
+  let displayData = {
+    name: application.candidate_name,
+    email: application.candidate_email,
+    phone: application.candidate_phone,
+    address: null
+  };
+
+  if (application.cv_text) {
+    const lines = application.cv_text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length > 0) {
+      displayData.name = lines[0]; // Usually the first line is the name
+      
+      const emailMatch = application.cv_text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (emailMatch) displayData.email = emailMatch[0];
+      
+      const phoneMatch = application.cv_text.match(/(?:\+84|0)(?:\s?\d){9,10}/);
+      if (phoneMatch) displayData.phone = phoneMatch[0];
+      
+      const addressMatch = application.cv_text.match(/(?:Địa chỉ|Address|Location):\s*([^\n]+)/i);
+      if (addressMatch) displayData.address = addressMatch[1].trim();
+    }
+  }
+
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -93,7 +117,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 )}
               </div>
               <div>
-                <Dialog.Title className="text-xl font-black text-white drop-shadow-sm">{application.candidate_name}</Dialog.Title>
+                <Dialog.Title className="text-xl font-black text-white drop-shadow-sm">{displayData.name}</Dialog.Title>
                 <Dialog.Description className="text-sm text-sky-100 font-medium flex items-center gap-2 mt-1">
                   <Briefcase className="w-4 h-4 opacity-80" /> Ứng tuyển: <span className="font-bold text-white">{application.job_title}</span>
                 </Dialog.Description>
@@ -115,11 +139,16 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-3 text-gray-600">
-                    <Mail className="w-4 h-4 text-gray-400" /> {application.candidate_email}
+                    <Mail className="w-4 h-4 text-gray-400" /> {displayData.email}
                   </div>
                   <div className="flex items-center gap-3 text-gray-600">
-                    <Phone className="w-4 h-4 text-gray-400" /> {application.candidate_phone || "Chưa cập nhật"}
+                    <Phone className="w-4 h-4 text-gray-400" /> {displayData.phone || "Chưa cập nhật"}
                   </div>
+                  {displayData.address && (
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <MapPin className="w-4 h-4 text-gray-400 shrink-0" /> {displayData.address}
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 text-gray-600">
                     <Calendar className="w-4 h-4 text-gray-400" /> Nộp ngày: {new Date(application.created_at).toLocaleDateString("vi-VN")}
                   </div>
