@@ -256,9 +256,9 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
   const query = db('applications')
     .select(
       'applications.*',
-      'users.full_name as candidate_name',
-      'users.email as candidate_email',
-      'users.phone as candidate_phone',
+      db.raw('COALESCE(applications.candidate_name, users.full_name) as candidate_name'),
+      db.raw('COALESCE(applications.candidate_email, users.email) as candidate_email'),
+      db.raw('COALESCE(applications.candidate_phone, users.phone) as candidate_phone'),
       'users.avatar_url as candidate_avatar',
       'jobs.title as job_title',
       'cvs.file_url as cv_file_url'
