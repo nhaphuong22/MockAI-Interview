@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
 import { Sparkles, Users, UserCheck, UserX, Target, Loader2, ShieldAlert } from "lucide-react";
 
-export function BossAIReport({ jobId }) {
+export function CampaignAIReport({ jobId }) {
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: ["boss-ai-report", jobId],
+    queryKey: ["campaign-ai-report", jobId],
     queryFn: async () => {
       const response = await jobApi.getJobCampaignReport(jobId);
       return response.data;
@@ -22,7 +22,7 @@ export function BossAIReport({ jobId }) {
         </div>
         <h3 className="text-2xl font-black text-gray-900 mb-2">Phân Tích Chiến Dịch Tuyển Dụng</h3>
         <p className="text-gray-500 text-center max-w-md mb-8">
-          Boss AI (Gemini) sẽ đọc toàn bộ dữ liệu ứng viên đã hoàn thành phỏng vấn và sinh báo cáo tổng hợp chuyên sâu để bạn đưa ra quyết định cuối cùng.
+          Hệ thống Phân Tích Tổng Hợp (AI) sẽ đọc toàn bộ dữ liệu ứng viên đã hoàn thành phỏng vấn và sinh báo cáo đánh giá chuyên sâu để bạn đưa ra quyết định cuối cùng.
         </p>
         <button
           onClick={() => refetch()}
@@ -31,7 +31,7 @@ export function BossAIReport({ jobId }) {
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <span className="relative flex items-center gap-2">
             <Sparkles className="w-5 h-5" /> 
-            Khởi động Boss AI Phân Tích
+            Khởi Động Quá Trình Phân Tích AI
           </span>
         </button>
       </div>
@@ -43,7 +43,7 @@ export function BossAIReport({ jobId }) {
       <div className="flex flex-col items-center justify-center py-40 bg-white rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-50/30 to-purple-50/30 animate-pulse -z-10" />
         <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-6" />
-        <h3 className="text-xl font-bold text-gray-800 mb-2">Sếp Gemini đang phân tích dữ liệu...</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-2">Hệ thống AI đang phân tích dữ liệu...</h3>
         <p className="text-gray-500 text-sm">Quá trình này có thể mất từ 5 - 15 giây tùy vào số lượng ứng viên.</p>
       </div>
     );
@@ -56,7 +56,7 @@ export function BossAIReport({ jobId }) {
           <ShieldAlert className="w-8 h-8 text-rose-500" />
         </div>
         <p className="text-rose-600 font-bold mb-2 text-lg">Không thể sinh báo cáo!</p>
-        <p className="text-gray-500 mb-6 max-w-md text-sm">{error?.response?.data?.message || "Lỗi hệ thống khi gọi Boss AI."}</p>
+        <p className="text-gray-500 mb-6 max-w-md text-sm">{error?.response?.data?.message || "Lỗi hệ thống khi gọi AI Phân Tích."}</p>
         <button onClick={() => refetch()} className="px-6 py-3 bg-gray-900 text-white hover:bg-gray-800 rounded-xl font-bold transition-colors">
           Thử lại
         </button>

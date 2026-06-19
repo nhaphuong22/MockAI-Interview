@@ -6,6 +6,7 @@ import { ManageApplications } from "../pages/recruiter/ManageApplications";
 import { CandidateProfile } from "../pages/recruiter/CandidateProfile";
 import { CompanyProfile } from "../pages/recruiter/CompanyProfile";
 import { RecruitmentAnalytics } from "../pages/recruiter/RecruitmentAnalytics";
+import { CampaignAnalytics } from "../pages/recruiter/CampaignAnalytics";
 import { CompanySettings } from "../pages/recruiter/CompanySettings";
 import { RecruiterNotifications } from "../pages/recruiter/HRNotifications";
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
@@ -42,6 +43,10 @@ export const recruiterRoutes = [
   { 
     path: "analytics", 
     element: <ProtectedRoute requiredRole="hr"><RecruitmentAnalytics /></ProtectedRoute>
+  },
+  { 
+    path: "campaign/:jobId", 
+    element: <ProtectedRoute requiredRole="hr"><CampaignAnalytics /></ProtectedRoute>
   },
   { 
     path: "settings", 
