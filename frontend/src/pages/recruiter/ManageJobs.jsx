@@ -262,8 +262,13 @@ export function ManageJobs() {
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link
-
-
+                            to={`/hr/dashboard/applications?jobId=${job.id}`}
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all inline-block"
+                            title="Xem danh sách ứng viên (Sở chỉ huy chiến dịch)"
+                          >
+                            <Users className="w-4 h-4" />
+                          </Link>
+                          <Link
                             to={`/hr/dashboard/edit-job/${job.id}`}
                             className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all inline-block"
                             title="Chỉnh sửa tin đăng"

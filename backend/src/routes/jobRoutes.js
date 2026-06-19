@@ -7,7 +7,8 @@ import {
   updateJob,
   deleteJob,
   getJobApplications,
-  updateJobApplication
+  updateJobApplication,
+  getJobCampaignReport
 } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
@@ -392,6 +393,7 @@ router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']),
  */
 
 router.get('/:id', cacheMiddleware('jobs:detail', 1800), getJobById);
+router.get('/:id/campaign-report', authenticateToken, requireRole(['HR', 'ADMIN']), getJobCampaignReport);
 router.put('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJob);
 router.delete('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), deleteJob);
 
