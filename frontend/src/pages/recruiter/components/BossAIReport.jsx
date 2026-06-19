@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
-import { Sparkles, Users, UserCheck, UserX, Target, Loader2, ArrowRight, ShieldAlert } from "lucide-react";
+import { Sparkles, Users, UserCheck, UserX, Target, Loader2, ShieldAlert } from "lucide-react";
 
 export function BossAIReport({ jobId }) {
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
