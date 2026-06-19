@@ -8,30 +8,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Float, MeshDistortMaterial, Sphere, Sparkles as DreiSparkles } from '@react-three/drei';
 
-const AnimatedNumber = ({ value }) => {
-  const [current, setCurrent] = useState(0);
 
-  useEffect(() => {
-    let startTimestamp = null;
-    const duration = 2500;
-    const endValue = parseInt(value, 10);
-
-    const step = (timestamp) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      const easeProgress = 1 - Math.pow(1 - progress, 4);
-      setCurrent(Math.floor(easeProgress * endValue));
-
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
-    };
-
-    window.requestAnimationFrame(step);
-  }, [value]);
-
-  return <>{current}</>;
-};
 
 const SpotlightCard = ({ children, className = "" }) => {
   const divRef = useRef(null);
@@ -115,21 +92,23 @@ const SkillAccordion = ({ section, isOpen, onClick }) => {
         onClick={onClick}
         className="w-full flex items-center justify-between p-6 relative z-10"
       >
-        <div className="flex items-center gap-6">
-            <svg viewBox="0 0 100 100" className="w-14 h-14 -rotate-90">
-              <circle cx="50" cy="50" r="40" className="fill-transparent stroke-gray-200 dark:stroke-slate-800" strokeWidth="8" />
-              <motion.circle 
-                initial={{ strokeDashoffset: 251.2 }}
-                animate={{ strokeDashoffset: 251.2 - (251.2 * section.score) / 100 }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-                cx="50" cy="50" r="40" 
-                className={`fill-transparent ${section.score >= 80 ? "stroke-emerald-400" : section.score >= 60 ? "stroke-[#0ea5e9]" : "stroke-amber-400"}`} 
-                strokeWidth="8" strokeLinecap="round" strokeDasharray="251.2" 
-              />
-            </svg>
-            <span className={`relative z-10 text-sm font-black tracking-tighter ${section.score >= 80 ? "text-emerald-500 dark:text-emerald-400" : section.score >= 60 ? "text-[#0ea5e9]" : "text-amber-500 dark:text-amber-400"}`}>
-              <AnimatedNumber value={section.score} />%
-            </span>
+        <div className="flex items-center gap-3">
+            {section.score >= 80 ? (
+              <div className="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-2xl border border-emerald-500/20 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Tốt</span>
+              </div>
+            ) : section.score >= 60 ? (
+              <div className="px-4 py-2 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-2xl border border-sky-500/20 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <Sparkles className="w-4 h-4" />
+                <span>Khá</span>
+              </div>
+            ) : (
+              <div className="px-4 py-2 bg-amber-500/10 text-amber-500 rounded-2xl border border-amber-500/20 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Cần cải thiện</span>
+              </div>
+            )}
           </div>
           <span className="font-extrabold dark:text-slate-200 text-slate-800 text-left text-xl tracking-tight">{section.name}</span>
         <motion.div 
@@ -236,13 +215,13 @@ export function CVAnalysisResult({ aiResults, onReupload }) {
               </div>
               
               <motion.div 
-                animate={{ scale: [1, 1.05, 1], filter: ["brightness(1)", "brightness(1.2)", "brightness(1)"] }}
+                animate={{ scale: [1, 1.03, 1] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 className="relative z-10"
               >
-                <div className="absolute -inset-10 bg-sky-500/30 blur-[80px] rounded-full z-0 pointer-events-none" />
-                <div className="text-[10rem] font-black tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-b from-white via-sky-100 to-sky-300 dark:from-white dark:via-sky-200 dark:to-[#0ea5e9] drop-shadow-[0_0_40px_rgba(14,165,233,0.5)]">
-                  <AnimatedNumber value={aiResults?.overallScore || 0} />
+                <div className="absolute -inset-10 bg-sky-500/20 blur-[80px] rounded-full z-0 pointer-events-none" />
+                <div className="text-[4rem] md:text-[6rem] font-black tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-b from-white via-sky-100 to-sky-300 dark:from-white dark:via-sky-200 dark:to-[#0ea5e9] drop-shadow-[0_0_30px_rgba(14,165,233,0.4)]">
+                  {aiResults?.overallScore >= 80 ? "HỒ SƠ TỐT" : aiResults?.overallScore >= 60 ? "HỒ SƠ KHÁ" : "CẦN CẢI THIỆN"}
                 </div>
               </motion.div>
               
@@ -276,7 +255,7 @@ export function CVAnalysisResult({ aiResults, onReupload }) {
                     cursor={{ fill: 'rgba(14,165,233,0.1)' }}
                     contentStyle={{ borderRadius: '24px', border: '1px solid rgba(14,165,233,0.2)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', backgroundColor: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', padding: '16px 24px' }}
                     itemStyle={{ color: '#38bdf8', fontWeight: '900', fontSize: '20px' }}
-                    formatter={(value) => [`${value}%`, 'Mức độ']}
+                    formatter={(value) => [value >= 80 ? 'Tốt' : value >= 60 ? 'Khá' : 'Cần cải thiện', 'Mức độ']}
                   />
                   <Radar name="Kỹ năng" dataKey="score" stroke="#38bdf8" strokeWidth={4} fill="url(#colorSkyCore)" fillOpacity={0.6} />
                   <defs>

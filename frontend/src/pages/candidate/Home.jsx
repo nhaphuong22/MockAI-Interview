@@ -232,9 +232,7 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
 
   const displaySuitableJobs = suitableJobs.length > 0 ? suitableJobs.slice(0, 6) : formattedJobs.slice(0, 6);
 
-  // CV ATS calculation from latest application
-  const latestAppWithCv = applicationsData?.find(app => app.aiScore > 0);
-  const atsScore = latestAppWithCv ? latestAppWithCv.aiScore : 0;
+
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -555,47 +553,22 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
               </button>
             </div>
 
-            {/* SVG ATS Score Progress Circle */}
-            <div className="flex flex-col items-center justify-center py-4 border-t border-gray-100/60 dark:border-white/5">
-              <div className="relative w-28 h-28 flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle
-                    cx="56"
-                    cy="56"
-                    r="46"
-                    className="stroke-gray-100 dark:stroke-slate-800"
-                    strokeWidth="7"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="56"
-                    cy="56"
-                    r="46"
-                    className="stroke-[#0ea5e9] transition-all duration-1000 ease-out"
-                    strokeWidth="7"
-                    fill="transparent"
-                    strokeDasharray={2 * Math.PI * 46}
-                    strokeDashoffset={2 * Math.PI * 46 * (1 - atsScore / 100)}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-3xl font-extrabold dark:text-white text-gray-900">{atsScore}</span>
-                  <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Điểm ATS CV</span>
-                </div>
+            {/* Tối ưu hóa CV bằng AI */}
+            <div className="flex flex-col items-center justify-center py-5 border-t border-gray-100/60 dark:border-white/5 text-center">
+              <div className="w-16 h-16 bg-[#0ea5e9]/10 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-sky-100/50 dark:border-sky-500/20 mb-3">
+                📄
               </div>
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-4 text-center px-4 leading-relaxed font-medium">
-                {atsScore > 0 
-                  ? `CV gần nhất đạt ${atsScore}/100 điểm. Luyện tập thêm để tối ưu hóa hồ sơ.`
-                  : "Chưa có điểm CV. Vui lòng upload CV của bạn để kiểm tra điểm ATS tự động."}
+              <h5 className="text-sm font-bold dark:text-white text-gray-900 mb-1">Tối Ưu CV Bằng AI</h5>
+              <p className="text-xs text-gray-500 dark:text-slate-400 px-4 leading-relaxed font-medium">
+                Tải lên CV của bạn để AI phân tích điểm mạnh, điểm yếu và gợi ý từ khóa phù hợp với công việc.
               </p>
               
               <Link 
                 to="/cv-review"
                 className="mt-4 px-5 py-2 border border-sky-100 dark:border-sky-950 text-xs font-bold text-[#0ea5e9] rounded-xl hover:bg-[#0ea5e9]/10 hover:border-[#0ea5e9]/30 transition-all flex items-center gap-1.5 bg-gradient-to-r from-sky-50 to-white dark:from-slate-900/60 dark:to-slate-800/60 shadow-sm"
               >
-                <FileText className="w-3.5 h-3.5" />
-                <span>{atsScore > 0 ? "Chấm điểm CV mới" : "Upload CV ngay"}</span>
+                <Sparkles className="w-3.5 h-3.5 text-[#0ea5e9]" />
+                <span>Phân tích CV ngay</span>
               </Link>
             </div>
 
