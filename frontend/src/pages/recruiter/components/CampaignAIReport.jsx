@@ -39,7 +39,7 @@ export function CampaignAIReport({ jobId }) {
     );
   }
 
-  const report = data?.data; // axios returns { message, data: { ... } }
+  const report = data; // Vì queryFn đã return response.data nên data chính là object report
   const stats = report?.statistics;
 
   return (

@@ -12,8 +12,8 @@ const getGeminiModel = (systemInstruction) => {
   }
   
   const genAI = new GoogleGenerativeAI(apiKey);
-  // Sử dụng gemini-flash-latest làm mặc định (bản 2026)
-  const modelName = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+  // Sử dụng gemini-2.5-flash làm mặc định (bản 2026, ổn định hơn bản latest)
+  const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   
   return genAI.getGenerativeModel({
     model: modelName,
@@ -366,10 +366,10 @@ Dựa vào dữ liệu trên, hãy sinh Báo Cáo Tổng Hợp dưới dạng JS
     const parsedData = safeParseJSON(text);
 
     return {
+      statistics: parsedData?.statistics || { total_candidates: candidatesData.length, qualified: 0, rejected: 0, average_score: 0 },
       campaign_summary: parsedData?.campaign_summary || 'Đã tổng hợp thành công báo cáo chiến dịch.',
-      top_candidates: parsedData?.top_candidates || [],
-      common_strengths: parsedData?.common_strengths || [],
-      common_weaknesses: parsedData?.common_weaknesses || [],
+      action_categories: parsedData?.action_categories || { interview_now: [], keep_in_pool: [], reject_immediately: [] },
+      skill_gap_analysis: parsedData?.skill_gap_analysis || 'Chưa có phân tích điểm yếu.',
       hr_recommendation: parsedData?.hr_recommendation || 'Xem xét gọi phỏng vấn các ứng viên điểm cao.'
     };
   } catch (err) {
