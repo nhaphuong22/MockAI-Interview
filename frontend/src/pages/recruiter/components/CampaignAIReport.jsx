@@ -9,7 +9,7 @@ export function CampaignAIReport({ jobId }) {
       const response = await jobApi.getJobCampaignReport(jobId);
       return response.data;
     },
-    enabled: false, // Không tự động chạy, HR phải bấm nút
+    enabled: !!jobId, // Tự động chạy ngay khi vào trang (nếu có jobId)
     retry: false
   });
 
