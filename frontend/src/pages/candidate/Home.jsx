@@ -452,7 +452,13 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
                   <div 
                     key={iv.id}
                     className="p-4 dark:bg-[#0f172a]/40 bg-white border border-gray-100 dark:border-white/5 rounded-2xl flex items-center justify-between hover:shadow-[0_4px_15px_rgba(0,0,0,0.01)] hover:border-[#0ea5e9]/20 transition-all cursor-pointer"
-                    onClick={() => navigate(`/hr-interview/result/${iv.id}`)}
+                    onClick={() => {
+                      if (iv.type === "REAL") {
+                        navigate(`/hr-interview/result/${iv.id}`);
+                      } else {
+                        navigate("/interview-practice", { state: { viewSessionId: iv.id } });
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-sky-50 dark:bg-sky-950/20 rounded-xl flex items-center justify-center text-lg shadow-sm">
@@ -460,7 +466,7 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold dark:text-white text-gray-900 line-clamp-1">
-                          {iv.customPosition || "Phỏng vấn giả lập"}
+                          {iv.position || "Phỏng vấn giả lập"}
                         </h4>
                         <p className="text-xs text-gray-400 font-semibold mt-0.5">
                           {iv.type === "REAL" ? "Ứng tuyển thực tế" : "Tự luyện tập phỏng vấn"}
@@ -471,12 +477,12 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
                       <div className="text-right hidden sm:block">
                         <p className="text-xs text-gray-400 font-medium">Thời gian</p>
                         <p className="text-xs font-bold text-gray-700 dark:text-slate-300 mt-0.5">
-                          {iv.created_at ? new Date(iv.created_at).toLocaleDateString("vi-VN") : "Gần đây"}
+                          {iv.date ? new Date(iv.date).toLocaleDateString("vi-VN") : "Gần đây"}
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5 px-3 py-1 bg-[#0ea5e9]/10 text-[#0ea5e9] rounded-xl text-xs font-bold border border-sky-100/50 dark:border-sky-500/20">
                         <Award className="w-3.5 h-3.5 text-amber-500" />
-                        <span>{iv.score || 80} điểm</span>
+                        <span>{iv.overall_score ?? 80} điểm</span>
                       </div>
                     </div>
                   </div>
