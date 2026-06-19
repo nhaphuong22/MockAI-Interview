@@ -363,6 +363,7 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
       'applications.id as app_id',
       'applications.interview_score',
       'applications.ai_summary',
+      'applications.updated_at',
       'users.full_name as candidate_name'
     )
     .where('applications.job_id', jobId)
@@ -373,7 +374,35 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
     throw new Error('Chưa có ứng viên nào hoàn thành phỏng vấn để tổng hợp báo cáo.');
   }
 
-  // 3. Chuẩn bị dữ liệu để đưa cho Gemini Boss
+  // 3. Cache Check
+  let maxAppUpdated = 0;
+  for (const app of applications) {
+    if (app.updated_at) {
+      const appTime = new Date(app.updated_at).getTime();
+      if (appTime > maxAppUpdated) maxAppUpdated = appTime;
+    }
+  }
+  const jobUpdated = job.updated_at ? new Date(job.updated_at).getTime() : 0;
+  const lastChangedAt = Math.max(jobUpdated, maxAppUpdated);
+  const cacheDate = job.campaign_report_updated_at ? new Date(job.campaign_report_updated_at).getTime() : 0;
+
+  if (job.campaign_report_cache && cacheDate >= lastChangedAt) {
+    console.log(`[Cache Hit] Returning cached Campaign Report for Job ${jobId}`);
+    
+    // Nếu data bị lưu nhầm thành string do lỗi trước đó, parse lại
+    let parsedCache = job.campaign_report_cache;
+    if (typeof parsedCache === 'string') {
+      try { parsedCache = JSON.parse(parsedCache); } catch(e) {}
+    }
+
+    return {
+      ...parsedCache,
+      is_cached: true,
+      generated_at: job.campaign_report_updated_at
+    };
+  }
+
+  // 4. Chuẩn bị dữ liệu để đưa cho Gemini Boss
   const candidatesData = applications.map(app => ({
     name: app.candidate_name,
     score: app.interview_score,
@@ -381,7 +410,7 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
     summary: app.ai_summary || 'Không có nhận xét'
   }));
 
-  // 4. Gọi Gemini
+  // 5. Gọi Gemini
   console.log(`Generating Boss Campaign Report for Job ${jobId} with ${candidatesData.length} candidates...`);
   const report = await generateCampaignReportFromGemini({
     jobTitle: job.title,
@@ -389,6 +418,17 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
     candidatesData
   });
 
-  return report;
+  // 6. Lưu Cache
+  const generatedDate = new Date();
+  await db('jobs').where({ id: jobId }).update({
+    campaign_report_cache: report,
+    campaign_report_updated_at: generatedDate
+  });
+
+  return {
+    ...report,
+    is_cached: false,
+    generated_at: generatedDate
+  };
 };
 

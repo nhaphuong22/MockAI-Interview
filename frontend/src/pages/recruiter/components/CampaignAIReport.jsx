@@ -9,17 +9,31 @@ export function CampaignAIReport({ jobId }) {
       const response = await jobApi.getJobCampaignReport(jobId);
       return response.data;
     },
-    enabled: !!jobId, // Tự động chạy ngay khi vào trang (nếu có jobId)
+    enabled: false, // Không tự động chạy, HR phải bấm nút
     retry: false
   });
 
   if (!data && !isLoading && !isFetching) {
     return (
-      <div className="flex flex-col items-center justify-center py-40 bg-white rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-50/30 to-purple-50/30 animate-pulse -z-10" />
-        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-6" />
-        <h3 className="text-xl font-bold text-gray-800 mb-2">Đang kết nối hệ thống AI...</h3>
-        <p className="text-gray-500 text-sm">Vui lòng đợi trong giây lát.</p>
+      <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-50/50 to-sky-50/50 -z-10" />
+        <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-sky-400 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-200 mb-6 transform rotate-3">
+          <Sparkles className="w-10 h-10 text-white" />
+        </div>
+        <h3 className="text-2xl font-black text-gray-900 mb-2">Phân Tích Chiến Dịch Tuyển Dụng</h3>
+        <p className="text-gray-500 text-center max-w-md mb-8">
+          Hệ thống Phân Tích Tổng Hợp (AI) sẽ đọc toàn bộ dữ liệu ứng viên đã hoàn thành phỏng vấn và sinh báo cáo đánh giá chuyên sâu để bạn đưa ra quyết định cuối cùng.
+        </p>
+        <button
+          onClick={() => refetch()}
+          className="group relative px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl overflow-hidden hover:scale-[1.02] transition-all shadow-xl shadow-gray-200"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <span className="relative flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            Khởi Động Quá Trình Phân Tích AI
+          </span>
+        </button>
       </div>
     );
   }
@@ -56,6 +70,27 @@ export function CampaignAIReport({ jobId }) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
+      {/* 0. Cache Header (Nếu có) */}
+      {report?.is_cached && report?.generated_at && (
+        <div className="flex items-center justify-between bg-blue-50/50 border border-blue-100 rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-blue-900">Đã tải báo cáo từ bộ nhớ đệm (Cache)</p>
+              <p className="text-xs text-blue-700">Dữ liệu được tạo vào lúc {new Date(report.generated_at).toLocaleString('vi-VN')} và chưa có sự thay đổi mới nào từ ứng viên.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => refetch()} 
+            className="px-4 py-2 bg-white text-blue-600 text-sm font-bold rounded-xl border border-blue-200 shadow-sm hover:bg-blue-50 transition-colors"
+          >
+            Làm mới
+          </button>
+        </div>
+      )}
+
       {/* 1. Statistics Bar */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -116,7 +151,7 @@ export function CampaignAIReport({ jobId }) {
 
       {/* 3. Action Buckets */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Interview Now */}
         <div className="bg-white rounded-3xl border border-emerald-100 overflow-hidden flex flex-col shadow-sm">
           <div className="bg-emerald-50 px-5 py-4 border-b border-emerald-100 flex items-center justify-between">
