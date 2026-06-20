@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Users, User, FileText, Filter, Eye, Star, Briefcase, Sparkles } from "lucide-react";
+import { Loader2, Users, User, FileText, Filter, Eye, Star, Briefcase, Sparkles, Phone, MapPin } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ApplicationDetailModal } from "./components/ApplicationDetailModal";
@@ -288,7 +288,32 @@ export function ManageApplications() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {applicationsList.map((app) => (
+                      {applicationsList.map((app) => {
+                        // Extract data from parsed CV text if available
+                        let displayData = {
+                          name: app.candidate_name,
+                          email: app.candidate_email,
+                          phone: app.candidate_phone,
+                          address: null
+                        };
+
+                        if (app.cv_text) {
+                          const lines = app.cv_text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                          if (lines.length > 0) {
+                            displayData.name = lines[0]; // Usually the first line is the name
+                            
+                            const emailMatch = app.cv_text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+                            if (emailMatch) displayData.email = emailMatch[0];
+                            
+                            const phoneMatch = app.cv_text.match(/(?:\+84|0)(?:\s?\d){9,10}/);
+                            if (phoneMatch) displayData.phone = phoneMatch[0];
+                            
+                            const addressMatch = app.cv_text.match(/(?:Địa chỉ|Address|Location):\s*([^\n]+)/i);
+                            if (addressMatch) displayData.address = addressMatch[1].trim();
+                          }
+                        }
+
+                        return (
                         <tr 
                           key={app.id} 
                           onClick={() => handleViewDetails(app)}
@@ -305,11 +330,21 @@ export function ManageApplications() {
                               </div>
                               <div>
                                 <div className="font-bold text-gray-900 group-hover:text-[#0ea5e9] transition-colors line-clamp-1">
-                                  {app.candidate_name}
+                                  {displayData.name}
                                 </div>
                                 <div className="text-xs text-gray-500 line-clamp-1 mt-0.5">
-                                  {app.candidate_email}
+                                  {displayData.email}
                                 </div>
+                                <div className="text-xs text-gray-500 line-clamp-1 mt-0.5 flex items-center gap-1">
+                                  <Phone className="w-3 h-3 shrink-0" />
+                                  {displayData.phone || "Chưa cập nhật"}
+                                </div>
+                                {displayData.address && (
+                                  <div className="text-xs text-gray-500 line-clamp-1 mt-0.5 flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 shrink-0" />
+                                    {displayData.address}
+                                  </div>
+                                )}
                                 {selectedJobId === "all" && (
                                   <div className="text-[10px] font-bold text-[#0ea5e9] mt-1 flex items-center gap-1">
                                     <Briefcase className="w-3 h-3" /> {app.jobTitle}
@@ -367,7 +402,8 @@ export function ManageApplications() {
                             )}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
