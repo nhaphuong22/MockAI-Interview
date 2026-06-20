@@ -55,7 +55,7 @@ export function Layout() {
     queryKey: ['userProfile'],
     queryFn: async () => {
       const data = await getProfileApi();
-      return data;
+      return data?.data;
     },
     enabled: !!isAuthenticated,
     staleTime: 5 * 60 * 1000,

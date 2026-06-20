@@ -6,7 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { JobFilters } from "./components/JobFilters";
-import { JobCard } from "./components/JobCard";
+import { CompanyGroupCard } from "./components/CompanyGroupCard";
 import { jobApi } from "../../api/jobApi";
 
 const cleanLocationName = (str) => {
@@ -227,6 +227,23 @@ export function Jobs() {
     return b.aiMatch - a.aiMatch;
   });
 
+  // Nhóm các công việc theo công ty, giữ nguyên thứ tự sắp xếp theo công việc phù hợp nhất
+  const groupedCompanyJobs = [];
+  const companyIndexMap = {};
+
+  sortedJobs.forEach(job => {
+    if (companyIndexMap[job.company] === undefined) {
+      companyIndexMap[job.company] = groupedCompanyJobs.length;
+      groupedCompanyJobs.push({
+        companyName: job.company,
+        logo: job.logo,
+        location: job.location,
+        jobs: []
+      });
+    }
+    groupedCompanyJobs[companyIndexMap[job.company]].jobs.push(job);
+  });
+
   const handleClearFilters = () => {
     setSearch("");
     setLocation("");
@@ -334,21 +351,31 @@ export function Jobs() {
                 }
               }}
             >
-              {sortedJobs.map((job) => (
+              {groupedCompanyJobs.map((group, index) => (
                 <motion.div
-                  key={job.id}
+                  key={group.companyName + index}
                   variants={{
                     hidden: { opacity: 0, y: 20 },
                     visible: { opacity: 1, y: 0 }
                   }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                 >
+
                   <JobCard
                     job={job}
 
                     isSelected={false}
                     isBookmarked={savedJobIds.includes(job.id)}
                     onSelect={() => navigate(`/jobs/${job.id}`)}
+
+                  <CompanyGroupCard
+                    companyName={group.companyName}
+                    logo={group.logo}
+                    location={group.location}
+                    jobs={group.jobs}
+                    bookmarked={bookmarked}
+                    onSelectJob={(id) => navigate(`/jobs/${id}`)}
+
                     onToggleBookmark={toggleBookmark}
                   />
                 </motion.div>

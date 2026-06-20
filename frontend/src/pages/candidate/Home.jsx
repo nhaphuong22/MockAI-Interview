@@ -134,9 +134,13 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
   // 1. Fetch Candidate profile from database
   const { data: profile } = useQuery({
     queryKey: ['userProfileHome'],
-    queryFn: getProfileApi,
+    queryFn: async () => {
+      const res = await getProfileApi();
+      return res?.data;
+    },
     staleTime: 5 * 60 * 1000,
   });
+  console.log("=== HOME PROFILE ===", profile);
 
   // 2. Fetch jobs list from API
   const { data: responseJobs, isLoading: jobsLoading } = useQuery({
@@ -165,8 +169,8 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
   const updateProfileMutation = useMutation({
     mutationFn: (data) => updateProfileApi(data),
     onSuccess: (updatedUser) => {
-      queryClient.setQueryData(['userProfileHome'], updatedUser);
-      queryClient.setQueryData(['userProfile'], updatedUser);
+      queryClient.setQueryData(['userProfileHome'], updatedUser?.data);
+      queryClient.setQueryData(['userProfile'], updatedUser?.data);
       showToast({ message: "Cập nhật trạng thái tìm việc thành công!", type: "success" });
     },
     onError: (error) => {

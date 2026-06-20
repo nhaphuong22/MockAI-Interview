@@ -1,7 +1,7 @@
-import { Eye, Calendar, Sparkles, Bot } from "lucide-react";
+import { Calendar, Bot } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export function ApplicationCard({ app, statusConfig, onViewAtsReport }) {
+export function ApplicationCard({ app, statusConfig }) {
   const config = statusConfig[app.status] || {
     label: "Không xác định",
     color: "bg-gray-100 text-gray-700",
@@ -47,12 +47,6 @@ export function ApplicationCard({ app, statusConfig, onViewAtsReport }) {
           <div className="relative">
             <div className="flex justify-between items-center mb-6">
               <h4 className="text-sm font-bold dark:text-slate-200 text-gray-900 uppercase tracking-widest">Tiến trình hồ sơ</h4>
-              <button
-                onClick={() => onViewAtsReport && onViewAtsReport(app.id)}
-                className="text-xs font-bold text-[#0ea5e9] hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <Eye className="w-3.5 h-3.5" /> Chi tiết
-              </button>
             </div>
             <div className="space-y-6">
               {app.timeline.map((step, index) => (
