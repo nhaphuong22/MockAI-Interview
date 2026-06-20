@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ToggleLeft, ToggleRight, Loader2, Eye, Pencil, CheckCircle2 } from "lucide-react";
+import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ToggleLeft, ToggleRight, Loader2, Eye, Pencil, CheckCircle2, Sparkles } from "lucide-react";
 
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -262,8 +262,13 @@ export function ManageJobs() {
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link
-
-
+                            to={`/hr/dashboard/applications?jobId=${job.id}`}
+                            className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all inline-block"
+                            title="Xem danh sách CV ứng viên"
+                          >
+                            <Users className="w-4 h-4" />
+                          </Link>
+                          <Link
                             to={`/hr/dashboard/edit-job/${job.id}`}
                             className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all inline-block"
                             title="Chỉnh sửa tin đăng"

@@ -1,11 +1,13 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, DollarSign, Briefcase, Clock, Building, Users, Award, ChevronRight, Bookmark, Share2, Flag, Loader2, UploadCloud, FileCheck, XCircle } from "lucide-react";
-import { useState } from "react";
+import { MapPin, DollarSign, Briefcase, Building, ChevronRight, Bookmark, Share2, Loader2, UploadCloud, FileCheck, XCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 import { jobApi } from "../../api/jobApi";
 import { cvApi } from "../../api/cvApi";
 import { applicationApi } from "../../api/applicationApi";
 import { useUiStore } from "../../store/useUiStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import { getProfileApi } from "../../api/auth";
 import * as Dialog from "@radix-ui/react-dialog";
 
 export function JobDetail() {
@@ -21,7 +23,40 @@ export function JobDetail() {
   const [coverLetter, setCoverLetter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Stepper states cho thông tin cá nhân
+  const [step, setStep] = useState(1);
+  const [candidateName, setCandidateName] = useState("");
+  const [candidateEmail, setCandidateEmail] = useState("");
+  const [candidatePhone, setCandidatePhone] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
+
   const addToast = useUiStore((state) => state.addToast);
+
+  // 1. Lấy thông tin profile ứng viên
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const data = await getProfileApi();
+      return data;
+    },
+    enabled: !!isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Pre-fill form khi modal mở
+  useEffect(() => {
+    if (isApplyModalOpen) {
+      setStep(1);
+      const profile = userProfile || user;
+      setCandidateName(profile?.full_name || profile?.fullName || "");
+      setCandidateEmail(profile?.email || "");
+      setCandidatePhone(profile?.phone || "");
+      setPortfolioUrl(profile?.portfolio_url || profile?.portfolioUrl || "");
+    }
+  }, [isApplyModalOpen, userProfile, user]);
 
   // 1. Gọi API lấy chi tiết Job thực tế
   const { data: response, isLoading, isError } = useQuery({
@@ -76,6 +111,49 @@ export function JobDetail() {
     }
   };
 
+  const formatPortfolioUrl = (url) => {
+    if (!url) return "";
+    const trimmed = url.trim();
+    if (trimmed && !/^https?:\/\//i.test(trimmed)) {
+      return `https://${trimmed}`;
+    }
+    return trimmed;
+  };
+
+  const handleNextStep = () => {
+    if (!candidateName.trim()) {
+      addToast("Vui lòng nhập họ và tên.", "warning");
+      return;
+    }
+    if (!candidateEmail.trim()) {
+      addToast("Vui lòng nhập địa chỉ email.", "warning");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(candidateEmail.trim())) {
+      addToast("Định dạng email không hợp lệ.", "warning");
+      return;
+    }
+    if (!candidatePhone.trim()) {
+      addToast("Vui lòng nhập số điện thoại.", "warning");
+      return;
+    }
+
+    const formattedUrl = formatPortfolioUrl(portfolioUrl);
+    setPortfolioUrl(formattedUrl);
+
+    if (formattedUrl) {
+      try {
+        new URL(formattedUrl);
+      } catch {
+        addToast("Định dạng Portfolio URL không hợp lệ.", "warning");
+        return;
+      }
+    }
+
+    setStep(2);
+  };
+
   // Xác nhận nộp đơn ứng tuyển
   const handleApplySubmit = async () => {
     if (!uploadedCvText) {
@@ -89,7 +167,11 @@ export function JobDetail() {
       await applicationApi.applyJob(id, {
         cv_text: uploadedCvText,
         cv_url: uploadedCvUrl,
-        cover_letter: coverLetter
+        cover_letter: coverLetter,
+        candidate_name: candidateName.trim(),
+        candidate_email: candidateEmail.trim(),
+        candidate_phone: candidatePhone.trim(),
+        portfolio_url: portfolioUrl.trim() ? formatPortfolioUrl(portfolioUrl) : null
       });
       addToast("Nộp đơn ứng tuyển thành công! Nhà tuyển dụng đã nhận được hồ sơ của bạn.", "success");
       setIsApplyModalOpen(false);
@@ -98,6 +180,11 @@ export function JobDetail() {
       setUploadedCvUrl("");
       setUploadedCvName("");
       setCoverLetter("");
+      setCandidateName("");
+      setCandidateEmail("");
+      setCandidatePhone("");
+      setPortfolioUrl("");
+      setStep(1);
     } catch (err) {
       console.error(err);
       addToast(err.response?.data?.message || "Nộp đơn ứng tuyển thất bại.", "error");
@@ -314,10 +401,13 @@ export function JobDetail() {
       </div>
 
       {/* dialog nộp đơn ứng tuyển (Apply Job Modal) */}
-      <Dialog.Root open={isApplyModalOpen} onOpenChange={setIsApplyModalOpen}>
+      <Dialog.Root open={isApplyModalOpen} onOpenChange={(open) => {
+        setIsApplyModalOpen(open);
+        if (!open) setStep(1); // Reset step khi đóng modal
+      }}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 animate-in fade-in duration-300" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl max-w-xl w-full p-8 z-50 animate-in zoom-in-95 duration-300 outline-none">
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl max-w-xl w-full p-8 z-50 animate-in zoom-in-95 duration-300 outline-none border border-slate-100">
             <div className="flex items-center justify-between mb-6">
               <Dialog.Title className="text-2xl font-bold text-gray-900">
                 Ứng Tuyển: {job.title}
@@ -327,98 +417,210 @@ export function JobDetail() {
               </Dialog.Close>
             </div>
 
-            <div className="space-y-6">
-              {/* Vùng tải CV */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">
-                  Tải Lên CV Của Bạn (PDF) <span className="text-red-500">*</span>
-                </label>
-                
-                {uploadedCvName ? (
-                  <div className="flex items-center justify-between bg-sky-50 border border-sky-100 p-4 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-sky-500 text-white rounded-lg flex items-center justify-center font-bold text-xs">
-                        PDF
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-gray-800 line-clamp-1">{uploadedCvName}</div>
-                        <div className="text-xs text-sky-600 font-semibold flex items-center gap-1 mt-0.5">
-                          <FileCheck className="w-3.5 h-3.5" />
-                          <span>Đã bóc tách thành công</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setUploadedCvName("");
-                        setUploadedCvText("");
-                      }}
-                      className="p-1 hover:bg-sky-100 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
-                      title="Xóa CV"
-                    >
-                      <XCircle className="w-5 h-5" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 hover:border-[#0ea5e9] rounded-2xl p-8 cursor-pointer transition-all bg-slate-50/50 hover:bg-sky-50/20 group">
-                    {isUploadingCv ? (
-                      <div className="flex flex-col items-center">
-                        <Loader2 className="w-8 h-8 text-[#0ea5e9] animate-spin mb-2" />
-                        <span className="text-sm text-gray-500 font-semibold">Đang bóc tách CV...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <UploadCloud className="w-10 h-10 text-gray-400 group-hover:text-[#0ea5e9] mb-2 transition-colors" />
-                        <span className="text-sm font-bold text-gray-700 mb-1">Click để tải lên file CV</span>
-                        <span className="text-xs text-gray-400 font-medium">Hỗ trợ định dạng PDF (Tối đa 5MB)</span>
-                      </>
-                    )}
-                    <input 
-                      type="file" 
-                      accept=".pdf" 
-                      onChange={handleCvChange} 
-                      className="hidden" 
-                      disabled={isUploadingCv}
-                    />
-                  </label>
-                )}
+            {/* Stepper progress indicator */}
+            <div className="flex items-center justify-between mb-8 relative">
+              <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-gray-100 -translate-y-1/2 z-0" />
+              <div 
+                className="absolute left-0 top-1/2 h-0.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] -translate-y-1/2 z-0 transition-all duration-300"
+                style={{ width: step === 1 ? "0%" : "100%" }}
+              />
+
+              {/* Step 1 Node */}
+              <div className="relative z-10 flex flex-col items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                  step === 1 
+                    ? "bg-[#0ea5e9] text-white ring-4 ring-sky-100" 
+                    : "bg-green-500 text-white"
+                }`}>
+                  {step === 1 ? "1" : "✓"}
+                </div>
+                <span className={`text-xs font-semibold mt-1.5 transition-colors duration-300 ${step === 1 ? "text-[#0ea5e9]" : "text-gray-500"}`}>
+                  Thông tin cá nhân
+                </span>
               </div>
 
-              {/* Cover Letter */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">
-                  Thư giới thiệu / Cover Letter (Không bắt buộc)
-                </label>
-                <textarea 
-                  rows={4}
-                  value={coverLetter}
-                  onChange={(e) => setCoverLetter(e.target.value)}
-                  placeholder="Giới thiệu ngắn gọn lý do bạn phù hợp với vị trí này..."
-                  className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
-                />
-              </div>
-
-              {/* Nút thao tác */}
-              <div className="flex gap-4 pt-4">
-                <Dialog.Close className="flex-1 py-3 border border-gray-200 rounded-xl text-gray-500 font-bold hover:bg-gray-50 transition-colors text-center cursor-pointer">
-                  Hủy
-                </Dialog.Close>
-                <button
-                  onClick={handleApplySubmit}
-                  disabled={isSubmitting || isUploadingCv || !uploadedCvText}
-                  className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Đang nộp hồ sơ...</span>
-                    </>
-                  ) : (
-                    <span>Nộp Đơn Ứng Tuyển</span>
-                  )}
-                </button>
+              {/* Step 2 Node */}
+              <div className="relative z-10 flex flex-col items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                  step === 2 
+                    ? "bg-[#0ea5e9] text-white ring-4 ring-sky-100" 
+                    : "bg-gray-100 text-gray-400"
+                }`}>
+                  2
+                </div>
+                <span className={`text-xs font-semibold mt-1.5 transition-colors duration-300 ${step === 2 ? "text-[#0ea5e9]" : "text-gray-400"}`}>
+                  Hồ sơ & Thư giới thiệu
+                </span>
               </div>
             </div>
+
+            {step === 1 ? (
+              /* BƯỚC 1: NHẬP THÔNG TIN CÁ NHÂN */
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                    Họ và tên <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={candidateName}
+                    onChange={(e) => setCandidateName(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                    Địa chỉ Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={candidateEmail}
+                    onChange={(e) => setCandidateEmail(e.target.value)}
+                    placeholder="candidate@example.com"
+                    className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                    Số điện thoại <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={candidatePhone}
+                    onChange={(e) => setCandidatePhone(e.target.value)}
+                    placeholder="0912345678"
+                    className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                    Portfolio URL (Không bắt buộc)
+                  </label>
+                  <input
+                    type="url"
+                    value={portfolioUrl}
+                    onChange={(e) => setPortfolioUrl(e.target.value)}
+                    onBlur={() => setPortfolioUrl(formatPortfolioUrl(portfolioUrl))}
+                    placeholder="github.com/my-profile"
+                    className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-4 border-t border-gray-50">
+                  <Dialog.Close className="flex-1 py-3.5 border border-gray-200 rounded-xl text-gray-500 font-bold hover:bg-gray-50 transition-colors text-center cursor-pointer text-sm">
+                    Hủy
+                  </Dialog.Close>
+                  <button
+                    onClick={handleNextStep}
+                    className="flex-1 py-3.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg hover:shadow-sky-100 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+                  >
+                    <span>Tiếp tục</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* BƯỚC 2: TẢI CV & THƯ GIỚI THIỆU */
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                    Tải Lên CV Của Bạn (PDF) <span className="text-red-500">*</span>
+                  </label>
+                  
+                  {uploadedCvName ? (
+                    <div className="flex items-center justify-between bg-sky-50 border border-sky-100 p-4 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-sky-500 text-white rounded-lg flex items-center justify-center font-bold text-xs">
+                          PDF
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-gray-800 line-clamp-1">{uploadedCvName}</div>
+                          <div className="text-xs text-sky-600 font-semibold flex items-center gap-1 mt-0.5">
+                            <FileCheck className="w-3.5 h-3.5" />
+                            <span>Đã bóc tách thành công</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setUploadedCvName("");
+                          setUploadedCvText("");
+                        }}
+                        className="p-1 hover:bg-sky-100 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                        title="Xóa CV"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 hover:border-[#0ea5e9] rounded-2xl p-8 cursor-pointer transition-all bg-slate-50/50 hover:bg-sky-50/20 group">
+                      {isUploadingCv ? (
+                        <div className="flex flex-col items-center">
+                          <Loader2 className="w-8 h-8 text-[#0ea5e9] animate-spin mb-2" />
+                          <span className="text-sm text-gray-500 font-semibold">Đang bóc tách CV...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <UploadCloud className="w-10 h-10 text-gray-400 group-hover:text-[#0ea5e9] mb-2 transition-colors" />
+                          <span className="text-sm font-bold text-gray-700 mb-1">Click để tải lên file CV</span>
+                          <span className="text-xs text-gray-400 font-medium">Hỗ trợ định dạng PDF (Tối đa 5MB)</span>
+                        </>
+                      )}
+                      <input 
+                        type="file" 
+                        accept=".pdf" 
+                        onChange={handleCvChange} 
+                        className="hidden" 
+                        disabled={isUploadingCv}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                    Thư giới thiệu / Cover Letter (Không bắt buộc)
+                  </label>
+                  <textarea 
+                    rows={4}
+                    value={coverLetter}
+                    onChange={(e) => setCoverLetter(e.target.value)}
+                    placeholder="Giới thiệu ngắn gọn lý do bạn phù hợp với vị trí này..."
+                    className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-4 border-t border-gray-50">
+                  <button
+                    onClick={() => setStep(1)}
+                    className="flex-1 py-3.5 border border-gray-200 rounded-xl text-gray-500 font-bold hover:bg-gray-50 transition-colors text-center cursor-pointer text-sm"
+                  >
+                    Quay lại
+                  </button>
+                  <button
+                    onClick={handleApplySubmit}
+                    disabled={isSubmitting || isUploadingCv || !uploadedCvText}
+                    className="flex-1 py-3.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg hover:shadow-sky-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-sm"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Đang nộp hồ sơ...</span>
+                      </>
+                    ) : (
+                      <span>Nộp Đơn Ứng Tuyển</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

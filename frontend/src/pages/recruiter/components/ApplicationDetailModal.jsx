@@ -1,6 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle, Clock, Star, Edit, Save, Loader2, Tag, MapPin } from "lucide-react";
-import { useState, useEffect } from "react";
+import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle, Clock, Star, Edit, Save, Loader2, Tag, Globe, ExternalLink, MapPin } from "lucide-react";
+import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
 import { inviteAIInterviewApi, getHRInterviewTranscriptApi } from "../../../api/hrInterviewApi";
@@ -76,11 +76,10 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
 
   if (!application) return null;
 
-  // Extract data from parsed CV text if available
   let displayData = {
-    name: application.candidate_name,
-    email: application.candidate_email,
-    phone: application.candidate_phone,
+    name: application.candidate_name || "",
+    email: application.candidate_email || "",
+    phone: application.candidate_phone || "",
     address: null
   };
 
@@ -146,7 +145,20 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   </div>
                   {displayData.address && (
                     <div className="flex items-center gap-3 text-gray-600">
-                      <MapPin className="w-4 h-4 text-gray-400 shrink-0" /> {displayData.address}
+                      <MapPin className="w-4 h-4 text-gray-400" /> {displayData.address}
+                    </div>
+                  )}
+                  {application.portfolio_url && (
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      <a 
+                        href={application.portfolio_url} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-sky-600 hover:text-sky-700 hover:underline inline-flex items-center gap-1 font-semibold"
+                      >
+                        Portfolio <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     </div>
                   )}
                   <div className="flex items-center gap-3 text-gray-600">

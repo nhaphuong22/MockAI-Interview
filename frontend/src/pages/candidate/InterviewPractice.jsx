@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { MicrophoneSetup } from "../../components/ai/MicrophoneSetup";
 import { InterviewSelection } from "../../components/interview/InterviewSelection";
 import { InterviewInfoInput } from "../../components/interview/InterviewInfoInput";
@@ -24,6 +25,8 @@ export function InterviewPractice() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiVoice, setAiVoice] = useState("vi-VN-female");
   const [historySessions, setHistorySessions] = useState([]);
+  const location = useLocation();
+  const [hasProcessedState, setHasProcessedState] = useState(false);
 
   const loadHistory = async () => {
     try {
@@ -42,6 +45,25 @@ export function InterviewPractice() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadHistory();
   }, []);
+
+  useEffect(() => {
+    if (location.state?.viewSessionId && historySessions.length > 0 && !hasProcessedState) {
+      const session = historySessions.find(s => s.id === Number(location.state.viewSessionId));
+      if (session) {
+        setAssessment(session);
+        if (session.qa_details && session.qa_details.length > 0) {
+          setQuestions(session.qa_details.map((q, idx) => ({
+            id: q.question_id || idx,
+            question_text: q.question,
+            expected_answer: ""
+          })));
+        }
+        setVoiceSessionId(session.id);
+        setMode("feedback");
+        setHasProcessedState(true);
+      }
+    }
+  }, [location.state, historySessions, hasProcessedState]);
 
   const { setHideNavbar } = useUiStore();
 
