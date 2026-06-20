@@ -1,5 +1,6 @@
 import db from '../db/knex.js';
 import { deleteCache, deleteCachePattern } from '../config/redis.js';
+import { generateCampaignReportFromGemini } from './geminiService.js';
 import { 
   insertJob, 
   insertJobRequirements 
@@ -255,9 +256,9 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
   const query = db('applications')
     .select(
       'applications.*',
-      'users.full_name as candidate_name',
-      'users.email as candidate_email',
-      'users.phone as candidate_phone',
+      db.raw('COALESCE(applications.candidate_name, users.full_name) as candidate_name'),
+      db.raw('COALESCE(applications.candidate_email, users.email) as candidate_email'),
+      db.raw('COALESCE(applications.candidate_phone, users.phone) as candidate_phone'),
       'users.avatar_url as candidate_avatar',
       'jobs.title as job_title',
       'cvs.file_url as cv_file_url'
@@ -350,6 +351,7 @@ export const getApplicationDetailById = async (applicationId) => {
 };
 
 /**
+
  * Lấy danh sách việc làm đã lưu hoặc ID việc làm đã lưu của ứng viên
  */
 export const getSavedJobsService = async (userId, returnIdsOnly = false) => {
@@ -436,5 +438,93 @@ export const updateSavedJobNoteService = async (userId, jobId, note) => {
   await db('saved_jobs')
     .where({ id: existingSave.id })
     .update({ note, updated_at: db.fn.now() });
+
+ * Tổng hợp toàn bộ dữ liệu ứng viên của 1 Job và gọi Gemini (Boss) để sinh Báo cáo Chiến dịch
+ */
+export const generateJobCampaignReportService = async (jobId, hrId) => {
+  // 1. Kiểm tra Job và quyền
+  const job = await db('jobs').where({ id: jobId }).first();
+  if (!job) throw new Error('Không tìm thấy tin tuyển dụng');
+  if (job.hr_id !== hrId) throw new Error('Bạn không có quyền truy cập tin tuyển dụng này');
+
+  // Lấy chi tiết yêu cầu công việc
+  const requirements = await db('job_requirements').where({ job_id: jobId });
+  const reqText = requirements.map(r => r.requirement_text).join(', ');
+
+  // 2. Lấy danh sách ứng viên đã hoàn thành phỏng vấn (có điểm)
+  const applications = await db('applications')
+    .join('users', 'applications.candidate_id', 'users.id')
+    .select(
+      'applications.id as app_id',
+      'applications.interview_score',
+      'applications.ai_summary',
+      'applications.updated_at',
+      'users.full_name as candidate_name'
+    )
+    .where('applications.job_id', jobId)
+    .whereNotNull('applications.interview_score') // Đã có điểm phỏng vấn
+    .orderBy('applications.interview_score', 'desc');
+
+  if (!applications || applications.length === 0) {
+    throw new Error('Chưa có ứng viên nào hoàn thành phỏng vấn để tổng hợp báo cáo.');
+  }
+
+  // 3. Cache Check
+  let maxAppUpdated = 0;
+  for (const app of applications) {
+    if (app.updated_at) {
+      const appTime = new Date(app.updated_at).getTime();
+      if (appTime > maxAppUpdated) maxAppUpdated = appTime;
+    }
+  }
+  const jobUpdated = job.updated_at ? new Date(job.updated_at).getTime() : 0;
+  const lastChangedAt = Math.max(jobUpdated, maxAppUpdated);
+  const cacheDate = job.campaign_report_updated_at ? new Date(job.campaign_report_updated_at).getTime() : 0;
+
+  if (job.campaign_report_cache && cacheDate >= lastChangedAt) {
+    console.log(`[Cache Hit] Returning cached Campaign Report for Job ${jobId}`);
+    
+    // Nếu data bị lưu nhầm thành string do lỗi trước đó, parse lại
+    let parsedCache = job.campaign_report_cache;
+    if (typeof parsedCache === 'string') {
+      try { parsedCache = JSON.parse(parsedCache); } catch(e) {}
+    }
+
+    return {
+      ...parsedCache,
+      is_cached: true,
+      generated_at: job.campaign_report_updated_at
+    };
+  }
+
+  // 4. Chuẩn bị dữ liệu để đưa cho Gemini Boss
+  const candidatesData = applications.map(app => ({
+    name: app.candidate_name,
+    score: app.interview_score,
+    violations: 0, // Violations được tổng hợp ngầm hoặc có thể lấy từ db, tạm để 0 vì đã bị trừ điểm trực tiếp
+    summary: app.ai_summary || 'Không có nhận xét'
+  }));
+
+  // 5. Gọi Gemini
+  console.log(`Generating Boss Campaign Report for Job ${jobId} with ${candidatesData.length} candidates...`);
+  const report = await generateCampaignReportFromGemini({
+    jobTitle: job.title,
+    requirements: job.requirements || reqText,
+    candidatesData
+  });
+
+  // 6. Lưu Cache
+  const generatedDate = new Date();
+  await db('jobs').where({ id: jobId }).update({
+    campaign_report_cache: report,
+    campaign_report_updated_at: generatedDate
+  });
+
+  return {
+    ...report,
+    is_cached: false,
+    generated_at: generatedDate
+  };
+
 };
 

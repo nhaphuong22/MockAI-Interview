@@ -116,7 +116,7 @@ export function InterviewSelection({ onStartInterview, previousSessions = [], on
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs dark:text-slate-400 text-gray-500 font-medium">
                             <span className="inline-flex items-center gap-1">
                               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                              Hình thức: {session.type === "REAL" ? "Phỏng vấn thật" : "Luyện tập"}
+                              Hình thức: {session.type === "REAL" || session.type === "INTERVIEW" ? "Phỏng vấn thật" : "Luyện tập"}
                             </span>
                             <span>•</span>
                             <span>{new Date(session.date).toLocaleDateString('vi-VN')}</span>

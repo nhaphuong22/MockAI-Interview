@@ -77,14 +77,7 @@ export default function AtsReportDashboard({ appId = null }) {
     return 'text-amber-500';
   };
 
-  const getScoreBg = (score) => {
-    if (score >= 80) return 'stroke-emerald-500';
-    if (score >= 60) return 'stroke-[#0ea5e9] stroke-[10]';
-    return 'stroke-amber-500';
-  };
 
-  // Tính chu vi vòng tròn điểm (r = 50 => C = 2 * PI * 50 = 314)
-  const strokeDashoffset = 314 - (314 * overallScore) / 100;
 
   return (
     <div className="space-y-6">
@@ -109,45 +102,29 @@ export default function AtsReportDashboard({ appId = null }) {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Điểm tổng quan */}
+        {/* Đánh giá hồ sơ tổng quan */}
         <div className="dark:bg-[#0f172a]/50 bg-slate-50/50 border dark:border-white/5 border-gray-100 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Điểm Số ATS</h4>
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">Đánh Giá Hồ Sơ</h4>
           
-          <div className="relative w-36 h-36 flex items-center justify-center mb-4">
-            <svg className="w-full h-full transform -rotate-90">
-              <circle
-                cx="72"
-                cy="72"
-                r="50"
-                className="stroke-slate-200 dark:stroke-slate-800"
-                strokeWidth="10"
-                fill="transparent"
-              />
-              <circle
-                cx="72"
-                cy="72"
-                r="50"
-                className={`transition-all duration-1000 ease-out ${getScoreBg(overallScore)}`}
-                strokeWidth="10"
-                fill="transparent"
-                strokeDasharray="314"
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center">
-              <span className={`text-4xl font-extrabold ${getScoreColor(overallScore)}`}>{overallScore}</span>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">/ 100</span>
-            </div>
+          <div className="w-24 h-24 bg-[#0ea5e9]/10 rounded-full flex items-center justify-center mb-6 text-[#0ea5e9] border border-sky-100/50 dark:border-sky-500/20 shadow-inner">
+            <Sparkles className="w-12 h-12 text-[#0ea5e9] animate-pulse" />
           </div>
 
           <div className="text-xs text-slate-500 font-medium max-w-[200px]">
             {overallScore >= 80 ? (
-              <p className="text-emerald-500 font-semibold">CV tuyệt vời! Hồ sơ của bạn cực kỳ tương thích với JD này.</p>
+              <p className="text-emerald-500 font-bold text-sm mb-1">HỒ SƠ TỐT</p>
             ) : overallScore >= 60 ? (
-              <p className="text-sky-500 font-semibold">Hồ sơ khá tốt, tuy nhiên hãy cải thiện các từ khóa để tối ưu ATS hơn.</p>
+              <p className="text-sky-500 font-bold text-sm mb-1">HỒ SƠ KHÁ</p>
             ) : (
-              <p className="text-amber-500 font-semibold">Độ tương thích chưa cao. Hãy đọc kỹ phần Khuyến nghị để sửa lại CV.</p>
+              <p className="text-amber-500 font-bold text-sm mb-1">CẦN CẢI THIỆN</p>
+            )}
+            
+            {overallScore >= 80 ? (
+              <p className="text-slate-400 dark:text-slate-500 text-[10px] mt-2">CV tuyệt vời! Hồ sơ của bạn cực kỳ tương thích với JD này.</p>
+            ) : overallScore >= 60 ? (
+              <p className="text-slate-400 dark:text-slate-500 text-[10px] mt-2">Hồ sơ khá tốt, tuy nhiên hãy cải thiện các từ khóa để tối ưu ATS hơn.</p>
+            ) : (
+              <p className="text-slate-400 dark:text-slate-500 text-[10px] mt-2">Độ tương thích chưa cao. Hãy đọc kỹ phần Khuyến nghị để sửa lại CV.</p>
             )}
           </div>
         </div>
@@ -186,7 +163,9 @@ export default function AtsReportDashboard({ appId = null }) {
                     <div key={idx} className="bg-slate-50/50 dark:bg-[#0f172a]/20 border dark:border-white/5 border-gray-100 p-3 rounded-xl">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{sec.name}</span>
-                        <span className={`text-xs font-bold ${getScoreColor(sec.score)}`}>{sec.score} / 100</span>
+                        <span className={`text-xs font-bold ${getScoreColor(sec.score)}`}>
+                          {sec.score >= 80 ? "Tốt" : sec.score >= 60 ? "Khá" : "Cần cải thiện"}
+                        </span>
                       </div>
                       {/* Bar indicator */}
                       <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">

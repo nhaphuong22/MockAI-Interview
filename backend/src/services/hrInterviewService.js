@@ -1,6 +1,5 @@
 import db from '../db/knex.js';
-import { evaluateCandidateAnswer } from './groqService.js';
-import { generateQuestionsFromGemini, generateOverallAssessmentFromGemini } from './geminiService.js';
+import { generateQuestionsFromGroq, evaluateCandidateAnswer, generateOverallAssessmentFromGroq } from './groqService.js';
 import { insertInterview, insertQuestions } from '../models/interviewModel.js';
 
 /**
@@ -66,8 +65,8 @@ export const initHRInterviewSession = async ({ userId, applicationId }) => {
     updated_at: new Date()
   });
 
-  console.log('Generating dynamic technical questions based on CV using Gemini...');
-  const aiQuestions = await generateQuestionsFromGemini({
+  console.log('Generating dynamic technical questions based on CV using Groq...');
+  const aiQuestions = await generateQuestionsFromGroq({
     position: application.job_title || 'General IT',
     skills: requirementsText.substring(0, 300),
     experienceLevel: application.experience_level || 'JUNIOR',
@@ -155,7 +154,9 @@ export const finishHRInterviewSession = async ({ interviewId, userId, totalTabVi
   const user = await db('users').where({ id: userId }).first();
 
   // 1. Fetch all questions and answers
-  const questions = await db('interview_questions').where({ interview_id: interviewId });
+  const questions = await db('interview_questions')
+    .where({ interview_id: interviewId })
+    .orderBy('order_index', 'asc');
   const answers = await db('candidate_answers')
     .whereIn('interview_question_id', questions.map(q => q.id));
 
@@ -176,46 +177,62 @@ export const finishHRInterviewSession = async ({ interviewId, userId, totalTabVi
 
   const combinedViolations = totalGazeViolations + (totalTabViolations || 0);
 
-  console.log('Generating bulk evaluation and overall assessment report using Gemini...');
-  const aiReport = await generateOverallAssessmentFromGemini({
-    candidateName: user?.full_name || 'Ứng viên',
-    position: interview.custom_position || 'Vị trí phỏng vấn',
-    skills: interview.custom_skills || '',
-    qaDetails,
-    totalViolations: combinedViolations
-  });
-
-  // 3. Update scores back to candidate_answers
+  console.log('Evaluating each answer sequentially using Groq API...');
   let totalScore = 0;
   let evaluatedCount = 0;
-  if (aiReport.evaluations && aiReport.evaluations.length > 0) {
-    for (const evalItem of aiReport.evaluations) {
-      const qId = evalItem.question_id;
-      const score = evalItem.score || 0;
-      const feedback = evalItem.feedback || '';
+
+  for (const qa of qaDetails) {
+    if (qa.answer === 'Không trả lời') {
+      qa.score = 0;
+      qa.feedback = 'Ứng viên đã bỏ qua câu hỏi này.';
+      continue;
+    }
+
+    try {
+      const evalResult = await evaluateCandidateAnswer(qa.question, qa.expected_answer, qa.answer);
+      const ansRecord = answers.find(a => a.interview_question_id === qa.id);
       
-      const ans = answers.find(a => a.interview_question_id === qId);
-      if (ans) {
-        const penalty = Math.min(50, (ans.gaze_violations || 0) * 10);
-        let finalScore = Math.max(0, score - penalty);
-        
-        let finalFeedback = feedback;
-        if (ans.gaze_violations > 0) {
-          finalFeedback += `\n\n[Cảnh báo AI]: Phát hiện ${ans.gaze_violations} lần ứng viên nhìn lệch khỏi khung hình. Bị trừ ${penalty} điểm.`;
+      let finalScore = evalResult.score || 0;
+      let finalFeedback = evalResult.feedback || '';
+
+      if (ansRecord) {
+        const penalty = Math.min(50, (ansRecord.gaze_violations || 0) * 10);
+        finalScore = Math.max(0, finalScore - penalty);
+        if (ansRecord.gaze_violations > 0) {
+          finalFeedback += `\n\n[Cảnh báo AI]: Phát hiện ${ansRecord.gaze_violations} lần ứng viên nhìn lệch khỏi khung hình. Bị trừ ${penalty} điểm.`;
         }
-        
-        await db('candidate_answers').where({ id: ans.id }).update({
+
+        await db('candidate_answers').where({ id: ansRecord.id }).update({
           score: finalScore,
           ai_feedback: finalFeedback
         });
-        
-        totalScore += finalScore;
-        evaluatedCount++;
       }
+
+      qa.score = finalScore;
+      qa.feedback = finalFeedback;
+      totalScore += finalScore;
+      evaluatedCount++;
+
+      // Small delay to respect Groq rate limits (30 RPM is quite high, but safe is better)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (err) {
+      console.error(`Failed to evaluate question ${qa.id} via Groq:`, err);
+      qa.score = 0;
+      qa.feedback = 'Lỗi trong quá trình AI phân tích câu trả lời.';
     }
   }
 
   const overallScore = evaluatedCount > 0 ? Math.round(totalScore / evaluatedCount) : 0;
+
+  console.log('Generating overall assessment report using Groq...');
+  const aiReport = await generateOverallAssessmentFromGroq({
+    candidateName: user?.full_name || 'Ứng viên',
+    position: interview.custom_position || 'Vị trí phỏng vấn',
+    skills: interview.custom_skills || '',
+    overallScore,
+    qaDetails,
+    totalViolations: combinedViolations
+  });
 
   // 4. Cập nhật applications table
   await db('applications')
@@ -269,7 +286,7 @@ export const getHRInterviewTranscript = async ({ interviewId, hrId }) => {
   // 2. Lấy toàn bộ Questions + Answers
   const questions = await db('interview_questions')
     .where({ interview_id: interviewId })
-    .orderBy('id', 'asc');
+    .orderBy('order_index', 'asc');
 
   const answers = await db('candidate_answers')
     .whereIn('interview_question_id', questions.map(q => q.id));

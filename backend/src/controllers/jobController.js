@@ -7,9 +7,13 @@ import {
   getJobApplicationsService,
   updateJobApplicationService,
   getApplicationDetailById,
+
   getSavedJobsService,
   toggleSavedJobService,
   updateSavedJobNoteService
+
+  generateJobCampaignReportService
+
 } from '../services/jobService.js';
 import { sendApplicationResultEmail } from '../services/emailService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
@@ -460,5 +464,28 @@ export const updateSavedJobNote = async (req, res) => {
       return sendError(res, 404, error.message);
     }
     return sendError(res, 500, 'Lỗi hệ thống khi cập nhật ghi chú.');
+  }
+};
+
+/**
+ * Tổng hợp toàn bộ dữ liệu ứng viên của 1 Job và gọi Gemini sinh báo cáo
+ */
+export const getJobCampaignReport = async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+    if (isNaN(jobId)) {
+      return sendError(res, 400, 'ID công việc không hợp lệ.');
+    }
+
+    const hrId = req.user.id;
+    const report = await generateJobCampaignReportService(jobId, hrId);
+    
+    return sendResponse(res, 200, report, 'Tạo báo cáo chiến dịch AI thành công.');
+  } catch (error) {
+    console.error('Lỗi trong jobController.getJobCampaignReport:', error);
+    if (error.message.includes('Chưa có ứng viên nào') || error.message.includes('quyền truy cập') || error.message.includes('Không tìm thấy')) {
+      return sendError(res, 400, error.message);
+    }
+    return sendError(res, 500, 'Lỗi hệ thống khi tạo báo cáo chiến dịch AI.');
   }
 };

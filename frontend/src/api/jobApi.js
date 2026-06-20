@@ -60,6 +60,7 @@ export const jobApi = {
     return axiosClient.put(`/jobs/applications/${id}`, data);
   },
 
+
   /**
    * Lấy danh sách việc làm đã lưu
    * @param {object} params - Bộ lọc (VD: returnIdsOnly=true)
@@ -80,5 +81,14 @@ export const jobApi = {
    */
   updateSavedJobNote: (jobId, note) => {
     return axiosClient.put(`/jobs/${jobId}/save/note`, { note });
+
+
+  /**
+   * Tổng hợp báo cáo chiến dịch Boss AI
+   * @param {number|string} jobId - ID của Job
+   */
+  getJobCampaignReport: (jobId) => {
+    return axiosClient.get(`/jobs/${jobId}/campaign-report`);
+
   }
 };

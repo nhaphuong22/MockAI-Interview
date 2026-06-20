@@ -342,6 +342,18 @@ export const loginGoogleUser = async (idToken) => {
       .first();
     
     roleName = userRole ? userRole.name : 'USER';
+
+    // Update avatar with Google's picture if candidate hasn't uploaded a custom avatar yet
+    if ((!user.avatar_url || user.avatar_url.trim() === "") && avatarUrl) {
+      const [updatedUser] = await db('users')
+        .where({ id: user.id })
+        .update({
+          avatar_url: avatarUrl,
+          updated_at: new Date()
+        })
+        .returning('*');
+      user = updatedUser;
+    }
   }
 
   // 4. Generate JWT
@@ -362,7 +374,7 @@ export const loginGoogleUser = async (idToken) => {
  * @param {object} data
  */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = data;
+  const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = data;
 
   const updateData = {};
   if (fullName !== undefined) updateData.full_name = fullName;
@@ -370,6 +382,7 @@ export const updateUserProfile = async (userId, data) => {
   if (address !== undefined) updateData.address = address;
   if (bio !== undefined) updateData.bio = bio;
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
+  if (isLookingForJob !== undefined) updateData.is_looking_for_job = isLookingForJob;
   if (companyName !== undefined) updateData.company_name = companyName;
   if (companyLogo !== undefined) updateData.company_logo = companyLogo;
   if (companyWebsite !== undefined) updateData.company_website = companyWebsite;

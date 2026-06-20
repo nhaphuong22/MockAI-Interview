@@ -461,13 +461,17 @@ export function InterviewSession({
 
   const handleSaveAndNext = async () => {
     const answerToSave = isTextMode ? textAnswer : finalAnswer;
+    let updatedQuestionsList = null;
     
     if (questionId && answerToSave && answerToSave.trim().length > 0) {
       setIsSavingAnswer(true);
       try {
         console.log(`Submitting answer for question ID ${questionId} to backend...`);
         // Gửi kèm số lần vi phạm ánh mắt lên backend
-        await submitAnswerApi(questionId, answerToSave.trim(), currentAudioUrl, accumulatedGazeViolations);
+        const res = await submitAnswerApi(questionId, answerToSave.trim(), currentAudioUrl, accumulatedGazeViolations);
+        if (res && res.data) {
+          updatedQuestionsList = res.data.data?.updatedQuestions || res.data.updatedQuestions;
+        }
       } catch (err) {
         console.error("Failed to submit and grade answer:", err);
       } finally {
@@ -481,12 +485,14 @@ export function InterviewSession({
       setAccumulatedGazeViolations(0);
     }
 
+    const activeQuestions = updatedQuestionsList || questions;
+
     // If it's the final question, trigger evaluation and Cloudinary upload
-    if (currentQuestion >= questions.length - 1) {
+    if (currentQuestion >= activeQuestions.length - 1) {
       if (interviewType === "voice") {
         handleFinalizeInterview();
       } else {
-        onNext();
+        onNext(activeQuestions);
       }
     } else {
       // Reset state variables for next question
@@ -494,7 +500,7 @@ export function InterviewSession({
       setFinalAnswer("");
       setCurrentAudioUrl("");
       setHasRecorded(false);
-      onNext();
+      onNext(activeQuestions);
     }
   };
 
