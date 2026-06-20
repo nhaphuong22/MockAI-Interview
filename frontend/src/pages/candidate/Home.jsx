@@ -168,8 +168,8 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
   const updateProfileMutation = useMutation({
     mutationFn: (data) => updateProfileApi(data),
     onSuccess: (updatedUser) => {
-      queryClient.setQueryData(['userProfileHome'], updatedUser);
-      queryClient.setQueryData(['userProfile'], updatedUser);
+      queryClient.setQueryData(['userProfileHome'], updatedUser?.data);
+      queryClient.setQueryData(['userProfile'], updatedUser?.data);
       showToast({ message: "Cập nhật trạng thái tìm việc thành công!", type: "success" });
     },
     onError: (error) => {
