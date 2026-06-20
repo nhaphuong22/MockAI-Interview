@@ -1,10 +1,7 @@
 import { SlidersHorizontal, Loader2, AlertCircle } from "lucide-react";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -349,25 +346,8 @@ export function Jobs() {
                   <JobCard
                     job={job}
 
-                    isSelected={activeJobId === job.id}
-                    isBookmarked={savedJobIds.includes(job.id)}
-                    onSelect={() => setSelectedJob(job.id)}
-                    onToggleBookmark={toggleBookmark}
-                  />
-                ))}
-              </div>
-
-              {selectedJobData && (
-                <JobDetailView 
-                  job={selectedJobData}
-                  onToggleBookmark={toggleBookmark}
-                  isBookmarked={savedJobIds.includes(selectedJobData.id)}
-                />
-              )}
-            </>
-
                     isSelected={false}
-                    isBookmarked={bookmarked.includes(job.id)}
+                    isBookmarked={savedJobIds.includes(job.id)}
                     onSelect={() => navigate(`/jobs/${job.id}`)}
                     onToggleBookmark={toggleBookmark}
                   />

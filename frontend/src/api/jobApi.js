@@ -81,8 +81,7 @@ export const jobApi = {
    */
   updateSavedJobNote: (jobId, note) => {
     return axiosClient.put(`/jobs/${jobId}/save/note`, { note });
-
-
+  },
   /**
    * Tổng hợp báo cáo chiến dịch Boss AI
    * @param {number|string} jobId - ID của Job

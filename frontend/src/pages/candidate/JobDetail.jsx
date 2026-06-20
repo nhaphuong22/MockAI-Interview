@@ -2,10 +2,6 @@ import { useParams, Link } from "react-router-dom";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MapPin, DollarSign, Briefcase, Clock, Building, Users, Award, ChevronRight, Bookmark, Share2, Flag, Loader2, UploadCloud, FileCheck, XCircle } from "lucide-react";
-import { useState } from "react";
-
-import { useQuery } from "@tanstack/react-query";
-import { MapPin, DollarSign, Briefcase, Building, ChevronRight, Bookmark, Share2, Loader2, UploadCloud, FileCheck, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { jobApi } from "../../api/jobApi";
