@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { User, Phone, Mail, MapPin, Globe, AlignLeft } from "lucide-react";
 import { updateProfileApi, uploadAvatarApi } from "../../../api/auth";
 import { Camera, Loader2 } from "lucide-react";
 
 export function AccountSettings({ user, onUpdateUser }) {
+  const queryClient = useQueryClient();
   // Form states
   const [fullName, setFullName] = useState(() => user?.full_name || user?.fullName || "");
   const [phone, setPhone] = useState(() => user?.phone || "");
@@ -76,6 +78,7 @@ export function AccountSettings({ user, onUpdateUser }) {
       });
       if (response.success) {
         onUpdateUser(response.data);
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
         setMessage({ type: "success", text: "Cập nhật thông tin hồ sơ thành công!" });
       } else {
         setMessage({ type: "error", text: response.message || "Có lỗi xảy ra!" });

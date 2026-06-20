@@ -149,10 +149,6 @@ export function ApplicationTracking() {
                   key={app.id} 
                   app={app} 
                   statusConfig={statusConfig} 
-                  onViewAtsReport={(appId) => {
-                    setSelectedAppId(appId);
-                    setShowAtsModal(true);
-                  }}
                 />
               ))
             ) : (

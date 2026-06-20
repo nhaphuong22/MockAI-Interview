@@ -134,7 +134,10 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
   // 1. Fetch Candidate profile from database
   const { data: profile } = useQuery({
     queryKey: ['userProfileHome'],
-    queryFn: getProfileApi,
+    queryFn: async () => {
+      const res = await getProfileApi();
+      return res?.data;
+    },
     staleTime: 5 * 60 * 1000,
   });
 
