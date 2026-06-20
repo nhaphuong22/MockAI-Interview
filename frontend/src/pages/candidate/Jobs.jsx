@@ -1,6 +1,6 @@
 import { SlidersHorizontal, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { JobFilters } from "./components/JobFilters";
 import { JobCard } from "./components/JobCard";
 import { JobDetailView } from "./components/JobDetailView";
@@ -26,8 +26,8 @@ const formatTime = (timeStr) => {
  * Manages job listings, filtering by various criteria, and viewing detailed descriptions.
  */
 export function Jobs() {
+  const queryClient = useQueryClient();
   const [selectedJob, setSelectedJob] = useState(null);
-  const [bookmarked, setBookmarked] = useState([]);
   const [salaryRange, setSalaryRange] = useState([10, 50]);
   const [showFilters, setShowFilters] = useState(true);
   const [search, setSearch] = useState("");
@@ -47,10 +47,26 @@ export function Jobs() {
 
   const jobsList = response?.data?.items || [];
 
+  // Gọi API lấy danh sách ID công việc đã lưu
+  const { data: savedJobIds = [] } = useQuery({
+    queryKey: ["savedJobIds"],
+    queryFn: async () => {
+      const res = await jobApi.getSavedJobs({ returnIdsOnly: true });
+      return res.data || [];
+    }
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (jobId) => jobApi.toggleSavedJob(jobId),
+    onSuccess: () => {
+      // Refresh cache để cập nhật UI
+      queryClient.invalidateQueries({ queryKey: ["savedJobIds"] });
+      queryClient.invalidateQueries({ queryKey: ["savedJobs"] });
+    }
+  });
+
   const toggleBookmark = (jobId) => {
-    setBookmarked((prev) =>
-      prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
-    );
+    toggleMutation.mutate(jobId);
   };
 
   // Định dạng hiển thị mức lương
@@ -183,7 +199,7 @@ export function Jobs() {
                     key={job.id}
                     job={job}
                     isSelected={activeJobId === job.id}
-                    isBookmarked={bookmarked.includes(job.id)}
+                    isBookmarked={savedJobIds.includes(job.id)}
                     onSelect={() => setSelectedJob(job.id)}
                     onToggleBookmark={toggleBookmark}
                   />
@@ -194,7 +210,7 @@ export function Jobs() {
                 <JobDetailView 
                   job={selectedJobData}
                   onToggleBookmark={toggleBookmark}
-                  isBookmarked={bookmarked.includes(selectedJobData.id)}
+                  isBookmarked={savedJobIds.includes(selectedJobData.id)}
                 />
               )}
             </>

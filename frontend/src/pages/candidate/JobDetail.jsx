@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MapPin, DollarSign, Briefcase, Clock, Building, Users, Award, ChevronRight, Bookmark, Share2, Flag, Loader2, UploadCloud, FileCheck, XCircle } from "lucide-react";
 import { useState } from "react";
 import { jobApi } from "../../api/jobApi";
@@ -10,7 +10,31 @@ import * as Dialog from "@radix-ui/react-dialog";
 
 export function JobDetail() {
   const { id } = useParams();
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Gọi API lấy danh sách ID công việc đã lưu
+  const { data: savedJobIds = [] } = useQuery({
+    queryKey: ["savedJobIds"],
+    queryFn: async () => {
+      const res = await jobApi.getSavedJobs({ returnIdsOnly: true });
+      return res.data || [];
+    }
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (jobId) => jobApi.toggleSavedJob(jobId),
+    onSuccess: () => {
+      // Refresh cache để cập nhật UI
+      queryClient.invalidateQueries({ queryKey: ["savedJobIds"] });
+      queryClient.invalidateQueries({ queryKey: ["savedJobs"] });
+    }
+  });
+
+  const isBookmarked = savedJobIds.includes(Number(id));
+
+  const toggleBookmark = () => {
+    toggleMutation.mutate(id);
+  };
 
   // States cho việc nộp đơn ứng tuyển
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
@@ -197,7 +221,7 @@ export function JobDetail() {
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setIsBookmarked(!isBookmarked)}
+                  onClick={toggleBookmark}
                   className="flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] transition-all text-sm cursor-pointer"
                 >
                   <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-[#0ea5e9] text-[#0ea5e9]" : ""}`} />
