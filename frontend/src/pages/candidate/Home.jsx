@@ -140,6 +140,7 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
     },
     staleTime: 5 * 60 * 1000,
   });
+  console.log("=== HOME PROFILE ===", profile);
 
   // 2. Fetch jobs list from API
   const { data: responseJobs, isLoading: jobsLoading } = useQuery({
