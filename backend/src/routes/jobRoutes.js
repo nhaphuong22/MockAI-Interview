@@ -11,7 +11,7 @@ import {
 
   toggleSavedJob,
   getSavedJobs,
-  updateSavedJobNote
+  updateSavedJobNote,
 
   getJobCampaignReport
 
