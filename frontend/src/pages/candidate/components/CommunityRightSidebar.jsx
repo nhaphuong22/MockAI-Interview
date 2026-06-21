@@ -1,24 +1,9 @@
 import React from "react";
-import { PenSquare, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 
-export function CommunityRightSidebar({ trendingTags, onWritePost, selectedTag, setSelectedTag }) {
+export function CommunityRightSidebar({ trendingTags, selectedTag, setSelectedTag }) {
   return (
     <div className="sticky top-24 space-y-8">
-      {/* Share story card */}
-      <div className="bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl p-8 text-white shadow-xl shadow-sky-100 overflow-hidden relative group">
-        <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-        <h3 className="text-2xl font-bold mb-3 relative z-10">Chia Sẻ Câu Chuyện</h3>
-        <p className="text-sm opacity-90 mb-6 relative z-10 leading-relaxed font-medium">
-          Trở thành contributor và giúp đỡ 200,000+ thành viên trong cộng đồng
-        </p>
-        <button 
-          onClick={onWritePost}
-          className="w-full py-4 bg-white text-[#0ea5e9] font-bold rounded-2xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 relative z-10 active:scale-[0.98]"
-        >
-          <PenSquare className="w-5 h-5" />
-          <span>Viết Bài Mới</span>
-        </button>
-      </div>
 
       {/* Trending Tags card */}
       <div className="dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/20 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-100">

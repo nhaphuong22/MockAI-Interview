@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { JobFilters } from "./components/JobFilters";
 import { CompanyGroupCard } from "./components/CompanyGroupCard";
 import { jobApi } from "../../api/jobApi";
+import { useUiStore } from "../../store/useUiStore";
 
 const cleanLocationName = (str) => {
   if (!str) return "";
@@ -84,12 +85,26 @@ export function Jobs() {
     }
   });
 
+  const showToast = useUiStore((state) => state.showToast);
+
   const toggleMutation = useMutation({
     mutationFn: (jobId) => jobApi.toggleSavedJob(jobId),
-    onSuccess: () => {
+    onSuccess: (res) => {
       // Refresh cache để cập nhật UI
       queryClient.invalidateQueries({ queryKey: ["savedJobIds"] });
       queryClient.invalidateQueries({ queryKey: ["savedJobs"] });
+      
+      const payload = res?.data || res;
+      showToast({ 
+        message: payload?.message || "Đã cập nhật trạng thái lưu việc làm.", 
+        type: "success" 
+      });
+    },
+    onError: (err) => {
+      showToast({ 
+        message: err.response?.data?.error || err.response?.data?.message || "Có lỗi xảy ra khi lưu việc làm.", 
+        type: "error" 
+      });
     }
   });
 
