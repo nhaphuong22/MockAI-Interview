@@ -84,11 +84,11 @@ export function ManageApplications() {
   const jobTitle = selectedJobId !== "all" ? activeJobInfo?.title : null;
 
   return (
-    <div className="bg-gray-50/50 min-h-screen py-8">
+    <div className="bg-gray-50/50 min-h-screen pt-4 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 tracking-tight flex flex-wrap items-center gap-3">
               <span>{jobTitle ? `Chiến dịch: ${jobTitle}` : "Hộp Thư Ứng Viên Tổng"}</span>
@@ -107,10 +107,10 @@ export function ManageApplications() {
           {selectedJobId !== "all" && jobTitle && (
             <Link
               to={`/hr/dashboard/campaign/${selectedJobId}`}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all whitespace-nowrap"
             >
-              <Sparkles className="w-5 h-5 animate-pulse" />
-              Xem Báo Cáo Chiến Dịch (AI)
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              Báo Cáo Chiến Dịch AI
             </Link>
           )}
         </div>
