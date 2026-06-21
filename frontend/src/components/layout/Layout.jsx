@@ -9,8 +9,9 @@ import { useThemeStore } from "../../store/useThemeStore";
 import { GlobalBackground } from "./GlobalBackground";
 import { useUiStore } from "../../store/useUiStore";
 import { useAuthGate } from "../../hooks/useAuthGate";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getProfileApi } from "../../api/auth";
+import { notificationApi } from "../../api/notificationApi";
 
 // Protected Link Component
 const ProtectedLink = ({ to, children, className }) => {
@@ -48,23 +49,61 @@ export function Layout() {
   const { theme, toggleTheme } = useThemeStore();
   const { handleProtectedNav } = useAuthGate();
 
+  const queryClient = useQueryClient();
+
   const { data: userProfile } = useQuery({
     queryKey: ['userProfile'],
     queryFn: async () => {
       const data = await getProfileApi();
-      return data;
+      return data?.data;
     },
     enabled: !!isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch notifications for Facebook-style dropdown
+  const { data: notificationsResponse } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: notificationApi.getNotifications,
+    enabled: !!isAuthenticated,
+    refetchInterval: 30000, // auto refetch every 30s as fallback
+  });
+
+  const notifications = Array.isArray(notificationsResponse) 
+    ? notificationsResponse 
+    : (notificationsResponse?.data || []);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const markAsReadMutation = useMutation({
+    mutationFn: (id) => notificationApi.markAsRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: notificationApi.markAllRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  });
+
   const currentUser = userProfile || user;
   const packageName = currentUser?.package_name || (isUserRecruiter ? "STARTER" : "MIỄN PHÍ");
 
-  const rawAvatarUrl = currentUser?.avatar_url || currentUser?.avatarUrl || "";
+  const rawAvatarUrl = currentUser?.avatar_url || currentUser?.avatarUrl || localStorage.getItem("googleAvatar") || "";
+  const getAbsoluteAvatarUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    const backendUrl = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace("/api", "")
+      : "http://localhost:5000";
+    return `${backendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
   const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
     ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
-    : rawAvatarUrl;
+    : getAbsoluteAvatarUrl(rawAvatarUrl);
 
   const handleLogout = () => {
     logout();
@@ -188,12 +227,106 @@ export function Layout() {
               )}
               {isAuthenticated ? (
                 <>
-                  <Link to={isRecruiter ? `${recruiterBase}/notifications` : isAdministrator ? `${administratorBase}/notifications` : "/notifications"}>
-                    <div className="relative group">
-                      <Bell className={`w-5 h-5 cursor-pointer transition-colors ${isCandidate && theme === 'dark' ? 'text-slate-300 group-hover:text-[#0ea5e9]' : 'text-gray-500 group-hover:text-[#0ea5e9]'}`} />
-                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
-                    </div>
-                  </Link>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger asChild>
+                      <button className="relative group outline-none cursor-pointer p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                        <Bell className={`w-5 h-5 transition-colors ${isCandidate && theme === 'dark' ? 'text-slate-300 group-hover:text-[#0ea5e9]' : 'text-gray-500 group-hover:text-[#0ea5e9]'}`} />
+                        {unreadCount > 0 && (
+                          <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></div>
+                        )}
+                      </button>
+                    </DropdownMenu.Trigger>
+
+                    <DropdownMenu.Portal>
+                      <DropdownMenu.Content
+                        className="w-[340px] sm:w-[380px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/5 p-0 z-50 animate-in fade-in zoom-in-95 overflow-hidden"
+                        sideOffset={8}
+                        align="end"
+                      >
+                        <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
+                          <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">Thông báo</h3>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markAllReadMutation.mutate();
+                              }}
+                              className="text-[11px] font-bold text-[#0ea5e9] hover:underline cursor-pointer"
+                            >
+                              Đánh dấu tất cả là đã đọc
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="max-h-[300px] overflow-y-auto divide-y divide-gray-50 dark:divide-white/5">
+                          {notifications.length === 0 ? (
+                            <div className="p-8 text-center text-gray-400 dark:text-slate-500 text-xs font-medium">
+                              Không có thông báo nào.
+                            </div>
+                          ) : (
+                            notifications.map((notification) => (
+                              <DropdownMenu.Item
+                                key={notification.id}
+                                asChild
+                                className="outline-none"
+                              >
+                                <div
+                                  onClick={() => {
+                                    if (!notification.isRead) {
+                                      markAsReadMutation.mutate(notification.id);
+                                    }
+                                    if (notification.link) {
+                                      navigate(notification.link);
+                                    }
+                                  }}
+                                  className={`p-3.5 flex gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors ${
+                                    !notification.isRead ? 'bg-sky-50/40 dark:bg-sky-950/10' : ''
+                                  }`}
+                                >
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm ${notification.color || 'bg-blue-50 text-blue-600'}`}>
+                                    {notification.type === 'application' ? '💼' : '🔔'}
+                                  </div>
+                                  
+                                  <div className="flex-1 space-y-0.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className={`text-[11px] font-bold leading-tight ${
+                                        !notification.isRead ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-slate-400'
+                                      }`}>
+                                        {notification.title}
+                                      </p>
+                                      {!notification.isRead && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#0ea5e9] shrink-0 mt-1"></span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 dark:text-slate-400 leading-normal font-medium line-clamp-2">
+                                      {notification.content}
+                                    </p>
+                                    <p className="text-[9px] text-gray-400 dark:text-slate-500 font-semibold mt-1">
+                                      {new Date(notification.time).toLocaleString('vi-VN', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        day: '2-digit',
+                                        month: '2-digit'
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                              </DropdownMenu.Item>
+                            ))
+                          )}
+                        </div>
+
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-900/80 border-t border-gray-100 dark:border-white/5 text-center">
+                          <Link
+                            to={isRecruiter ? `${recruiterBase}/notifications` : isAdministrator ? `${administratorBase}/notifications` : "/notifications"}
+                            className="text-[10px] font-bold text-gray-600 dark:text-slate-400 hover:text-[#0ea5e9] dark:hover:text-[#0ea5e9] transition-colors inline-block w-full"
+                          >
+                            Xem tất cả trong trang thông báo
+                          </Link>
+                        </div>
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Portal>
+                  </DropdownMenu.Root>
 
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger asChild>
@@ -286,7 +419,7 @@ export function Layout() {
         </header>
       )}
 
-      <main className={`min-h-[calc(100vh-64px)] ${shouldHideNavbar ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28')}`}>
+      <main className={`min-h-[calc(100vh-64px)] ${shouldHideNavbar ? 'pt-0' : (location.pathname === '/' && !isAuthenticated ? 'pt-0' : 'pt-24 md:pt-28')}`}>
         <Outlet />
       </main>
 

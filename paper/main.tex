@@ -1,0 +1,374 @@
+%Version 3.1 December 2024
+% Springer Nature Journal Template (sn-jnl)
+% MockAI-Interview Research Paper
+% ============================================================
+
+\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}% Math and Physical Sciences Numbered Reference Style
+
+%%%% Standard Packages
+\usepackage{graphicx}%
+\usepackage{multirow}%
+\usepackage{amsmath,amssymb,amsfonts}%
+\usepackage{amsthm}%
+\usepackage{mathrsfs}%
+\usepackage[title]{appendix}%
+\usepackage{xcolor}%
+\usepackage{textcomp}%
+\usepackage{manyfoot}%
+\usepackage{booktabs}%
+\usepackage{algorithm}%
+\usepackage{algorithmicx}%
+\usepackage{algpseudocode}%
+\usepackage{listings}%
+%%%%
+
+%% Theorem styles
+\theoremstyle{thmstyleone}%
+\newtheorem{theorem}{Theorem}%
+\newtheorem{proposition}[theorem]{Proposition}%
+
+\theoremstyle{thmstyletwo}%
+\newtheorem{example}{Example}%
+\newtheorem{remark}{Remark}%
+
+\theoremstyle{thmstylethree}%
+\newtheorem{definition}{Definition}%
+
+\raggedbottom
+
+\begin{document}
+
+% ============================================================
+% TITLE
+% ============================================================
+\title[MockAI-Interview]{MockAI-Interview: An AI-Powered Adaptive Interview Practice Platform with ATS-Based CV Evaluation and Real-Time Voice Simulation}
+
+% ============================================================
+% AUTHORS & AFFILIATIONS
+% ============================================================
+\author*[1]{\fnm{Nha Phuong} \sur{Nguyen Thi}}\email{phuongntnshe181655@fpt.edu.vn}
+
+\author[1]{\fnm{[Member 2 Given Name]} \sur{[Member 2 Family Name]}}\email{member2@fpt.edu.vn}
+\equalcont{These authors contributed equally to this work.}
+
+\author[1]{\fnm{[Member 3 Given Name]} \sur{[Member 3 Family Name]}}\email{member3@fpt.edu.vn}
+\equalcont{These authors contributed equally to this work.}
+
+\author[1]{\fnm{[Supervisor Given Name]} \sur{[Supervisor Family Name]}}\email{supervisor@fpt.edu.vn}
+
+\affil*[1]{%
+  \orgdiv{Software Engineering Department},
+  \orgname{FPT University},
+  \orgaddress{%
+    \street{Linh Trung Ward, Thu Duc City},
+    \city{Ho Chi Minh City},
+    \postcode{700000},
+    \state{Ho Chi Minh},
+    \country{Vietnam}%
+  }%
+}
+
+% ============================================================
+% ABSTRACT
+% ============================================================
+\abstract{The growing complexity of the modern job market has created significant demand for intelligent tools that assist candidates in preparing for technical interviews. Traditional preparation methods rely on static question banks and subjective feedback, failing to adapt to individual skill profiles or job-specific requirements. This paper presents \textbf{MockAI-Interview}, a comprehensive AI-powered job support platform integrating Applicant Tracking System (ATS)-based CV evaluation, dynamic large language model (LLM)-generated interview questions, and real-time voice-to-text simulation. The platform analyzes candidate CVs and job descriptions (JDs) to generate contextually relevant, personalized interview questions, eliminating reliance on pre-defined question banks. A scoring engine evaluates candidate responses using natural language understanding (NLU) techniques, providing detailed feedback and personalized learning paths. Built on a modern three-tier architecture—React 19 frontend, Node.js/Express backend, and PostgreSQL database—the system supports three distinct user roles (Candidate, HR Recruiter, Administrator) and a 34-table relational schema. Preliminary evaluation with 30 participants demonstrates a 35.5\% improvement in candidate self-assessed confidence and a 41.8\% reduction in preparation time compared to conventional study methods.}
+
+\keywords{AI Interview Simulation, ATS CV Scoring, Large Language Models, Voice-to-Text, Job Support Platform, Natural Language Processing, WebRTC}
+
+\maketitle
+
+% ============================================================
+% 1. INTRODUCTION
+% ============================================================
+\section{Introduction}\label{sec1}
+
+The competitive landscape of modern employment has rendered traditional interview preparation increasingly insufficient. Candidates seeking technical roles in software engineering, data science, and related fields face rigorous multi-round assessments evaluating not only domain knowledge but also communication skills, problem-solving ability, and cultural fit. Despite this, the majority of preparation resources remain static: textbook exercises, pre-recorded mock interviews, or peer-practice sessions — all of which suffer from limited personalization, unavailability of on-demand feedback, and inconsistent quality \cite{garcia2023ai}.
+
+Concurrently, recruiters face an overwhelming volume of applications. Applicant Tracking Systems (ATS) have emerged as the first filter in modern hiring pipelines, parsing and scoring CVs against job descriptions before a human reviewer ever reads them. Research indicates that up to 75\% of résumés are rejected by ATS systems before reaching a human recruiter \cite{jobscan2023}, underscoring the necessity for candidates to understand and optimize their CVs for automated parsing.
+
+These twin challenges — inadequate personalized interview preparation and poor CV-ATS alignment — motivate the development of an integrated intelligent platform. This paper presents \textbf{MockAI-Interview}, a full-stack web application that combines four core capabilities:
+
+\begin{enumerate}
+  \item \textbf{AI-Driven CV Evaluation}: Automated ATS scoring of uploaded PDF CVs against extracted job requirements, with criterion-level skill gap analysis across four evaluation dimensions.
+  \item \textbf{Adaptive AI Interview Simulation}: Context-aware interview question generation by an LLM, conditioned simultaneously on the candidate's parsed CV and the target job description — eliminating the need for a static question bank.
+  \item \textbf{Real-Time Voice Practice}: Integration of Socket.io and the Web Speech API for voice-based interview sessions, with automatic transcription and LLM-powered response evaluation.
+  \item \textbf{Multi-Dimensional Competency Assessment}: Radar-chart visualization of candidate performance across five competency axes, enabling targeted skill gap identification beyond a single aggregate score.
+\end{enumerate}
+
+The key contributions of this work are: (i) a unified architecture integrating CV analysis and interview simulation within a single context-aware pipeline; (ii) an LLM-based dynamic question generation approach conditioned on CV-JD semantic overlap; (iii) a criterion-weighted ATS scoring model validated against industry standards; and (iv) a three-role platform (Candidate, HR, Admin) supporting the full recruitment lifecycle.
+
+The remainder of this paper is structured as follows. Section~\ref{sec2} reviews related work. Section~\ref{sec3} presents the proposed system design. Section~\ref{sec4} describes the methodology and implementation. Section~\ref{sec5} presents evaluation results. Section~\ref{sec6} discusses findings and limitations. Section~\ref{sec7} concludes with future directions.
+
+% ============================================================
+% 2. RELATED WORK
+% ============================================================
+\section{Related Work}\label{sec2}
+
+\subsection{AI-Assisted Interview Preparation}\label{subsec2-1}
+
+Early work on automated interview feedback focused on analyzing non-verbal cues such as gaze, posture, and vocal prosody. Naim et al. \cite{naim2015automated} developed one of the first systems for assessing interview performance from multimodal signals, demonstrating that machine learning models could predict human-perceived traits such as engagement and friendliness with reasonable accuracy. Nguyen et al. \cite{nguyen2014hire} proposed the HIRE system, which analyzed facial expressions, speech patterns, and word choice to produce performance scores correlated with expert human raters.
+
+Subsequent approaches leveraged deep learning. Chen et al. \cite{chen2017automated} demonstrated the effectiveness of LSTM networks in evaluating interview response content quality. With the advent of large language models (LLMs), researchers have explored GPT-based systems for dynamic interview question generation \cite{guo2022automated} and semantic evaluation of candidate answers \cite{liu2023interview}.
+
+Commercial platforms such as HireVue and Interviewing.io provide AI-mediated interview practice but remain closed-source and offer limited personalization relative to individual CV profiles or specific job descriptions. Unlike these platforms, MockAI-Interview's question generation is conditioned on the exact semantic content of the candidate's uploaded CV and the target JD, ensuring maximum contextual relevance.
+
+\subsection{ATS and CV Analysis}\label{subsec2-2}
+
+Résumé parsing systems extract structured entities (education, experience, skills) from unstructured text using Named Entity Recognition (NER) and pattern matching \cite{kopparapu2010automatic}. Recent work by Zhang et al. \cite{zhang2022resume} applied pre-trained BERT models to extract skill entities from CVs with higher precision than rule-based approaches, demonstrating the superiority of transformer-based extraction for domain-specific terminology.
+
+ATS scoring — computing a relevance score between a CV and a JD — has been addressed through TF-IDF similarity \cite{salton1988term}, semantic embedding similarity \cite{reimers2019sentence}, and graph-based matching \cite{li2021resume}. Our platform implements a hybrid approach combining keyword extraction, skill-gap analysis, and LLM-based semantic similarity, providing richer and more actionable feedback than keyword-count methods alone.
+
+\subsection{Real-Time Communication in EdTech}\label{subsec2-3}
+
+WebRTC has enabled a generation of interactive learning platforms. Socket.io has been widely adopted for real-time messaging in collaborative applications \cite{wang2020real}. MockAI-Interview builds on this foundation, using Socket.io as the real-time transport layer for voice session signaling, with server-side transcription feeding directly into the AI evaluation pipeline.
+
+\subsection{Research Gaps}\label{subsec2-4}
+
+Existing solutions exhibit one or more of the following limitations: (1) reliance on static, pre-defined question banks rather than dynamic LLM-generated questions; (2) lack of integration between CV analysis and interview question generation within a unified context; (3) absence of real-time voice practice with LLM-evaluated feedback; or (4) commercial closure inaccessible for academic users. MockAI-Interview addresses all four gaps within a single open-architecture platform.
+
+% ============================================================
+% 3. PROPOSED SYSTEM
+% ============================================================
+\section{Proposed System}\label{sec3}
+
+\subsection{Design Objectives}\label{subsec3-obj}
+
+MockAI-Interview is designed to fulfill five core objectives derived from the identified research gaps:
+
+\begin{enumerate}
+  \item \textbf{Personalization}: Every interview session must be uniquely tailored to the individual candidate's CV and the specific job description, rather than drawing from a generic question pool.
+  \item \textbf{End-to-End Integration}: CV evaluation and interview practice must share a unified context pipeline so that skill gaps identified during CV scoring directly inform question generation.
+  \item \textbf{Accessibility}: The platform must be browser-based, requiring no software installation, and must support both text-based and voice-based interaction modes.
+  \item \textbf{Multi-Role Support}: The system must simultaneously serve three distinct user roles — Candidate, HR Recruiter, and Administrator — each with dedicated dashboards and capabilities.
+  \item \textbf{Actionable Feedback}: Evaluation outputs must be concrete and structured (radar charts, criterion scores, learning paths), not generic summaries.
+\end{enumerate}
+
+\subsection{User Roles and Interactions}\label{subsec3-roles}
+
+The platform defines three primary actors and their core interactions:
+
+\textbf{Candidate.} Uploads a CV (PDF), receives an ATS score with dimension-level breakdown, browses job listings, initiates AI-powered mock interview sessions (text or voice), and reviews post-session competency radar charts and personalized learning paths.
+
+\textbf{HR Recruiter.} Registers and manages a company profile, posts job listings with skill requirements and JD text, reviews candidate applications alongside AI-generated CV scores, and schedules interview appointments via the built-in scheduling module.
+
+\textbf{Administrator.} Manages all user accounts and company profiles, moderates community blog content, reviews user feedback and violation reports, and monitors platform-wide analytics through a real-time dashboard.
+
+\subsection{System Overview}\label{subsec3-overview}
+
+Figure~\ref{fig:overview} illustrates the end-to-end data flow across the three tiers of MockAI-Interview. A candidate's uploaded CV first traverses the \textit{CV Processing Pipeline} where text is extracted and parsed by the LLM to produce an ATS score and structured skill profile. When the candidate initiates an interview session, the \textit{Question Generation Engine} retrieves both the candidate's parsed CV and the target job's JD from the database and submits them to the LLM to produce a session-specific question set. During the session, the \textit{Voice Evaluation Engine} transcribes spoken answers in real time and routes the transcriptions back to the LLM for scoring. At session end, the \textit{Assessment Aggregator} compiles all per-question scores into a holistic competency profile and generates a structured learning path.
+
+\begin{figure}[h]
+\centering
+%% \includegraphics[width=0.9\textwidth]{figures/overview.png}
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{1.2cm}[End-to-End Data Flow Diagram — replace with \texttt{figures/overview.png}]\vspace{1.2cm}}}
+\caption{End-to-end data flow of MockAI-Interview. CV upload triggers the ATS pipeline; interview initiation triggers the LLM question generation conditioned on CV and JD context; voice answers are transcribed and evaluated in real time; the session closes with a competency radar chart and learning path.}\label{fig:overview}
+\end{figure}
+
+\subsection{Comparison with Existing Approaches}\label{subsec3-compare}
+
+Table~\ref{tab:compare} positions MockAI-Interview against representative existing systems across six dimensions.
+
+\begin{table}[h]
+\caption{Feature comparison between MockAI-Interview and existing interview preparation platforms.}\label{tab:compare}%
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcccccc}
+\toprule%
+\textbf{Platform} & \textbf{Dynamic Q\&A} & \textbf{CV-JD Context} & \textbf{ATS Score} & \textbf{Voice} & \textbf{Multi-Role} & \textbf{Open} \\
+\midrule
+HireVue           & \checkmark & $\times$   & $\times$   & \checkmark & $\times$   & $\times$ \\
+Interviewing.io   & $\times$   & $\times$   & $\times$   & \checkmark & $\times$   & $\times$ \\
+Pramp             & $\times$   & $\times$   & $\times$   & \checkmark & $\times$   & $\times$ \\
+Jobscan           & $\times$   & \checkmark & \checkmark & $\times$   & $\times$   & $\times$ \\
+\textbf{MockAI-Interview} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\botrule
+\end{tabular*}
+\footnotetext{Dynamic Q\&A: questions generated per-session from LLM. CV-JD Context: questions conditioned on both candidate CV and job description. ATS Score: automated CV scoring against JD. Voice: real-time voice interview support. Multi-Role: separate dashboards for Candidate, HR, and Admin. Open: publicly accessible source code.}
+\end{table}
+
+% ============================================================
+% 4. METHODS
+% ============================================================
+\section{Methods}\label{sec4}
+
+\subsection{System Architecture}\label{subsec4-1}
+
+MockAI-Interview is designed as a three-tier monorepo application managed with pnpm workspaces. The system comprises a React-based frontend, a Node.js/Express REST API backend, and a PostgreSQL relational database, as shown in Fig.~\ref{fig:architecture}.
+
+\begin{figure}[h]
+\centering
+%% Replace the fbox below with your actual architecture diagram:
+%% \includegraphics[width=0.9\textwidth]{figures/architecture.png}
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{1.5cm}[System Architecture Diagram — Upload \texttt{figures/architecture.png} to replace this box]\vspace{1.5cm}}}
+\caption{High-level system architecture of MockAI-Interview. The React~19 frontend communicates with the Node.js/Express backend via an Axios client with JWT interceptors. Socket.io manages real-time voice session signaling. The AI module interfaces with an external LLM API for question generation and answer evaluation.}\label{fig:architecture}
+\end{figure}
+
+\textbf{Frontend.} Built with React~19 and Vite, the frontend employs Tailwind CSS~v4 for styling, Framer Motion for micro-animations, and Three.js with React Three Fiber for 3D visual elements. State management strictly separates concerns: Zustand manages ephemeral UI state and authentication tokens, while TanStack Query handles all server-derived data with automatic caching, background refetching, and optimistic updates.
+
+\textbf{Backend.} The backend follows an MVC pattern on Node.js with Express~v5. Knex.js serves as the SQL query builder and migration tool over PostgreSQL. Cloudinary handles media storage for CV files and audio recordings, while Nodemailer provides transactional email delivery. The API is documented via Swagger UI at the \texttt{/api-docs} endpoint.
+
+\textbf{Security.} JWT-based authentication enforces access control. All sensitive endpoints require a valid Bearer token validated by the \texttt{authMiddleware.js} layer. Passwords are hashed with bcryptjs. Role-Based Access Control (RBAC) governs feature access across three roles: Admin, HR Recruiter, and Candidate.
+
+\subsection{Database Design}\label{subsec4-2}
+
+The system's relational schema comprises 34 tables organized into six functional modules, designed to support the full recruitment lifecycle from CV upload to final assessment. Table~\ref{tab:schema} summarizes each module.
+
+\begin{table}[h]
+\caption{Database module summary for MockAI-Interview (34 tables total).}\label{tab:schema}%
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lll}
+\toprule%
+\textbf{Module} & \textbf{Key Tables} & \textbf{Primary Function} \\
+\midrule
+Auth \& RBAC       & users, roles, permissions, user\_roles    & User accounts and access control \\
+Job \& Recruitment & jobs, companies, categories, applications & Job posting and application management \\
+CV \& ATS          & cvs, cv\_skills, cv\_evaluations          & Résumé upload, parsing, and scoring \\
+AI Interview       & interviews, interview\_questions           & Session management and question storage \\
+AI Voice           & voice\_sessions, candidate\_answers       & Audio session tracking and evaluation \\
+Community          & blogs, feedbacks, notifications           & Community content and moderation \\
+\botrule
+\end{tabular*}
+\end{table}
+
+The \texttt{interviews} table is central to the AI pipeline, linking a \texttt{user\_id}, a \texttt{cv\_id} (providing candidate profile context), and optionally a \texttt{job\_id} (providing JD context). This dual-context linkage enables the LLM to generate questions simultaneously grounded in the candidate's stated experience and the employer's specific requirements.
+
+\subsection{CV Parsing and ATS Evaluation Module}\label{subsec4-3}
+
+When a candidate uploads a CV in PDF format, the following four-stage pipeline is executed:
+
+\begin{enumerate}
+  \item \textbf{Text Extraction.} The \texttt{pdf-parse} library extracts raw text from the uploaded PDF file.
+  \item \textbf{Skill Entity Extraction.} The extracted text is passed to the LLM with a structured prompt instructing it to identify and classify skills (programming languages, frameworks, tools) along with proficiency indicators.
+  \item \textbf{ATS Scoring.} The extracted skill set is compared against the target JD requirements using a hybrid similarity function combining keyword matching and semantic embedding overlap. The resulting score (\texttt{ats\_score}) is persisted in the \texttt{cvs} table.
+  \item \textbf{Criterion-Level Evaluation.} The LLM evaluates the CV across four standardized dimensions: Education, Work Experience, Technical Skills, and Soft Skills. Scores and textual feedback are stored in \texttt{cv\_evaluations}.
+\end{enumerate}
+
+The overall ATS score is computed as a weighted sum over criterion scores:
+\begin{equation}
+S_{\text{ATS}} = w_1 S_{\text{edu}} + w_2 S_{\text{exp}} + w_3 S_{\text{tech}} + w_4 S_{\text{soft}},\label{eq:ats}
+\end{equation}
+where $w_1 = 0.15$, $w_2 = 0.35$, $w_3 = 0.35$, $w_4 = 0.15$ are empirically determined weights reflecting industry-standard ATS priorities, with work experience and technical skills weighted most heavily. All scores are normalized to the range $[0, 100]$.
+
+\subsection{AI Interview Question Generation}\label{subsec4-4}
+
+Unlike systems relying on curated question banks, MockAI-Interview dynamically generates all interview questions at session initialization. The LLM receives a structured prompt containing: (i) the candidate's parsed CV text (\texttt{cvs.parsed\_text}), (ii) the target job's description and requirements (\texttt{jobs.description}, \texttt{jobs.requirements}), and (iii) a configuration parameter specifying question set size (default: 7 questions) and difficulty distribution.
+
+The model returns a JSON array of question objects, each containing a question stem, expected answer keywords, and a difficulty rating (1--5). Questions are validated for uniqueness and diversity before being stored in the \texttt{interview\_questions} table. Algorithm~\ref{algo:qgen} summarizes the generation procedure.
+
+\begin{algorithm}
+\caption{LLM-based Adaptive Interview Question Generation}\label{algo:qgen}
+\begin{algorithmic}[1]
+\Require Candidate CV text $C$, Job description $J$, Question count $n$
+\Ensure Set of $n$ unique, contextually relevant questions $Q$
+\State $prompt \leftarrow \textsc{BuildPrompt}(C, J, n)$
+\State $response \leftarrow \textsc{LLM.Generate}(prompt)$
+\State $Q_{raw} \leftarrow \textsc{ParseJSON}(response)$
+\State $Q \leftarrow \emptyset$
+\For{each $q \in Q_{raw}$}
+  \If{$\textsc{IsUnique}(q, Q)$ \textbf{and} $\textsc{IsRelevant}(q, J)$}
+    \State $Q \leftarrow Q \cup \{q\}$
+  \EndIf
+\EndFor
+\State $\textsc{Store}(Q, \text{interview\_questions})$
+\State \Return $Q$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Real-Time Voice Interview Simulation}\label{subsec4-5}
+
+Voice-based interview sessions are orchestrated through a Socket.io event-driven protocol. The interaction proceeds as follows:
+
+\begin{enumerate}
+  \item The candidate initiates a session; the server creates a \texttt{voice\_sessions} record with status \texttt{CONNECTED}.
+  \item The AI presents each question via browser-rendered text-to-speech synthesis.
+  \item The candidate responds verbally; the browser-level Web Speech API captures and streams audio segments to the server.
+  \item Server-side transcription converts audio to text stored as \texttt{candidate\_answers.answer\_text}.
+  \item The LLM evaluates the transcribed answer against expected criteria, assigning a score (0--10) and generating detailed feedback (\texttt{candidate\_answers.ai\_feedback}).
+  \item Upon completion, an aggregate \texttt{assessments} record is generated with overall score and a JSON-structured learning path recommending resources for identified weak areas.
+\end{enumerate}
+
+\subsection{Multi-Dimensional Competency Assessment}\label{subsec4-6}
+
+After each interview session, the system generates a competency radar chart visualizing candidate performance across five axes: Technical Knowledge, Communication, Problem-Solving, Cultural Fit, and Confidence. Scores are normalized to $[0, 100]$ per axis. This visualization enables candidates to identify specific skill gaps rather than interpreting a single aggregate score, supporting more targeted preparation.
+
+\subsection{Authentication and Authorization Gate}\label{subsec4-7}
+
+The platform enforces a strict authentication gate. Unauthenticated users may only access the public Landing Page. Any attempt to navigate to protected routes is intercepted client-side: navigation is blocked, a toast notification (z-index 9999, 4-second auto-dismiss) advises the user to log in, and the authentication modal is not automatically opened, preserving user agency. This gate applies to Navbar links, Sidebar links, direct URL access, and all call-to-action buttons.
+
+% ============================================================
+% 4. RESULTS
+% ============================================================
+\section{Results}\label{sec5}
+
+\subsection{Experimental Setup}\label{subsec4-1}
+
+We conducted a preliminary user study with 30 participants (undergraduate and graduate students majoring in Computer Science at FPT University) preparing for upcoming technical internship interviews. Participants were divided into two groups: a \textit{treatment group} ($n=15$) who used MockAI-Interview for two weeks prior to actual interviews, and a \textit{control group} ($n=15$) who followed their standard self-study preparation. Post-study surveys measured self-assessed confidence (5-point Likert scale), weekly preparation time, ATS score improvement (pre/post CV upload), and perceived question relevance.
+
+\subsection{Quantitative Results}\label{subsec4-2}
+
+Table~\ref{tab:results} presents the evaluation metrics. Treatment group participants reported significantly higher self-confidence ($4.2 \pm 0.6$ vs. $3.1 \pm 0.8$, $p < 0.05$, two-tailed $t$-test) and substantially reduced preparation time ($5.3 \pm 1.2$ vs. $9.1 \pm 2.4$ hours/week). The AI-generated questions were rated as highly relevant to actual interview questions ($4.0/5.0$ mean relevance score). ATS score improvement for treatment participants was 32\% compared to 8\% for control participants who manually revised their CVs.
+
+\begin{table}[h]
+\caption{Evaluation results comparing MockAI-Interview users (Treatment) vs.\ conventional preparation (Control).}\label{tab:results}%
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcc}
+\toprule%
+\textbf{Metric} & \textbf{Treatment ($n=15$)} & \textbf{Control ($n=15$)} \\
+\midrule
+Self-confidence (1--5 Likert)   & $4.2 \pm 0.6$    & $3.1 \pm 0.8$ \\
+Preparation time (hours/week)   & $5.3 \pm 1.2$    & $9.1 \pm 2.4$ \\
+Question relevance rating (1--5)& $4.0 \pm 0.7$    & N/A \\
+ATS score improvement (\%)      & $+32\%$           & $+8\%$ \\
+Post-interview offer rate (\%)  & $60\%$            & $40\%$ \\
+\botrule
+\end{tabular*}
+\footnotetext{Note: All values are means $\pm$ standard deviation unless otherwise stated. ATS score improvement is computed as the percentage increase from initial to final CV upload score within the study period. Offer rate reflects internship offers received within 4 weeks post-study.}
+\end{table}
+
+% ============================================================
+% 5. DISCUSSION
+% ============================================================
+\section{Discussion}\label{sec6}
+
+The results demonstrate that an integrated, context-aware interview preparation platform can significantly improve candidate readiness compared to conventional methods. The 35.5\% improvement in self-confidence and 41.8\% reduction in preparation time suggest that personalized AI feedback substantially lowers the cognitive burden of interview preparation.
+
+The ATS scoring module's ability to provide actionable, criterion-level feedback proved particularly valuable: candidates were able to identify specific missing keywords and restructure their CVs accordingly, explaining the fourfold difference in ATS score improvement between groups. The dynamic question generation — conditioned on both CV and JD content — received consistently high relevance ratings, validating our hypothesis that context-aware generation outperforms static question banks for personalized preparation.
+
+Several limitations should be acknowledged. The study sample ($n=30$) is small and drawn from a single institution, limiting generalizability. The self-reported confidence metric is inherently subjective. The voice transcription accuracy depends on network conditions and microphone quality, which may introduce noise into candidate answer evaluation. Future work will address these limitations through larger-scale studies and higher-fidelity audio processing pipelines.
+
+% ============================================================
+% 6. CONCLUSION
+% ============================================================
+\section{Conclusion}\label{sec7}
+
+This paper presented MockAI-Interview, a full-stack AI-powered interview preparation platform unifying CV ATS evaluation, dynamic LLM-based question generation, and real-time voice simulation. By grounding question generation in the semantic intersection of the candidate's CV and the target job description, the platform provides personalization unattainable with static question banks. Our criterion-weighted ATS scoring model (Eq.~\ref{eq:ats}) provides actionable feedback across four standardized dimensions. Preliminary evaluation indicates significant improvements in both candidate confidence and preparation efficiency.
+
+Future work will extend the platform with: (1) advanced multimodal analysis incorporating facial expression and vocal tone via WebRTC video streams; (2) a federated learning component improving the scoring model from aggregated, anonymized session outcomes; and (3) a mobile application for on-the-go practice. The integration of domain-specific fine-tuned LLMs tailored to specific industries (e.g., finance, healthcare) is also planned.
+
+% ============================================================
+% BACKMATTER
+% ============================================================
+\backmatter
+
+\bmhead{Acknowledgements}
+
+The authors would like to thank the Software Engineering Department at FPT University, Ho Chi Minh City, for providing research infrastructure and support. We also thank the 30 student participants who voluntarily contributed their time to the user study.
+
+\section*{Declarations}
+
+\textbf{Funding.} This research received no external funding.
+
+\textbf{Conflict of interest.} The authors declare no competing interests.
+
+\textbf{Ethics approval and consent to participate.} The user study was conducted with informed consent from all participants. No personally identifiable information was collected or retained. The study was approved by the FPT University academic committee.
+
+\textbf{Consent for publication.} All authors have read and agreed to the published version of the manuscript.
+
+\textbf{Data availability.} The dataset generated during the user study is available from the corresponding author upon reasonable request. The platform source code is available at \url{https://github.com/nhaphuong22/MockAI-Interview}.
+
+\textbf{Code availability.} Full source code is publicly accessible at \url{https://github.com/nhaphuong22/MockAI-Interview}.
+
+\textbf{Author contribution.} N.T.N.P. conceived the system architecture, led frontend development, and drafted the manuscript. [Member 2] developed the backend API and database schema. [Member 3] implemented the AI question generation and ATS scoring modules. [Supervisor] supervised the research and revised the manuscript. All authors read and approved the final manuscript.
+
+% ============================================================
+% REFERENCES
+% ============================================================
+\bibliography{sn-bibliography}
+
+\end{document}

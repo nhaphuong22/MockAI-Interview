@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, Mail, Phone, MapPin, Camera, Loader2, Save, Lock } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { updateProfileApi, uploadAvatarApi, changePasswordApi } from "../../api/auth";
@@ -26,6 +26,7 @@ const InputField = ({ label, name, icon: Icon, placeholder, value, onChange, typ
 );
 
 export function CompanySettings() {
+  const queryClient = useQueryClient();
   const { user, setAuth } = useAuthStore();
   const [formData, setFormData] = useState({
     fullName: "",
@@ -68,6 +69,7 @@ export function CompanySettings() {
     mutationFn: (data) => updateProfileApi(data),
     onSuccess: (response) => {
       setAuth(response.data);
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       setMessage({ type: "success", text: "Cập nhật thông tin cá nhân thành công!" });
       setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     },

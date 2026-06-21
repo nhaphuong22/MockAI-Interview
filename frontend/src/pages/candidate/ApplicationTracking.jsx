@@ -45,7 +45,6 @@ export function ApplicationTracking() {
     // Sinh timeline động dựa trên trạng thái
     const timeline = [
       { step: "Nộp hồ sơ", completed: true, date: new Date(app.appliedDate).toLocaleDateString("vi-VN") },
-      { step: "Chấm điểm CV AI", completed: true, date: new Date(app.appliedDate).toLocaleDateString("vi-VN"), score: app.aiScore },
       { step: "Chờ phản hồi", completed: rawStatus !== "submitted", date: rawStatus !== "submitted" ? new Date(app.appliedDate).toLocaleDateString("vi-VN") : null },
       { step: "Phỏng vấn Nhà Tuyển Dụng", completed: rawStatus === "interviewed" || rawStatus === "accepted", date: null },
       { step: "Kết quả cuối cùng", completed: rawStatus === "accepted" || rawStatus === "rejected", date: null },
@@ -150,10 +149,6 @@ export function ApplicationTracking() {
                   key={app.id} 
                   app={app} 
                   statusConfig={statusConfig} 
-                  onViewAtsReport={(appId) => {
-                    setSelectedAppId(appId);
-                    setShowAtsModal(true);
-                  }}
                 />
               ))
             ) : (
