@@ -10,7 +10,7 @@ export function SavedJobs() {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const showToast = useUiStore((state) => state.showToast);
 
-  const { data: jobs = [], isLoading } = useQuery({
+  const { data: jobs = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ['savedJobs'],
     queryFn: async () => {
       const res = await jobApi.getSavedJobs();
@@ -54,6 +54,25 @@ export function SavedJobs() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen gap-4 bg-gray-50/50">
+        <div className="text-red-500 font-extrabold text-xl">
+          Đã xảy ra lỗi khi tải danh sách việc làm!
+        </div>
+        <div className="text-gray-500 text-sm font-semibold">
+          {error?.response?.data?.error || error?.response?.data?.message || error?.message || "Lỗi hệ thống"}
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="px-6 py-2.5 bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold rounded-xl shadow-md transition-all cursor-pointer"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50/50 min-h-screen py-10">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -68,8 +87,12 @@ export function SavedJobs() {
               className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/30 border border-gray-50 hover:border-sky-100 transition-all group"
             >
               <div className="flex flex-col md:flex-row gap-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
-                  {job.logo}
+                <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden text-white">
+                  {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
+                    <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-bold">{job.logo || "🚀"}</span>
+                  )}
                 </div>
 
                 <div className="flex-1">

@@ -86,6 +86,27 @@ export const authenticateToken = async (req, res, next) => {
 };
 
 /**
+ * Middleware: Xác thực token tùy chọn (Không chặn nếu thiếu token, chỉ parse nếu có)
+ */
+export const optionalAuthenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token) {
+    try {
+      const decoded = verifyToken(token);
+      const user = await db('users').where({ id: decoded.id }).first();
+      if (user) {
+        req.user = decoded;
+      }
+    } catch (error) {
+      // Bỏ qua lỗi token trong chế độ tùy chọn
+    }
+  }
+  next();
+};
+
+/**
  * Middleware to restrict access based on user roles
  * @param {Array<string>} allowedRoles - List of allowed roles
  */

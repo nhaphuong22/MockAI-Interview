@@ -1,4 +1,14 @@
-import { saveDraftBlog, requestBlogReview, getPublishedBlogs as fetchPublishedBlogs, getBlogById as fetchBlogById, getRelatedBlogs as fetchRelatedBlogs } from '../services/blogService.js';
+import { 
+  saveDraftBlog, 
+  requestBlogReview, 
+  getPublishedBlogs as fetchPublishedBlogs, 
+  getBlogById as fetchBlogById, 
+  getRelatedBlogs as fetchRelatedBlogs,
+  toggleLikeBlog,
+  addBlogComment,
+  getBlogComments
+} from '../services/blogService.js';
+import { containsBadWords } from '../helper/badWordsHelper.js';
 
 /**
  * Lưu bài viết nháp (Draft Blog)
@@ -10,6 +20,10 @@ export const createDraft = async (req, res) => {
 
     if (!title || !content) {
       return res.status(400).json({ message: 'Vui lòng cung cấp tiêu đề (title) và nội dung (content).' });
+    }
+
+    if (containsBadWords(title) || containsBadWords(content)) {
+      return res.status(400).json({ message: 'Bài viết chứa từ ngữ không phù hợp.' });
     }
 
     const newArticle = await saveDraftBlog({
@@ -81,7 +95,8 @@ export const uploadCoverImage = async (req, res) => {
  */
 export const getPublishedBlogs = async (req, res) => {
   try {
-    const blogs = await fetchPublishedBlogs();
+    const currentUserId = req.user?.id || null;
+    const blogs = await fetchPublishedBlogs(currentUserId);
     return res.status(200).json({
       message: 'Lấy danh sách bài viết thành công.',
       data: blogs
@@ -98,7 +113,8 @@ export const getPublishedBlogs = async (req, res) => {
 export const getBlogById = async (req, res) => {
   try {
     const { id } = req.params;
-    const blog = await fetchBlogById(Number(id));
+    const currentUserId = req.user?.id || null;
+    const blog = await fetchBlogById(Number(id), currentUserId);
 
     return res.status(200).json({
       message: 'Lấy chi tiết bài viết thành công.',
@@ -110,6 +126,76 @@ export const getBlogById = async (req, res) => {
     }
     console.error('Lỗi khi lấy chi tiết blog:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi tải chi tiết bài viết.' });
+  }
+};
+
+/**
+ * Toggle thích bài viết
+ */
+export const toggleLike = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const result = await toggleLikeBlog(Number(id), userId);
+    return res.status(200).json({
+      message: result.liked ? 'Đã thích bài viết.' : 'Đã bỏ thích bài viết.',
+      data: result
+    });
+  } catch (error) {
+    if (error.message === 'Không tìm thấy bài viết.') {
+      return res.status(404).json({ message: error.message });
+    }
+    console.error('Lỗi khi toggle like bài viết:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi tương tác thích.' });
+  }
+};
+
+/**
+ * Thêm bình luận mới
+ */
+export const createComment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { content } = req.body;
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ message: 'Nội dung bình luận không được để trống.' });
+    }
+
+    if (containsBadWords(content)) {
+      return res.status(400).json({ message: 'Bình luận chứa từ ngữ không phù hợp.' });
+    }
+
+    const comment = await addBlogComment(Number(id), userId, content);
+    return res.status(201).json({
+      message: 'Đăng bình luận thành công.',
+      data: comment
+    });
+  } catch (error) {
+    if (error.message === 'Không tìm thấy bài viết.') {
+      return res.status(404).json({ message: error.message });
+    }
+    console.error('Lỗi khi thêm bình luận:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi thêm bình luận.' });
+  }
+};
+
+/**
+ * Lấy danh sách bình luận
+ */
+export const getComments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const comments = await getBlogComments(Number(id));
+    return res.status(200).json({
+      message: 'Lấy danh sách bình luận thành công.',
+      data: comments
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy bình luận:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi lấy bình luận.' });
   }
 };
 

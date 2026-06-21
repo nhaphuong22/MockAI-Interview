@@ -1,8 +1,18 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { createDraft, submitForReview, uploadCoverImage, getPublishedBlogs, getBlogById, getRelatedBlogs } from '../controllers/blogController.js';
-import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { 
+  createDraft, 
+  submitForReview, 
+  uploadCoverImage, 
+  getPublishedBlogs, 
+  getBlogById, 
+  getRelatedBlogs,
+  toggleLike,
+  createComment,
+  getComments
+} from '../controllers/blogController.js';
+import { authenticateToken, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
 
 const router = express.Router();
@@ -129,7 +139,7 @@ router.put('/:id/submit', authenticateToken, submitForReview);
  *       200:
  *         description: Trả về danh sách bài viết.
  */
-router.get('/published', cacheMiddleware('blogs:published', 1800), getPublishedBlogs);
+router.get('/published', optionalAuthenticateToken, cacheMiddleware('blogs:published', 1800), getPublishedBlogs);
 
 /**
  * @swagger
@@ -152,7 +162,7 @@ router.get('/published', cacheMiddleware('blogs:published', 1800), getPublishedB
  *       404:
  *         description: Không tìm thấy bài viết.
  */
-router.get('/:id', cacheMiddleware('blogs:detail', 1800), getBlogById);
+router.get('/:id', optionalAuthenticateToken, cacheMiddleware('blogs:detail', 1800), getBlogById);
 
 /**
  * @swagger
@@ -176,5 +186,84 @@ router.get('/:id', cacheMiddleware('blogs:detail', 1800), getBlogById);
  *         description: Không tìm thấy bài viết.
  */
 router.get('/:id/related', getRelatedBlogs);
+
+/**
+ * @swagger
+ * /api/blogs/{id}/like:
+ *   post:
+ *     summary: Thích hoặc Bỏ thích bài viết
+ *     description: Thích hoặc bỏ thích bài viết dựa vào ID (yêu cầu đăng nhập).
+ *     tags:
+ *       - Community Blog
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài viết
+ *     responses:
+ *       200:
+ *         description: Thực hiện thành công.
+ */
+router.post('/:id/like', authenticateToken, toggleLike);
+
+/**
+ * @swagger
+ * /api/blogs/{id}/comments:
+ *   post:
+ *     summary: Đăng bình luận cho bài viết
+ *     description: Đăng bình luận mới cho bài viết dựa vào ID (yêu cầu đăng nhập).
+ *     tags:
+ *       - Community Blog
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài viết
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 example: "Bài viết rất hữu ích!"
+ *     responses:
+ *       201:
+ *         description: Đăng bình luận thành công.
+ */
+router.post('/:id/comments', authenticateToken, createComment);
+
+/**
+ * @swagger
+ * /api/blogs/{id}/comments:
+ *   get:
+ *     summary: Lấy danh sách bình luận của bài viết
+ *     description: Lấy danh sách bình luận của bài viết dựa vào ID.
+ *     tags:
+ *       - Community Blog
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài viết
+ *     responses:
+ *       200:
+ *         description: Lấy bình luận thành công.
+ */
+router.get('/:id/comments', getComments);
 
 export default router;

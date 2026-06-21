@@ -27,10 +27,16 @@ export function JobDetail() {
 
   const toggleMutation = useMutation({
     mutationFn: (jobId) => jobApi.toggleSavedJob(jobId),
-    onSuccess: () => {
+    onSuccess: (res) => {
       // Refresh cache để cập nhật UI
       queryClient.invalidateQueries({ queryKey: ["savedJobIds"] });
       queryClient.invalidateQueries({ queryKey: ["savedJobs"] });
+      
+      const payload = res?.data || res;
+      addToast(payload?.message || "Đã cập nhật trạng thái lưu việc làm.", "success");
+    },
+    onError: (err) => {
+      addToast(err.response?.data?.error || err.response?.data?.message || "Có lỗi xảy ra khi lưu việc làm.", "error");
     }
   });
 
