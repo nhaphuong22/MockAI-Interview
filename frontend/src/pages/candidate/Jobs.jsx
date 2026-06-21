@@ -361,21 +361,13 @@ export function Jobs() {
                   transition={{ duration: 0.3, ease: "easeOut" }}
                 >
 
-                  <JobCard
-                    job={job}
-
-                    isSelected={false}
-                    isBookmarked={savedJobIds.includes(job.id)}
-                    onSelect={() => navigate(`/jobs/${job.id}`)}
-
                   <CompanyGroupCard
                     companyName={group.companyName}
                     logo={group.logo}
                     location={group.location}
                     jobs={group.jobs}
-                    bookmarked={bookmarked}
+                    bookmarked={savedJobIds}
                     onSelectJob={(id) => navigate(`/jobs/${id}`)}
-
                     onToggleBookmark={toggleBookmark}
                   />
                 </motion.div>
