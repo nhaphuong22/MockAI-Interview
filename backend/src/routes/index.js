@@ -12,6 +12,7 @@ import verificationRoutes from './verificationRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import applicationRoutes from './applicationRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
+import aiRoutes from './aiRoutes.js';
 
 const router = express.Router();
 
@@ -28,6 +29,7 @@ router.use('/verification', verificationRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/applications', applicationRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/ai', aiRoutes);
 router.use('/', systemRoutes);
 
 export default router;
