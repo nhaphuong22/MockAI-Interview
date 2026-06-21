@@ -250,42 +250,54 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                             </p>
                           </div>
 
-                          {/* Talent Signals & Red Flags */}
+                          {/* Positive & Negative Notes */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4">
                               <h4 className="text-sm font-bold text-amber-700 flex items-center gap-2 mb-3 uppercase">
-                                <Award className="w-4 h-4" /> Dấu hiệu Nhân Tài (Talent)
+                                <Award className="w-4 h-4" /> Điểm Cộng (Positive Notes)
                               </h4>
-                              {application.aiFeedback.talent_signals?.length > 0 ? (
+                              {application.aiFeedback.positive_notes?.length > 0 ? (
                                 <ul className="space-y-2">
-                                  {application.aiFeedback.talent_signals.map((sig, idx) => (
+                                  {application.aiFeedback.positive_notes.map((sig, idx) => (
                                     <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
                                       <span className="text-amber-500 mt-0.5">•</span> {sig}
                                     </li>
                                   ))}
                                 </ul>
                               ) : (
-                                <span className="text-sm text-gray-400 italic">Không có dấu hiệu đặc biệt</span>
+                                <span className="text-sm text-gray-400 italic">Không có điểm cộng nổi bật</span>
                               )}
                             </div>
                             
-                            <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4">
-                              <h4 className="text-sm font-bold text-rose-700 flex items-center gap-2 mb-3 uppercase">
-                                <AlertTriangle className="w-4 h-4" /> Cờ Đỏ (Red Flags)
+                            <div className="bg-orange-50/50 border border-orange-200 rounded-xl p-4">
+                              <h4 className="text-sm font-bold text-orange-700 flex items-center gap-2 mb-3 uppercase">
+                                <AlertTriangle className="w-4 h-4" /> Điểm Trừ (Negative Notes)
                               </h4>
-                              {application.aiFeedback.red_flags?.length > 0 ? (
+                              {application.aiFeedback.negative_notes?.length > 0 ? (
                                 <ul className="space-y-2">
-                                  {application.aiFeedback.red_flags.map((flag, idx) => (
+                                  {application.aiFeedback.negative_notes.map((flag, idx) => (
                                     <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
-                                      <span className="text-rose-500 mt-0.5">•</span> {flag}
+                                      <span className="text-orange-500 mt-0.5">•</span> {flag}
                                     </li>
                                   ))}
                                 </ul>
                               ) : (
-                                <span className="text-sm text-gray-400 italic">Không phát hiện rủi ro</span>
+                                <span className="text-sm text-gray-400 italic">Không phát hiện điểm trừ</span>
                               )}
                             </div>
                           </div>
+
+                          {/* Interview Notes */}
+                          {application.aiFeedback.interview_notes && (
+                            <div className="bg-sky-50 border border-sky-100 rounded-xl p-4">
+                              <h4 className="text-sm font-bold text-sky-700 flex items-center gap-2 mb-2 uppercase">
+                                <MessageSquare className="w-4 h-4" /> Lưu ý Phỏng Vấn (HR Notes)
+                              </h4>
+                              <p className="text-sm text-sky-900 leading-relaxed">
+                                {application.aiFeedback.interview_notes}
+                              </p>
+                            </div>
+                          )}
 
                           {/* Skills Matching */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

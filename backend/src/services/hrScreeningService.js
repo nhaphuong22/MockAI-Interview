@@ -22,7 +22,7 @@ const cleanRawText = (text) => {
  */
 export const runHrScreeningPipeline = async (rawCvText, job, jobRequirements) => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = 'llama3-70b-8192'; // Sử dụng model Llama 3 70B của Groq để xử lý ngữ nghĩa sâu
+  const modelName = 'llama-3.3-70b-versatile'; // Sử dụng model Llama 3.3 70B mới nhất của Groq
 
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
     throw new Error('GROQ_API_KEY chưa được cấu hình. Hệ thống từ chối chấm ảo.');
@@ -49,18 +49,22 @@ Bạn phải kiểm tra chặt chẽ các "Tiêu chí bắt buộc". Nếu CV th
 - Hiểu sự tương đương công nghệ: Nếu JD yêu cầu React, ứng viên có kinh nghiệm chuyên sâu Next.js hoặc Vue.js, hãy ghi nhận và cho điểm cao về tư duy Frontend. Đừng máy móc trừ điểm.
 - Đánh giá chiều sâu: Phân biệt giữa việc "Liệt kê kỹ năng" và "Thực sự ứng dụng trong dự án".
 
-4. TALENT SIGNALS & RED FLAGS:
-- Talent Signals (Dấu hiệu nhân tài): Tìm kiếm thành tích xuất sắc, giải thưởng, xử lý hệ thống lớn, tối ưu hóa hiệu năng, hoặc thăng tiến nhanh.
-- Red Flags (Cờ đỏ): Tìm ra các khoảng trống thời gian bất thường (gap year), chức danh thổi phồng (mới ra trường làm CTO), hoặc mô tả dự án quá chung chung (dùng quá nhiều từ "We" mà không rõ "I").
+4. POSITIVE NOTES & NEGATIVE NOTES (ĐIỂM CỘNG & ĐIỂM TRỪ):
+- Positive Notes (Điểm cộng): Đánh giá các tín hiệu tích cực như thành tích xuất sắc chứng minh bằng số liệu thực tế (Data-driven achievements), quản lý ngân sách lớn, tối ưu hệ thống, trình độ vượt trội (Overqualified). Mỗi điểm cộng hãy TĂNG thêm điểm \`semantic_score\`.
+- Negative Notes (Điểm trừ): Đánh giá các điểm chưa tốt như nhảy việc liên tục (Job hopping), khoảng trống thời gian (gap year), mô tả chung chung. Mỗi điểm trừ hãy GIẢM đi một chút \`semantic_score\` (khoảng 5-10 điểm), không đánh rớt ngay lập tức.
+
+5. ZERO TOLERANCE (KHÔNG KHOAN NHƯỢNG):
+Nếu CV chứa ngôn từ tục tĩu, chửi thề, tiếng lóng vô văn hóa, hoặc có thái độ chống đối/thiếu tôn trọng công ty cũ, BẮT BUỘC đánh rớt (REJECTED) và ép \`semantic_score\` về 0 ngay lập tức, bất kể ứng viên có bao nhiêu kinh nghiệm.
 
 Bạn PHẢI trả về JSON duy nhất theo định dạng sau:
 {
-  "knockout_status": "PASSED" | "REJECTED",
+  "knockout_status": "PASSED" hoặc "REJECTED",
   "knockout_reason": "Giải thích ngắn gọn tại sao rớt vòng gửi xe (nếu REJECTED). Nếu PASSED thì để chuỗi rỗng.",
-  "semantic_score": <Điểm từ 0-100 dựa trên độ fit với JD, độ sâu kinh nghiệm>,
+  "semantic_score": <Điểm từ 0-100 sau khi đã cộng/trừ các Notes. NẾU dính Zero Tolerance, ép về 0>,
   "evaluation_summary": "Nhận xét tổng quan về ứng viên (Tiếng Việt)",
-  "talent_signals": ["Tín hiệu 1", "Tín hiệu 2"],
-  "red_flags": ["Cờ đỏ 1", "Cờ đỏ 2"],
+  "positive_notes": ["Điểm cộng 1", "Điểm cộng 2"],
+  "negative_notes": ["Điểm trừ 1", "Điểm trừ 2"],
+  "interview_notes": "Lưu ý cho HR vòng phỏng vấn (Ví dụ: Hỏi lý do nhảy việc, kỳ vọng lương với ứng viên Overqualified...)",
   "matched_skills": ["Kỹ năng 1", "Kỹ năng 2"],
   "missing_skills": ["Kỹ năng 1", "Kỹ năng 2"]
 }
@@ -116,14 +120,16 @@ Hãy thực hiện đánh giá toàn diện và trả về kết quả định d
     throw new Error('AI trả về dữ liệu không đúng chuẩn JSON.');
   }
 
+  // Đảm bảo cấu trúc trả về chuẩn
   return {
-    knockout_status: parsedData.knockout_status === 'REJECTED' ? 'REJECTED' : 'PASSED',
+    knockout_status: parsedData.knockout_status || 'PASSED',
     knockout_reason: parsedData.knockout_reason || '',
-    semantic_score: Number(parsedData.semantic_score) || 0,
-    evaluation_summary: parsedData.evaluation_summary || 'Không có nhận xét',
-    talent_signals: Array.isArray(parsedData.talent_signals) ? parsedData.talent_signals : [],
-    red_flags: Array.isArray(parsedData.red_flags) ? parsedData.red_flags : [],
+    semantic_score: typeof parsedData.semantic_score === 'number' ? parsedData.semantic_score : 50,
+    evaluation_summary: parsedData.evaluation_summary || 'Đã phân tích CV thành công.',
+    positive_notes: Array.isArray(parsedData.positive_notes) ? parsedData.positive_notes : [],
+    negative_notes: Array.isArray(parsedData.negative_notes) ? parsedData.negative_notes : [],
+    interview_notes: parsedData.interview_notes || '',
     matched_skills: Array.isArray(parsedData.matched_skills) ? parsedData.matched_skills : [],
-    missing_skills: Array.isArray(parsedData.missing_skills) ? parsedData.missing_skills : [],
+    missing_skills: Array.isArray(parsedData.missing_skills) ? parsedData.missing_skills : []
   };
 };
