@@ -1,5 +1,6 @@
 import db from '../db/knex.js';
 import { evaluateCV, generatePDFReportBuffer } from '../services/cvService.js';
+import { runHrScreeningPipeline } from '../services/hrScreeningService.js';
 import { sendJobApplicationEmail, sendApplicationReportEmail, sendApplicationStatusUpdateEmail } from '../services/emailService.js';
 import { sendRealtimeNotification, broadcastNewApplication } from '../socket.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
@@ -7,28 +8,7 @@ import cloudinary from '../core/cloudinary.js';
 import path from 'path';
 import { deleteCache, deleteCachePattern } from '../config/redis.js';
 
-/**
- * Helper: Trích xuất các từ khóa kỹ năng từ văn bản CV
- */
-const extractSkillsFromText = (text) => {
-  if (!text) return ['React', 'JavaScript'];
-  const commonSkills = [
-    'React', 'Node.js', 'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go', 'Rust',
-    'HTML', 'CSS', 'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Docker', 'Kubernetes', 
-    'Git', 'AWS', 'Vue', 'Angular', 'Express', 'Tailwind', 'Figma', 'UI/UX', 
-    'Marketing', 'SEO', 'Sales', 'Excel', 'Photoshop', 'Project Management'
-  ];
-  const foundSkills = [];
-  const lowerText = text.toLowerCase();
-  for (const skill of commonSkills) {
-    const escapedSkill = skill.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const regex = new RegExp(`(?:\\b|\\s|^)${escapedSkill}(?:\\b|\\s|$|\\.)`, 'i');
-    if (regex.test(lowerText)) {
-      foundSkills.push(skill);
-    }
-  }
-  return foundSkills.length > 0 ? foundSkills : ['React', 'JavaScript'];
-};
+// Đã xóa hàm extractSkillsFromText vì AI Pipeline mới đã tự động bóc tách kỹ năng chuẩn xác.
 
 /**
  * Helper: Upload file report PDF buffer lên Cloudinary dạng raw
@@ -88,16 +68,36 @@ export const applyJob = async (req, res) => {
       return sendError(res, 404, 'Không tìm thấy thông tin công việc này.');
     }
 
-    // 3. Đánh giá CV bằng AI dựa trên JD và yêu cầu công việc
-    const jobJD = `${job.title}\n${job.description || ''}\n${job.requirements || ''}`;
+    // Lấy thêm các tiêu chí đánh giá tự động (job_requirements)
+    const jobRequirements = await db('job_requirements').where('job_id', jobId);
+
     const formattedName = candidate_name || req.user.full_name || req.user.email;
-    console.log(`[Application] Đang chấm điểm CV cho ứng viên ${formattedName} với JD của Job ${job.title}...`);
-    const evaluation = await evaluateCV(sanitizedCvText, jobJD);
+    console.log(`[Application] Đang chấm điểm CV cho ứng viên ${formattedName} với HR Screening Pipeline...`);
+    
+    // Gọi Pipeline mới thay vì evaluateCV cũ
+    const evaluation = await runHrScreeningPipeline(sanitizedCvText, job, jobRequirements);
+
+    // Xác định trạng thái ban đầu của Application (Rớt vòng knock-out thì REJECTED luôn)
+    const initialStatus = evaluation.knockout_status === 'REJECTED' ? 'REJECTED' : 'SUBMITTED';
 
     // 3.1. Tạo PDF báo cáo và tải lên Cloudinary
     const candidateName = candidate_name || req.user.full_name || req.user.email;
     console.log(`[Application] Đang tạo báo cáo đánh giá PDF cho ứng viên ${candidateName}...`);
-    const pdfReportBuffer = await generatePDFReportBuffer(evaluation, candidateName, job.title);
+    
+    // Map data mới sang chuẩn cũ để PDF vẫn tạo được không bị lỗi
+    const mappedEvaluationForPDF = {
+      overallScore: evaluation.semantic_score || 0,
+      strengths: evaluation.talent_signals || [],
+      improvements: evaluation.red_flags && evaluation.red_flags.length > 0 ? evaluation.red_flags : ["Hồ sơ khá tốt, cần phỏng vấn thêm để làm rõ."],
+      sections: [
+        { name: "Vòng Gửi Xe (Knock-out)", score: evaluation.knockout_status === 'PASSED' ? 100 : 0, feedback: evaluation.knockout_reason || "Đạt các yêu cầu tối thiểu của công việc" },
+        { name: "Đánh giá Ngữ nghĩa (Semantic)", score: evaluation.semantic_score || 0, feedback: evaluation.evaluation_summary || "Không có nhận xét" },
+        { name: "Kỹ năng Khớp", score: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? 100 : 50, feedback: evaluation.matched_skills ? evaluation.matched_skills.join(', ') : "Không có" },
+        { name: "Kỹ năng Cần Bổ Sung", score: evaluation.missing_skills && evaluation.missing_skills.length > 0 ? 50 : 100, feedback: evaluation.missing_skills ? evaluation.missing_skills.join(', ') : "Không phát hiện thiếu sót" }
+      ]
+    };
+
+    const pdfReportBuffer = await generatePDFReportBuffer(mappedEvaluationForPDF, candidateName, job.title);
     
     console.log(`[Application] Đang upload PDF báo cáo lên Cloudinary...`);
     const reportCloudinaryResult = await uploadReportToCloudinary(pdfReportBuffer, candidateName);
@@ -116,7 +116,7 @@ export const applyJob = async (req, res) => {
           user_id: candidateId,
           file_url: cv_url || 'uploads/cv/cv_uploaded.pdf',
           parsed_text: sanitizedCvText,
-          ats_score: evaluation.overallScore || 0,
+          ats_score: evaluation.semantic_score || 0,
           ai_feedback: JSON.stringify(evaluation).replace(/\x00/g, ''),
           pdf_report_url: pdfReportUrl,
           created_at: new Date(),
@@ -130,15 +130,15 @@ export const applyJob = async (req, res) => {
         .where({ id: existingApp.id })
         .update({
           cv_id: cv.id,
-          status: 'SUBMITTED', // Reset trạng thái về Mới tiếp nhận
-          cv_score: evaluation.overallScore || 0,
-          total_score: evaluation.overallScore || 0,
+          status: initialStatus, // Sử dụng trạng thái dựa trên Knock-out
+          cv_score: evaluation.semantic_score || 0,
+          total_score: evaluation.semantic_score || 0,
           cover_letter: cover_letter || null,
           candidate_name: candidate_name || null,
           candidate_email: candidate_email || null,
           candidate_phone: candidate_phone || null,
           portfolio_url: portfolio_url || null,
-          ai_summary: extractSkillsFromText(sanitizedCvText).slice(0, 3).join(', '),
+          ai_summary: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3).join(', ') : 'Chưa cập nhật kỹ năng',
           updated_at: new Date(),
           created_at: new Date() // Đẩy lên đầu danh sách HR
         })
@@ -151,7 +151,7 @@ export const applyJob = async (req, res) => {
           user_id: candidateId,
           file_url: cv_url || 'uploads/cv/cv_uploaded.pdf',
           parsed_text: sanitizedCvText,
-          ats_score: evaluation.overallScore || 0,
+          ats_score: evaluation.semantic_score || 0,
           ai_feedback: JSON.stringify(evaluation).replace(/\x00/g, ''),
           pdf_report_url: pdfReportUrl,
           created_at: new Date(),
@@ -166,15 +166,15 @@ export const applyJob = async (req, res) => {
           candidate_id: candidateId,
           job_id: jobId,
           cv_id: cv.id,
-          status: 'SUBMITTED',
-          cv_score: evaluation.overallScore || 0,
-          total_score: evaluation.overallScore || 0,
+          status: initialStatus, // Sử dụng trạng thái dựa trên Knock-out
+          cv_score: evaluation.semantic_score || 0,
+          total_score: evaluation.semantic_score || 0,
           cover_letter: cover_letter || null,
           candidate_name: candidate_name || null,
           candidate_email: candidate_email || null,
           candidate_phone: candidate_phone || null,
           portfolio_url: portfolio_url || null,
-          ai_summary: extractSkillsFromText(sanitizedCvText).slice(0, 3).join(', '),
+          ai_summary: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3).join(', ') : 'Chưa cập nhật kỹ năng',
           created_at: new Date(),
           updated_at: new Date()
         })
@@ -216,7 +216,7 @@ export const applyJob = async (req, res) => {
           hrUser.full_name || 'Nhà tuyển dụng',
           candidateName,
           job.title,
-          evaluation.overallScore || 0,
+          evaluation.semantic_score || 0,
           pdfReportUrl,
           true, // Gửi cho HR
           pdfReportBuffer
@@ -240,8 +240,8 @@ export const applyJob = async (req, res) => {
         avatar: req.user.avatar_url ? '👦' : '👨‍💻',
         email: req.user.email,
         position: job.title,
-        aiScore: evaluation.overallScore || 0,
-        skills: extractSkillsFromText(sanitizedCvText).slice(0, 3),
+        aiScore: evaluation.semantic_score || 0,
+        skills: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3) : ['Chưa cập nhật kỹ năng'],
         status: 'new',
         appliedDate: new Date().toISOString()
       });
@@ -255,7 +255,7 @@ export const applyJob = async (req, res) => {
         req.user.full_name || 'Ứng viên',
         candidateName,
         job.title,
-        evaluation.overallScore || 0,
+        evaluation.semantic_score || 0,
         pdfReportUrl,
         false, // Gửi cho Candidate
         pdfReportBuffer
@@ -267,7 +267,7 @@ export const applyJob = async (req, res) => {
       application_id: application.id,
       cv_id: cv.id,
       status: application.status,
-      ai_score: evaluation.overallScore
+      ai_score: evaluation.semantic_score
     }, 'Nộp đơn ứng tuyển thành công.');
   } catch (error) {
     console.error('Lỗi trong applyJob controller:', error);
