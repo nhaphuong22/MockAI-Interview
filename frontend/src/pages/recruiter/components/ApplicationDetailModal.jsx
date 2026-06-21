@@ -243,7 +243,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                           <div className={`p-4 rounded-xl border ${application.aiFeedback.knockout_status === 'REJECTED' ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
                             <h4 className={`text-sm font-bold flex items-center gap-2 ${application.aiFeedback.knockout_status === 'REJECTED' ? 'text-red-700' : 'text-emerald-700'}`}>
                               {application.aiFeedback.knockout_status === 'REJECTED' ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-                              Vòng Gửi Xe (Knock-out Check)
+                              Vòng Sơ Khảo (Knock-out Check)
                             </h4>
                             <p className="text-sm mt-2 font-medium text-gray-700">
                               {application.aiFeedback.knockout_reason || (application.aiFeedback.knockout_status === 'REJECTED' ? 'Không đạt yêu cầu bắt buộc.' : 'Đạt các yêu cầu bắt buộc của công việc.')}
