@@ -9,17 +9,18 @@ import MDEditor from '@uiw/react-md-editor';
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Accordion from "@radix-ui/react-accordion";
 
-const STATUS_OPTIONS = [
-  { value: "SUBMITTED", label: "Đã nộp", activeClass: "bg-blue-500 text-white border-blue-500 shadow-blue-500/30" },
-  { value: "AI_REVIEWED", label: "AI Đã duyệt", activeClass: "bg-indigo-500 text-white border-indigo-500 shadow-indigo-500/30" },
-  { value: "HR_REVIEWING", label: "HR Đang duyệt", activeClass: "bg-amber-500 text-white border-amber-500 shadow-amber-500/30" },
-  { value: "SHORTLISTED", label: "Vào vòng trong", activeClass: "bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/30" },
-  { value: "AI_INTERVIEW_INVITED", label: "Đã mời PV AI", activeClass: "bg-orange-500 text-white border-orange-500 shadow-orange-500/30" },
-  { value: "INTERVIEWED", label: "Đã PV AI", activeClass: "bg-cyan-500 text-white border-cyan-500 shadow-cyan-500/30" },
-  { value: "INTERVIEW_SCHEDULED", label: "Lịch phỏng vấn", activeClass: "bg-purple-500 text-white border-purple-500 shadow-purple-500/30" },
-  { value: "HIRED", label: "Đã tuyển", activeClass: "bg-green-600 text-white border-green-600 shadow-green-600/30" },
-  { value: "REJECTED", label: "Từ chối", activeClass: "bg-red-500 text-white border-red-500 shadow-red-500/30" }
-];
+// Chỉ dùng mảng này để map Label cho cái Badge hiển thị trên Header
+const STATUS_LABELS = {
+  "SUBMITTED": "Đã nộp",
+  "AI_REVIEWED": "AI Đã duyệt",
+  "HR_REVIEWING": "HR Đang duyệt",
+  "SHORTLISTED": "Vào vòng trong",
+  "AI_INTERVIEW_INVITED": "Đã mời PV AI",
+  "INTERVIEWED": "Đã PV AI",
+  "INTERVIEW_SCHEDULED": "Lịch phỏng vấn",
+  "HIRED": "Đã tuyển",
+  "REJECTED": "Từ chối"
+};
 
 const TAG_OPTIONS = ["Tiềm năng", "Senior", "Junior", "Fresher", "Đang cân nhắc", "Blacklist"];
 
@@ -27,7 +28,6 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
   const queryClient = useQueryClient();
   const showToast = useUiStore((state) => state.showToast);
 
-  const [status, setStatus] = useState(application?.status || "SUBMITTED");
   const [hrTag, setHrTag] = useState(application?.hr_tag || "");
   const [hrNotes, setHrNotes] = useState(application?.hr_notes || "");
 
@@ -45,8 +45,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     mutationFn: (data) => jobApi.updateJobApplication(application.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(["manage-applications"]);
-      showToast({ message: "Cập nhật thông tin ứng viên thành công!", type: "success" });
-      onOpenChange(false);
+      showToast({ message: "Cập nhật hồ sơ thành công!", type: "success" });
     },
     onError: (error) => {
       console.error("Lỗi khi cập nhật hồ sơ:", error);
@@ -58,7 +57,6 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     mutationFn: () => inviteAIInterviewApi(application.id),
     onSuccess: () => {
       queryClient.invalidateQueries(["manage-applications"]);
-      setStatus("AI_INTERVIEW_INVITED");
       showToast({ message: "Đã gửi lời mời phỏng vấn AI đến ứng viên!", type: "success" });
     },
     onError: (error) => {
@@ -67,11 +65,25 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     }
   });
 
-  const handleSave = () => {
+  const handleSaveNotes = () => {
     updateMutation.mutate({
-      status,
+      status: application.status, // Giữ nguyên status cũ
       hr_tag: hrTag,
       hr_notes: hrNotes
+    });
+  };
+
+  const handleAction = (newStatus) => {
+    updateMutation.mutate({
+      status: newStatus,
+      hr_tag: hrTag,
+      hr_notes: hrNotes
+    }, {
+      onSuccess: () => {
+        if(newStatus === 'REJECTED' || newStatus === 'HIRED') {
+          onOpenChange(false); // Đóng modal khi đã chốt hạ
+        }
+      }
     });
   };
 
@@ -100,6 +112,8 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     }
   }
 
+  const currentStatusLabel = STATUS_LABELS[application.status || "SUBMITTED"] || "Chưa rõ";
+
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -117,7 +131,13 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 )}
               </div>
               <div>
-                <Dialog.Title className="text-xl font-black text-white drop-shadow-sm">{displayData.name}</Dialog.Title>
+                <div className="flex items-center gap-3">
+                  <Dialog.Title className="text-xl font-black text-white drop-shadow-sm">{displayData.name}</Dialog.Title>
+                  <span className="px-3 py-1 text-xs font-bold bg-white/20 text-white rounded-full border border-white/30 backdrop-blur-sm shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                    {currentStatusLabel}
+                  </span>
+                </div>
                 <Dialog.Description className="text-sm text-sky-100 font-medium flex items-center gap-2 mt-0.5">
                   <Briefcase className="w-4 h-4 opacity-80" /> Ứng tuyển: <span className="font-bold text-white">{application.job_title}</span>
                 </Dialog.Description>
@@ -446,28 +466,8 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
               {/* Thao tác HR */}
               <div className="border-t border-gray-100 pt-6 space-y-6 flex-1 flex flex-col">
                 <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
-                  <Edit className="w-4 h-4 text-[#0ea5e9]" /> Thao Tác Của HR
+                  <Edit className="w-4 h-4 text-[#0ea5e9]" /> Ghi chú & Phân loại
                 </h3>
-                
-                {/* Status Chips */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2.5 uppercase">Trạng Thái Hồ Sơ</label>
-                  <div className="flex flex-wrap gap-2">
-                    {STATUS_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setStatus(opt.value)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                          status === opt.value 
-                            ? opt.activeClass 
-                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Tag Chips */}
                 <div>
@@ -500,38 +500,71 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 </div>
 
                 {/* Notes Textarea */}
-                <div className="flex-1 flex flex-col min-h-[120px]">
+                <div className="flex flex-col">
                   <label className="block text-xs font-bold text-gray-500 mb-2.5 uppercase">Ghi chú nội bộ</label>
                   <textarea 
                     value={hrNotes} 
                     onChange={(e) => setHrNotes(e.target.value)}
                     placeholder="Ghi chú về ứng viên này (chỉ HR xem được)..."
-                    className="w-full flex-1 border-2 border-gray-100 rounded-xl p-3 text-[13px] text-gray-800 focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/10 outline-none resize-none transition-all bg-gray-50 focus:bg-white"
+                    rows={3}
+                    className="w-full border-2 border-gray-100 rounded-xl p-3 text-[13px] text-gray-800 focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/10 outline-none resize-none transition-all bg-gray-50 focus:bg-white"
                   ></textarea>
                 </div>
+                
+                <div className="flex justify-end">
+                   <button 
+                      onClick={handleSaveNotes}
+                      disabled={updateMutation.isPending}
+                      className="flex items-center gap-1.5 text-sm font-bold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100 px-4 py-2 rounded-lg transition-colors"
+                   >
+                     <Save className="w-4 h-4" /> Lưu Ghi Chú & Tag
+                   </button>
+                </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
-                  <button 
-                    onClick={handleSave}
-                    disabled={updateMutation.isPending}
-                    className="flex justify-center items-center gap-2 w-full bg-[#0ea5e9] text-white px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-[#0284c7] hover:shadow-lg shadow-sky-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    Cập Nhật Hồ Sơ
-                  </button>
-
+                {/* Action Buttons / Decisions */}
+                <div className="pt-6 border-t border-gray-100 flex-1 flex flex-col justify-end space-y-4">
+                  <label className="block text-xs font-bold text-gray-500 uppercase text-center">Đưa Ra Quyết Định</label>
+                  
+                  {/* Quyết định cấp 1 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => handleAction('SHORTLISTED')}
+                      disabled={updateMutation.isPending || application.status === 'SHORTLISTED' || application.status === 'HIRED' || application.status === 'REJECTED'}
+                      className="flex justify-center items-center gap-2 w-full bg-emerald-500 text-white px-4 py-3.5 rounded-xl font-bold text-sm hover:bg-emerald-600 hover:shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Vào Vòng Trong
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleAction('REJECTED')}
+                      disabled={updateMutation.isPending || application.status === 'REJECTED'}
+                      className="flex justify-center items-center gap-2 w-full bg-rose-500 text-white px-4 py-3.5 rounded-xl font-bold text-sm hover:bg-rose-600 hover:shadow-lg shadow-rose-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <X className="w-4 h-4" /> Từ Chối
+                    </button>
+                  </div>
+                  
                   {/* Mời phỏng vấn AI chỉ hiện khi status phù hợp */}
-                  {(status === 'SHORTLISTED' || status === 'HR_REVIEWING' || status === 'AI_INTERVIEW_INVITED') && (
+                  {(application.status === 'SHORTLISTED' || application.status === 'HR_REVIEWING' || application.status === 'AI_INTERVIEW_INVITED' || application.status === 'INTERVIEWED') && (
                     <button 
                       onClick={() => inviteMutation.mutate()}
-                      disabled={inviteMutation.isPending || status === 'AI_INTERVIEW_INVITED' || status === 'INTERVIEWED'}
-                      className="flex justify-center items-center gap-2 w-full bg-white border-2 border-indigo-100 text-indigo-600 px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-indigo-50 hover:border-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                      disabled={inviteMutation.isPending || application.status === 'AI_INTERVIEW_INVITED' || application.status === 'INTERVIEWED'}
+                      className="flex justify-center items-center gap-2 w-full bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-indigo-700 hover:shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98] disabled:opacity-50"
                     >
-                      {inviteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
-                      {status === 'AI_INTERVIEW_INVITED' ? "Đã Gửi Mời Phỏng Vấn AI" : "Mời Phỏng Vấn AI"}
+                      {inviteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                      {application.status === 'AI_INTERVIEW_INVITED' ? "Đã Gửi Lời Mời Phỏng Vấn AI" : application.status === 'INTERVIEWED' ? "Ứng Viên Đã Hoàn Thành PV" : "Mời Phỏng Vấn AI"}
                     </button>
                   )}
+
+                  {/* Quyết định cấp cuối: Hired */}
+                  <button 
+                    onClick={() => handleAction('HIRED')}
+                    disabled={updateMutation.isPending || application.status === 'HIRED' || application.status === 'REJECTED'}
+                    className="flex justify-center items-center gap-2 w-full bg-white border-2 border-green-500 text-green-600 px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-green-50 hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50"
+                  >
+                    <Award className="w-4 h-4" /> Đánh Dấu Trúng Tuyển (Hired)
+                  </button>
+
                 </div>
 
               </div>
