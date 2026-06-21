@@ -8,7 +8,7 @@ import { useUiStore } from "../../../store/useUiStore";
 import MDEditor from '@uiw/react-md-editor';
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Accordion from "@radix-ui/react-accordion";
-import { MessageSquare, ChevronDown, CheckCircle2, AlertTriangle } from "lucide-react";
+import { MessageSquare, ChevronDown, CheckCircle2, AlertTriangle, Award } from "lucide-react";
 
 const STATUS_OPTIONS = [
   { value: "SUBMITTED", label: "Đã nộp", color: "text-blue-600 bg-blue-50 border-blue-200" },
@@ -235,13 +235,94 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
 
                 <Tabs.Content value="summary" className="p-0 outline-none flex-1 flex flex-col min-h-[300px]">
                   <div className="bg-gradient-to-br from-[#f8fafc] to-[#f0f9ff] flex-1">
-                    <div className="p-5 flex-1 h-full">
-                      {application.ai_summary ? (
-                        <div data-color-mode="light" className="text-sm">
-                          <MDEditor.Markdown 
-                            source={application.ai_summary} 
-                            style={{ background: 'transparent', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}
-                          />
+                    <div className="p-5 flex-1 h-full overflow-y-auto max-h-[500px]">
+                      {application.aiFeedback ? (
+                        <div className="space-y-6">
+                          
+                          {/* Knock-out Status */}
+                          <div className={`p-4 rounded-xl border ${application.aiFeedback.knockout_status === 'REJECTED' ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                            <h4 className={`text-sm font-bold flex items-center gap-2 ${application.aiFeedback.knockout_status === 'REJECTED' ? 'text-red-700' : 'text-emerald-700'}`}>
+                              {application.aiFeedback.knockout_status === 'REJECTED' ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                              Vòng Gửi Xe (Knock-out Check)
+                            </h4>
+                            <p className="text-sm mt-2 font-medium text-gray-700">
+                              {application.aiFeedback.knockout_reason || (application.aiFeedback.knockout_status === 'REJECTED' ? 'Không đạt yêu cầu bắt buộc.' : 'Đạt các yêu cầu bắt buộc của công việc.')}
+                            </p>
+                          </div>
+
+                          {/* Talent Signals & Red Flags */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4">
+                              <h4 className="text-sm font-bold text-amber-700 flex items-center gap-2 mb-3 uppercase">
+                                <Award className="w-4 h-4" /> Dấu hiệu Nhân Tài (Talent)
+                              </h4>
+                              {application.aiFeedback.talent_signals?.length > 0 ? (
+                                <ul className="space-y-2">
+                                  {application.aiFeedback.talent_signals.map((sig, idx) => (
+                                    <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                                      <span className="text-amber-500 mt-0.5">•</span> {sig}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <span className="text-sm text-gray-400 italic">Không có dấu hiệu đặc biệt</span>
+                              )}
+                            </div>
+                            
+                            <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4">
+                              <h4 className="text-sm font-bold text-rose-700 flex items-center gap-2 mb-3 uppercase">
+                                <AlertTriangle className="w-4 h-4" /> Cờ Đỏ (Red Flags)
+                              </h4>
+                              {application.aiFeedback.red_flags?.length > 0 ? (
+                                <ul className="space-y-2">
+                                  {application.aiFeedback.red_flags.map((flag, idx) => (
+                                    <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                                      <span className="text-rose-500 mt-0.5">•</span> {flag}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <span className="text-sm text-gray-400 italic">Không phát hiện rủi ro</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Skills Matching */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                              <h4 className="text-sm font-bold text-emerald-600 mb-2">Kỹ năng đáp ứng</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {application.aiFeedback.matched_skills?.map((s, i) => (
+                                  <span key={i} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-semibold">{s}</span>
+                                ))}
+                                {(!application.aiFeedback.matched_skills || application.aiFeedback.matched_skills.length === 0) && (
+                                  <span className="text-xs text-gray-400 italic">Không có</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                              <h4 className="text-sm font-bold text-gray-500 mb-2">Kỹ năng còn thiếu</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {application.aiFeedback.missing_skills?.map((s, i) => (
+                                  <span key={i} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold">{s}</span>
+                                ))}
+                                {(!application.aiFeedback.missing_skills || application.aiFeedback.missing_skills.length === 0) && (
+                                  <span className="text-xs text-gray-400 italic">Không có</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Evaluation Summary */}
+                          <div className="bg-white border border-sky-100 rounded-xl p-5 shadow-sm">
+                            <h4 className="text-sm font-bold text-sky-700 mb-3 uppercase flex items-center gap-2">
+                              <FileText className="w-4 h-4" /> Nhận xét tổng quan
+                            </h4>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {application.aiFeedback.evaluation_summary}
+                            </p>
+                          </div>
+
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center py-10 text-gray-400">
