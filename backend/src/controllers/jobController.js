@@ -7,8 +7,15 @@ import {
   getJobApplicationsService,
   updateJobApplicationService,
   getApplicationDetailById,
+
+  getSavedJobsService,
+  toggleSavedJobService,
+  updateSavedJobNoteService
+
   generateJobCampaignReportService
+
 } from '../services/jobService.js';
+import { sendApplicationResultEmail } from '../services/emailService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
 /**
@@ -338,7 +345,7 @@ export const updateJobApplication = async (req, res) => {
       return sendError(res, 400, 'ID hồ sơ ứng tuyển không hợp lệ.');
     }
 
-    const { status, hr_tag, hr_notes } = req.body;
+    const { status, hr_tag, hr_notes, send_email, email_content } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role?.toUpperCase();
 
@@ -375,10 +382,88 @@ export const updateJobApplication = async (req, res) => {
       reviewedBy: userId
     });
 
+    // 4. Gửi email nếu được yêu cầu
+    if (send_email && email_content) {
+      try {
+        await sendApplicationResultEmail(
+          application.candidate_email,
+          application.candidate_name,
+          application.job_title,
+          email_content
+        );
+      } catch (emailError) {
+        console.error('Lỗi khi gửi email ứng viên:', emailError);
+      }
+    }
+
     return sendResponse(res, 200, result, 'Cập nhật hồ sơ ứng tuyển thành công.');
   } catch (error) {
     console.error('Lỗi trong jobController.updateJobApplication:', error);
-    return sendError(res, 500, 'Lỗi hệ thống khi cập nhật hồ sơ ứng tuyển.');
+    return sendError(res, 500, 'Lỗi hệ thống khi cập nhật trạng thái ứng tuyển.');
+  }
+};
+
+/**
+ * Lấy danh sách công việc đã lưu của ứng viên
+ */
+export const getSavedJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { returnIdsOnly } = req.query;
+    
+    const savedJobs = await getSavedJobsService(userId, returnIdsOnly === 'true');
+    return sendResponse(res, 200, savedJobs);
+  } catch (error) {
+    console.error('Lỗi trong jobController.getSavedJobs:', error);
+    return sendError(res, 500, 'Lỗi hệ thống khi lấy danh sách việc làm đã lưu.');
+  }
+};
+
+/**
+ * Thêm / Xóa công việc khỏi danh sách đã lưu
+ */
+export const toggleSavedJob = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const jobId = parseInt(req.params.id);
+    
+    if (isNaN(jobId)) {
+      return sendError(res, 400, 'ID công việc không hợp lệ.');
+    }
+
+    const result = await toggleSavedJobService(userId, jobId);
+    // return sendResponse(res, statusCode, data)
+    return sendResponse(res, 200, { isSaved: result.isSaved, message: result.message });
+  } catch (error) {
+    console.error('Lỗi trong jobController.toggleSavedJob:', error);
+    if (error.message === 'Không tìm thấy công việc.') {
+      return sendError(res, 404, error.message);
+    }
+    return sendError(res, 500, 'Lỗi hệ thống khi thay đổi trạng thái lưu công việc.');
+  }
+};
+
+/**
+ * Cập nhật ghi chú cho công việc đã lưu
+ */
+export const updateSavedJobNote = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const jobId = parseInt(req.params.id);
+    const { note } = req.body;
+    
+    if (isNaN(jobId)) {
+      return sendError(res, 400, 'ID công việc không hợp lệ.');
+    }
+
+    await updateSavedJobNoteService(userId, jobId, note);
+    return sendResponse(res, 200, { note });
+  } catch (error) {
+    console.error('Lỗi trong jobController.updateSavedJobNote:', error);
+    if (error.message === 'Công việc này chưa được lưu.') {
+      return sendError(res, 404, error.message);
+    }
+    return sendError(res, 500, 'Lỗi hệ thống khi cập nhật ghi chú.');
   }
 };
 

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon, Crown } from "lucide-react";
+import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon, Crown, Bookmark } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
@@ -367,15 +367,26 @@ export function Layout() {
                     </DropdownMenu.Item>
 
                     {isCandidate && (
-                      <DropdownMenu.Item asChild>
-                        <Link
-                          to="/payment"
-                          className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
-                        >
-                          <PieChart className="w-4 h-4" />
-                          <span>{packageName}</span>
-                        </Link>
-                      </DropdownMenu.Item>
+                      <>
+                        <DropdownMenu.Item asChild>
+                          <Link
+                            to="/saved-jobs"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
+                          >
+                            <Bookmark className="w-4 h-4" />
+                            <span>Việc làm đã lưu</span>
+                          </Link>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item asChild>
+                          <Link
+                            to="/payment"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
+                          >
+                            <PieChart className="w-4 h-4" />
+                            <span>{packageName}</span>
+                          </Link>
+                        </DropdownMenu.Item>
+                      </>
                     )}
 
                     <DropdownMenu.Separator className="h-px bg-gray-100 my-1.5" />
