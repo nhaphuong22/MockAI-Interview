@@ -1,58 +1,83 @@
-import { Bookmark, MapPin, DollarSign, Briefcase, Trash2, StickyNote, Send, Search } from "lucide-react";
+import { Bookmark, MapPin, DollarSign, Briefcase, Trash2, StickyNote, Send, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-const savedJobsData = [
-  {
-    id: 1,
-    title: "Senior Frontend Developer",
-    company: "TechCorp Vietnam",
-    logo: "🚀",
-    location: "Hà Nội",
-    salary: "25-35 triệu",
-    type: "Full-time",
-    tags: ["React", "TypeScript"],
-    savedDate: "2026-05-15",
-    note: "Công ty tốt, cần chuẩn bị kỹ về React",
-  },
-  {
-    id: 2,
-    title: "Full Stack Developer",
-    company: "Startup Hub",
-    logo: "💻",
-    location: "Remote",
-    salary: "28-38 triệu",
-    type: "Full-time",
-    tags: ["React", "Node.js"],
-    savedDate: "2026-05-14",
-    note: "",
-  },
-];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { jobApi } from "../../api/jobApi";
+import { useUiStore } from "../../store/useUiStore";
 
 export function SavedJobs() {
-  const [jobs, setJobs] = useState(savedJobsData);
+  const queryClient = useQueryClient();
   const [editingNoteId, setEditingNoteId] = useState(null);
+  const showToast = useUiStore((state) => state.showToast);
+
+  const { data: jobs = [], isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['savedJobs'],
+    queryFn: async () => {
+      const res = await jobApi.getSavedJobs();
+      return res.data || [];
+    }
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (jobId) => jobApi.toggleSavedJob(jobId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedJobs'] });
+      queryClient.invalidateQueries({ queryKey: ['savedJobIds'] });
+      showToast({ message: "Đã bỏ lưu việc làm.", type: "success" });
+    },
+    onError: () => showToast({ message: "Có lỗi xảy ra.", type: "error" })
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: ({ jobId, note }) => jobApi.updateSavedJobNote(jobId, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedJobs'] });
+      showToast({ message: "Cập nhật ghi chú thành công.", type: "success" });
+      setEditingNoteId(null);
+    },
+    onError: () => showToast({ message: "Không thể lưu ghi chú.", type: "error" })
+  });
 
   const removeJob = (id) => {
-    setJobs(jobs.filter(job => job.id !== id));
+    toggleMutation.mutate(id);
   };
+
+  const saveNote = (id, newNote) => {
+    updateNoteMutation.mutate({ jobId: id, note: newNote });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0ea5e9]" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen gap-4 bg-gray-50/50">
+        <div className="text-red-500 font-extrabold text-xl">
+          Đã xảy ra lỗi khi tải danh sách việc làm!
+        </div>
+        <div className="text-gray-500 text-sm font-semibold">
+          {error?.response?.data?.error || error?.response?.data?.message || error?.message || "Lỗi hệ thống"}
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="px-6 py-2.5 bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold rounded-xl shadow-md transition-all cursor-pointer"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50/50 min-h-screen py-10">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Việc Làm Đã Lưu</h1>
-            <p className="text-lg text-gray-600 font-medium">Bạn có <span className="text-[#0ea5e9] font-bold">{jobs.length}</span> cơ hội tiềm năng đang chờ đợi</p>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Tìm trong mục đã lưu..." 
-              className="pl-10 pr-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm focus:border-[#0ea5e9] focus:outline-none shadow-sm"
-            />
-          </div>
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Việc Làm Đã Lưu</h1>
         </div>
 
         <div className="space-y-6">
@@ -62,8 +87,12 @@ export function SavedJobs() {
               className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/30 border border-gray-50 hover:border-sky-100 transition-all group"
             >
               <div className="flex flex-col md:flex-row gap-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
-                  {job.logo}
+                <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden text-white">
+                  {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
+                    <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-bold">{job.logo || "🚀"}</span>
+                  )}
                 </div>
 
                 <div className="flex-1">
@@ -111,7 +140,13 @@ export function SavedJobs() {
                           placeholder="Thêm ghi chú cá nhân về công việc này..."
                           className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:border-[#0ea5e9] focus:bg-white focus:outline-none transition-all resize-none text-sm font-medium"
                           rows={3}
-                          onBlur={() => setEditingNoteId(null)}
+                          onBlur={(e) => {
+                            if (e.target.value !== job.note) {
+                              saveNote(job.id, e.target.value);
+                            } else {
+                              setEditingNoteId(null);
+                            }
+                          }}
                           autoFocus
                         />
                       </div>

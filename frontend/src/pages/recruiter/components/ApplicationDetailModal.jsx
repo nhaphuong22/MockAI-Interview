@@ -1,6 +1,13 @@
 import * as Dialog from "@radix-ui/react-dialog";
+<<<<<<< HEAD
 import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle2, Clock, Star, Edit, Save, Loader2, Tag, Globe, ExternalLink, MapPin, AlertTriangle, Award, MessageSquare, ChevronDown, Download } from "lucide-react";
 import { useState } from "react";
+=======
+
+import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle, Clock, Star, Edit, Save, Loader2, Tag, Globe, ExternalLink, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+
+>>>>>>> origin/main
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
 import { inviteAIInterviewApi, getHRInterviewTranscriptApi } from "../../../api/hrInterviewApi";
@@ -30,6 +37,30 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
 
   const [hrTag, setHrTag] = useState(application?.hr_tag || "");
   const [hrNotes, setHrNotes] = useState(application?.hr_notes || "");
+  
+  // Email state
+  const [sendEmail, setSendEmail] = useState(false);
+  const [emailContent, setEmailContent] = useState("");
+
+  // Update email template when status changes
+  useEffect(() => {
+    if (status === "SHORTLISTED") {
+      setEmailContent(`Chúng tôi rất ấn tượng với hồ sơ của bạn và xin thông báo bạn đã vượt qua vòng sơ loại.\n\nPhòng nhân sự sẽ sớm liên hệ với bạn để trao đổi về lịch phỏng vấn vòng tiếp theo.\n\nVui lòng kiểm tra email thường xuyên.`);
+      setSendEmail(true);
+    } else if (status === "REJECTED") {
+      setEmailContent(`Cảm ơn bạn đã quan tâm ứng tuyển. Sau khi xem xét kỹ lưỡng, chúng tôi rất tiếc phải thông báo rằng hồ sơ của bạn chưa phù hợp với định hướng của công ty ở thời điểm hiện tại.\n\nChúng tôi sẽ lưu trữ hồ sơ của bạn và liên hệ lại khi có cơ hội phù hợp trong tương lai.\n\nChúc bạn thành công trên con đường sự nghiệp!`);
+      setSendEmail(true);
+    } else if (status === "INTERVIEW_SCHEDULED") {
+      setEmailContent(`Chúng tôi xin trân trọng kính mời bạn tham gia buổi phỏng vấn trực tuyến.\n\nChi tiết về thời gian và link tham gia sẽ được cập nhật sớm trên hệ thống và gửi qua email cho bạn.\n\nVui lòng chuẩn bị kết nối mạng ổn định và trang phục lịch sự.`);
+      setSendEmail(true);
+    } else if (status === "HIRED") {
+      setEmailContent(`Chúc mừng bạn đã xuất sắc vượt qua các vòng phỏng vấn và chính thức trở thành một phần của công ty chúng tôi!\n\nPhòng nhân sự sẽ gửi Thư Mời Nhận Việc (Offer Letter) với thông tin chi tiết qua email này trong thời gian sớm nhất.\n\nRất mong được chào đón bạn!`);
+      setSendEmail(true);
+    } else {
+      setSendEmail(false);
+      setEmailContent("");
+    }
+  }, [status]);
 
   const { data: transcriptData, isLoading: isLoadingTranscript } = useQuery({
     queryKey: ["hr-interview-transcript", application?.interview_id],
@@ -69,7 +100,9 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     updateMutation.mutate({
       status: application.status, // Giữ nguyên status cũ
       hr_tag: hrTag,
-      hr_notes: hrNotes
+      hr_notes: hrNotes,
+      send_email: sendEmail,
+      email_content: emailContent
     });
   };
 
@@ -437,6 +470,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 
                 <div className="space-y-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <div>
+<<<<<<< HEAD
                     <div className="flex justify-between text-xs font-bold mb-1.5">
                       <span className="text-gray-600">Điểm CV (Độ phù hợp)</span>
                       <span className="text-sky-600">{application.cv_score || 0}/100</span>
@@ -454,6 +488,18 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${application.interview_score || 0}%` }}></div>
                     </div>
+=======
+                    <label className="block text-xs font-bold text-gray-700 mb-2">Trạng thái hồ sơ</label>
+                    <select 
+                      value={status} 
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="w-full border-2 border-gray-100 rounded-lg p-2.5 text-sm focus:border-sky-500 focus:ring-0 outline-none font-semibold text-gray-800"
+                    >
+                      {STATUS_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+>>>>>>> origin/main
                   </div>
 
                   <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
@@ -519,6 +565,44 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                    >
                      <Save className="w-4 h-4" /> Lưu Ghi Chú & Tag
                    </button>
+                </div>
+
+                {/* EMAIL TEMPLATE */}
+                <div className="bg-sky-50/50 p-4 rounded-xl border border-sky-100 mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={sendEmail} 
+                        onChange={(e) => setSendEmail(e.target.checked)}
+                        className="w-4 h-4 text-[#0ea5e9] border-gray-300 rounded focus:ring-[#0ea5e9]"
+                      />
+                      <span className="text-xs font-bold text-sky-900">Gửi email thông báo cho ứng viên</span>
+                    </label>
+                  </div>
+                  
+                  {sendEmail && (
+                    <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Tiêu đề (Mặc định)</label>
+                        <div className="bg-white px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-500 cursor-not-allowed">
+                          [MockAI Interview] Kết quả hồ sơ ứng tuyển - {application.job_title}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Nội dung Email</label>
+                        <textarea 
+                          value={emailContent} 
+                          onChange={(e) => setEmailContent(e.target.value)}
+                          placeholder="Nhập lời nhắn gửi đến ứng viên..."
+                          rows={4}
+                          className="w-full border border-sky-200 rounded-lg p-3 text-sm focus:border-[#0ea5e9] focus:ring-0 outline-none resize-none bg-white"
+                        ></textarea>
+                        <p className="text-[10px] text-sky-600 mt-1 italic">*Hệ thống tự động thêm tên ứng viên và lời chào vào đầu thư.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 </div>
 
                 {/* Action Buttons / Decisions */}

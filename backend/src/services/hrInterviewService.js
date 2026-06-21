@@ -177,15 +177,13 @@ export const finishHRInterviewSession = async ({ interviewId, userId, totalTabVi
 
   const combinedViolations = totalGazeViolations + (totalTabViolations || 0);
 
-  console.log('Evaluating each answer sequentially using Groq API...');
-  let totalScore = 0;
-  let evaluatedCount = 0;
+  console.log('Evaluating each answer in parallel using Groq API...');
 
-  for (const qa of qaDetails) {
+  const evalPromises = qaDetails.map(async (qa) => {
     if (qa.answer === 'Không trả lời') {
       qa.score = 0;
       qa.feedback = 'Ứng viên đã bỏ qua câu hỏi này.';
-      continue;
+      return;
     }
 
     try {
@@ -210,15 +208,22 @@ export const finishHRInterviewSession = async ({ interviewId, userId, totalTabVi
 
       qa.score = finalScore;
       qa.feedback = finalFeedback;
-      totalScore += finalScore;
-      evaluatedCount++;
-
-      // Small delay to respect Groq rate limits (30 RPM is quite high, but safe is better)
-      await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (err) {
       console.error(`Failed to evaluate question ${qa.id} via Groq:`, err);
       qa.score = 0;
       qa.feedback = 'Lỗi trong quá trình AI phân tích câu trả lời.';
+    }
+  });
+
+  // Execute all evaluations in parallel to optimize response time
+  await Promise.all(evalPromises);
+
+  let totalScore = 0;
+  let evaluatedCount = 0;
+  for (const qa of qaDetails) {
+    if (qa.answer !== 'Không trả lời') {
+      totalScore += qa.score || 0;
+      evaluatedCount++;
     }
   }
 

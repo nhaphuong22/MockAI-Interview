@@ -21,5 +21,14 @@ export const blogApi = {
   },
   getBlogById: (id) => {
     return axiosClient.get(`/blogs/${id}`);
+  },
+  toggleLikeBlog: (id) => {
+    return axiosClient.post(`/blogs/${id}/like`);
+  },
+  createComment: (id, content) => {
+    return axiosClient.post(`/blogs/${id}/comments`, { content });
+  },
+  getComments: (id) => {
+    return axiosClient.get(`/blogs/${id}/comments`);
   }
 };

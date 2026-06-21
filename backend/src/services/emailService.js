@@ -213,6 +213,44 @@ export const sendJobApplicationEmail = async (toEmail, hrName, candidateName, jo
 };
 
 /**
+ * Send application result email to candidate.
+ * @param {string} toEmail - Recipient email address
+ * @param {string} candidateName - Name of the candidate
+ * @param {string} jobTitle - Title of the job
+ * @param {string} customMessage - Custom message from HR
+ */
+export const sendApplicationResultEmail = async (toEmail, candidateName, jobTitle, customMessage) => {
+  await sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Kết quả hồ sơ ứng tuyển - ${jobTitle}`,
+    text: `Chào ${candidateName},\n\n${customMessage}\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="background: #0ea5e9; display: inline-block; padding: 12px 20px; border-radius: 12px; margin-bottom: 16px;">
+            <span style="color: white; font-size: 20px; font-weight: 800;">${APP_NAME}</span>
+          </div>
+          <h1 style="color: #0f172a; font-size: 22px; margin: 0;">Kết quả hồ sơ ứng tuyển</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(14,165,233,0.07); text-align: left;">
+          <p style="color: #334155; margin-top: 0;">Chào <strong>${candidateName}</strong>,</p>
+          <p style="color: #334155;">Cảm ơn bạn đã quan tâm và ứng tuyển cho vị trí <strong>${jobTitle}</strong> tại ${APP_NAME}.</p>
+          
+          <div style="margin: 24px 0; padding: 20px; background: #f8fafc; border-left: 4px solid #0ea5e9; border-radius: 0 8px 8px 0;">
+            <p style="color: #334155; margin: 0; white-space: pre-wrap;">${customMessage}</p>
+          </div>
+
+          <p style="color: #64748b; margin-bottom: 0;">Chúc bạn thành công trên con đường sự nghiệp của mình!</p>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">Trân trọng,<br>Đội ngũ ${APP_NAME}</p>
+      </div>
+    `,
+  });
+};
+
+
+/**
  * Gửi email báo cáo đánh giá CV kèm đính kèm tệp PDF cho Candidate hoặc HR
  * @param {string} toEmail - Email nhận
  * @param {string} recipientName - Tên người nhận
@@ -340,5 +378,4 @@ export const sendApplicationStatusUpdateEmail = async (toEmail, candidateName, j
     `
   });
 };
-
 

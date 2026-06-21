@@ -22,8 +22,8 @@ axiosClient.interceptors.request.use((config) => {
 axiosClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    // Xử lý lỗi 401 (Unauthorized) hoặc 403 (Forbidden) do JWT hết hạn
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+    // Xử lý lỗi 401 (Unauthorized) do JWT hết hạn hoặc không hợp lệ
+    if (error.response && error.response.status === 401) {
       console.warn("Phiên đăng nhập đã hết hạn hoặc token không hợp lệ.");
       useAuthStore.getState().logout();
       alert("Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục sử dụng hệ thống!");

@@ -339,10 +339,107 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
  */
 export const getApplicationDetailById = async (applicationId) => {
   return await db('applications')
-    .select('applications.*', 'jobs.hr_id as job_hr_id')
+    .select(
+      'applications.*', 
+      'jobs.hr_id as job_hr_id',
+      'jobs.title as job_title',
+      'users.full_name as candidate_name',
+      'users.email as candidate_email'
+    )
     .join('jobs', 'applications.job_id', 'jobs.id')
+    .join('users', 'applications.candidate_id', 'users.id')
     .where('applications.id', applicationId)
     .first();
+};
+
+/**
+
+ * Lấy danh sách việc làm đã lưu hoặc ID việc làm đã lưu của ứng viên
+ */
+export const getSavedJobsService = async (userId, returnIdsOnly = false) => {
+  if (returnIdsOnly) {
+    const savedJobs = await db('saved_jobs')
+      .where('user_id', userId)
+      .select('job_id');
+    return savedJobs.map(sj => sj.job_id);
+  }
+
+  // Lấy chi tiết việc làm đã lưu
+  const savedJobs = await db('saved_jobs')
+    .join('jobs', 'saved_jobs.job_id', '=', 'jobs.id')
+    .leftJoin('companies', 'jobs.company_id', 'companies.id')
+    .where('saved_jobs.user_id', userId)
+    .select(
+      'jobs.id',
+      'jobs.title',
+      'companies.name as company_name',
+      'companies.logo_url as company_logo',
+      'companies.address as company_address',
+      'jobs.salary_min',
+      'jobs.salary_max',
+      'jobs.salary_currency',
+      'jobs.is_salary_visible',
+      'jobs.experience_level as type',
+      'saved_jobs.created_at as savedDate',
+      'saved_jobs.note'
+    )
+    .orderBy('saved_jobs.created_at', 'desc');
+
+  // Format lại dữ liệu
+  return savedJobs.map(job => ({
+    id: job.id,
+    title: job.title,
+    company: job.company_name || 'Công ty ẩn danh',
+    logo: job.company_logo || '🚀',
+    location: job.company_address || 'Việt Nam',
+    salary: job.is_salary_visible && job.salary_min
+      ? `${(job.salary_min / 1000000).toFixed(0)} - ${(job.salary_max / 1000000).toFixed(0)} triệu ${job.salary_currency}`
+      : 'Thương lượng',
+    type: job.type || 'Không yêu cầu',
+    savedDate: job.savedDate,
+    note: job.note || '',
+    tags: [job.type, job.company_address].filter(Boolean)
+  }));
+};
+
+/**
+ * Bật/Tắt lưu việc làm
+ */
+export const toggleSavedJobService = async (userId, jobId) => {
+  // Check job exists
+  const job = await db('jobs').where({ id: jobId }).first();
+  if (!job) {
+    throw new Error('Không tìm thấy công việc.');
+  }
+
+  const existingSave = await db('saved_jobs')
+    .where({ user_id: userId, job_id: jobId })
+    .first();
+
+  if (existingSave) {
+    await db('saved_jobs').where({ id: existingSave.id }).delete();
+    return { message: 'Đã bỏ lưu việc làm.', isSaved: false };
+  } else {
+    await db('saved_jobs').insert({ user_id: userId, job_id: jobId });
+    return { message: 'Đã lưu việc làm.', isSaved: true };
+  }
+};
+
+/**
+ * Cập nhật ghi chú cho việc làm đã lưu
+ */
+export const updateSavedJobNoteService = async (userId, jobId, note) => {
+  const existingSave = await db('saved_jobs')
+    .where({ user_id: userId, job_id: jobId })
+    .first();
+
+  if (!existingSave) {
+    throw new Error('Công việc này chưa được lưu.');
+  }
+
+  await db('saved_jobs')
+    .where({ id: existingSave.id })
+    .update({ note, updated_at: db.fn.now() });
 };
 
 /**
@@ -433,5 +530,6 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
     is_cached: false,
     generated_at: generatedDate
   };
+
 };
 

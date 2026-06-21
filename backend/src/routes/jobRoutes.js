@@ -8,7 +8,13 @@ import {
   deleteJob,
   getJobApplications,
   updateJobApplication,
+
+  toggleSavedJob,
+  getSavedJobs,
+  updateSavedJobNote,
+
   getJobCampaignReport
+
 } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
@@ -391,6 +397,10 @@ router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']),
  *       500:
  *         description: Lỗi hệ thống.
  */
+// Candidate Saved Jobs
+router.get('/saved-jobs', authenticateToken, requireRole(['USER']), getSavedJobs);
+router.post('/:id/save', authenticateToken, requireRole(['USER']), toggleSavedJob);
+router.put('/:id/save/note', authenticateToken, requireRole(['USER']), updateSavedJobNote);
 
 router.get('/:id', cacheMiddleware('jobs:detail', 1800), getJobById);
 router.get('/:id/campaign-report', authenticateToken, requireRole(['HR', 'ADMIN']), getJobCampaignReport);

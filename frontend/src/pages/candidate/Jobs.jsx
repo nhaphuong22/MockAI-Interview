@@ -1,11 +1,14 @@
 import { SlidersHorizontal, Loader2, AlertCircle } from "lucide-react";
+
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+
 import { JobFilters } from "./components/JobFilters";
 import { CompanyGroupCard } from "./components/CompanyGroupCard";
 import { jobApi } from "../../api/jobApi";
+import { useUiStore } from "../../store/useUiStore";
 
 const cleanLocationName = (str) => {
   if (!str) return "";
@@ -26,9 +29,14 @@ const cleanLocationName = (str) => {
  * Manages job listings, filtering by various criteria, and viewing detailed descriptions.
  */
 export function Jobs() {
+
+  const queryClient = useQueryClient();
+  const [selectedJob, setSelectedJob] = useState(null);
+
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const [bookmarked, setBookmarked] = useState([]);
+
   const [salaryRange, setSalaryRange] = useState([10, 50]);
   const [showFilters, setShowFilters] = useState(true);
   const [search, setSearch] = useState("");
@@ -68,10 +76,40 @@ export function Jobs() {
 
   const jobsList = response?.data?.items || [];
 
+  // Gọi API lấy danh sách ID công việc đã lưu
+  const { data: savedJobIds = [] } = useQuery({
+    queryKey: ["savedJobIds"],
+    queryFn: async () => {
+      const res = await jobApi.getSavedJobs({ returnIdsOnly: true });
+      return res.data || [];
+    }
+  });
+
+  const showToast = useUiStore((state) => state.showToast);
+
+  const toggleMutation = useMutation({
+    mutationFn: (jobId) => jobApi.toggleSavedJob(jobId),
+    onSuccess: (res) => {
+      // Refresh cache để cập nhật UI
+      queryClient.invalidateQueries({ queryKey: ["savedJobIds"] });
+      queryClient.invalidateQueries({ queryKey: ["savedJobs"] });
+      
+      const payload = res?.data || res;
+      showToast({ 
+        message: payload?.message || "Đã cập nhật trạng thái lưu việc làm.", 
+        type: "success" 
+      });
+    },
+    onError: (err) => {
+      showToast({ 
+        message: err.response?.data?.error || err.response?.data?.message || "Có lỗi xảy ra khi lưu việc làm.", 
+        type: "error" 
+      });
+    }
+  });
+
   const toggleBookmark = (jobId) => {
-    setBookmarked((prev) =>
-      prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
-    );
+    toggleMutation.mutate(jobId);
   };
 
   // Định dạng hiển thị mức lương
@@ -337,18 +375,20 @@ export function Jobs() {
                   }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                 >
+
                   <CompanyGroupCard
                     companyName={group.companyName}
                     logo={group.logo}
                     location={group.location}
                     jobs={group.jobs}
-                    bookmarked={bookmarked}
+                    bookmarked={savedJobIds}
                     onSelectJob={(id) => navigate(`/jobs/${id}`)}
                     onToggleBookmark={toggleBookmark}
                   />
                 </motion.div>
               ))}
             </motion.div>
+
           )}
         </div>
       </div>
