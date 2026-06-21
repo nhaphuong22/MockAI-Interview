@@ -492,7 +492,7 @@ export function Community() {
                 </label>
                 
                 {coverImagePreview ? (
-                  <div className="relative rounded-2xl overflow-hidden max-h-48 border dark:border-slate-850 border-gray-100">
+                  <div className="relative rounded-2xl overflow-hidden h-48 border dark:border-slate-850 border-gray-100">
                     <img src={coverImagePreview} alt="preview" className="w-full h-full object-cover" />
                     <button
                       type="button"

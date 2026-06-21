@@ -9,6 +9,8 @@ import {
   getBlogComments
 } from '../services/blogService.js';
 import { containsBadWords } from '../helper/badWordsHelper.js';
+import cloudinary from '../core/cloudinary.js';
+import fs from 'fs';
 
 /**
  * Lưu bài viết nháp (Draft Blog)
@@ -77,8 +79,12 @@ export const uploadCoverImage = async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng chọn một file ảnh.' });
     }
 
-    // Trả về URL của ảnh đã được lưu
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // Tải ảnh lên Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'blogs',
+    });
+
+    const imageUrl = uploadResult.secure_url;
     
     return res.status(200).json({
       message: 'Tải ảnh bìa lên thành công.',
@@ -87,6 +93,15 @@ export const uploadCoverImage = async (req, res) => {
   } catch (error) {
     console.error('Lỗi khi tải ảnh bìa:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi tải ảnh bìa.' });
+  } finally {
+    // Đảm bảo file tạm local luôn được dọn dẹp sạch sẽ
+    if (req.file && req.file.path) {
+      try {
+        await fs.promises.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('Không thể xóa file ảnh tạm thời:', unlinkError);
+      }
+    }
   }
 };
 

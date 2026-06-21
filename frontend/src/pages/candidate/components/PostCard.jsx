@@ -178,7 +178,7 @@ export function PostCard({ post }) {
 
       {/* Cover Image: Tràn viền card (hiển thị dưới text) */}
       {hasImage && (
-        <div className="w-full max-h-96 overflow-hidden relative border-y dark:border-slate-850 border-gray-100/50">
+        <div className="w-full h-64 md:h-80 overflow-hidden relative border-y dark:border-slate-850 border-gray-100/50">
           <img 
             src={post.image} 
             alt={post.title} 
