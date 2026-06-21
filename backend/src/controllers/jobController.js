@@ -10,7 +10,7 @@ import {
 
   getSavedJobsService,
   toggleSavedJobService,
-  updateSavedJobNoteService
+  updateSavedJobNoteService,
 
   generateJobCampaignReportService
 

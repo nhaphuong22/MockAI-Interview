@@ -440,7 +440,9 @@ export const updateSavedJobNoteService = async (userId, jobId, note) => {
   await db('saved_jobs')
     .where({ id: existingSave.id })
     .update({ note, updated_at: db.fn.now() });
+};
 
+/**
  * Tổng hợp toàn bộ dữ liệu ứng viên của 1 Job và gọi Gemini (Boss) để sinh Báo cáo Chiến dịch
  */
 export const generateJobCampaignReportService = async (jobId, hrId) => {
