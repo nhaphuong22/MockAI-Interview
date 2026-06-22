@@ -1,13 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
-<<<<<<< HEAD
 import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle2, Clock, Star, Edit, Save, Loader2, Tag, Globe, ExternalLink, MapPin, AlertTriangle, Award, MessageSquare, ChevronDown, Download } from "lucide-react";
-import { useState } from "react";
-=======
-
-import { X, User, Briefcase, Calendar, Mail, Phone, FileText, CheckCircle, Clock, Star, Edit, Save, Loader2, Tag, Globe, ExternalLink, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
-
->>>>>>> origin/main
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
 import { inviteAIInterviewApi, getHRInterviewTranscriptApi } from "../../../api/hrInterviewApi";
@@ -44,23 +37,24 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
 
   // Update email template when status changes
   useEffect(() => {
-    if (status === "SHORTLISTED") {
+    const currentStatus = application?.status;
+    if (currentStatus === "SHORTLISTED") {
       setEmailContent(`Chúng tôi rất ấn tượng với hồ sơ của bạn và xin thông báo bạn đã vượt qua vòng sơ loại.\n\nPhòng nhân sự sẽ sớm liên hệ với bạn để trao đổi về lịch phỏng vấn vòng tiếp theo.\n\nVui lòng kiểm tra email thường xuyên.`);
       setSendEmail(true);
-    } else if (status === "REJECTED") {
+    } else if (currentStatus === "REJECTED") {
       setEmailContent(`Cảm ơn bạn đã quan tâm ứng tuyển. Sau khi xem xét kỹ lưỡng, chúng tôi rất tiếc phải thông báo rằng hồ sơ của bạn chưa phù hợp với định hướng của công ty ở thời điểm hiện tại.\n\nChúng tôi sẽ lưu trữ hồ sơ của bạn và liên hệ lại khi có cơ hội phù hợp trong tương lai.\n\nChúc bạn thành công trên con đường sự nghiệp!`);
       setSendEmail(true);
-    } else if (status === "INTERVIEW_SCHEDULED") {
+    } else if (currentStatus === "INTERVIEW_SCHEDULED") {
       setEmailContent(`Chúng tôi xin trân trọng kính mời bạn tham gia buổi phỏng vấn trực tuyến.\n\nChi tiết về thời gian và link tham gia sẽ được cập nhật sớm trên hệ thống và gửi qua email cho bạn.\n\nVui lòng chuẩn bị kết nối mạng ổn định và trang phục lịch sự.`);
       setSendEmail(true);
-    } else if (status === "HIRED") {
+    } else if (currentStatus === "HIRED") {
       setEmailContent(`Chúc mừng bạn đã xuất sắc vượt qua các vòng phỏng vấn và chính thức trở thành một phần của công ty chúng tôi!\n\nPhòng nhân sự sẽ gửi Thư Mời Nhận Việc (Offer Letter) với thông tin chi tiết qua email này trong thời gian sớm nhất.\n\nRất mong được chào đón bạn!`);
       setSendEmail(true);
     } else {
       setSendEmail(false);
       setEmailContent("");
     }
-  }, [status]);
+  }, [application?.status]);
 
   const { data: transcriptData, isLoading: isLoadingTranscript } = useQuery({
     queryKey: ["hr-interview-transcript", application?.interview_id],
@@ -470,7 +464,6 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 
                 <div className="space-y-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <div>
-<<<<<<< HEAD
                     <div className="flex justify-between text-xs font-bold mb-1.5">
                       <span className="text-gray-600">Điểm CV (Độ phù hợp)</span>
                       <span className="text-sky-600">{application.cv_score || 0}/100</span>
@@ -488,18 +481,6 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${application.interview_score || 0}%` }}></div>
                     </div>
-=======
-                    <label className="block text-xs font-bold text-gray-700 mb-2">Trạng thái hồ sơ</label>
-                    <select 
-                      value={status} 
-                      onChange={(e) => setStatus(e.target.value)}
-                      className="w-full border-2 border-gray-100 rounded-lg p-2.5 text-sm focus:border-sky-500 focus:ring-0 outline-none font-semibold text-gray-800"
-                    >
-                      {STATUS_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
->>>>>>> origin/main
                   </div>
 
                   <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
@@ -650,10 +631,8 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   </button>
 
                 </div>
-
               </div>
             </div>
-          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
