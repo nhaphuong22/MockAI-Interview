@@ -25,8 +25,6 @@ const STATUS_LABELS = {
   REJECTED:             "Từ chối",
 };
 
-const TAG_OPTIONS = ["Tiềm năng", "Senior", "Junior", "Fresher", "Đang cân nhắc", "Blacklist"];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function deriveAIRecommendation(aiFeedback) {
   if (!aiFeedback) return null;
@@ -60,7 +58,6 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
   const queryClient = useQueryClient();
   const showToast = useUiStore((state) => state.showToast);
 
-  const [hrTag, setHrTag] = useState(application?.hr_tag || "");
   const [hrNotes, setHrNotes] = useState(application?.hr_notes || "");
   const [sendEmail, setSendEmail] = useState(false);
   const [emailContent, setEmailContent] = useState("");
@@ -119,7 +116,6 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
   const handleSaveNotes = () => {
     updateMutation.mutate({
       status: application.status,
-      hr_tag: hrTag,
       hr_notes: hrNotes,
       send_email: sendEmail,
       email_content: emailContent,
@@ -128,7 +124,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
 
   const handleAction = (newStatus) => {
     updateMutation.mutate(
-      { status: newStatus, hr_tag: hrTag, hr_notes: hrNotes },
+      { status: newStatus, hr_notes: hrNotes },
       {
         onSuccess: () => {
           if (newStatus === "REJECTED" || newStatus === "HIRED") onOpenChange(false);
@@ -161,7 +157,14 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
 
   const currentStatusLabel = STATUS_LABELS[application.status || "SUBMITTED"] || "Chưa rõ";
   const aiRecommendation = deriveAIRecommendation(application.aiFeedback);
-  const finalScore = computeFinalScore(application.cv_score, application.interview_score);
+
+  // Nếu DB chưa có điểm tổng PV, tự tính trung bình từ transcript (nếu có)
+  const computedInterviewScore = application.interview_score ?? 
+    (transcriptData?.transcript?.length > 0 
+      ? Math.round(transcriptData.transcript.reduce((sum, qa) => sum + (qa.score || 0), 0) / transcriptData.transcript.length) 
+      : null);
+
+  const finalScore = computeFinalScore(application.cv_score, computedInterviewScore);
   const finalLabel = finalScoreLabel(finalScore);
   const hasInterview = !!application.interview_id;
 
@@ -219,11 +222,11 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 >
                   <Mic className="w-4 h-4" />
                   Kết quả PV AI
-                  {application.interview_score != null && (
+                  {computedInterviewScore != null && (
                     <span className={`ml-1 text-xs font-black px-2 py-0.5 rounded-full ${
                       viewMode === "pv" ? "bg-[#0ea5e9]/10 text-[#0ea5e9]" : "bg-white/25 text-white"
                     }`}>
-                      {application.interview_score}/100
+                      {computedInterviewScore}/100
                     </span>
                   )}
                 </button>
@@ -549,20 +552,20 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                     <div className="p-5 space-y-4">
 
                       {/* Overall score banner */}
-                      {application.interview_score != null && (
+                      {computedInterviewScore != null && (
                         <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
-                          application.interview_score >= 70 ? "bg-emerald-50 border-emerald-200"
-                          : application.interview_score >= 50 ? "bg-amber-50 border-amber-200"
+                          computedInterviewScore >= 70 ? "bg-emerald-50 border-emerald-200"
+                          : computedInterviewScore >= 50 ? "bg-amber-50 border-amber-200"
                           : "bg-red-50 border-red-200"
                         }`}>
                           <div>
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">🎙 Điểm Phỏng Vấn</p>
                             <p className={`text-2xl font-black mt-0.5 ${
-                              application.interview_score >= 70 ? "text-emerald-700"
-                              : application.interview_score >= 50 ? "text-amber-700"
+                              computedInterviewScore >= 70 ? "text-emerald-700"
+                              : computedInterviewScore >= 50 ? "text-amber-700"
                               : "text-red-700"
                             }`}>
-                              {application.interview_score}
+                              {computedInterviewScore}
                               <span className="text-sm font-bold text-gray-400">/100</span>
                             </p>
                           </div>
@@ -764,10 +767,12 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                     <div>
                       <div className="flex justify-between text-xs font-bold mb-1.5">
                         <span className="text-gray-600">Phỏng vấn AI (60%)</span>
-                        <span className="text-sky-600">{application.interview_score || 0}/100</span>
+                        <span className="text-sky-600">
+                          {computedInterviewScore != null ? `${computedInterviewScore}/100` : "Chưa có"}
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-sky-400 h-2 rounded-full" style={{ width: `${application.interview_score || 0}%` }} />
+                        <div className="bg-sky-400 h-2 rounded-full" style={{ width: `${computedInterviewScore || 0}%` }} />
                       </div>
                     </div>
                     <div className="pt-3 border-t border-gray-200">
@@ -788,39 +793,12 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   </div>
                 </div>
 
-                {/* Ghi chú & Tag */}
+                {/* Ghi chú */}
                 <div className="border-t border-gray-100 pt-4 space-y-4">
                   <h3 className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
-                    <Edit className="w-4 h-4 text-[#0ea5e9]" /> Ghi chú &amp; Phân loại
+                    <Edit className="w-4 h-4 text-[#0ea5e9]" /> Ghi chú nội bộ
                   </h3>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Phân Loại (Tag)</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      <button
-                        onClick={() => setHrTag("")}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                          hrTag === "" ? "bg-gray-800 text-white border-gray-800" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        Bỏ Tag
-                      </button>
-                      {TAG_OPTIONS.map((tag) => (
-                        <button
-                          key={tag}
-                          onClick={() => setHrTag(tag)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                            hrTag === tag
-                              ? "bg-[#0ea5e9] text-white border-[#0ea5e9] shadow-sm"
-                              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-                          }`}
-                        >
-                          {tag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Ghi chú nội bộ</label>
                     <textarea
                       value={hrNotes}
                       onChange={(e) => setHrNotes(e.target.value)}
@@ -835,7 +813,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                       disabled={updateMutation.isPending}
                       className="flex items-center gap-1.5 text-sm font-bold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      <Save className="w-4 h-4" /> Lưu Ghi Chú &amp; Tag
+                      <Save className="w-4 h-4" /> Lưu Ghi Chú
                     </button>
                   </div>
                 </div>
