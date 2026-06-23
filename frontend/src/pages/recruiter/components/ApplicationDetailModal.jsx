@@ -145,7 +145,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-sky-950/60 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[98vw] max-w-7xl h-[95vh] bg-white rounded-2xl shadow-2xl z-50 p-0 animate-in zoom-in-95 duration-200 focus:outline-none flex flex-col overflow-hidden">
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[98vw] max-w-[1536px] h-[95vh] bg-white rounded-2xl shadow-2xl z-50 p-0 animate-in zoom-in-95 duration-200 focus:outline-none flex flex-col overflow-hidden">
           
           {/* Header */}
           <div className="bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] px-6 py-4 flex items-center justify-between shadow-md z-20 flex-shrink-0">
@@ -175,19 +175,47 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
             </Dialog.Close>
           </div>
 
-          {/* Main Body Split Pane */}
+          {/* Main Body Split Pane (3 Columns) */}
           <div className="flex flex-1 overflow-hidden bg-gray-50/50">
             
-            {/* CỘT TRÁI (NỘI DUNG CHÍNH) */}
-            <div className="flex-[7] border-r border-gray-200 flex flex-col h-full bg-white relative">
-              <Tabs.Root defaultValue={application.cv_file_url ? "cv" : "summary"} className="flex flex-col h-full overflow-hidden">
+            {/* COL 1: CV (Left) - 45% */}
+            <div className="w-[45%] border-r border-gray-200 flex flex-col h-full bg-gray-100 relative overflow-hidden">
+              <div className="bg-white px-4 py-3 border-b border-gray-200 flex justify-between items-center flex-shrink-0 shadow-sm z-10">
+                <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                   <FileText className="w-4 h-4 text-[#0ea5e9]" /> Hồ Sơ Gốc (CV)
+                </h3>
+                {application.cv_file_url && (
+                  <div className="flex gap-2">
+                    <a href={application.cv_file_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-600 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-lg transition-colors">
+                      <ExternalLink className="w-3.5 h-3.5" /> Mở tab mới
+                    </a>
+                    <a href={application.cv_file_url} download className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#0ea5e9] bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors">
+                      <Download className="w-3.5 h-3.5" /> Tải CV
+                    </a>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1 w-full h-full p-2 lg:p-4 overflow-hidden">
+                {application.cv_file_url ? (
+                  <iframe 
+                    src={`${application.cv_file_url}#toolbar=0&navpanes=0&scrollbar=0`}
+                    className="w-full h-full rounded-lg shadow-sm border border-gray-200 bg-white"
+                    title="CV Document"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-white rounded-lg shadow-sm border border-gray-200">
+                    <FileText className="w-12 h-12 mb-3 opacity-20" />
+                    <span className="font-medium text-gray-500">Ứng viên không đính kèm CV gốc</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* COL 2: AI Report & Q&A (Middle) - 30% */}
+            <div className="w-[30%] border-r border-gray-200 flex flex-col h-full bg-white relative">
+              <Tabs.Root defaultValue="summary" className="flex flex-col h-full overflow-hidden">
                 <Tabs.List className="flex px-4 pt-2 border-b border-gray-200 bg-gray-50/80 gap-2 flex-shrink-0">
-                  <Tabs.Trigger 
-                    value="cv" 
-                    className="px-5 py-3 text-sm font-bold text-gray-500 data-[state=active]:text-[#0ea5e9] data-[state=active]:border-b-2 data-[state=active]:border-[#0ea5e9] transition-all flex items-center gap-2"
-                  >
-                    <FileText className="w-4 h-4" /> Hồ Sơ Gốc (CV)
-                  </Tabs.Trigger>
                   <Tabs.Trigger 
                     value="summary" 
                     className="px-5 py-3 text-sm font-bold text-gray-500 data-[state=active]:text-[#0ea5e9] data-[state=active]:border-b-2 data-[state=active]:border-[#0ea5e9] transition-all flex items-center gap-2"
@@ -203,37 +231,9 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   </Tabs.Trigger>
                 </Tabs.List>
 
-                {/* Tab CV */}
-                <Tabs.Content value="cv" className="flex-1 p-0 outline-none flex flex-col overflow-hidden bg-gray-100">
-                  {application.cv_file_url ? (
-                    <>
-                      <div className="bg-white px-4 py-2 border-b border-gray-200 flex justify-end gap-3 flex-shrink-0">
-                        <a href={application.cv_file_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-600 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-lg transition-colors">
-                          <ExternalLink className="w-3.5 h-3.5" /> Mở trong tab mới
-                        </a>
-                        <a href={application.cv_file_url} download className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#0ea5e9] bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors">
-                          <Download className="w-3.5 h-3.5" /> Tải Xuống CV
-                        </a>
-                      </div>
-                      <div className="flex-1 w-full h-full p-2 lg:p-4">
-                        <iframe 
-                          src={`${application.cv_file_url}#toolbar=0&navpanes=0&scrollbar=0`}
-                          className="w-full h-full rounded-lg shadow-sm border border-gray-200 bg-white"
-                          title="CV Document"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-white">
-                      <FileText className="w-12 h-12 mb-3 opacity-20" />
-                      <span className="font-medium text-gray-500">Ứng viên không đính kèm CV gốc</span>
-                    </div>
-                  )}
-                </Tabs.Content>
-
                 {/* Tab Báo Cáo AI */}
                 <Tabs.Content value="summary" className="flex-1 p-0 outline-none overflow-y-auto">
-                  <div className="bg-gradient-to-br from-[#f8fafc] to-[#f0f9ff] min-h-full p-6">
+                  <div className="bg-gradient-to-br from-[#f8fafc] to-[#f0f9ff] min-h-full p-5">
                     {application.aiFeedback ? (
                       <div className="space-y-6">
                         
@@ -249,7 +249,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                         </div>
 
                         {/* Positive & Negative Notes */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                           <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4">
                             <h4 className="text-sm font-bold text-amber-700 flex items-center gap-2 mb-3 uppercase">
                               <Award className="w-4 h-4" /> Điểm Cộng (Positive Notes)
@@ -298,7 +298,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                         )}
 
                         {/* Skills Matching */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                             <h4 className="text-sm font-bold text-emerald-600 mb-2">Kỹ năng đáp ứng</h4>
                             <div className="flex flex-wrap gap-2">
@@ -413,11 +413,11 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
               </Tabs.Root>
             </div>
 
-            {/* CỘT PHẢI (THÔNG TIN & THAO TÁC HR) */}
-            <div className="flex-[4] flex flex-col h-full bg-white overflow-y-auto border-l border-gray-200 p-6 space-y-6">
+            {/* COL 3: HR Panel (Right) - 25% */}
+            <div className="w-[25%] flex flex-col h-full bg-white overflow-y-auto p-5 space-y-5">
               
               {/* Thông Tin & Liên Hệ */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
                   <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
                     <User className="w-4 h-4 text-sky-500" /> Thông tin liên hệ
@@ -428,16 +428,16 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   </span>
                 </div>
                 
-                <div className="space-y-3 text-sm">
+                <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-3 text-gray-700">
-                    <Mail className="w-4 h-4 text-gray-400" /> {displayData.email}
+                    <Mail className="w-4 h-4 text-gray-400" /> <span className="truncate">{displayData.email}</span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-700">
                     <Phone className="w-4 h-4 text-gray-400" /> {displayData.phone || "Chưa cập nhật"}
                   </div>
                   {displayData.address && (
                     <div className="flex items-center gap-3 text-gray-700">
-                      <MapPin className="w-4 h-4 text-gray-400" /> {displayData.address}
+                      <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" /> <span className="line-clamp-2">{displayData.address}</span>
                     </div>
                   )}
                   {application.portfolio_url && (
@@ -447,7 +447,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                         href={application.portfolio_url} 
                         target="_blank" 
                         rel="noreferrer"
-                        className="text-[#0ea5e9] hover:text-[#0284c7] hover:underline inline-flex items-center gap-1 font-bold"
+                        className="text-[#0ea5e9] hover:text-[#0284c7] hover:underline inline-flex items-center gap-1 font-bold truncate"
                       >
                         Portfolio <ExternalLink className="w-3.5 h-3.5" />
                       </a>
@@ -457,12 +457,12 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
               </div>
 
               {/* Điểm số */}
-              <div className="space-y-4 pt-2">
+              <div className="space-y-3 pt-2">
                 <h3 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wider flex items-center gap-2">
                   <Star className="w-4 h-4 text-amber-400" /> Đánh giá năng lực
                 </h3>
                 
-                <div className="space-y-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div className="space-y-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <div>
                     <div className="flex justify-between text-xs font-bold mb-1.5">
                       <span className="text-gray-600">Điểm CV (Độ phù hợp)</span>
@@ -491,7 +491,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
               </div>
 
               {/* Thao tác HR */}
-              <div className="border-t border-gray-100 pt-6 space-y-6 flex-1 flex flex-col">
+              <div className="border-t border-gray-100 pt-5 space-y-5 flex-1 flex flex-col">
                 <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
                   <Edit className="w-4 h-4 text-[#0ea5e9]" /> Ghi chú & Phân loại
                 </h3>
@@ -532,7 +532,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   <textarea 
                     value={hrNotes} 
                     onChange={(e) => setHrNotes(e.target.value)}
-                    placeholder="Ghi chú về ứng viên này (chỉ HR xem được)..."
+                    placeholder="Ghi chú về ứng viên này..."
                     rows={3}
                     className="w-full border-2 border-gray-100 rounded-xl p-3 text-[13px] text-gray-800 focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/10 outline-none resize-none transition-all bg-gray-50 focus:bg-white"
                   ></textarea>
@@ -549,7 +549,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                 </div>
 
                 {/* EMAIL TEMPLATE */}
-                <div className="bg-sky-50/50 p-4 rounded-xl border border-sky-100 mt-4">
+                <div className="bg-sky-50/50 p-4 rounded-xl border border-sky-100 mt-2">
                   <div className="flex items-center justify-between mb-3">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input 
@@ -567,7 +567,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Tiêu đề (Mặc định)</label>
                         <div className="bg-white px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-500 cursor-not-allowed">
-                          [MockAI Interview] Kết quả hồ sơ ứng tuyển - {application.job_title}
+                          [MockAI] Kết quả hồ sơ - {application.job_title}
                         </div>
                       </div>
                       <div>
@@ -579,60 +579,61 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                           rows={4}
                           className="w-full border border-sky-200 rounded-lg p-3 text-sm focus:border-[#0ea5e9] focus:ring-0 outline-none resize-none bg-white"
                         ></textarea>
-                        <p className="text-[10px] text-sky-600 mt-1 italic">*Hệ thống tự động thêm tên ứng viên và lời chào vào đầu thư.</p>
                       </div>
                     </div>
                   )}
                 </div>
-                </div>
 
                 {/* Action Buttons / Decisions */}
-                <div className="pt-6 border-t border-gray-100 flex-1 flex flex-col justify-end space-y-4">
+                <div className="pt-5 flex-1 flex flex-col justify-end space-y-4">
                   <label className="block text-xs font-bold text-gray-500 uppercase text-center">Đưa Ra Quyết Định</label>
                   
                   {/* Quyết định cấp 1 */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button 
-                      onClick={() => handleAction('SHORTLISTED')}
-                      disabled={updateMutation.isPending || application.status === 'SHORTLISTED' || application.status === 'HIRED' || application.status === 'REJECTED'}
-                      className="flex justify-center items-center gap-2 w-full bg-emerald-500 text-white px-4 py-3.5 rounded-xl font-bold text-sm hover:bg-emerald-600 hover:shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Vào Vòng Trong
-                    </button>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => handleAction('SHORTLISTED')}
+                        disabled={updateMutation.isPending || application.status === 'SHORTLISTED' || application.status === 'HIRED' || application.status === 'REJECTED'}
+                        className="flex justify-center items-center gap-2 flex-1 bg-emerald-500 text-white px-3 py-3 rounded-xl font-bold text-sm hover:bg-emerald-600 hover:shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-4 h-4" /> Vòng Trong
+                      </button>
+                      
+                      <button 
+                        onClick={() => handleAction('REJECTED')}
+                        disabled={updateMutation.isPending || application.status === 'REJECTED'}
+                        className="flex justify-center items-center gap-2 flex-1 bg-rose-500 text-white px-3 py-3 rounded-xl font-bold text-sm hover:bg-rose-600 hover:shadow-lg shadow-rose-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                      >
+                        <X className="w-4 h-4" /> Từ Chối
+                      </button>
+                    </div>
                     
+                    {/* Mời phỏng vấn AI chỉ hiện khi status phù hợp */}
+                    {(application.status === 'SHORTLISTED' || application.status === 'HR_REVIEWING' || application.status === 'AI_INTERVIEW_INVITED' || application.status === 'INTERVIEWED') && (
+                      <button 
+                        onClick={() => inviteMutation.mutate()}
+                        disabled={inviteMutation.isPending || application.status === 'AI_INTERVIEW_INVITED' || application.status === 'INTERVIEWED'}
+                        className="flex justify-center items-center gap-2 w-full bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-indigo-700 hover:shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {inviteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                        {application.status === 'AI_INTERVIEW_INVITED' ? "Đã Gửi Mời Phỏng Vấn AI" : application.status === 'INTERVIEWED' ? "Đã Hoàn Thành PV" : "Mời Phỏng Vấn AI"}
+                      </button>
+                    )}
+
+                    {/* Quyết định cấp cuối: Hired */}
                     <button 
-                      onClick={() => handleAction('REJECTED')}
-                      disabled={updateMutation.isPending || application.status === 'REJECTED'}
-                      className="flex justify-center items-center gap-2 w-full bg-rose-500 text-white px-4 py-3.5 rounded-xl font-bold text-sm hover:bg-rose-600 hover:shadow-lg shadow-rose-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                      onClick={() => handleAction('HIRED')}
+                      disabled={updateMutation.isPending || application.status === 'HIRED' || application.status === 'REJECTED'}
+                      className="flex justify-center items-center gap-2 w-full bg-white border-2 border-green-500 text-green-600 px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-green-50 hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50"
                     >
-                      <X className="w-4 h-4" /> Từ Chối
+                      <Award className="w-4 h-4" /> Đánh Dấu Trúng Tuyển
                     </button>
                   </div>
-                  
-                  {/* Mời phỏng vấn AI chỉ hiện khi status phù hợp */}
-                  {(application.status === 'SHORTLISTED' || application.status === 'HR_REVIEWING' || application.status === 'AI_INTERVIEW_INVITED' || application.status === 'INTERVIEWED') && (
-                    <button 
-                      onClick={() => inviteMutation.mutate()}
-                      disabled={inviteMutation.isPending || application.status === 'AI_INTERVIEW_INVITED' || application.status === 'INTERVIEWED'}
-                      className="flex justify-center items-center gap-2 w-full bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-indigo-700 hover:shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {inviteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-                      {application.status === 'AI_INTERVIEW_INVITED' ? "Đã Gửi Lời Mời Phỏng Vấn AI" : application.status === 'INTERVIEWED' ? "Ứng Viên Đã Hoàn Thành PV" : "Mời Phỏng Vấn AI"}
-                    </button>
-                  )}
-
-                  {/* Quyết định cấp cuối: Hired */}
-                  <button 
-                    onClick={() => handleAction('HIRED')}
-                    disabled={updateMutation.isPending || application.status === 'HIRED' || application.status === 'REJECTED'}
-                    className="flex justify-center items-center gap-2 w-full bg-white border-2 border-green-500 text-green-600 px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-green-50 hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50"
-                  >
-                    <Award className="w-4 h-4" /> Đánh Dấu Trúng Tuyển (Hired)
-                  </button>
-
                 </div>
+
               </div>
             </div>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

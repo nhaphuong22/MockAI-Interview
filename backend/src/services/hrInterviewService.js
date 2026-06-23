@@ -1,5 +1,5 @@
 import db from '../db/knex.js';
-import { generateQuestionsFromGroq, evaluateCandidateAnswer, generateOverallAssessmentFromGroq } from './groqService.js';
+import { generateQuestionsFromGroq, evaluateCandidateAnswer, generateOverallAssessmentFromGroq, evaluateAllAndGenerateHRReport } from './groqService.js';
 import { insertInterview, insertQuestions } from '../models/interviewModel.js';
 
 /**
@@ -177,67 +177,69 @@ export const finishHRInterviewSession = async ({ interviewId, userId, totalTabVi
 
   const combinedViolations = totalGazeViolations + (totalTabViolations || 0);
 
-  console.log('Evaluating each answer in parallel using Groq API...');
+  console.log('Evaluating all answers and generating report in a single Groq API call...');
 
-  const evalPromises = qaDetails.map(async (qa) => {
-    if (qa.answer === 'Không trả lời') {
-      qa.score = 0;
-      qa.feedback = 'Ứng viên đã bỏ qua câu hỏi này.';
-      return;
-    }
+  // Prepare input format for Groq
+  const groqInputQaDetails = qaDetails.map(qa => {
+    const ansRecord = answers.find(a => a.interview_question_id === qa.id);
+    return {
+      ...qa,
+      gaze_violations: ansRecord ? (ansRecord.gaze_violations || 0) : 0
+    };
+  });
 
-    try {
-      const evalResult = await evaluateCandidateAnswer(qa.question, qa.expected_answer, qa.answer);
-      const ansRecord = answers.find(a => a.interview_question_id === qa.id);
-      
-      let finalScore = evalResult.score || 0;
-      let finalFeedback = evalResult.feedback || '';
+  let overallScore = 0;
+  let aiReport = null;
 
-      if (ansRecord) {
-        const penalty = Math.min(50, (ansRecord.gaze_violations || 0) * 10);
-        finalScore = Math.max(0, finalScore - penalty);
-        if (ansRecord.gaze_violations > 0) {
-          finalFeedback += `\n\n[Cảnh báo AI]: Phát hiện ${ansRecord.gaze_violations} lần ứng viên nhìn lệch khỏi khung hình. Bị trừ ${penalty} điểm.`;
+  try {
+    const batchResult = await evaluateAllAndGenerateHRReport({
+      candidateName: user?.full_name || 'Ứng viên',
+      position: interview.custom_position || 'Vị trí phỏng vấn',
+      skills: interview.custom_skills || '',
+      qaDetails: groqInputQaDetails,
+      totalViolations: combinedViolations
+    });
+
+    let totalScore = 0;
+    let evaluatedCount = 0;
+    
+    if (batchResult.evaluations && Array.isArray(batchResult.evaluations)) {
+      for (const qa of qaDetails) {
+        if (qa.answer === 'Không trả lời') {
+          qa.score = 0;
+          qa.feedback = 'Ứng viên đã bỏ qua câu hỏi này.';
+          continue;
         }
 
-        await db('candidate_answers').where({ id: ansRecord.id }).update({
-          score: finalScore,
-          ai_feedback: finalFeedback
-        });
+        const evalMatch = batchResult.evaluations.find(e => Number(e.id) === Number(qa.id));
+        if (evalMatch) {
+          qa.score = Math.max(0, Number(evalMatch.score) || 0);
+          qa.feedback = evalMatch.feedback || '';
+
+          totalScore += qa.score;
+          evaluatedCount++;
+
+          const ansRecord = answers.find(a => a.interview_question_id === qa.id);
+          if (ansRecord) {
+            await db('candidate_answers').where({ id: ansRecord.id }).update({
+              score: qa.score,
+              ai_feedback: qa.feedback
+            });
+          }
+        } else {
+          qa.score = 0;
+          qa.feedback = 'Không thể phân tích câu trả lời.';
+        }
       }
-
-      qa.score = finalScore;
-      qa.feedback = finalFeedback;
-    } catch (err) {
-      console.error(`Failed to evaluate question ${qa.id} via Groq:`, err);
-      qa.score = 0;
-      qa.feedback = 'Lỗi trong quá trình AI phân tích câu trả lời.';
     }
-  });
 
-  // Execute all evaluations in parallel to optimize response time
-  await Promise.all(evalPromises);
+    overallScore = evaluatedCount > 0 ? Math.round(totalScore / evaluatedCount) : 0;
+    aiReport = batchResult.overall_assessment || { feedback_summary: 'Không tạo được báo cáo tổng quan.' };
 
-  let totalScore = 0;
-  let evaluatedCount = 0;
-  for (const qa of qaDetails) {
-    if (qa.answer !== 'Không trả lời') {
-      totalScore += qa.score || 0;
-      evaluatedCount++;
-    }
+  } catch (error) {
+    console.error('Batch evaluation failed:', error);
+    throw new Error('Lỗi khi phân tích bằng AI Batch Processing');
   }
-
-  const overallScore = evaluatedCount > 0 ? Math.round(totalScore / evaluatedCount) : 0;
-
-  console.log('Generating overall assessment report using Groq...');
-  const aiReport = await generateOverallAssessmentFromGroq({
-    candidateName: user?.full_name || 'Ứng viên',
-    position: interview.custom_position || 'Vị trí phỏng vấn',
-    skills: interview.custom_skills || '',
-    overallScore,
-    qaDetails,
-    totalViolations: combinedViolations
-  });
 
   // 4. Cập nhật applications table
   await db('applications')
@@ -256,7 +258,7 @@ export const finishHRInterviewSession = async ({ interviewId, userId, totalTabVi
       interview_id: interviewId,
       overall_score: overallScore,
       feedback_summary: aiReport.feedback_summary,
-      learning_path: JSON.stringify(aiReport.learning_path),
+      learning_path: JSON.stringify([]), // Bỏ learning path cho AI HR
       created_at: new Date(),
       updated_at: new Date()
     });
@@ -322,8 +324,7 @@ export const getHRInterviewTranscript = async ({ interviewId, hrId }) => {
     status: interview.status,
     position: interview.custom_position,
     assessment: assessment ? {
-      overallScore: assessment.overall_score,
-      learningPath: assessment.learning_path ? JSON.parse(assessment.learning_path) : []
+      overallScore: assessment.overall_score
     } : null,
     transcript
   };
