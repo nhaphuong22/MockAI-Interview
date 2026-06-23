@@ -142,9 +142,11 @@ export function ManageApplications() {
 
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-start justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight flex flex-wrap items-center gap-3">
-              <span>{jobTitle ? `Chiến dịch: ${jobTitle}` : "Hộp Thư Ứng Viên Tổng"}</span>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+              <span className="truncate max-w-[200px] sm:max-w-[300px] md:max-w-[500px] lg:max-w-[600px]" title={jobTitle ? `Chiến dịch: ${jobTitle}` : "Hộp Thư Ứng Viên Tổng"}>
+                {jobTitle ? `Chiến dịch: ${jobTitle}` : "Hộp Thư Ứng Viên Tổng"}
+              </span>
               <span className="shrink-0 whitespace-nowrap px-3 py-1 bg-sky-100 text-[#0ea5e9] text-sm font-bold rounded-full">
                 {applicationsList.length} hồ sơ
               </span>
@@ -167,27 +169,25 @@ export function ManageApplications() {
         </div>
 
         {/* Quick Stats Bar */}
-        {rawList.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-            {[
-              { label: "Chờ xử lý", value: stats.newCount, icon: <Clock className="w-4 h-4" />, color: "text-blue-600 bg-blue-50 border-blue-100", filter: "SUBMITTED" },
-              { label: "Chờ PV AI", value: stats.waitingPV, icon: <Sparkles className="w-4 h-4" />, color: "text-[#0ea5e9] bg-sky-50 border-sky-100", filter: "SHORTLISTED" },
-              { label: "Có KQ PV", value: stats.hasResult, icon: <BarChart2 className="w-4 h-4" />, color: "text-violet-600 bg-violet-50 border-violet-100", filter: "INTERVIEWED" },
-              { label: "Đã tuyển", value: stats.hired, icon: <CheckCircle2 className="w-4 h-4" />, color: "text-green-700 bg-green-50 border-green-200", filter: "" },
-              { label: "Từ chối", value: stats.rejected, icon: <X className="w-4 h-4" />, color: "text-red-600 bg-red-50 border-red-100", filter: "REJECTED" },
-            ].map((stat) => (
-              <button
-                key={stat.label}
-                onClick={() => setFilterStatus(stat.filter)}
-                className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border font-bold text-sm transition-all hover:scale-[1.02] hover:shadow-sm ${stat.color} ${filterStatus === stat.filter && stat.filter !== "" ? "ring-2 ring-offset-1 ring-current" : ""}`}
-              >
-                {stat.icon}
-                <span className="text-xl font-black">{stat.value}</span>
-                <span className="text-xs font-semibold opacity-75">{stat.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+          {[
+            { label: "Chờ xử lý", value: stats.newCount, icon: <Clock className="w-4 h-4" />, color: "text-blue-600 bg-blue-50 border-blue-100", filter: "SUBMITTED" },
+            { label: "Chờ PV AI", value: stats.waitingPV, icon: <Sparkles className="w-4 h-4" />, color: "text-[#0ea5e9] bg-sky-50 border-sky-100", filter: "SHORTLISTED" },
+            { label: "Có KQ PV", value: stats.hasResult, icon: <BarChart2 className="w-4 h-4" />, color: "text-violet-600 bg-violet-50 border-violet-100", filter: "INTERVIEWED" },
+            { label: "Đã tuyển", value: stats.hired, icon: <CheckCircle2 className="w-4 h-4" />, color: "text-green-700 bg-green-50 border-green-200", filter: "" },
+            { label: "Từ chối", value: stats.rejected, icon: <X className="w-4 h-4" />, color: "text-red-600 bg-red-50 border-red-100", filter: "REJECTED" },
+          ].map((stat) => (
+            <button
+              key={stat.label}
+              onClick={() => setFilterStatus(stat.filter)}
+              className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border font-bold text-sm transition-all hover:scale-[1.02] hover:shadow-sm ${stat.color} ${filterStatus === stat.filter && stat.filter !== "" ? "ring-2 ring-offset-1 ring-current" : ""}`}
+            >
+              {stat.icon}
+              <span className="text-xl font-black">{stat.value}</span>
+              <span className="text-xs font-semibold opacity-75">{stat.label}</span>
+            </button>
+          ))}
+        </div>
 
         {/* Main Content Layout */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
