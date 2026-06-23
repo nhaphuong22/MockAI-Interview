@@ -661,14 +661,15 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                     </div>
                   )}
 
-                  <div className="flex gap-2 mb-2">
+                  <div className="flex gap-2 mb-3">
                     <button
-                      onClick={() => handleAction("SHORTLISTED")}
-                      disabled={updateMutation.isPending || ["SHORTLISTED", "HIRED", "REJECTED"].includes(application.status)}
-                      className="flex justify-center items-center gap-1.5 flex-1 bg-emerald-500 text-white px-3 py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-600 hover:shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98] disabled:opacity-40"
+                      onClick={() => handleAction("HIRED")}
+                      disabled={updateMutation.isPending || application.status === "HIRED" || application.status === "REJECTED"}
+                      className="flex justify-center items-center gap-1.5 flex-1 bg-green-500 text-white px-3 py-2.5 rounded-xl font-bold text-sm hover:bg-green-600 hover:shadow-lg shadow-green-500/30 transition-all active:scale-[0.98] disabled:opacity-40"
                     >
-                      <CheckCircle2 className="w-4 h-4" /> Vòng Trong
+                      <Award className="w-4 h-4" /> Trúng Tuyển
                     </button>
+
                     <button
                       onClick={() => handleAction("REJECTED")}
                       disabled={updateMutation.isPending || application.status === "REJECTED"}
@@ -678,31 +679,29 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                     </button>
                   </div>
 
-                  {["SHORTLISTED", "HR_REVIEWING", "AI_INTERVIEW_INVITED", "INTERVIEWED"].includes(application.status) && (
-                    <button
-                      onClick={() => inviteMutation.mutate()}
-                      disabled={inviteMutation.isPending || ["AI_INTERVIEW_INVITED", "INTERVIEWED"].includes(application.status)}
-                      className="flex justify-center items-center gap-2 w-full bg-[#0ea5e9] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-[#0284c7] hover:shadow-lg shadow-sky-500/30 transition-all active:scale-[0.98] disabled:opacity-40 mb-2"
-                    >
-                      {inviteMutation.isPending
-                        ? <Loader2 className="w-4 h-4 animate-spin" />
-                        : <MessageSquare className="w-4 h-4" />}
-                      {application.status === "AI_INTERVIEW_INVITED"
-                        ? "Đã Gửi Mời PV AI"
-                        : application.status === "INTERVIEWED"
-                        ? "Đã Hoàn Thành PV"
-                        : "🎙 Mời Phỏng Vấn AI"}
-                    </button>
-                  )}
+                  {/* Tùy chọn Premium chỉ hiện trong giai đoạn duyệt CV hoặc đang chờ ứng viên PV */}
+                  {!["REJECTED", "HIRED", "INTERVIEWED"].includes(application.status) && (
+                    <>
+                      <div className="relative flex items-center py-2 mb-1">
+                        <div className="flex-grow border-t border-gray-200"></div>
+                        <span className="flex-shrink-0 mx-2 text-[10px] uppercase font-bold text-[#0ea5e9]">✨ Tùy chọn Phỏng vấn AI (Premium)</span>
+                        <div className="flex-grow border-t border-gray-200"></div>
+                      </div>
 
-                  <button
-                    onClick={() => handleAction("HIRED")}
-                    disabled={updateMutation.isPending || application.status === "HIRED" || application.status === "REJECTED" || !application.interview_id}
-                    title={!application.interview_id ? "Cần hoàn thành phỏng vấn AI trước" : ""}
-                    className="flex justify-center items-center gap-2 w-full bg-white border-2 border-green-500 text-green-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-green-50 hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40"
-                  >
-                    <Award className="w-4 h-4" /> Đánh Dấu Trúng Tuyển
-                  </button>
+                      <button
+                        onClick={() => inviteMutation.mutate()}
+                        disabled={inviteMutation.isPending || application.status === "AI_INTERVIEW_INVITED"}
+                        className="flex justify-center items-center gap-2 w-full bg-[#0ea5e9] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-[#0284c7] hover:shadow-lg shadow-sky-500/30 transition-all active:scale-[0.98] disabled:opacity-40 mb-2"
+                      >
+                        {inviteMutation.isPending
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <MessageSquare className="w-4 h-4" />}
+                        {application.status === "AI_INTERVIEW_INVITED"
+                          ? "Đã Gửi Mời PV AI"
+                          : "🎙 Mời Phỏng Vấn AI"}
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Thông tin liên hệ */}
