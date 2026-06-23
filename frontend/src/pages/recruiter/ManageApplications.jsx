@@ -339,7 +339,6 @@ export function ManageApplications() {
                         </th>
                         <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Điểm PV</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Trạng Thái</th>
-                        <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Tag</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Thao Tác</th>
                       </tr>
                     </thead>
@@ -366,7 +365,7 @@ export function ManageApplications() {
 
                         const aiVerdict = getAIVerdict(app);
                         const actionMeta = getActionMeta(app.status);
-                        const hasInterviewScore = app.interview_score != null && app.interview_score > 0;
+                        const hasInterviewScore = app.interview_score != null;
 
                         return (
                           <tr
@@ -408,7 +407,7 @@ export function ManageApplications() {
                                 <div className="flex flex-col gap-1.5">
                                   {/* Score bar */}
                                   <div className="flex items-center gap-2">
-                                    <span className={`text-lg font-black ${
+                                    <span className={`text-sm font-black ${
                                       aiVerdict.score >= 70 ? "text-emerald-600"
                                       : aiVerdict.score >= 50 ? "text-amber-600"
                                       : "text-red-500"
@@ -449,7 +448,7 @@ export function ManageApplications() {
                             <td className="px-5 py-4">
                               {hasInterviewScore ? (
                                 <div className="flex flex-col gap-1">
-                                  <span className={`text-lg font-black ${
+                                  <span className={`text-sm font-black ${
                                     app.interview_score >= 70 ? "text-emerald-600"
                                     : app.interview_score >= 50 ? "text-amber-600"
                                     : "text-red-500"
@@ -479,17 +478,6 @@ export function ManageApplications() {
                               }`}>
                                 {STATUS_BADGES[app.status]?.label || app.status}
                               </span>
-                            </td>
-
-                            {/* Tag */}
-                            <td className="px-5 py-4">
-                              {app.hr_tag ? (
-                                <span className="px-2.5 py-1 bg-gray-100 text-gray-600 border border-gray-200 rounded-lg text-xs font-semibold">
-                                  {app.hr_tag}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-gray-400 italic">—</span>
-                              )}
                             </td>
 
                             {/* Action */}
