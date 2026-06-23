@@ -9,6 +9,7 @@ import { JobFilters } from "./components/JobFilters";
 import { CompanyGroupCard } from "./components/CompanyGroupCard";
 import { jobApi } from "../../api/jobApi";
 import { useUiStore } from "../../store/useUiStore";
+import { useAuthStore } from "../../store/useAuthStore";
 
 const cleanLocationName = (str) => {
   if (!str) return "";
@@ -36,6 +37,8 @@ export function Jobs() {
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const [bookmarked, setBookmarked] = useState([]);
+  
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const [salaryRange, setSalaryRange] = useState([10, 50]);
   const [showFilters, setShowFilters] = useState(true);
@@ -82,7 +85,8 @@ export function Jobs() {
     queryFn: async () => {
       const res = await jobApi.getSavedJobs({ returnIdsOnly: true });
       return res.data || [];
-    }
+    },
+    enabled: !!isAuthenticated
   });
 
   const showToast = useUiStore((state) => state.showToast);
@@ -109,6 +113,10 @@ export function Jobs() {
   });
 
   const toggleBookmark = (jobId) => {
+    if (!isAuthenticated) {
+      showToast({ message: "Yêu cầu đăng nhập để dùng được tính năng này", type: "warning" });
+      return;
+    }
     toggleMutation.mutate(jobId);
   };
 
