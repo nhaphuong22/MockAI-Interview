@@ -69,6 +69,15 @@ export const applyJob = async (req, res) => {
       return sendError(res, 400, 'Nội dung CV (cv_text) là bắt buộc.');
     }
 
+    // Validate số điện thoại Việt Nam (nếu có)
+    if (candidate_phone) {
+      const cleanPhone = candidate_phone.trim().replace(/\s/g, '');
+      const phoneRegex = /^(\+84|0)(3[2-9]|5[6-9]|7[06-9]|8[0-9]|9[0-9])[0-9]{7}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        return sendError(res, 400, 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ (10 số, bắt đầu bằng 0 hoặc +84).');
+      }
+    }
+
     // Loại bỏ ký tự null (0x00) để tránh lỗi UTF-8 của PostgreSQL
     const sanitizedCvText = cv_text.replace(/\x00/g, '');
 
@@ -299,7 +308,8 @@ export const getApplications = async (req, res) => {
         'companies.name as company_name',
         'cvs.file_url as cv_url',
         'cvs.pdf_report_url as pdf_report_url',
-        'cvs.ai_feedback as ai_feedback'
+        'cvs.ai_feedback as ai_feedback',
+        'cvs.parsed_text as cv_text'
       );
 
     if (role === 'HR') {
@@ -346,6 +356,8 @@ export const getApplications = async (req, res) => {
       candidateAvatar: item.candidate_avatar || '👨‍💻',
       cvId: item.cv_id,
       cvUrl: item.cv_url, // Lấy file url CV thực tế trả về cho frontend
+      cv_text: item.cv_text || null,
+      cvText: item.cv_text || null,
       pdfReportUrl: item.pdf_report_url,
       aiFeedback: item.ai_feedback ? JSON.parse(item.ai_feedback) : null,
       status: item.status.toLowerCase(), // frontend match: 'new', 'reviewed', 'interviewed', 'accepted', 'rejected'
