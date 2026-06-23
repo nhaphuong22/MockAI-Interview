@@ -55,7 +55,7 @@ export const loginUser = async (email, password) => {
 /**
  * Register a new user. Sends verification email instead of auto-login.
  */
-export const registerUser = async (email, password, fullName, roleName = 'USER') => {
+export const registerUser = async (email, password, fullName, roleName = 'USER', companyDetails = {}) => {
   const existingUser = await db('users').where({ email }).first();
   if (existingUser) {
     throw new Error('Email already registered');
@@ -76,6 +76,11 @@ export const registerUser = async (email, password, fullName, roleName = 'USER')
         email_verified: false,
         verification_token: verificationToken,
         verification_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        company_name: companyDetails.companyName || null,
+        company_size: companyDetails.companySize || null,
+        company_industry: companyDetails.companyIndustry || null,
+        company_city: companyDetails.companyCity || null,
+        company_address: companyDetails.companyAddress || null,
         created_at: trx.fn.now(),
         updated_at: trx.fn.now(),
       })

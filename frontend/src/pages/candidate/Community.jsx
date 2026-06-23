@@ -229,7 +229,8 @@ export function Community() {
       comments: post.comments_count || 0,
       tags: tagsArray.filter(t => t),
       image: post.cover_image_url || "📄",
-      isLiked: post.is_liked_by_user || false
+      isLiked: post.is_liked_by_user || false,
+      category: post.category || ""
     };
   });
 
@@ -239,14 +240,29 @@ export function Community() {
   // Filter bài viết
   const filteredPosts = allPosts.filter(post => {
     const postTags = post.tags || [];
-    const matchesCategory = selectedCategory === "all" || 
-      postTags.some(tag => tag.toLowerCase() === selectedCategory || 
-                            (selectedCategory === "cv" && tag.toLowerCase() === "cv") ||
-                            (selectedCategory === "interview" && tag.toLowerCase() === "phỏng vấn") ||
-                            (selectedCategory === "career" && tag.toLowerCase() === "sự nghiệp") ||
-                            (selectedCategory === "tech" && tag.toLowerCase() === "tech") ||
-                            (selectedCategory === "salary" && tag.toLowerCase() === "lương")
-      );
+    
+    let matchesCategory;
+    if (selectedCategory === "all") {
+      matchesCategory = true;
+    } else {
+      const categoryMapping = {
+        cv: "Career Tips",
+        interview: "Interview Guide",
+        career: "Industry News",
+        tech: "Industry News",
+        salary: "Career Tips"
+      };
+      const expectedDbCategory = categoryMapping[selectedCategory];
+      
+      matchesCategory = (post.category && post.category === expectedDbCategory) || 
+        postTags.some(tag => tag.toLowerCase() === selectedCategory || 
+                              (selectedCategory === "cv" && tag.toLowerCase().includes("cv")) ||
+                              (selectedCategory === "interview" && tag.toLowerCase().includes("phỏng vấn")) ||
+                              (selectedCategory === "career" && tag.toLowerCase().includes("sự nghiệp")) ||
+                              (selectedCategory === "tech" && tag.toLowerCase().includes("tech")) ||
+                              (selectedCategory === "salary" && tag.toLowerCase().includes("lương"))
+        );
+    }
 
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||

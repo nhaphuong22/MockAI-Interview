@@ -185,11 +185,6 @@ export function CompanyProfile() {
         contactPhone: user.contact_phone || user.contactPhone || "",
         contactPublic: user.contact_public !== undefined ? user.contact_public : (user.contactPublic !== undefined ? user.contactPublic : true),
       });
-
-      // Nếu chưa có thông tin công ty, mặc định mở form chỉnh sửa
-      if (!companyName) {
-        setIsEditing(true);
-      }
     }
   }, [user]);
 
@@ -302,7 +297,7 @@ export function CompanyProfile() {
             </div>
           </div>
 
-          {!isEditing && formData.companyName && (
+          {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold rounded-xl hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors"
@@ -449,15 +444,13 @@ export function CompanyProfile() {
               
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-6 mb-6">
                  <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Chỉnh sửa hồ sơ</h2>
-                 {user.company_name && (
-                   <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors font-semibold"
-                   >
-                     <X size={18} /> Hủy bỏ
-                   </button>
-                 )}
+                 <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors font-semibold"
+                 >
+                   <X size={18} /> Hủy bỏ
+                 </button>
               </div>
 
               {/* Logo Upload */}
@@ -581,15 +574,13 @@ export function CompanyProfile() {
 
               {/* Submit */}
               <div className="pt-8 mt-4 border-t border-slate-100 dark:border-white/10 flex gap-4">
-                {user.company_name && (
-                   <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="w-1/3 py-4 bg-slate-100 text-slate-700 font-bold text-lg rounded-2xl hover:bg-slate-200 transition-colors"
-                   >
-                     Hủy
-                   </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="w-1/3 py-4 bg-slate-100 text-slate-700 font-bold text-lg rounded-2xl hover:bg-slate-200 transition-colors"
+                >
+                  Hủy
+                </button>
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}

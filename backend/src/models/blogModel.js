@@ -87,7 +87,7 @@ export const findRelatedBlogs = async (id, tags) => {
     );
 
   if (tags && tags.length > 0) {
-    query.whereRaw('blogs.tags && ?', [tags]); // && operator for array overlap in Postgres
+    query.whereRaw('blogs.tags && CAST(? AS text[])', [tags]); // && operator for array overlap in Postgres
   }
 
   return query.orderBy('blogs.created_at', 'desc').limit(3);

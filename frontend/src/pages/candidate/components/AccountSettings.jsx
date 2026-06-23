@@ -96,7 +96,7 @@ export function AccountSettings({ user, onUpdateUser }) {
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-      <h2 className="text-2xl font-bold text-gray-900 mb-8">Thông tin cá nhân</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Thông tin cá nhân</h2>
       
       {message.text && (
         <div className={`p-4 rounded-2xl mb-6 font-semibold text-sm ${
@@ -119,7 +119,7 @@ export function AccountSettings({ user, onUpdateUser }) {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Nhập họ và tên"
-                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100"
+                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10"
               />
             </div>
           </div>
@@ -132,7 +132,7 @@ export function AccountSettings({ user, onUpdateUser }) {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Nhập số điện thoại"
-                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100"
+                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10"
               />
             </div>
           </div>
@@ -160,7 +160,7 @@ export function AccountSettings({ user, onUpdateUser }) {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Ví dụ: Hà Nội, Việt Nam"
-                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100"
+                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10"
               />
             </div>
           </div>
@@ -185,7 +185,7 @@ export function AccountSettings({ user, onUpdateUser }) {
 
                 {/* Uploading indicator overlay */}
                 {isUploadingAvatar && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex flex-col items-center justify-center gap-1">
+                  <div className="absolute inset-0 bg-white dark:bg-[#0f172a]/80 backdrop-blur-[1px] flex flex-col items-center justify-center gap-1">
                     <Loader2 className="w-6 h-6 text-[#0ea5e9] animate-spin" />
                     <span className="text-[9px] font-bold text-[#0ea5e9] tracking-wider uppercase">Tải lên...</span>
                   </div>
@@ -212,7 +212,7 @@ export function AccountSettings({ user, onUpdateUser }) {
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   placeholder="Hoặc dán URL ảnh vào đây..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100"
+                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10"
                 />
               </div>
               <p className="text-xs text-gray-400 mt-2 font-medium">Bạn có thể tải ảnh lên từ máy tính hoặc dán đường dẫn ảnh.</p>
@@ -229,7 +229,7 @@ export function AccountSettings({ user, onUpdateUser }) {
               onChange={(e) => setBio(e.target.value)}
               placeholder="Chia sẻ ngắn gọn về bản thân bạn..."
               rows={4}
-              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium resize-none border border-gray-100"
+              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium resize-none border border-gray-100 dark:border-white/10"
             />
           </div>
         </div>

@@ -63,8 +63,8 @@ export function SecuritySettings() {
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Mật khẩu & Bảo mật</h2>
-      <p className="text-sm text-gray-500 mb-8">Cập nhật mật khẩu để bảo vệ tài khoản của bạn.</p>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Mật khẩu & Bảo mật</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Cập nhật mật khẩu để bảo vệ tài khoản của bạn.</p>
 
       {/* Status message */}
       {message.text && (
@@ -95,12 +95,12 @@ export function SecuritySettings() {
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Nhập mật khẩu hiện tại"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
               onClick={() => setShowCurrent(!showCurrent)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-300 transition-colors"
             >
               {showCurrent ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -108,7 +108,7 @@ export function SecuritySettings() {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-100" />
+        <div className="border-t border-gray-100 dark:border-white/10" />
 
         {/* New Password */}
         <div>
@@ -123,12 +123,12 @@ export function SecuritySettings() {
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Tối thiểu 6 ký tự"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
               onClick={() => setShowNew(!showNew)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-300 transition-colors"
             >
               {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -172,12 +172,12 @@ export function SecuritySettings() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Nhập lại mật khẩu mới"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 rounded-2xl focus:bg-white focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-300 transition-colors"
             >
               {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>

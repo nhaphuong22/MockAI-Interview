@@ -37,7 +37,7 @@ export const parseCVBuffer = async (fileBuffer) => {
  * @param {string} jobDescription - Mô tả công việc cần đối chiếu
  * @returns {Promise<object>} Điểm số và nhận xét chi tiết
  */
-export const evaluateCV = async (cvText, jobDescription) => {
+export const evaluateCV = async (cvText, jobTitle, jobDescription) => {
   const apiKey = process.env.GROQ_API_KEY;
   const modelName = process.env.GROQ_MODEL || 'qwen/qwen3-32b';
 
@@ -105,9 +105,11 @@ Bạn PHẢI trả về kết quả dưới định dạng JSON duy nhất, có 
 }`;
 
   const userPrompt = `Dưới đây là thông tin chi tiết:
-1. Mô tả công việc (Job Description - JD):
+1. Thông tin công việc:
+- Vị trí ứng tuyển: ${jobTitle || "Không có (Hãy đánh giá tổng quan CV)"}
+- Mô tả công việc (Job Description - JD):
 =========================================
-${jobDescription}
+${jobDescription || "Không có (Hãy chấm điểm dựa trên vị trí ứng tuyển hoặc thông tin chung)"}
 =========================================
 
 2. Văn bản CV bóc tách của ứng viên (Candidate CV Text):

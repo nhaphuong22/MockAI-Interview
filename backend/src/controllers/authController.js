@@ -18,7 +18,7 @@ import fs from 'fs';
 
 export const register = async (req, res) => {
   try {
-    const { email, password, fullName, role } = req.body;
+    const { email, password, fullName, role, companyDetails } = req.body;
 
     if (!email || !password || !fullName) {
       return sendError(res, 400, 'Email, password, and full name are required');
@@ -47,9 +47,13 @@ export const register = async (req, res) => {
       if (publicDomains.includes(emailDomain)) {
         return sendError(res, 400, 'Vui lòng sử dụng email công ty để đăng ký tài khoản Nhà tuyển dụng.');
       }
+      
+      if (!companyDetails || !companyDetails.companyName) {
+        return sendError(res, 400, 'Thông tin công ty là bắt buộc đối với Nhà tuyển dụng.');
+      }
     }
 
-    const result = await registerUser(email, password, fullName, roleName);
+    const result = await registerUser(email, password, fullName, roleName, companyDetails);
     return sendResponse(res, 201, result);
   } catch (error) {
     if (error.message === 'Email already registered') {

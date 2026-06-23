@@ -44,18 +44,18 @@ export function Settings() {
     : getAbsoluteAvatarUrl(rawAvatarUrl);
 
   return (
-    <div className="bg-gray-50/50 min-h-screen py-10">
+    <div className="dark:bg-transparent bg-gray-50/50 min-h-screen py-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10 flex items-center gap-4">
           <button 
             onClick={() => navigate(-1)}
-            className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100 hover:bg-sky-50 hover:text-[#0ea5e9] transition-colors"
+            className="p-3 bg-white dark:bg-[#0f172a] rounded-2xl shadow-sm border border-gray-100 dark:border-white/10 hover:bg-sky-50 hover:text-[#0ea5e9] transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Cài đặt hệ thống</h1>
-            <p className="text-lg text-gray-600 font-medium">Tùy chỉnh trải nghiệm MockAI theo cách của bạn</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">Cài đặt hệ thống</h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 font-medium">Tùy chỉnh trải nghiệm MockAI theo cách của bạn</p>
           </div>
         </div>
 
@@ -73,7 +73,7 @@ export function Settings() {
           </aside>
 
           <main className="lg:col-span-8">
-            <div className="bg-white rounded-[40px] p-10 shadow-xl shadow-gray-200/20 border border-gray-50 min-h-[600px]">
+            <div className="bg-white dark:bg-[#0f172a] rounded-[40px] p-10 shadow-xl shadow-gray-200/20 border border-gray-50 dark:border-white/5 min-h-[600px]">
               {activeTab === "account" ? (
                 <AccountSettings 
                   user={user} 
