@@ -26,7 +26,7 @@ export async function seed(knex) {
       file_url: 'https://mockai.com/uploads/sample-cv.pdf',
       parsed_text: 'Nguyen Van A, Frontend Developer with 2 years of experience in ReactJS, Tailwind CSS, JavaScript ES6+',
       ats_score: 85,
-      ai_feedback: 'CV của bạn có cấu trúc tốt, tuy nhiên cần bổ sung thêm dự án thực tế về tối ưu hóa hiệu năng.',
+      ai_feedback: JSON.stringify({ semantic_score: 85, talent_signals: ['Có kinh nghiệm ReactJS', 'Biết Tailwind CSS'], red_flags: ['Cần bổ sung dự án thực tế về tối ưu hóa hiệu năng'], knockout_status: 'PASSED', matched_skills: ['ReactJS', 'Tailwind CSS', 'JavaScript ES6+'], missing_skills: [] }),
       created_at: new Date(),
       updated_at: new Date()
     }

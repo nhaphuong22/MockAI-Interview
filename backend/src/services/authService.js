@@ -45,11 +45,9 @@ export const loginUser = async (email, password) => {
   const roleName = await getUserRole(user.id);
   const token = generateToken({ id: user.id, email: user.email, role: roleName });
 
-  const { password_hash, verification_token, verification_token_expires_at,
-          reset_password_token, reset_password_expires_at, ...userInfo } = user;
-  userInfo.role = roleName;
+  const fullProfile = await getUserProfile(user.id);
 
-  return { user: userInfo, token };
+  return { user: fullProfile, token };
 };
 
 /**

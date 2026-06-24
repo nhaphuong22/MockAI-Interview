@@ -19,7 +19,7 @@ export const getCompanyById = async (id) => {
     .join('roles', 'user_roles.role_id', 'roles.id')
     .where('users.company_id', id)
     .where('roles.name', 'HR')
-    .select('users.contact_public')
+    .select('users.contact_public', 'users.contact_email', 'users.contact_phone')
     .first();
 
   // Mặc định contact_public là true nếu không tìm thấy HR tương ứng
@@ -29,6 +29,11 @@ export const getCompanyById = async (id) => {
     ...company,
     contact_public: isContactPublic,
   };
+
+  if (hrUser) {
+    if (hrUser.contact_email) result.email = hrUser.contact_email;
+    if (hrUser.contact_phone) result.phone = hrUser.contact_phone;
+  }
 
   // Ẩn email và số điện thoại nếu cấu hình là ẩn
   if (!isContactPublic) {

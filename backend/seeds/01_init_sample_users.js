@@ -5,12 +5,18 @@ import bcrypt from 'bcryptjs';
  * @returns { Promise<void> } 
  */
 export async function seed(knex) {
-  // Deletes blogs, jobs, user_roles first, then users to respect foreign keys
-  await knex('blogs').del();
+  // Deletes all tables to start fresh
   await knex('job_requirements').del();
+  await knex('applications').del();
+  await knex('voice_sessions').del();
+  await knex('assessments').del();
+  await knex('interviews').del();
+  await knex('cvs').del();
+  await knex('blogs').del();
   await knex('jobs').del();
   await knex('user_roles').del();
   await knex('users').del();
+  await knex('companies').del();
   
   const salt = await bcrypt.genSalt(10);
   const password_hash = await bcrypt.hash('123456', salt);
@@ -37,9 +43,45 @@ export async function seed(knex) {
     },
     {
       id: 3,
-      email: 'recruiter@mockai.com',
+      email: 'recruiter1@mockai.com',
       password_hash: password_hash,
-      full_name: 'Nhà Tuyển Dụng MockAI',
+      full_name: 'HR TechCorp',
+      email_verified: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
+      id: 4,
+      email: 'recruiter2@mockai.com',
+      password_hash: password_hash,
+      full_name: 'HR VinaGroup',
+      email_verified: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
+      id: 5,
+      email: 'recruiter3@mockai.com',
+      password_hash: password_hash,
+      full_name: 'HR GreenEnergy',
+      email_verified: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
+      id: 6,
+      email: 'recruiter4@mockai.com',
+      password_hash: password_hash,
+      full_name: 'HR FastFinance',
+      email_verified: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
+      id: 7,
+      email: 'recruiter5@mockai.com',
+      password_hash: password_hash,
+      full_name: 'HR SmartEdu',
       email_verified: true,
       created_at: new Date(),
       updated_at: new Date()
@@ -57,40 +99,13 @@ export async function seed(knex) {
   await knex('user_roles').insert([
     { user_id: 1, role_id: roleMap['ADMIN'], created_at: new Date(), updated_at: new Date() },
     { user_id: 2, role_id: roleMap['USER'], created_at: new Date(), updated_at: new Date() },
-    { user_id: 3, role_id: roleMap['HR'], created_at: new Date(), updated_at: new Date() }
-  ]);
-
-  // Đảm bảo xóa jobs cũ trước khi chèn mới để tránh lỗi khóa chính nếu chạy lại seed
-  await knex('job_requirements').del();
-  await knex('jobs').del();
-  
-  // Insert sample Job
-  await knex('jobs').insert([
-    {
-      id: 1,
-      hr_id: 3,
-      title: 'Frontend Developer (React)',
-      description: 'Chúng tôi đang tìm kiếm một Frontend Developer đam mê React...',
-      status: 'OPEN',
-      created_at: new Date(),
-      updated_at: new Date()
-    }
-  ]);
-
-  // Insert job requirements
-  await knex('job_requirements').insert([
-    {
-      job_id: 1,
-      requirement_text: 'ReactJS, Tailwind CSS, JavaScript ES6+',
-      is_mandatory: true,
-      created_at: new Date(),
-      updated_at: new Date()
-    }
+    { user_id: 3, role_id: roleMap['HR'], created_at: new Date(), updated_at: new Date() },
+    { user_id: 4, role_id: roleMap['HR'], created_at: new Date(), updated_at: new Date() },
+    { user_id: 5, role_id: roleMap['HR'], created_at: new Date(), updated_at: new Date() },
+    { user_id: 6, role_id: roleMap['HR'], created_at: new Date(), updated_at: new Date() },
+    { user_id: 7, role_id: roleMap['HR'], created_at: new Date(), updated_at: new Date() }
   ]);
 
   // Reset sequences to prevent duplicate key errors in auto-increment
   await knex.raw("SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))");
-  await knex.raw("SELECT setval('jobs_id_seq', (SELECT MAX(id) FROM jobs))");
-  await knex.raw("SELECT setval('job_requirements_id_seq', (SELECT MAX(id) FROM job_requirements))");
 };
-
