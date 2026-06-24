@@ -7,6 +7,7 @@
 export async function seed(knex) {
   // Clear dependent tables first
   await knex('blogs').del();
+  await knex('job_requirements').del();
   await knex('jobs').del();
   await knex('companies').del();
   await knex('job_types').del();
@@ -133,7 +134,6 @@ export async function seed(knex) {
       job_type_id: 1,
       title: 'Senior React Developer',
       description: 'Phát triển ứng dụng Web chất lượng cao sử dụng React và Next.js.',
-      requirements: 'Có từ 3 năm kinh nghiệm lập trình ReactJS, Tailwind CSS, JavaScript ES6+.',
       experience_level: 'SENIOR',
       salary_min: 35000000,
       salary_max: 45000000,
@@ -158,7 +158,6 @@ export async function seed(knex) {
       job_type_id: 1,
       title: 'AI Engineer (Python / PyTorch)',
       description: 'Nghiên cứu và tích hợp các mô hình Generative AI vào nền tảng phỏng vấn.',
-      requirements: 'Kinh nghiệm với Python, PyTorch, Node-Llama-Cpp, NLP, LLMs.',
       experience_level: 'MID',
       salary_min: 40000000,
       salary_max: 60000000,
@@ -183,7 +182,6 @@ export async function seed(knex) {
       job_type_id: 1,
       title: 'Chuyên viên Marketing Online',
       description: 'Lên kế hoạch và chạy các chiến dịch truyền thông cộng đồng trực tuyến.',
-      requirements: 'Có kinh nghiệm SEO, Google Ads, Facebook Ads và xây dựng hình ảnh thương hiệu.',
       experience_level: 'JUNIOR',
       salary_min: 15000000,
       salary_max: 22000000,
@@ -206,7 +204,6 @@ export async function seed(knex) {
       job_type_id: 3,
       title: 'Node.js Backend Developer',
       description: 'Phát triển RESTful APIs hiệu năng cao sử dụng Node.js, Express, Postgres và Knex.',
-      requirements: 'Thành thạo Javascript, Express, SQL, cơ chế xác thực JWT và bảo mật hệ thống.',
       experience_level: 'MID',
       salary_min: 20000000,
       salary_max: 30000000,
@@ -231,7 +228,6 @@ export async function seed(knex) {
       job_type_id: 1,
       title: 'Project Manager',
       description: 'Quản lý tiến độ các dự án phát triển phần mềm theo mô hình Agile/Scrum.',
-      requirements: 'Có kinh nghiệm quản lý tối thiểu 3 năm, chứng chỉ PMP hoặc CSM là lợi thế.',
       experience_level: 'LEAD',
       salary_min: 30000000,
       salary_max: 40000000,
@@ -244,6 +240,45 @@ export async function seed(knex) {
       approved_at: new Date(),
       view_count: 4,
       status: 'CLOSED',
+      created_at: new Date(),
+      updated_at: new Date()
+    }
+  ]);
+
+  // Seed Job Requirements
+  await knex('job_requirements').insert([
+    {
+      job_id: 1,
+      requirement_text: 'Có từ 3 năm kinh nghiệm lập trình ReactJS, Tailwind CSS, JavaScript ES6+.',
+      is_mandatory: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
+      job_id: 2,
+      requirement_text: 'Kinh nghiệm với Python, PyTorch, Node-Llama-Cpp, NLP, LLMs.',
+      is_mandatory: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
+      job_id: 3,
+      requirement_text: 'Có kinh nghiệm SEO, Google Ads, Facebook Ads và xây dựng hình ảnh thương hiệu.',
+      is_mandatory: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
+      job_id: 4,
+      requirement_text: 'Thành thạo Javascript, Express, SQL, cơ chế xác thực JWT và bảo mật hệ thống.',
+      is_mandatory: true,
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
+      job_id: 5,
+      requirement_text: 'Có kinh nghiệm quản lý tối thiểu 3 năm, chứng chỉ PMP hoặc CSM là lợi thế.',
+      is_mandatory: true,
       created_at: new Date(),
       updated_at: new Date()
     }
@@ -321,5 +356,6 @@ export async function seed(knex) {
   await knex.raw("SELECT setval('categories_id_seq', (SELECT MAX(id) FROM categories))");
   await knex.raw("SELECT setval('companies_id_seq', (SELECT MAX(id) FROM companies))");
   await knex.raw("SELECT setval('jobs_id_seq', (SELECT MAX(id) FROM jobs))");
+  await knex.raw("SELECT setval('job_requirements_id_seq', (SELECT MAX(id) FROM job_requirements))");
   await knex.raw("SELECT setval('blogs_id_seq', (SELECT MAX(id) FROM blogs))");
 };

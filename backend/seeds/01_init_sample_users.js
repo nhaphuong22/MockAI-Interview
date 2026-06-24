@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 export async function seed(knex) {
   // Deletes blogs, jobs, user_roles first, then users to respect foreign keys
   await knex('blogs').del();
+  await knex('job_requirements').del();
   await knex('jobs').del();
   await knex('user_roles').del();
   await knex('users').del();
@@ -60,6 +61,7 @@ export async function seed(knex) {
   ]);
 
   // Đảm bảo xóa jobs cũ trước khi chèn mới để tránh lỗi khóa chính nếu chạy lại seed
+  await knex('job_requirements').del();
   await knex('jobs').del();
   
   // Insert sample Job
@@ -69,8 +71,18 @@ export async function seed(knex) {
       hr_id: 3,
       title: 'Frontend Developer (React)',
       description: 'Chúng tôi đang tìm kiếm một Frontend Developer đam mê React...',
-      requirements: 'ReactJS, Tailwind CSS, JavaScript ES6+',
       status: 'OPEN',
+      created_at: new Date(),
+      updated_at: new Date()
+    }
+  ]);
+
+  // Insert job requirements
+  await knex('job_requirements').insert([
+    {
+      job_id: 1,
+      requirement_text: 'ReactJS, Tailwind CSS, JavaScript ES6+',
+      is_mandatory: true,
       created_at: new Date(),
       updated_at: new Date()
     }
@@ -79,5 +91,6 @@ export async function seed(knex) {
   // Reset sequences to prevent duplicate key errors in auto-increment
   await knex.raw("SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))");
   await knex.raw("SELECT setval('jobs_id_seq', (SELECT MAX(id) FROM jobs))");
+  await knex.raw("SELECT setval('job_requirements_id_seq', (SELECT MAX(id) FROM job_requirements))");
 };
 

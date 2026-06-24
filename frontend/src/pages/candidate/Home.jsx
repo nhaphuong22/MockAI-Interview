@@ -18,6 +18,7 @@ import { applicationApi } from "../../api/applicationApi";
 import { getInterviewHistoryApi } from "../../api/interviewApi";
 import { getProfileApi, updateProfileApi } from "../../api/auth";
 import { JobCard } from "./components/JobCard";
+import { getRelativeTimeString } from "../../utils/dateUtils";
 
 const CITY_OPTIONS = [
   "Thành phố Hà Nội",
@@ -217,7 +218,7 @@ function RenderCandidateDashboard({ provinces, showToast, queryClient }) {
     experience: job.experience_level || "Không yêu cầu",
     tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
     aiMatch: job.aiMatch || (82 + (job.id % 14)), // Simulated Match
-    posted: job.created_at ? new Date(job.created_at).toLocaleDateString("vi-VN") : "Gần đây",
+    posted: getRelativeTimeString(job.created_at),
     applicants: job.applicants_count || 0,
     description: job.description,
     requirements: job.requirements,
@@ -700,7 +701,7 @@ function RenderLandingPage({ theme, provinces, popularTags }) {
     experience: job.experience_level || "Không yêu cầu",
     tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
     aiMatch: job.aiMatch || (82 + (job.id % 14)), // Simulated Match
-    posted: job.created_at ? new Date(job.created_at).toLocaleDateString("vi-VN") : "Gần đây",
+    posted: getRelativeTimeString(job.created_at),
     applicants: job.applicants_count || 0,
     description: job.description,
     requirements: job.requirements,

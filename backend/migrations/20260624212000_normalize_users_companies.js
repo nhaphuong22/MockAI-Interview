@@ -8,13 +8,20 @@
 export async function up(knex) {
   // 1. Add missing fields to companies table
   const hasDocumentUrl = await knex.schema.hasColumn('companies', 'document_url');
-  if (!hasDocumentUrl) {
-    await knex.schema.alterTable('companies', (table) => {
+  const hasVerificationStatus = await knex.schema.hasColumn('companies', 'verification_status');
+  const hasCity = await knex.schema.hasColumn('companies', 'city');
+
+  await knex.schema.alterTable('companies', (table) => {
+    if (!hasDocumentUrl) {
       table.text('document_url').nullable();
+    }
+    if (!hasVerificationStatus) {
       table.string('verification_status').defaultTo('UNVERIFIED');
+    }
+    if (!hasCity) {
       table.string('city').nullable();
-    });
-  }
+    }
+  });
 
   // 2. Data Migration: Move data from users to companies
   const usersWithCompanyInfo = await knex('users')
@@ -124,11 +131,12 @@ export async function down(knex) {
 
   // 3. Drop added columns from companies
   const hasDocumentUrl = await knex.schema.hasColumn('companies', 'document_url');
-  if (hasDocumentUrl) {
-    await knex.schema.alterTable('companies', (table) => {
-      table.dropColumn('document_url');
-      table.dropColumn('verification_status');
-      table.dropColumn('city');
-    });
-  }
+  const hasVerificationStatus = await knex.schema.hasColumn('companies', 'verification_status');
+  const hasCity = await knex.schema.hasColumn('companies', 'city');
+
+  await knex.schema.alterTable('companies', (table) => {
+    if (hasDocumentUrl) table.dropColumn('document_url');
+    if (hasVerificationStatus) table.dropColumn('verification_status');
+    if (hasCity) table.dropColumn('city');
+  });
 }

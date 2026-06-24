@@ -17,6 +17,8 @@ import {
 } from '../services/jobService.js';
 import { sendApplicationResultEmail } from '../services/emailService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
+import db from '../db/knex.js';
+import { sendRealtimeNotification } from '../socket.js';
 
 /**
  * Đăng tin tuyển dụng mới kèm theo các yêu cầu chi tiết
@@ -379,20 +381,70 @@ export const updateJobApplication = async (req, res) => {
       'AI_REVIEWED', 
       'HR_REVIEWING', 
       'SHORTLISTED', 
+      'AI_INTERVIEW_INVITED',
+      'INTERVIEWED',
       'INTERVIEW_SCHEDULED', 
       'HIRED', 
+      'ACCEPTED',
       'REJECTED'
     ];
     if (status && !VALID_STATUSES.includes(status.toUpperCase())) {
       return sendError(res, 400, 'Trạng thái ứng tuyển không hợp lệ.');
     }
 
+    const finalStatus = status ? status.toUpperCase() : (application.status || '').toUpperCase();
+    const statusChanged = finalStatus !== (application.status || '').toUpperCase();
+
     const result = await updateJobApplicationService(applicationId, {
-      status: status ? status.toUpperCase() : application.status,
+      status: finalStatus,
       hrTag: hr_tag !== undefined ? hr_tag : application.hr_tag,
       hrNotes: hr_notes !== undefined ? hr_notes : application.hr_notes,
       reviewedBy: userId
     });
+
+    // Tạo thông báo in-app và gửi real-time qua Socket.io nếu trạng thái thay đổi
+    if (statusChanged) {
+      const statusLabels = {
+        SUBMITTED: 'Đã nộp',
+        AI_REVIEWED: 'AI đã duyệt',
+        HR_REVIEWING: 'HR Đang duyệt',
+        SHORTLISTED: 'Vào vòng trong',
+        AI_INTERVIEW_INVITED: 'Đã mời PV AI',
+        INTERVIEWED: 'Có kết quả PV',
+        INTERVIEW_SCHEDULED: 'Lịch phỏng vấn',
+        HIRED: 'Đã tuyển',
+        ACCEPTED: 'Trúng tuyển',
+        REJECTED: 'Từ chối'
+      };
+
+      try {
+        const [notification] = await db('notifications')
+          .insert({
+            user_id: application.candidate_id,
+            type: 'APPLICATION_UPDATE',
+            title: 'Cập nhật trạng thái đơn tuyển',
+            content: `Đơn ứng tuyển vị trí "${application.job_title}" của bạn đã được cập nhật thành: ${statusLabels[finalStatus] || finalStatus}`,
+            link: '/applications',
+            reference_id: applicationId,
+            reference_type: 'application',
+            is_read: false,
+            created_at: new Date(),
+            updated_at: new Date()
+          })
+          .returning('*');
+
+        sendRealtimeNotification(application.candidate_id, {
+          id: notification.id,
+          type: 'application',
+          title: notification.title,
+          content: notification.content,
+          time: 'Vừa xong',
+          isRead: false
+        });
+      } catch (notiError) {
+        console.error('Lỗi khi tạo/gửi thông báo cập nhật trạng thái:', notiError);
+      }
+    }
 
     // 4. Gửi email nếu được yêu cầu
     if (send_email && email_content) {

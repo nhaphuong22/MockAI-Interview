@@ -1,4 +1,4 @@
-import { MapPin, DollarSign, Bookmark, ChevronDown, ChevronUp, TrendingUp } from "lucide-react";
+import { MapPin, DollarSign, Bookmark, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -69,13 +69,6 @@ export function CompanyJobCard({
         {visibleJobs.map((job) => {
           const isSelected = selectedJobId === job.id;
           const isBookmarked = bookmarked.includes(job.id);
-          const matchScore = job.aiMatch || 0;
-          const matchColor =
-            matchScore >= 85
-              ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100"
-              : matchScore >= 70
-              ? "text-[#0ea5e9] bg-sky-50 dark:bg-[#0ea5e9]/10 border-sky-100 dark:border-[#0ea5e9]/20"
-              : "text-amber-500 bg-amber-50 dark:bg-amber-500/10 border-amber-100";
 
           return (
             <button
@@ -141,12 +134,6 @@ export function CompanyJobCard({
 
                 {/* Right: match + bookmark */}
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                  {matchScore > 0 && (
-                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold ${matchColor}`}>
-                      <TrendingUp className="w-3 h-3" />
-                      {matchScore}%
-                    </div>
-                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
