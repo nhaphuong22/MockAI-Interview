@@ -1,5 +1,5 @@
 import db from '../db/knex.js';
-import { generateQuestionsFromGroq, evaluateCandidateAnswer, generateOverallAssessmentFromGroq } from './groqService.js';
+import { generateQuestionsFromGroq, evaluateCandidateAnswer, generateOverallAssessmentFromGroq, evaluateAllAndGenerateHRReport } from './groqService.js';
 import { insertInterview, insertQuestions } from '../models/interviewModel.js';
 
 /**
@@ -145,134 +145,152 @@ export const getHRInterviewResult = async ({ interviewId, userId }) => {
 };
 
 /**
- * Kết thúc phỏng vấn HR, tổng hợp dữ liệu, gọi AI sinh báo cáo và lưu lại cho HR.
+ * Chạy ngầm việc gọi AI để phân tích điểm số, tránh block API chính.
+ */
+const processAIEvaluationBackground = async ({ interviewId, userId, totalTabViolations }) => {
+  try {
+    const interview = await db('interviews').where({ id: interviewId, user_id: userId }).first();
+    const user = await db('users').where({ id: userId }).first();
+    if (!interview || !user) return;
+
+    // 1. Fetch all questions and answers
+    const questions = await db('interview_questions')
+      .where({ interview_id: interviewId })
+      .orderBy('order_index', 'asc');
+    const answers = await db('candidate_answers')
+      .whereIn('interview_question_id', questions.map(q => q.id));
+
+    // 2. Prepare data for AI
+    let totalGazeViolations = 0;
+    const qaDetails = questions.map((q) => {
+      const ans = answers.find(a => a.interview_question_id === q.id);
+      if (ans) {
+        totalGazeViolations += ans.gaze_violations || 0;
+      }
+      return {
+        id: q.id,
+        question: q.question_text,
+        expected_answer: q.expected_answer,
+        answer: ans ? ans.answer_text : 'Không trả lời',
+      };
+    });
+
+    const combinedViolations = totalGazeViolations + (totalTabViolations || 0);
+
+    console.log(`[Background] Evaluating AI for Interview ID: ${interviewId}...`);
+
+    const groqInputQaDetails = qaDetails.map(qa => {
+      const ansRecord = answers.find(a => a.interview_question_id === qa.id);
+      return {
+        ...qa,
+        gaze_violations: ansRecord ? (ansRecord.gaze_violations || 0) : 0
+      };
+    });
+
+    let overallScore = 0;
+    let aiReport = null;
+
+    try {
+      const batchResult = await evaluateAllAndGenerateHRReport({
+        candidateName: user.full_name || 'Ứng viên',
+        position: interview.custom_position || 'Vị trí phỏng vấn',
+        skills: interview.custom_skills || '',
+        qaDetails: groqInputQaDetails,
+        totalViolations: combinedViolations
+      });
+
+      let totalScore = 0;
+      let evaluatedCount = 0;
+      
+      if (batchResult.evaluations && Array.isArray(batchResult.evaluations)) {
+        for (const qa of qaDetails) {
+          if (qa.answer === 'Không trả lời') {
+            qa.score = 0;
+            qa.feedback = 'Ứng viên đã bỏ qua câu hỏi này.';
+            continue;
+          }
+
+          const evalMatch = batchResult.evaluations.find(e => Number(e.id) === Number(qa.id));
+          if (evalMatch) {
+            qa.score = Math.max(0, Number(evalMatch.score) || 0);
+            qa.feedback = evalMatch.feedback || '';
+
+            totalScore += qa.score;
+            evaluatedCount++;
+
+            const ansRecord = answers.find(a => a.interview_question_id === qa.id);
+            if (ansRecord) {
+              await db('candidate_answers').where({ id: ansRecord.id }).update({
+                score: qa.score,
+                ai_feedback: qa.feedback
+              });
+            }
+          } else {
+            qa.score = 0;
+            qa.feedback = 'Không thể phân tích câu trả lời.';
+          }
+        }
+      }
+
+      overallScore = evaluatedCount > 0 ? Math.round(totalScore / evaluatedCount) : 0;
+      aiReport = batchResult.overall_assessment || { feedback_summary: 'Không tạo được báo cáo tổng quan.' };
+
+    } catch (error) {
+      console.error('[Background] Batch evaluation failed:', error);
+      aiReport = { feedback_summary: 'Lỗi: Không thể kết nối với AI để phân tích điểm số.' };
+      overallScore = 0;
+    }
+
+    // 4. Cập nhật applications table
+    await db('applications')
+      .where({ interview_id: interviewId })
+      .update({
+        ai_summary: aiReport.feedback_summary,
+        interview_score: overallScore,
+        updated_at: new Date()
+      });
+
+    // 5. Cập nhật bảng assessments
+    const existingAssesment = await db('assessments').where({ interview_id: interviewId }).first();
+    if (!existingAssesment) {
+      await db('assessments').insert({
+        interview_id: interviewId,
+        overall_score: overallScore,
+        feedback_summary: aiReport.feedback_summary,
+        learning_path: JSON.stringify([]),
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    }
+
+    // 6. Clear Redis Cache for HR Applications
+    const jobInfo = await db('jobs').where({ id: interview.job_id }).first();
+    if (jobInfo) {
+      const { deleteCachePattern } = await import('../config/redis.js');
+      await deleteCachePattern(`applications:hr:${jobInfo.hr_id}:*`);
+    }
+
+    console.log(`[Background] Hoàn thành chấm điểm cho Interview ID: ${interviewId}. Điểm: ${overallScore}`);
+
+  } catch (globalError) {
+    console.error('[Background] Lỗi nghiêm trọng khi chấm điểm AI:', globalError);
+  }
+};
+
+/**
+ * Kết thúc phỏng vấn HR: Đánh dấu hoàn thành và đưa việc chấm điểm chạy ngầm.
  */
 export const finishHRInterviewSession = async ({ interviewId, userId, totalTabViolations }) => {
   const interview = await db('interviews').where({ id: interviewId, user_id: userId }).first();
   if (!interview) throw new Error('Interview not found');
 
-  const user = await db('users').where({ id: userId }).first();
-
-  // 1. Fetch all questions and answers
-  const questions = await db('interview_questions')
-    .where({ interview_id: interviewId })
-    .orderBy('order_index', 'asc');
-  const answers = await db('candidate_answers')
-    .whereIn('interview_question_id', questions.map(q => q.id));
-
-  // 2. Prepare data for AI
-  let totalGazeViolations = 0;
-  const qaDetails = questions.map((q) => {
-    const ans = answers.find(a => a.interview_question_id === q.id);
-    if (ans) {
-      totalGazeViolations += ans.gaze_violations || 0;
-    }
-    return {
-      id: q.id,
-      question: q.question_text,
-      expected_answer: q.expected_answer,
-      answer: ans ? ans.answer_text : 'Không trả lời',
-    };
-  });
-
-  const combinedViolations = totalGazeViolations + (totalTabViolations || 0);
-
-  console.log('Evaluating each answer in parallel using Groq API...');
-
-  const evalPromises = qaDetails.map(async (qa) => {
-    if (qa.answer === 'Không trả lời') {
-      qa.score = 0;
-      qa.feedback = 'Ứng viên đã bỏ qua câu hỏi này.';
-      return;
-    }
-
-    try {
-      const evalResult = await evaluateCandidateAnswer(qa.question, qa.expected_answer, qa.answer);
-      const ansRecord = answers.find(a => a.interview_question_id === qa.id);
-      
-      let finalScore = evalResult.score || 0;
-      let finalFeedback = evalResult.feedback || '';
-
-      if (ansRecord) {
-        const penalty = Math.min(50, (ansRecord.gaze_violations || 0) * 10);
-        finalScore = Math.max(0, finalScore - penalty);
-        if (ansRecord.gaze_violations > 0) {
-          finalFeedback += `\n\n[Cảnh báo AI]: Phát hiện ${ansRecord.gaze_violations} lần ứng viên nhìn lệch khỏi khung hình. Bị trừ ${penalty} điểm.`;
-        }
-
-        await db('candidate_answers').where({ id: ansRecord.id }).update({
-          score: finalScore,
-          ai_feedback: finalFeedback
-        });
-      }
-
-      qa.score = finalScore;
-      qa.feedback = finalFeedback;
-    } catch (err) {
-      console.error(`Failed to evaluate question ${qa.id} via Groq:`, err);
-      qa.score = 0;
-      qa.feedback = 'Lỗi trong quá trình AI phân tích câu trả lời.';
-    }
-  });
-
-  // Execute all evaluations in parallel to optimize response time
-  await Promise.all(evalPromises);
-
-  let totalScore = 0;
-  let evaluatedCount = 0;
-  for (const qa of qaDetails) {
-    if (qa.answer !== 'Không trả lời') {
-      totalScore += qa.score || 0;
-      evaluatedCount++;
-    }
-  }
-
-  const overallScore = evaluatedCount > 0 ? Math.round(totalScore / evaluatedCount) : 0;
-
-  console.log('Generating overall assessment report using Groq...');
-  const aiReport = await generateOverallAssessmentFromGroq({
-    candidateName: user?.full_name || 'Ứng viên',
-    position: interview.custom_position || 'Vị trí phỏng vấn',
-    skills: interview.custom_skills || '',
-    overallScore,
-    qaDetails,
-    totalViolations: combinedViolations
-  });
-
-  // 4. Cập nhật applications table
-  await db('applications')
-    .where({ interview_id: interviewId })
-    .update({
-      ai_summary: aiReport.feedback_summary,
-      interview_score: overallScore,
-      updated_at: new Date()
-    });
-
-  // 5. Cập nhật bảng assessments (cho consistency nếu cần)
-  // Check if assessment already exists
-  const existingAssesment = await db('assessments').where({ interview_id: interviewId }).first();
-  if (!existingAssesment) {
-    await db('assessments').insert({
-      interview_id: interviewId,
-      overall_score: overallScore,
-      feedback_summary: aiReport.feedback_summary,
-      learning_path: JSON.stringify(aiReport.learning_path),
-      created_at: new Date(),
-      updated_at: new Date()
-    });
-  }
-
-  // 6. Update interview status to COMPLETED
+  // Cập nhật trạng thái phỏng vấn thành COMPLETED ngay lập tức
   await db('interviews').where({ id: interviewId }).update({ status: 'COMPLETED', ended_at: new Date() });
 
-  // 7. Clear Redis Cache for HR Applications
-  const jobInfo = await db('jobs').where({ id: interview.job_id }).first();
-  if (jobInfo) {
-    const { deleteCachePattern } = await import('../config/redis.js');
-    await deleteCachePattern(`applications:hr:${jobInfo.hr_id}:*`);
-  }
+  // Gọi quá trình chấm điểm AI chạy ngầm (không dùng await)
+  processAIEvaluationBackground({ interviewId, userId, totalTabViolations }).catch(console.error);
 
-  return { success: true, overallScore };
+  return { success: true, message: 'Đã lưu câu trả lời. Hệ thống AI đang tiến hành chấm điểm ở chế độ nền.' };
 };
 
 /**
@@ -322,8 +340,7 @@ export const getHRInterviewTranscript = async ({ interviewId, hrId }) => {
     status: interview.status,
     position: interview.custom_position,
     assessment: assessment ? {
-      overallScore: assessment.overall_score,
-      learningPath: assessment.learning_path ? JSON.parse(assessment.learning_path) : []
+      overallScore: assessment.overall_score
     } : null,
     transcript
   };
