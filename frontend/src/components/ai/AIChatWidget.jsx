@@ -2,6 +2,7 @@ import { MessageSquare, X, Send, Sparkles, User, Bot, Minimize2, Maximize2, Tras
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { sendChatMessage } from "../../api/aiApi";
+import { Link } from "react-router-dom";
 
 const INITIAL_MESSAGE = {
   id: "welcome",
@@ -176,7 +177,7 @@ export function AIChatWidget() {
               <>
                 <div
                   ref={scrollRef}
-                  className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-[#0d1526]/80"
+                  className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-[#0d1526]/80 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full"
                 >
                   {messages.map((msg) => (
                     <div
@@ -207,7 +208,19 @@ export function AIChatWidget() {
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                  a: ({ node, ...props }) => <a {...props} className="text-[#0ea5e9] hover:underline" />,
+                                  a: ({ node, ...props }) => {
+                                    if (props.href && props.href.startsWith('/')) {
+                                      return (
+                                        <Link 
+                                          to={props.href} 
+                                          className="block w-full text-center px-4 py-2 mt-2 bg-[#0ea5e9]/10 text-[#0ea5e9] text-sm font-semibold rounded-lg hover:bg-[#0ea5e9] hover:text-white transition-all shadow-sm"
+                                        >
+                                          {props.children}
+                                        </Link>
+                                      );
+                                    }
+                                    return <a {...props} className="text-[#0ea5e9] hover:underline" target="_blank" rel="noopener noreferrer" />;
+                                  },
                                   strong: ({ node, ...props }) => <strong {...props} className="font-semibold" />
                                 }}
                               >
