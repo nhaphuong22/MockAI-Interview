@@ -321,8 +321,23 @@ export function HRDashboard() {
                             )}
                           </div>
                           <div>
-                            <div className="font-bold text-gray-900">{app.candidateName}</div>
-                            <div className="text-xs text-gray-500">{app.candidateEmail}</div>
+                            {(() => {
+                              // Parse thông tin từ CV text
+                              let displayName = app.candidateName || "";
+                              let displayEmail = app.candidateEmail || "";
+                              if (app.cvText) {
+                                const lines = app.cvText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                                if (lines.length > 0) displayName = lines[0];
+                                const emailMatch = app.cvText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/);
+                                if (emailMatch && !emailMatch[0].endsWith('.')) displayEmail = emailMatch[0];
+                              }
+                              return (
+                                <>
+                                  <div className="font-bold text-gray-900">{displayName || "Ứng viên"}</div>
+                                  <div className="text-xs text-gray-500">{displayEmail || "Chưa có email"}</div>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                       </td>

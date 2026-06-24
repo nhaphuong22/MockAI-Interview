@@ -175,6 +175,11 @@ export function JobDetail() {
       addToast("Vui lòng nhập số điện thoại.", "warning");
       return;
     }
+    const phoneRegex = /^(\+84|0)(3[2-9]|5[6-9]|7[06-9]|8[0-9]|9[0-9])[0-9]{7}$/;
+    if (!phoneRegex.test(candidatePhone.trim().replace(/\s/g, ""))) {
+      addToast("Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam (10 số, bắt đầu bằng 0 hoặc +84).", "warning");
+      return;
+    }
 
     const formattedUrl = formatPortfolioUrl(portfolioUrl);
     setPortfolioUrl(formattedUrl);

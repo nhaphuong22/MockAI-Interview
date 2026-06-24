@@ -128,11 +128,14 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
     if (lines.length > 0) {
       displayData.name = lines[0];
       
-      const emailMatch = application.cv_text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-      if (emailMatch) displayData.email = emailMatch[0];
+      const emailMatch = application.cv_text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/);
+      if (emailMatch && !emailMatch[0].endsWith('.')) {
+        displayData.email = emailMatch[0];
+      }
       
-      const phoneMatch = application.cv_text.match(/(?:\+84|0)(?:\s?\d){9,10}/);
-      if (phoneMatch) displayData.phone = phoneMatch[0];
+      // SĐT VN hợp lệ: bắt đầu bằng +84 hoặc 0, theo sau là đầu số 3,5,7,8,9 và 8 chữ số (cho phép khoảng trắng/dấu chấm/gạch ngang)
+      const phoneMatch = application.cv_text.match(/(?:\+84|0)[\s.-]*[35789](?:[\s.-]*\d){8}\b/);
+      if (phoneMatch) displayData.phone = phoneMatch[0].replace(/[\s.-]/g, '');
       
       const addressMatch = application.cv_text.match(/(?:Địa chỉ|Address|Location):\s*([^\n]+)/i);
       if (addressMatch) displayData.address = addressMatch[1]?.trim();
