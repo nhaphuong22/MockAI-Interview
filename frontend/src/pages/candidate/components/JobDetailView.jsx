@@ -44,16 +44,34 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
       <div className="px-5 py-4 border-b dark:border-white/5 border-slate-100 bg-white dark:bg-slate-900/80">
         <div className="flex items-start gap-4">
           {/* Company logo */}
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-sky-100 dark:shadow-sky-900/20 shrink-0">
-            {companyInitial}
-          </div>
+          {job.company_id ? (
+            <Link
+              to={`/companies/${job.company_id}`}
+              className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-sky-100 dark:shadow-sky-900/20 shrink-0 hover:opacity-90 transition-opacity"
+            >
+              {companyInitial}
+            </Link>
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-sky-100 dark:shadow-sky-900/20 shrink-0">
+              {companyInitial}
+            </div>
+          )}
 
           {/* Title block */}
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-extrabold text-gray-950 dark:text-white leading-tight mb-1">
               {job.title}
             </h2>
-            <p className="text-[#0ea5e9] font-semibold text-sm mb-1.5">{job.company}</p>
+            {job.company_id ? (
+              <Link
+                to={`/companies/${job.company_id}`}
+                className="text-[#0ea5e9] font-semibold text-sm mb-1.5 hover:underline block"
+              >
+                {job.company}
+              </Link>
+            ) : (
+              <p className="text-[#0ea5e9] font-semibold text-sm mb-1.5">{job.company}</p>
+            )}
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
               {job.posted && (
                 <span className="flex items-center gap-1">
