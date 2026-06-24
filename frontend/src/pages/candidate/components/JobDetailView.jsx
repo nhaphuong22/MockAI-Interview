@@ -1,7 +1,3 @@
-
-import { Bookmark, MapPin, DollarSign, Briefcase } from "lucide-react";
-import { Link } from "react-router-dom";
-
 import { useEffect, useRef, useState } from "react";
 import {
   Bookmark, MapPin, DollarSign, Briefcase, Clock,
@@ -15,7 +11,6 @@ const TABS = [
   { id: "benefits", label: "Quyền lợi" },
   { id: "company", label: "Giới thiệu công ty" },
 ];
-
 
 /**
  * JobDetailView - Tab-based detail panel matching reference design
@@ -43,36 +38,6 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
       : (job.company || "?").charAt(0).toUpperCase();
 
   return (
-
-    <div className="w-1/2 border-l dark:border-white/10 border-gray-200 dark:bg-[#0a0f1c]/80 bg-white overflow-y-auto h-full flex flex-col">
-      {/* Sticky top actions bar */}
-      <div className="sticky top-0 dark:bg-[#0a0f1c]/95 bg-white/95 backdrop-blur-md border-b dark:border-white/10 border-gray-200 p-6 z-10">
-        <div className="flex items-start gap-4 mb-4">
-          {job.company_id ? (
-            <Link
-              to={`/companies/${job.company_id}`}
-              className="w-16 h-16 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-3xl shrink-0 text-white hover:opacity-90 transition-opacity"
-            >
-              {job.logo}
-            </Link>
-          ) : (
-            <div className="w-16 h-16 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-3xl shrink-0 text-white">
-              {job.logo}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold dark:text-white text-gray-900 mb-1 truncate">{job.title}</h2>
-            {job.company_id ? (
-              <Link
-                to={`/companies/${job.company_id}`}
-                className="text-lg dark:text-slate-300 text-gray-600 font-medium hover:text-[#0ea5e9] dark:hover:text-[#38bdf8] transition-colors inline-block"
-              >
-                {job.company}
-              </Link>
-            ) : (
-              <p className="text-lg dark:text-slate-300 text-gray-600 font-medium">{job.company}</p>
-            )}
-
     <div className="flex-1 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/70 dark:border-white/5 dark:bg-slate-900/80 dark:shadow-none h-full flex flex-col">
 
       {/* ── HEADER ── */}
@@ -130,7 +95,6 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
             >
               <Share2 className="w-4 h-4" />
             </button>
-
           </div>
         </div>
       </div>
