@@ -59,7 +59,9 @@ export function JobDetail() {
   const [step, setStep] = useState(1);
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [candidatePhone, setCandidatePhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -515,11 +517,34 @@ export function JobDetail() {
                   <input
                     type="email"
                     value={candidateEmail}
-                    onChange={(e) => setCandidateEmail(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCandidateEmail(val);
+                      
+                      if (val.length > 0) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(val)) {
+                          setEmailError("Email không hợp lệ (ví dụ: example@gmail.com)");
+                        } else {
+                          setEmailError("");
+                        }
+                      } else {
+                        setEmailError("");
+                      }
+                    }}
                     placeholder="candidate@example.com"
-                    className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
+                    className={`w-full border rounded-xl p-3.5 text-sm focus:ring-4 focus:outline-none transition-all placeholder:text-gray-400 ${
+                      emailError 
+                        ? "border-red-400 focus:border-red-500 focus:ring-red-50" 
+                        : "border-gray-200 focus:border-[#0ea5e9] focus:ring-sky-50"
+                    }`}
                     required
                   />
+                  {emailError && (
+                    <p className="text-xs text-red-500 mt-1.5 font-medium animate-in fade-in slide-in-from-top-1">
+                      {emailError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -529,11 +554,36 @@ export function JobDetail() {
                   <input
                     type="tel"
                     value={candidatePhone}
-                    onChange={(e) => setCandidatePhone(e.target.value)}
+                    onChange={(e) => {
+                      // Chỉ cho phép nhập số và dấu +
+                      const val = e.target.value.replace(/[^\d+]/g, '');
+                      setCandidatePhone(val);
+                      
+                      // Validate realtime
+                      if (val.length > 0) {
+                        const phoneRegex = /^(\+84|0)(3[2-9]|5[6-9]|7[06-9]|8[0-9]|9[0-9])[0-9]{7}$/;
+                        if (!phoneRegex.test(val)) {
+                          setPhoneError("SĐT không hợp lệ (cần 10 số, bắt đầu bằng 0 hoặc +84)");
+                        } else {
+                          setPhoneError("");
+                        }
+                      } else {
+                        setPhoneError("");
+                      }
+                    }}
                     placeholder="0912345678"
-                    className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all placeholder:text-gray-400"
+                    className={`w-full border rounded-xl p-3.5 text-sm focus:ring-4 focus:outline-none transition-all placeholder:text-gray-400 ${
+                      phoneError 
+                        ? "border-red-400 focus:border-red-500 focus:ring-red-50" 
+                        : "border-gray-200 focus:border-[#0ea5e9] focus:ring-sky-50"
+                    }`}
                     required
                   />
+                  {phoneError && (
+                    <p className="text-xs text-red-500 mt-1.5 font-medium animate-in fade-in slide-in-from-top-1">
+                      {phoneError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
