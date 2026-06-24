@@ -15,6 +15,8 @@ import * as Dialog from "@radix-ui/react-dialog";
 export function JobDetail() {
   const { id } = useParams();
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
 
   // Gọi API lấy danh sách ID công việc đã lưu
   const { data: savedJobIds = [] } = useQuery({
@@ -67,8 +69,6 @@ export function JobDetail() {
   const [candidatePhone, setCandidatePhone] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
 
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const user = useAuthStore((state) => state.user);
 
   const addToast = useUiStore((state) => state.addToast);
 
