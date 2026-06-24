@@ -109,32 +109,28 @@ export function ManageApplications() {
 
   const getAppCountForJob = (jId) => {
     if (jId === "all") return allApplications.length;
-    return allApplications.filter((app) => app.jobId === jId).length;
+    return allApplications.filter((app) => app.job_id === jId).length;
   };
 
   const activeJobInfo = jobsList.find((job) => job.id === selectedJobId);
   const jobTitle = selectedJobId !== "all" ? activeJobInfo?.title : null;
 
-  // Quick Stats: tính từ applicationsList (theo job đang chọn)
-  const stats = useMemo(() => {
-    const base = rawList;
-    return {
-      newCount: base.filter((a) => ["SUBMITTED", "AI_REVIEWED"].includes(a.status)).length,
-      waitingPV: base.filter((a) => ["SHORTLISTED", "AI_INTERVIEW_INVITED"].includes(a.status)).length,
-      hasResult: base.filter((a) => a.status === "INTERVIEWED").length,
-      hired: base.filter((a) => a.status === "HIRED").length,
-      rejected: base.filter((a) => a.status === "REJECTED").length,
-    };
-  }, [rawList]);
+  // Filter shortcuts map with counts
+  const QUICK_FILTERS = useMemo(() => {
+    const currentApps = selectedJobId === "all" 
+      ? allApplications 
+      : allApplications.filter(a => a.job_id === selectedJobId);
 
-  // Filter shortcuts map
-  const QUICK_FILTERS = [
-    { label: "Tất cả", value: "", icon: null },
-    { label: "Chưa xử lý", value: "SUBMITTED", icon: null },
-    { label: "Vào vòng trong", value: "SHORTLISTED", icon: null },
-    { label: "Đã mời PV", value: "AI_INTERVIEW_INVITED", icon: null },
-    { label: "Có KQ PV", value: "INTERVIEWED", icon: null },
-  ];
+    return [
+      { label: "Tất cả", value: "", count: currentApps.length },
+      { label: "Chưa xử lý", value: "SUBMITTED", count: currentApps.filter(a => a.status === "SUBMITTED" || a.status === "AI_REVIEWED").length },
+      { label: "Vòng trong", value: "SHORTLISTED", count: currentApps.filter(a => a.status === "SHORTLISTED").length },
+      { label: "Đã mời PV", value: "AI_INTERVIEW_INVITED", count: currentApps.filter(a => a.status === "AI_INTERVIEW_INVITED").length },
+      { label: "Có KQ PV", value: "INTERVIEWED", count: currentApps.filter(a => a.status === "INTERVIEWED").length },
+      { label: "Đã tuyển", value: "HIRED", count: currentApps.filter(a => a.status === "HIRED").length },
+      { label: "Từ chối", value: "REJECTED", count: currentApps.filter(a => a.status === "REJECTED").length },
+    ];
+  }, [allApplications, selectedJobId]);
 
   return (
     <div className="bg-gray-50/50 min-h-screen pt-4 pb-8">
@@ -168,26 +164,6 @@ export function ManageApplications() {
           )}
         </div>
 
-        {/* Quick Stats Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-          {[
-            { label: "Chờ xử lý", value: stats.newCount, icon: <Clock className="w-4 h-4" />, color: "text-blue-600 bg-blue-50 border-blue-100", filter: "SUBMITTED" },
-            { label: "Chờ PV AI", value: stats.waitingPV, icon: <Sparkles className="w-4 h-4" />, color: "text-[#0ea5e9] bg-sky-50 border-sky-100", filter: "SHORTLISTED" },
-            { label: "Có KQ PV", value: stats.hasResult, icon: <BarChart2 className="w-4 h-4" />, color: "text-violet-600 bg-violet-50 border-violet-100", filter: "INTERVIEWED" },
-            { label: "Đã tuyển", value: stats.hired, icon: <CheckCircle2 className="w-4 h-4" />, color: "text-green-700 bg-green-50 border-green-200", filter: "" },
-            { label: "Từ chối", value: stats.rejected, icon: <X className="w-4 h-4" />, color: "text-red-600 bg-red-50 border-red-100", filter: "REJECTED" },
-          ].map((stat) => (
-            <button
-              key={stat.label}
-              onClick={() => setFilterStatus(stat.filter)}
-              className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border font-bold text-sm transition-all hover:scale-[1.02] hover:shadow-sm ${stat.color} ${filterStatus === stat.filter && stat.filter !== "" ? "ring-2 ring-offset-1 ring-current" : ""}`}
-            >
-              {stat.icon}
-              <span className="text-xl font-black">{stat.value}</span>
-              <span className="text-xs font-semibold opacity-75">{stat.label}</span>
-            </button>
-          ))}
-        </div>
 
         {/* Main Content Layout */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -284,13 +260,18 @@ export function ManageApplications() {
                     <button
                       key={f.value}
                       onClick={() => setFilterStatus(f.value)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                         filterStatus === f.value
-                          ? "bg-[#0ea5e9] text-white shadow-sm"
-                          : "text-gray-600 hover:bg-gray-50 bg-gray-100/50"
+                          ? "bg-[#0ea5e9] text-white shadow-md shadow-[#0ea5e9]/20 border border-[#0ea5e9]"
+                          : "text-gray-600 hover:bg-sky-50 hover:text-[#0ea5e9] bg-gray-100/50 border border-transparent"
                       }`}
                     >
-                      {f.label}
+                      <span>{f.label}</span>
+                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] leading-none ${
+                        filterStatus === f.value ? "bg-white/20" : "bg-gray-200/60"
+                      }`}>
+                        {f.count}
+                      </span>
                     </button>
                   ))}
                 </div>
