@@ -2,12 +2,13 @@ import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Star, Briefcase, Users, Download, Loader2, CheckCircle2,
-  Phone, FileDown, NotepadText, ArrowUpDown, Trophy
+  Phone, FileDown, NotepadText, ArrowUpDown, Trophy, Eye
 } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useUiStore } from "../../store/useUiStore";
 import { Link } from "react-router-dom";
+import { ApplicationDetailModal } from "./components/ApplicationDetailModal";
 
 // Status label + color for qualified candidates
 const STATUS_BADGES = {
@@ -91,6 +92,15 @@ export function ShortlistBoard() {
   const [checkedJobIds, setCheckedJobIds] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
   const [sortByScore, setSortByScore] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+
+  const handleViewDetails = (app) => {
+    // Map về định dạng snake_case nếu component con cần, nhưng ApplicationDetailModal hiện đang nhận prop application từ ManageApplications nơi data lấy trực tiếp từ API. 
+    // Tuy nhiên ở đây app đã là mixed camelCase và snake_case, modal vẫn đọc được app.id
+    setSelectedApplication(app);
+    setIsModalOpen(true);
+  };
 
   // Fetch all HR jobs
   const { data: jobsResponse, isLoading: isLoadingJobs } = useQuery({
@@ -108,7 +118,17 @@ export function ShortlistBoard() {
     queryKey: ["shortlist-all", currentHrId],
     queryFn: async () => {
       const res = await jobApi.getJobApplications();
-      return res.data;
+      return res.data.map(app => ({
+        ...app,
+        jobId: app.job_id,
+        candidateName: app.candidate_name,
+        candidateEmail: app.candidate_email,
+        candidatePhone: app.candidate_phone,
+        jobTitle: app.job_title,
+        aiScore: app.cv_score,
+        interviewScore: app.interview_score,
+        hrNotes: app.hr_notes,
+      }));
     },
     enabled: !!currentHrId,
   });
@@ -395,6 +415,7 @@ export function ShortlistBoard() {
                         <th className="px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Điểm PV AI</th>
                         <th className="px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Ghi Chú HR</th>
                         <th className="px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Trạng Thái</th>
+                        <th className="px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Hành Động</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -404,7 +425,11 @@ export function ShortlistBoard() {
                         const badge = STATUS_BADGES[statusKey];
 
                         return (
-                          <tr key={app.id} className="hover:bg-amber-50/30 transition-all group">
+                          <tr 
+                            key={app.id} 
+                            onClick={() => handleViewDetails(app)}
+                            className="hover:bg-amber-50/30 transition-all group cursor-pointer"
+                          >
                             {/* STT */}
                             <td className="px-4 py-4 text-xs font-bold text-gray-400">{index + 1}</td>
 
@@ -467,7 +492,7 @@ export function ShortlistBoard() {
                             </td>
 
                             {/* Ghi Chú HR — Inline editable */}
-                            <td className="px-4 py-4 max-w-[200px]">
+                            <td className="px-4 py-4 max-w-[200px]" onClick={(e) => e.stopPropagation()}>
                               <NoteCell app={{ ...app, hrNotes: app.hrNotes }} onSave={handleSaveNote} />
                             </td>
 
@@ -481,6 +506,18 @@ export function ShortlistBoard() {
                                 <span className="text-xs text-gray-400">{app.status}</span>
                               )}
                             </td>
+
+                            {/* Action */}
+                            <td className="px-4 py-4 text-right">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleViewDetails(app); }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-[#0ea5e9] text-xs font-bold rounded-lg hover:bg-[#0ea5e9] hover:text-white transition-all border border-sky-100 shadow-sm"
+                                title="Xem Chi Tiết Hồ Sơ"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                Chi Tiết
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -491,6 +528,13 @@ export function ShortlistBoard() {
             </div>
           </div>
         </div>
+
+        <ApplicationDetailModal
+          key={selectedApplication?.id || "empty"}
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          application={selectedApplication}
+        />
       </div>
     </div>
   );
