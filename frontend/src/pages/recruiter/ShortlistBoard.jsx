@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
-import { toast } from "react-toastify";
+import { useUiStore } from "../../store/useUiStore";
 import { Link } from "react-router-dom";
 
 // Status label + color for qualified candidates
@@ -81,6 +81,7 @@ function NoteCell({ app, onSave }) {
 
 export function ShortlistBoard() {
   const { user } = useAuthStore();
+  const { showToast } = useUiStore();
   const queryClient = useQueryClient();
   const currentHrId = user?.id;
 
@@ -172,7 +173,7 @@ export function ShortlistBoard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shortlist-all", currentHrId] });
     },
-    onError: () => toast.error("Lưu ghi chú thất bại. Vui lòng thử lại."),
+    onError: () => showToast({ message: "Lưu ghi chú thất bại. Vui lòng thử lại.", type: "error" }),
   });
 
   const handleSaveNote = (applicationId, note) => {
@@ -185,10 +186,10 @@ export function ShortlistBoard() {
     setIsExporting(true);
     try {
       await jobApi.exportApplications({ jobIds });
-      toast.success("Xuất file Excel thành công!");
+      showToast({ message: "Xuất file Excel thành công!", type: "success" });
     } catch (err) {
       const msg = err?.response?.data?.message || "Xuất file thất bại. Vui lòng thử lại.";
-      toast.error(msg);
+      showToast({ message: msg, type: "error" });
     } finally {
       setIsExporting(false);
     }
