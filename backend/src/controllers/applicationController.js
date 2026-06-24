@@ -82,7 +82,7 @@ export const applyJob = async (req, res) => {
 
     const formattedName = candidate_name || req.user.full_name || req.user.email;
     console.log(`[Application] Đang chấm điểm CV cho ứng viên ${formattedName} với HR Screening Pipeline...`);
-    
+
     // Gọi Pipeline mới thay vì evaluateCV cũ
     const evaluation = await runHrScreeningPipeline(sanitizedCvText, job, jobRequirements);
 
@@ -92,7 +92,7 @@ export const applyJob = async (req, res) => {
     // 3.1. Tạo PDF báo cáo và tải lên Cloudinary
     const candidateName = candidate_name || req.user.full_name || req.user.email;
     console.log(`[Application] Đang tạo báo cáo đánh giá PDF cho ứng viên ${candidateName}...`);
-    
+
     // Map data mới sang chuẩn cũ để PDF vẫn tạo được không bị lỗi
     const mappedEvaluationForPDF = {
       overallScore: evaluation.semantic_score || 0,
@@ -107,7 +107,7 @@ export const applyJob = async (req, res) => {
     };
 
     const pdfReportBuffer = await generatePDFReportBuffer(mappedEvaluationForPDF, candidateName, job.title);
-    
+
     console.log(`[Application] Đang upload PDF báo cáo lên Cloudinary...`);
     const reportCloudinaryResult = await uploadReportToCloudinary(pdfReportBuffer, candidateName);
     const pdfReportUrl = reportCloudinaryResult.secure_url;
@@ -118,7 +118,7 @@ export const applyJob = async (req, res) => {
 
     if (existingApp) {
       console.log(`[Application] Ứng viên ${formattedName} cập nhật CV/đơn ứng tuyển cho Job ${job.title}...`);
-      
+
       // Lưu thông tin CV mới vào bảng `cvs`
       const [newCv] = await db('cvs')
         .insert({
@@ -205,7 +205,7 @@ export const applyJob = async (req, res) => {
           user_id: job.hr_id,
           type: 'APPLICATION_UPDATE',
           title: existingApp ? 'Cập nhật đơn ứng tuyển' : 'Đơn ứng tuyển mới',
-          content: existingApp 
+          content: existingApp
             ? `${req.user.full_name || req.user.email} đã cập nhật lại CV cho vị trí "${job.title}"`
             : `${req.user.full_name || req.user.email} đã nộp đơn ứng tuyển cho vị trí "${job.title}"`,
           link: `/hr/dashboard`,
@@ -399,8 +399,8 @@ export const updateApplicationStatus = async (req, res) => {
       .join('jobs', 'applications.job_id', 'jobs.id')
       .join('users', 'applications.candidate_id', 'users.id')
       .select(
-        'applications.*', 
-        'jobs.hr_id as job_hr_id', 
+        'applications.*',
+        'jobs.hr_id as job_hr_id',
         'jobs.title as job_title',
         'users.email as candidate_email',
         'users.full_name as candidate_name'
