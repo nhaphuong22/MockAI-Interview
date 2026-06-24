@@ -1,9 +1,41 @@
 import { Bookmark, MapPin, DollarSign, Briefcase, Trash2, StickyNote, Send, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+
+
+const savedJobsData = [
+  {
+    id: 1,
+    title: "Senior Frontend Developer",
+    company: "TechCorp Vietnam",
+    company_id: 1,
+    logo: "🚀",
+    location: "Hà Nội",
+    salary: "25-35 triệu",
+    type: "Full-time",
+    tags: ["React", "TypeScript"],
+    savedDate: "2026-05-15",
+    note: "Công ty tốt, cần chuẩn bị kỹ về React",
+  },
+  {
+    id: 2,
+    title: "Full Stack Developer",
+    company: "Startup Hub",
+    company_id: 2,
+    logo: "💻",
+    location: "Remote",
+    salary: "28-38 triệu",
+    type: "Full-time",
+    tags: ["React", "Node.js"],
+    savedDate: "2026-05-14",
+    note: "",
+  },
+];
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { jobApi } from "../../api/jobApi";
 import { useUiStore } from "../../store/useUiStore";
+
 
 export function SavedJobs() {
   const queryClient = useQueryClient();
@@ -87,6 +119,20 @@ export function SavedJobs() {
               className="bg-white dark:bg-[#0f172a] rounded-3xl p-8 shadow-xl shadow-gray-200/30 border border-gray-50 dark:border-white/5 hover:border-sky-100 transition-all group"
             >
               <div className="flex flex-col md:flex-row gap-8">
+
+                {job.company_id ? (
+                  <Link
+                    to={`/companies/${job.company_id}`}
+                    className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300 hover:opacity-90"
+                  >
+                    {job.logo}
+                  </Link>
+                ) : (
+                  <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    {job.logo}
+                  </div>
+                )}
+
                 <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden text-white">
                   {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
                     <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
@@ -94,6 +140,7 @@ export function SavedJobs() {
                     <span className="font-bold">{job.logo || "🚀"}</span>
                   )}
                 </div>
+
 
                 <div className="flex-1">
                   <div className="flex flex-col mb-4">
@@ -103,7 +150,20 @@ export function SavedJobs() {
                     >
                       {job.title}
                     </Link>
+
+                    {job.company_id ? (
+                      <Link
+                        to={`/companies/${job.company_id}`}
+                        className="text-lg text-gray-500 hover:text-[#0ea5e9] font-medium transition-colors inline-block"
+                      >
+                        {job.company}
+                      </Link>
+                    ) : (
+                      <p className="text-lg text-gray-500 font-medium">{job.company}</p>
+                    )}
+
                     <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">{job.company}</p>
+
                   </div>
 
                   <div className="flex flex-wrap gap-6 text-sm mb-6">

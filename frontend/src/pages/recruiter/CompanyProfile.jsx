@@ -172,6 +172,7 @@ export function CompanyProfile() {
   useEffect(() => {
     if (user) {
       const companyName = user.company_name || user.companyName || "";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         companyName,
         companyLogo: user.company_logo || user.companyLogo || "",

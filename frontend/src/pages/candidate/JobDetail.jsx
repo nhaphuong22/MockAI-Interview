@@ -289,14 +289,26 @@ export function JobDetail() {
             {/* Header Thẻ Công Việc */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
               <div className="flex items-start gap-6 mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-4xl font-bold text-white flex-shrink-0">
-                  {companyLogo}
-                </div>
+                {job.company_id ? (
+                  <Link to={`/companies/${job.company_id}`} className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-4xl font-bold text-white flex-shrink-0 hover:opacity-90 transition-opacity">
+                    {companyLogo}
+                  </Link>
+                ) : (
+                  <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-4xl font-bold text-white flex-shrink-0">
+                    {companyLogo}
+                  </div>
+                )}
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
                   <div className="flex items-center gap-2 text-lg text-gray-700 mb-3">
                     <Building className="w-5 h-5 text-gray-400" />
-                    <span>{job.company_name || "Công ty chưa xác minh"}</span>
+                    {job.company_id ? (
+                      <Link to={`/companies/${job.company_id}`} className="font-bold text-gray-800 hover:text-[#0ea5e9] transition-colors">
+                        {job.company_name || "Công ty chưa xác minh"}
+                      </Link>
+                    ) : (
+                      <span className="font-bold text-gray-800">{job.company_name || "Công ty chưa xác minh"}</span>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-4 text-sm">
                     <div className="flex items-center gap-1 text-gray-600">
@@ -432,11 +444,23 @@ export function JobDetail() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h3 className="font-bold text-gray-900 mb-4">Về Công Ty</h3>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl font-bold text-white">
-                  {companyLogo}
-                </div>
+                {job.company_id ? (
+                  <Link to={`/companies/${job.company_id}`} className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl font-bold text-white hover:opacity-90 transition-opacity">
+                    {companyLogo}
+                  </Link>
+                ) : (
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl font-bold text-white">
+                    {companyLogo}
+                  </div>
+                )}
                 <div>
-                  <div className="font-bold text-gray-800">{job.company_name || "Công ty chưa xác minh"}</div>
+                  {job.company_id ? (
+                    <Link to={`/companies/${job.company_id}`} className="font-bold text-gray-800 hover:text-[#0ea5e9] transition-colors">
+                      {job.company_name || "Công ty chưa xác minh"}
+                    </Link>
+                  ) : (
+                    <div className="font-bold text-gray-800">{job.company_name || "Công ty chưa xác minh"}</div>
+                  )}
                   <div className="text-xs text-gray-500">Doanh nghiệp tuyển dụng</div>
                 </div>
               </div>

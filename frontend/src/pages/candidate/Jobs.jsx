@@ -6,6 +6,92 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { JobFilters } from "./components/JobFilters";
+import { JobCard } from "./components/JobCard";
+import { JobDetailView } from "./components/JobDetailView";
+
+const jobsData = [
+  {
+    id: 1,
+    title: "Senior React Developer",
+    company: "TechCorp Vietnam",
+    company_id: 1,
+    logo: "🚀",
+    location: "Hà Nội",
+    salary: "25-35 triệu",
+    type: "Full-time",
+    remote: "Hybrid",
+    experience: "3-5 years",
+    tags: ["React", "TypeScript", "Node.js"],
+    aiMatch: 95,
+    posted: "2 ngày trước",
+    applicants: 45,
+  },
+  {
+    id: 2,
+    title: "Full Stack Developer",
+    company: "Startup Hub",
+    company_id: 2,
+    logo: "💻",
+    location: "Remote",
+    salary: "28-38 triệu",
+    type: "Full-time",
+    remote: "Remote",
+    experience: "2-4 years",
+    tags: ["React", "Node.js", "MongoDB"],
+    aiMatch: 88,
+    posted: "1 tuần trước",
+    applicants: 32,
+  },
+  {
+    id: 3,
+    title: "Frontend Developer",
+    company: "Design Studio",
+    company_id: 1,
+    logo: "🎨",
+    location: "TP.HCM",
+    salary: "20-30 triệu",
+    type: "Full-time",
+    remote: "Office",
+    experience: "1-3 years",
+    tags: ["React", "Vue.js", "CSS"],
+    aiMatch: 82,
+    posted: "3 ngày trước",
+    applicants: 28,
+  },
+  {
+    id: 4,
+    title: "Backend Developer (Node.js)",
+    company: "E-Commerce Plus",
+    company_id: 2,
+    logo: "📱",
+    location: "Đà Nẵng",
+    salary: "22-32 triệu",
+    type: "Full-time",
+    remote: "Hybrid",
+    experience: "2-4 years",
+    tags: ["Node.js", "PostgreSQL", "Docker"],
+    aiMatch: 78,
+    posted: "5 ngày trước",
+    applicants: 18,
+  },
+  {
+    id: 5,
+    title: "UI/UX Designer",
+    company: "Creative Agency",
+    company_id: 1,
+    logo: "✨",
+    location: "Hà Nội",
+    salary: "18-28 triệu",
+    type: "Full-time",
+    remote: "Hybrid",
+    experience: "1-3 years",
+    tags: ["Figma", "Adobe XD", "UI Design"],
+    aiMatch: 75,
+    posted: "4 ngày trước",
+    applicants: 22,
+  },
+];
+
 import { CompanyGroupCard } from "./components/CompanyGroupCard";
 import { jobApi } from "../../api/jobApi";
 import { useUiStore } from "../../store/useUiStore";
@@ -22,6 +108,7 @@ const cleanLocationName = (str) => {
     .replace(/\s+/g, "")
     .trim();
 };
+
 
 
 

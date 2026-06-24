@@ -189,6 +189,7 @@ export function PostJob() {
     return <VerifyCompany status={verificationStatus} setStatus={setVerificationStatus} />;
   }
 
+
   return (
 
 

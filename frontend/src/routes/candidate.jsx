@@ -1,6 +1,7 @@
 import { Home } from "../pages/candidate/Home";
 import { Jobs } from "../pages/candidate/Jobs";
 import { JobDetail } from "../pages/candidate/JobDetail";
+import { CompanyDetail } from "../pages/candidate/CompanyDetail";
 import { SavedJobs } from "../pages/candidate/SavedJobs";
 import { ApplicationTracking } from "../pages/candidate/ApplicationTracking";
 import { Profile } from "../pages/candidate/Profile";
@@ -27,6 +28,10 @@ export const candidateRoutes = [
   { 
     path: "jobs/:id", 
     element: <JobDetail />
+  },
+  { 
+    path: "companies/:id", 
+    element: <ProtectedRoute><CompanyDetail /></ProtectedRoute>
   },
   { 
     path: "saved-jobs", 

@@ -1,4 +1,5 @@
 import { MapPin, DollarSign, Briefcase, Clock, Bookmark } from "lucide-react";
+import { Link } from "react-router-dom";
 
 /**
  * JobCard Component
@@ -22,9 +23,25 @@ export function JobCard({
     >
       <div className="flex gap-4">
         {/* Company Logo Icon */}
+
+        {job.company_id ? (
+          <Link
+            to={`/companies/${job.company_id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-sm hover:opacity-90 transition-opacity"
+          >
+            {job.logo}
+          </Link>
+        ) : (
+          <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-sm">
+            {job.logo}
+          </div>
+        )}
+
         <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md shadow-sky-100 dark:shadow-none">
           {job.logo}
         </div>
+
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4 mb-2">
@@ -32,7 +49,21 @@ export function JobCard({
               <h3 className="text-base font-bold dark:text-white text-gray-900 group-hover:text-[#0ea5e9] dark:group-hover:text-[#38bdf8] transition-colors truncate">
                 {job.title}
               </h3>
+
+              {job.company_id ? (
+                <Link
+                  to={`/companies/${job.company_id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-sm dark:text-slate-400 text-gray-500 hover:text-[#0ea5e9] dark:hover:text-[#38bdf8] font-medium transition-colors inline-block"
+                >
+                  {job.company}
+                </Link>
+              ) : (
+                <p className="text-sm dark:text-slate-400 text-gray-500 font-medium">{job.company}</p>
+              )}
+
               <p className="text-xs dark:text-slate-400 text-gray-500 font-semibold mt-0.5">{job.company}</p>
+
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <div className="px-2.5 py-0.5 bg-gradient-to-r from-emerald-500/10 to-sky-500/10 dark:from-emerald-400/20 dark:to-sky-400/20 text-[#0ea5e9] dark:text-sky-400 rounded-full text-[10px] font-bold border border-sky-100/30 dark:border-sky-500/20">
