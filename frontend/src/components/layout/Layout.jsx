@@ -143,7 +143,7 @@ export function Layout() {
   const administratorBase = "/admin/dashboard";
 
   return (
-    <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark text-white' : 'bg-slate-50 text-gray-900'}`}>
+    <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark bg-[#0a0f1c] text-white' : 'bg-slate-50 text-gray-900'}`}>
       {isCandidate && <GlobalBackground />}
       {!shouldHideNavbar && (
         <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
