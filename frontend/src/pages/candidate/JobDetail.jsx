@@ -381,16 +381,7 @@ export function JobDetail() {
 
           {/* Cột Bên Phải */}
           <div className="space-y-6">
-            {/* AI Match Score box */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-2 border-green-200">
-              <div className="text-center mb-4">
-                <div className="text-5xl font-bold text-green-600 mb-2">{job.aiMatch || (82 + (job.id % 14))}%</div>
-                <div className="text-green-800 font-semibold">AI Match Score</div>
-              </div>
-              <p className="text-sm text-green-700 text-center font-medium">
-                Hồ sơ của bạn phù hợp rất cao với vị trí này!
-              </p>
-            </div>
+
 
             {/* Thông Tin Tóm Tắt */}
             <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5">

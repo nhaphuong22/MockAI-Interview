@@ -15,6 +15,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useUiStore } from "../../store/useUiStore";
 import { jobApi } from "../../api/jobApi";
 import { JobCard } from "./components/JobCard";
+import { getRelativeTimeString } from "../../utils/dateUtils";
 
 const CITY_OPTIONS = [
   "Thành phố Hà Nội",
@@ -108,6 +109,7 @@ export function Home() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
+
 // PUBLIC LANDING PAGE VIEW (WHEN LOGGED OUT)
 // ────────────────────────────────────────────────────────────────────────────────
 function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
@@ -163,7 +165,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
     experience: job.experience_level || "Không yêu cầu",
     tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
     aiMatch: job.aiMatch || (82 + (job.id % 14)), // Simulated Match
-    posted: job.created_at ? new Date(job.created_at).toLocaleDateString("vi-VN") : "Gần đây",
+    posted: getRelativeTimeString(job.created_at),
     applicants: job.applicants_count || 0,
     description: job.description,
     requirements: job.requirements,
