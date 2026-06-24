@@ -26,7 +26,6 @@ export const createNewJob = async (req, res) => {
     const { 
       title, 
       description, 
-      requirements, 
       status, 
       experience_level,
       salary_min,
@@ -100,7 +99,6 @@ export const createNewJob = async (req, res) => {
       hrId,
       title: title.trim(),
       description,
-      requirements,
       status,
       experienceLevel: experience_level || null,
       salaryMin: parsedSalaryMin,
@@ -179,7 +177,6 @@ export const updateJob = async (req, res) => {
     const { 
       title, 
       description, 
-      requirements, 
       status, 
       experience_level,
       salary_min,
@@ -261,7 +258,6 @@ export const updateJob = async (req, res) => {
     const result = await updateJobById(jobId, {
       title: title.trim(),
       description,
-      requirements,
       status,
       experienceLevel: experience_level || null,
       salaryMin: parsedSalaryMin,

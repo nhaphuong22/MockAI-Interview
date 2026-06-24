@@ -68,6 +68,20 @@ export const registerUser = async (email, password, fullName, roleName = 'USER',
   const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
 
   await db.transaction(async (trx) => {
+    let companyId = null;
+    if (companyDetails.companyName) {
+      const [newCompany] = await trx('companies').insert({
+        name: companyDetails.companyName,
+        company_size: companyDetails.companySize || null,
+        industry: companyDetails.companyIndustry || null,
+        city: companyDetails.companyCity || null,
+        address: companyDetails.companyAddress || null,
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now()
+      }).returning('id');
+      companyId = newCompany.id || newCompany;
+    }
+
     const [newUser] = await trx('users')
       .insert({
         email,
@@ -76,11 +90,7 @@ export const registerUser = async (email, password, fullName, roleName = 'USER',
         email_verified: false,
         verification_token: verificationToken,
         verification_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        company_name: companyDetails.companyName || null,
-        company_size: companyDetails.companySize || null,
-        company_industry: companyDetails.companyIndustry || null,
-        company_city: companyDetails.companyCity || null,
-        company_address: companyDetails.companyAddress || null,
+        company_id: companyId,
         created_at: trx.fn.now(),
         updated_at: trx.fn.now(),
       })
@@ -388,14 +398,6 @@ export const updateUserProfile = async (userId, data) => {
   if (bio !== undefined) updateData.bio = bio;
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
   if (isLookingForJob !== undefined) updateData.is_looking_for_job = isLookingForJob;
-  if (companyName !== undefined) updateData.company_name = companyName;
-  if (companyLogo !== undefined) updateData.company_logo = companyLogo;
-  if (companyWebsite !== undefined) updateData.company_website = companyWebsite;
-  if (companyDescription !== undefined) updateData.company_description = companyDescription;
-  if (companySize !== undefined) updateData.company_size = companySize;
-  if (companyIndustry !== undefined) updateData.company_industry = companyIndustry;
-  if (companyCity !== undefined) updateData.company_city = companyCity;
-  if (companyAddress !== undefined) updateData.company_address = companyAddress;
   if (contactEmail !== undefined) updateData.contact_email = contactEmail;
   if (contactPhone !== undefined) updateData.contact_phone = contactPhone;
   if (contactPublic !== undefined) updateData.contact_public = contactPublic;
@@ -411,13 +413,34 @@ export const updateUserProfile = async (userId, data) => {
     throw new Error('User not found');
   }
 
+  // Handle company updates
+  const companyUpdateData = {};
+  let updateCompany = false;
+  if (companyName !== undefined) { companyUpdateData.name = companyName; updateCompany = true; }
+  if (companyLogo !== undefined) { companyUpdateData.logo_url = companyLogo; updateCompany = true; }
+  if (companyWebsite !== undefined) { companyUpdateData.website = companyWebsite; updateCompany = true; }
+  if (companyDescription !== undefined) { companyUpdateData.description = companyDescription; updateCompany = true; }
+  if (companySize !== undefined) { companyUpdateData.company_size = companySize; updateCompany = true; }
+  if (companyIndustry !== undefined) { companyUpdateData.industry = companyIndustry; updateCompany = true; }
+  if (companyCity !== undefined) { companyUpdateData.city = companyCity; updateCompany = true; }
+  if (companyAddress !== undefined) { companyUpdateData.address = companyAddress; updateCompany = true; }
+
+  if (updateCompany) {
+    companyUpdateData.updated_at = db.fn.now();
+    if (updatedUser.company_id) {
+      await db('companies').where({ id: updatedUser.company_id }).update(companyUpdateData);
+    } else {
+      companyUpdateData.created_at = db.fn.now();
+      const [newCompany] = await db('companies').insert(companyUpdateData).returning('id');
+      const newId = newCompany.id || newCompany;
+      await db('users').where({ id: userId }).update({ company_id: newId });
+      updatedUser.company_id = newId;
+    }
+  }
+
   const roleName = await getUserRole(updatedUser.id);
-
-  const { password_hash, verification_token, verification_token_expires_at,
-          reset_password_token, reset_password_expires_at, ...userInfo } = updatedUser;
-  userInfo.role = roleName;
-
-  return userInfo;
+  const fullProfile = await getUserProfile(userId);
+  return fullProfile;
 };
 
 /**
@@ -426,8 +449,22 @@ export const updateUserProfile = async (userId, data) => {
  */
 export const getUserProfile = async (userId) => {
   const user = await db('users')
-    .select('users.*', 'packages.name as package_name')
+    .select(
+      'users.*', 
+      'packages.name as package_name',
+      'companies.name as company_name',
+      'companies.logo_url as company_logo',
+      'companies.website as company_website',
+      'companies.description as company_description',
+      'companies.company_size as company_size',
+      'companies.industry as company_industry',
+      'companies.city as company_city',
+      'companies.address as company_address',
+      'companies.verification_status as company_verification_status',
+      'companies.document_url as company_document_url'
+    )
     .leftJoin('packages', 'users.package_id', 'packages.id')
+    .leftJoin('companies', 'users.company_id', 'companies.id')
     .where({ 'users.id': userId })
     .first();
 
