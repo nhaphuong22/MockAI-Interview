@@ -1,4 +1,5 @@
 import { MapPin, DollarSign, Briefcase, Clock, Bookmark } from "lucide-react";
+import { Link } from "react-router-dom";
 
 /**
  * JobCard Component
@@ -22,9 +23,19 @@ export function JobCard({
     >
       <div className="flex gap-4">
         {/* Company Logo Icon */}
-        <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-sm">
-          {job.logo}
-        </div>
+        {job.company_id ? (
+          <Link
+            to={`/companies/${job.company_id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-sm hover:opacity-90 transition-opacity"
+          >
+            {job.logo}
+          </Link>
+        ) : (
+          <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-sm">
+            {job.logo}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4 mb-2">
@@ -32,7 +43,17 @@ export function JobCard({
               <h3 className="text-lg font-semibold mb-1 dark:text-white text-gray-900 hover:text-[#0ea5e9] dark:hover:text-[#38bdf8] transition-colors truncate">
                 {job.title}
               </h3>
-              <p className="text-sm dark:text-slate-400 text-gray-500 font-medium">{job.company}</p>
+              {job.company_id ? (
+                <Link
+                  to={`/companies/${job.company_id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-sm dark:text-slate-400 text-gray-500 hover:text-[#0ea5e9] dark:hover:text-[#38bdf8] font-medium transition-colors inline-block"
+                >
+                  {job.company}
+                </Link>
+              ) : (
+                <p className="text-sm dark:text-slate-400 text-gray-500 font-medium">{job.company}</p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <div className="px-3 py-1 dark:bg-[#0ea5e9]/10 bg-sky-50 text-[#0ea5e9] rounded-full text-xs font-bold border dark:border-[#0ea5e9]/20 border-sky-100/50 shrink-0">

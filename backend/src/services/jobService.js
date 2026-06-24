@@ -78,6 +78,7 @@ export const getJobsList = async ({
   status,
   experienceLevel,
   hrId,
+  companyId,
   search,
   page = 1,
   limit = 10
@@ -100,6 +101,9 @@ export const getJobsList = async ({
   if (hrId) {
     query.where('jobs.hr_id', hrId);
   }
+  if (companyId) {
+    query.where('jobs.company_id', companyId);
+  }
   if (search) {
     query.where('jobs.title', 'ilike', `%${search}%`); // ilike cho PostgreSQL để tìm kiếm không phân biệt hoa thường
   }
@@ -111,6 +115,7 @@ export const getJobsList = async ({
   if (status) countQuery.where('status', status);
   if (experienceLevel) countQuery.where('experience_level', experienceLevel);
   if (hrId) countQuery.where('hr_id', hrId);
+  if (companyId) countQuery.where('company_id', companyId);
   if (search) countQuery.where('title', 'ilike', `%${search}%`);
 
   const [countResult] = await countQuery.count('id as count');

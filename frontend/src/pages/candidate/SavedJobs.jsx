@@ -7,6 +7,7 @@ const savedJobsData = [
     id: 1,
     title: "Senior Frontend Developer",
     company: "TechCorp Vietnam",
+    company_id: 1,
     logo: "🚀",
     location: "Hà Nội",
     salary: "25-35 triệu",
@@ -19,6 +20,7 @@ const savedJobsData = [
     id: 2,
     title: "Full Stack Developer",
     company: "Startup Hub",
+    company_id: 2,
     logo: "💻",
     location: "Remote",
     salary: "28-38 triệu",
@@ -62,9 +64,18 @@ export function SavedJobs() {
               className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/30 border border-gray-50 hover:border-sky-100 transition-all group"
             >
               <div className="flex flex-col md:flex-row gap-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
-                  {job.logo}
-                </div>
+                {job.company_id ? (
+                  <Link
+                    to={`/companies/${job.company_id}`}
+                    className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300 hover:opacity-90"
+                  >
+                    {job.logo}
+                  </Link>
+                ) : (
+                  <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-4xl shadow-lg shadow-sky-100 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    {job.logo}
+                  </div>
+                )}
 
                 <div className="flex-1">
                   <div className="flex flex-col mb-4">
@@ -74,7 +85,16 @@ export function SavedJobs() {
                     >
                       {job.title}
                     </Link>
-                    <p className="text-lg text-gray-500 font-medium">{job.company}</p>
+                    {job.company_id ? (
+                      <Link
+                        to={`/companies/${job.company_id}`}
+                        className="text-lg text-gray-500 hover:text-[#0ea5e9] font-medium transition-colors inline-block"
+                      >
+                        {job.company}
+                      </Link>
+                    ) : (
+                      <p className="text-lg text-gray-500 font-medium">{job.company}</p>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-6 text-sm mb-6">

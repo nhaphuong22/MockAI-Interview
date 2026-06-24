@@ -120,12 +120,13 @@ export const createNewJob = async (req, res) => {
  */
 export const getJobs = async (req, res) => {
   try {
-    const { status, experience_level, hr_id, search, page = 1, limit = 10 } = req.query;
+    const { status, experience_level, hr_id, company_id, search, page = 1, limit = 10 } = req.query;
 
     const filters = {
       status,
       experienceLevel: experience_level,
       hrId: hr_id ? parseInt(hr_id) : null,
+      companyId: company_id ? parseInt(company_id) : null,
       search,
       page: parseInt(page),
       limit: parseInt(limit)
