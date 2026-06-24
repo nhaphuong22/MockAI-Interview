@@ -22,7 +22,8 @@ export function JobDetail() {
     queryFn: async () => {
       const res = await jobApi.getSavedJobs({ returnIdsOnly: true });
       return res.data || [];
-    }
+    },
+    enabled: !!isAuthenticated
   });
 
   const toggleMutation = useMutation({
@@ -43,6 +44,10 @@ export function JobDetail() {
   const isBookmarked = savedJobIds.includes(Number(id));
 
   const toggleBookmark = () => {
+    if (!isAuthenticated) {
+      addToast("Yêu cầu đăng nhập để dùng được tính năng này", "warning");
+      return;
+    }
     toggleMutation.mutate(id);
   };
 
@@ -307,7 +312,13 @@ export function JobDetail() {
 
               <div className="flex gap-3 mb-6">
                 <button 
-                  onClick={() => setIsApplyModalOpen(true)}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      addToast("Yêu cầu đăng nhập để dùng được tính năng này", "warning");
+                      return;
+                    }
+                    setIsApplyModalOpen(true);
+                  }}
                   className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg transition-all cursor-pointer"
                 >
                   Nộp Đơn Ngay

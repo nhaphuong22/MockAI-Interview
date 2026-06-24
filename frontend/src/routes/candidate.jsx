@@ -22,11 +22,11 @@ export const candidateRoutes = [
   { index: true, Component: Home }, // Public: Landing Page
   { 
     path: "jobs", 
-    element: <ProtectedRoute><Jobs /></ProtectedRoute>
+    element: <Jobs />
   },
   { 
     path: "jobs/:id", 
-    element: <ProtectedRoute><JobDetail /></ProtectedRoute>
+    element: <JobDetail />
   },
   { 
     path: "saved-jobs", 
