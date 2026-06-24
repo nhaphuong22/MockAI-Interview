@@ -101,24 +101,32 @@ export const jobApi = {
     }
     params.set("format", "excel");
 
-    const response = await axiosClient.get(`/applications/export?${params.toString()}`, {
-      responseType: "blob",
+    const token = localStorage.getItem("token");
+    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    
+    // Import axios dynamically or we can just use fetch to avoid interceptor issues and keep headers
+    const response = await fetch(`${baseURL}/applications/export?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
-    // Auto-trigger browser download
-    const blob = new Blob([response.data], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
+    if (!response.ok) {
+      throw new Error("Lỗi xuất file Excel");
+    }
+
+    const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
 
-    // Try to extract filename from Content-Disposition header
-    const disposition = response.headers?.["content-disposition"] || "";
+    // Extract filename from headers
+    const disposition = response.headers.get("content-disposition") || "";
     const filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
     link.download = filenameMatch
       ? decodeURIComponent(filenameMatch[1])
-      : `MockAI_Shortlist_${new Date().toLocaleDateString("vi-VN").replace(/\//g, "-")}.xlsx`;
+      : `MockAI_Shortlist_${new Date().toLocaleDateString("vi-VN").replace(/\//g, "-")}.zip`;
 
     document.body.appendChild(link);
     link.click();

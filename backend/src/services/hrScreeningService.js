@@ -87,7 +87,7 @@ ${cleanedCv || "Không có nội dung CV"}
 Hãy thực hiện đánh giá toàn diện và trả về kết quả định dạng JSON.`;
 
   console.log(`[HR Screening] Đang đánh giá CV qua AI Pipeline bằng model ${modelName}...`);
-  
+
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
