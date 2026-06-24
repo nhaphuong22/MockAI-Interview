@@ -217,20 +217,7 @@ export const applyJob = async (req, res) => {
         })
         .returning('*');
 
-      // Gửi mail cho HR thông qua SMTP kèm PDF báo cáo
-      if (hrUser && hrUser.email) {
-        console.log(`[Application] Đang gửi mail báo cáo tuyển dụng kèm PDF tới HR: ${hrUser.email}`);
-        await sendApplicationReportEmail(
-          hrUser.email,
-          hrUser.full_name || 'Nhà tuyển dụng',
-          candidateName,
-          job.title,
-          evaluation.semantic_score || 0,
-          pdfReportUrl,
-          true, // Gửi cho HR
-          pdfReportBuffer
-        );
-      }
+      // Đã vô hiệu hóa gửi mail cho HR khi có đơn mới theo yêu cầu của user
 
       // Đẩy thông báo tức thời (In-app notification) cho HR qua Socket.io
       sendRealtimeNotification(job.hr_id, {
@@ -256,21 +243,51 @@ export const applyJob = async (req, res) => {
       });
     }
 
-    // Gửi mail xác nhận và báo cáo chi tiết cho Candidate thông qua SMTP kèm PDF báo cáo
-    if (req.user.email) {
-      console.log(`[Application] Đang gửi mail xác nhận và báo cáo tuyển dụng tới Candidate: ${req.user.email}`);
-      await sendApplicationReportEmail(
-        req.user.email,
-        req.user.full_name || 'Ứng viên',
-        candidateName,
-        job.title,
-        evaluation.semantic_score || 0,
-        pdfReportUrl,
-        false, // Gửi cho Candidate
-        pdfReportBuffer
-      );
-    }
+    // Đã vô hiệu hóa gửi mail xác nhận cho ứng viên khi nộp đơn theo yêu cầu của user
 
+    // Tuy nhiên, nếu AI tự động đánh rớt (Knock-out REJECTED), thì tự động gửi mail báo Từ chối cho ứng viên luôn
+    if (initialStatus === 'REJECTED') {
+      const emailToUse = candidate_email || req.user.email;
+      const candidateNameToUse = candidate_name || req.user.full_name || req.user.email;
+      if (emailToUse) {
+        console.log(`[Application] AI Knock-out REJECTED - Tự động gửi mail báo rớt tới Candidate: ${emailToUse}`);
+        sendApplicationStatusUpdateEmail(
+          emailToUse,
+          candidateNameToUse,
+          job.title,
+          'REJECTED'
+        ).catch(err => console.error('Lỗi khi gửi email báo rớt AI Knock-out:', err));
+      }
+
+      // Tạo thông báo in-app cho ứng viên
+      try {
+        const [candidateNotification] = await db('notifications')
+          .insert({
+            user_id: candidateId,
+            type: 'APPLICATION_UPDATE',
+            title: 'Cập nhật trạng thái đơn tuyển',
+            content: `Đơn ứng tuyển vị trí "${job.title}" của bạn đã được cập nhật thành: Từ chối`,
+            link: '/applications',
+            reference_id: application.id,
+            reference_type: 'application',
+            is_read: false,
+            created_at: new Date(),
+            updated_at: new Date()
+          })
+          .returning('*');
+
+        sendRealtimeNotification(candidateId, {
+          id: candidateNotification.id,
+          type: 'application',
+          title: candidateNotification.title,
+          content: candidateNotification.content,
+          time: 'Vừa xong',
+          isRead: false
+        });
+      } catch (notiError) {
+        console.error('Lỗi khi tạo in-app notification cho Candidate bị AI từ chối:', notiError);
+      }
+    }
 
     return sendResponse(res, 201, {
       application_id: application.id,
@@ -389,7 +406,7 @@ export const updateApplicationStatus = async (req, res) => {
       return sendError(res, 400, 'ID đơn tuyển dụng không hợp lệ.');
     }
 
-    const VALID_STATUSES = ['new', 'reviewed', 'interviewed', 'accepted', 'rejected', 'SUBMITTED', 'REVIEWING', 'ACCEPTED', 'REJECTED'];
+    const VALID_STATUSES = ['new', 'reviewed', 'interviewed', 'accepted', 'rejected', 'hired', 'shortlisted', 'SUBMITTED', 'REVIEWING', 'ACCEPTED', 'REJECTED', 'HIRED', 'SHORTLISTED'];
     if (!status || !VALID_STATUSES.includes(status)) {
       return sendError(res, 400, 'Trạng thái cập nhật không hợp lệ.');
     }
