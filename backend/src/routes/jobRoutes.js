@@ -7,9 +7,17 @@ import {
   updateJob,
   deleteJob,
   getJobApplications,
-  updateJobApplication
+  updateJobApplication,
+
+  toggleSavedJob,
+  getSavedJobs,
+  updateSavedJobNote,
+
+  getJobCampaignReport
+
 } from '../controllers/jobController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
+import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
 
 
 const router = express.Router();
@@ -264,8 +272,8 @@ const router = express.Router();
 
 // Route khai báo
 router.post('/', authenticateToken, requireRole(['HR', 'ADMIN']), createNewJob);
-router.get('/', getJobs);
-router.get('/applications', authenticateToken, requireRole(['HR', 'ADMIN']), getJobApplications);
+router.get('/', cacheMiddleware('jobs:list', 1800), getJobs);
+router.get('/applications', authenticateToken, requireRole(['HR', 'ADMIN']), cacheMiddleware('applications:hr', 1800), getJobApplications);
 router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJobApplication);
 
 /**
@@ -389,12 +397,13 @@ router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']),
  *       500:
  *         description: Lỗi hệ thống.
  */
+// Candidate Saved Jobs
+router.get('/saved-jobs', authenticateToken, requireRole(['USER']), getSavedJobs);
+router.post('/:id/save', authenticateToken, requireRole(['USER']), toggleSavedJob);
+router.put('/:id/save/note', authenticateToken, requireRole(['USER']), updateSavedJobNote);
 
-// Route khai báo
-router.post('/', authenticateToken, requireRole(['HR', 'ADMIN']), createNewJob);
-router.get('/', getJobs);
-
-router.get('/:id', getJobById);
+router.get('/:id', cacheMiddleware('jobs:detail', 1800), getJobById);
+router.get('/:id/campaign-report', authenticateToken, requireRole(['HR', 'ADMIN']), getJobCampaignReport);
 router.put('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJob);
 router.delete('/:id', authenticateToken, requireRole(['HR', 'ADMIN']), deleteJob);
 

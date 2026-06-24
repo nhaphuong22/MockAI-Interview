@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Clock, Mic, MicOff, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import { Sparkles, Clock, Mic, MicOff, Loader2, CheckCircle2, ArrowRight, Volume2, VolumeX } from "lucide-react";
 import { AudioVisualizer } from "../ai/AudioVisualizer";
 import { AiWaveform } from "../ai/AiWaveform";
 import { selectVoice, configureVoiceStyle, initVoices } from "../../utils/voiceEngine";
@@ -9,6 +9,10 @@ import {
   assessVoiceSessionApi 
 } from "../../api/voiceSession";
 import { submitAnswerApi } from "../../api/interviewApi";
+import { axiosClient } from "../../api/axiosClient";
+import { useGazeTracker } from "../../hooks/useGazeTracker";
+import { Avatar3D } from "../ai/Avatar3D";
+import { useAuthStore } from "../../store/useAuthStore";
 
 /**
  * InterviewSession Component
@@ -26,6 +30,9 @@ export function InterviewSession({
   aiVoice = "vi-VN-female",
   onFinish
 }) {
+  const { user } = useAuthStore();
+  const userDisplayName = user?.full_name || user?.fullName || user?.name || "Ứng viên";
+
   const isTextMode = interviewType === "text";
   const questionObj = questions[currentQuestion];
   const questionText = typeof questionObj === "string" ? questionObj : (questionObj?.question_text || "");
@@ -38,12 +45,13 @@ export function InterviewSession({
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [aiVolume, setAiVolume] = useState(0);
   const [isFinalizing, setIsFinalizing] = useState(false); // Cloudinary and assessment packaging state
   const [audioLevel, setAudioLevel] = useState(0);
-  const [realtimeTranscript, setRealtimeTranscript] = useState("");
   const [finalAnswer, setFinalAnswer] = useState("");
   const [currentAudioUrl, setCurrentAudioUrl] = useState("");
   const [hasRecorded, setHasRecorded] = useState(false);
+  const [isAiVoiceEnabled, setIsAiVoiceEnabled] = useState(true);
 
   // Audio Context & Media Recorder Refs
   const mediaRecorderRef = useRef(null);
@@ -51,12 +59,36 @@ export function InterviewSession({
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const recognitionRef = useRef(null);
   const chunksRef = useRef([]);
-  const transcriptRef = useRef("");
 
   // Timer state
   const [seconds, setSeconds] = useState(0);
+
+  // Gaze tracking state
+  const [gazeWarning, setGazeWarning] = useState(false);
+  const [cameraErrorMessage, setCameraErrorMessage] = useState("");
+  const [accumulatedGazeViolations, setAccumulatedGazeViolations] = useState(0);
+
+  const {
+    videoRef,
+    gazeViolations,
+    isWarningActive,
+    isCameraActive,
+    isLoadingModel,
+    isFaceDetected,
+    resetViolations
+  } = useGazeTracker({
+    isActive: interviewType === "voice" && !isFinalizing,
+    onViolation: (count) => {
+      setAccumulatedGazeViolations(count);
+    },
+    onWarning: (active) => {
+      setGazeWarning(active);
+    },
+    onCameraError: (msg) => {
+      setCameraErrorMessage(msg);
+    }
+  });
 
   const stopAudioEngine = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -74,52 +106,180 @@ export function InterviewSession({
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
   };
 
-  // Text-To-Speech function using native Web Speech Synthesis
-  const speakQuestion = (text) => {
+  const speakQuestionFallback = (text, force = false) => {
+    if (!isAiVoiceEnabled && !force) {
+      setIsAiSpeaking(false);
+      return;
+    }
     if ('speechSynthesis' in window) {
-      // 1. Cancel any active vocal sound first
       window.speechSynthesis.cancel();
-
-      // 2. Format utterance
       const utterance = new SpeechSynthesisUtterance(text);
-      
       const isEnglish = aiVoice.startsWith("en-US");
       const isMale = aiVoice.includes("-male");
-      
       utterance.lang = isEnglish ? "en-US" : "vi-VN";
-
-      // Configure pitch/rate for clear male/female differentiation
       configureVoiceStyle(utterance, isMale);
-
-      // Select the best matching voice using cross-exclusion engine
       const matchingVoice = selectVoice(aiVoice);
       if (matchingVoice) utterance.voice = matchingVoice;
+      
+      let fallbackInterval;
 
       utterance.onstart = () => {
         setIsAiSpeaking(true);
         setIsRecording(false);
         setHasRecorded(false);
-      };
 
+        // Giả lập âm lượng miệng nhấp nháy khi nói
+        fallbackInterval = setInterval(() => {
+          if (window.speechSynthesis.speaking) {
+            setAiVolume(0.15 + Math.random() * 0.75);
+          } else {
+            setAiVolume(0);
+            clearInterval(fallbackInterval);
+          }
+        }, 80);
+      };
+      
       utterance.onend = () => {
         setIsAiSpeaking(false);
+        setAiVolume(0);
+        if (fallbackInterval) clearInterval(fallbackInterval);
       };
-
+      
       utterance.onerror = (err) => {
         console.error("SpeechSynthesis error:", err);
         setIsAiSpeaking(false);
+        setAiVolume(0);
+        if (fallbackInterval) clearInterval(fallbackInterval);
       };
-
-      // 3. Play voice
       window.speechSynthesis.speak(utterance);
     } else {
       console.warn("Speech Synthesis not supported natively in this browser.");
+    }
+  };
+ 
+  // Text-To-Speech function using backend ElevenLabs API (or Google Translate TTS fallback)
+  const speakQuestion = async (text, force = false) => {
+    // 1. Cancel any active vocal sound first
+    if (window.activeTtsAudio) {
+      try {
+        window.activeTtsAudio.pause();
+        window.activeTtsAudio = null;
+      } catch (err) {
+        console.debug("Audio pause ignored:", err);
+      }
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setAiVolume(0);
+ 
+    if (!isAiVoiceEnabled && !force) {
+      setIsAiSpeaking(false);
+      return;
+    }
+
+    try {
+      setIsAiSpeaking(true);
+      setIsRecording(false);
+      setHasRecorded(false);
+
+      // Call API using axiosClient to get binary blob
+      const response = await axiosClient.post("/voice-sessions/tts", { 
+        text: text, 
+        lang: aiVoice 
+      }, {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(blob);
+      
+      const audio = new Audio(audioUrl);
+      window.activeTtsAudio = audio;
+
+      // Web Audio AnalyserNode setup for R3F Lipsync
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioContext();
+      const analyser = audioCtx.createAnalyser();
+      const source = audioCtx.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      analyser.fftSize = 64;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let animationId;
+
+      const checkVolume = () => {
+        if (audio.paused || audio.ended) {
+          setAiVolume(0);
+          return;
+        }
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / dataArray.length;
+        const vol = Math.min(average / 90, 1.0); // normalize and scale volume
+        setAiVolume(vol);
+        animationId = requestAnimationFrame(checkVolume);
+      };
+
+      audio.onplay = () => {
+        audioCtx.resume();
+        checkVolume();
+      };
+      
+      audio.onended = () => {
+        setIsAiSpeaking(false);
+        setAiVolume(0);
+        cancelAnimationFrame(animationId);
+        audioCtx.close();
+        URL.revokeObjectURL(audioUrl);
+        window.activeTtsAudio = null;
+      };
+      
+      audio.onerror = (err) => {
+        console.error("TTS audio playback error, falling back:", err);
+        setAiVolume(0);
+        cancelAnimationFrame(animationId);
+        audioCtx.close();
+        URL.revokeObjectURL(audioUrl);
+        window.activeTtsAudio = null;
+        speakQuestionFallback(text, force);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.warn("Backend TTS failed, falling back to local speech synthesis:", error);
+      speakQuestionFallback(text, force);
+    }
+  };
+ 
+  const toggleAiVoice = () => {
+    const nextState = !isAiVoiceEnabled;
+    setIsAiVoiceEnabled(nextState);
+    if (!nextState) {
+      // Stop active voices immediately
+      if (window.activeTtsAudio) {
+        try {
+          window.activeTtsAudio.pause();
+          window.activeTtsAudio = null;
+        } catch (err) {
+          console.debug("Mute pause ignored:", err);
+        }
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setIsAiSpeaking(false);
+    } else {
+      // Re-trigger current question speaking if turned back on
+      if (interviewType === "voice" && questionText && !isRecording && !isTranscribing && !hasRecorded) {
+        speakQuestion(questionText, true);
+      }
     }
   };
 
@@ -137,6 +297,14 @@ export function InterviewSession({
       stopAudioEngine();
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
+      }
+      if (window.activeTtsAudio) {
+        try {
+          window.activeTtsAudio.pause();
+          window.activeTtsAudio = null;
+        } catch (err) {
+          console.debug("Audio pause ignored:", err);
+        }
       }
     };
   }, []);
@@ -161,14 +329,12 @@ export function InterviewSession({
   const startRecording = async () => {
     try {
       chunksRef.current = [];
-      setRealtimeTranscript("");
-      transcriptRef.current = "";
       setFinalAnswer("");
-
+ 
       // 1. Get audio stream
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-
+ 
       // 2. Initialize volume analyzer
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const audioContext = new AudioContext();
@@ -178,10 +344,10 @@ export function InterviewSession({
       analyser.fftSize = 256;
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
-
+ 
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-
+ 
       const drawVolume = () => {
         if (!analyserRef.current) return;
         analyserRef.current.getByteFrequencyData(dataArray);
@@ -196,7 +362,7 @@ export function InterviewSession({
         animationFrameRef.current = requestAnimationFrame(drawVolume);
       };
       drawVolume();
-
+ 
       // 3. Initialize Media Recorder
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -205,63 +371,33 @@ export function InterviewSession({
           chunksRef.current.push(e.data);
         }
       };
-
+ 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
         setIsTranscribing(true);
-
+ 
         try {
-          // Send audio to backend using latest ref value to avoid stale closures
-          const response = await transcribeAudioApi(audioBlob, transcriptRef.current);
+          // Send audio to backend with empty client transcript to enforce backend Groq Whisper processing
+          const response = await transcribeAudioApi(audioBlob, "");
           if (response && response.success) {
             setFinalAnswer(response.data.text);
             setCurrentAudioUrl(response.data.audioUrl || "");
           } else {
-            setFinalAnswer(transcriptRef.current || "Không nhận diện được âm thanh.");
+            setFinalAnswer("Không nhận diện được âm thanh.");
           }
         } catch (err) {
           console.error("Transcription API error:", err);
-          setFinalAnswer(transcriptRef.current || "Lỗi nhận diện âm thanh. Vui lòng ghi âm lại hoặc tự nhập câu trả lời vào ô này.");
+          setFinalAnswer("Lỗi nhận diện âm thanh. Vui lòng ghi âm lại hoặc tự nhập câu trả lời vào ô này.");
         } finally {
           setIsTranscribing(false);
           setHasRecorded(true);
         }
       };
-
-      // 4. Initialize Web Speech API if available
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "vi-VN"; 
-
-        recognition.onresult = (event) => {
-          let finalTranscript = "";
-          let interimTranscript = "";
-          for (let i = 0; i < event.results.length; ++i) {
-            const segment = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += segment + " ";
-            } else {
-              interimTranscript += segment;
-            }
-          }
-          const fullText = (finalTranscript + interimTranscript).trim();
-          if (fullText) {
-            setRealtimeTranscript(fullText);
-            transcriptRef.current = fullText;
-          }
-        };
-
-        recognitionRef.current = recognition;
-        recognition.start();
-      }
-
+ 
       // Start recording
       mediaRecorder.start();
       setIsRecording(true);
-
+ 
     } catch (err) {
       console.error("Start recording failed:", err);
       alert("Không thể truy cập Microphone. Vui lòng kiểm tra lại quyền.");
@@ -279,6 +415,14 @@ export function InterviewSession({
     stopAudioEngine();
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+    }
+    if (window.activeTtsAudio) {
+      try {
+        window.activeTtsAudio.pause();
+        window.activeTtsAudio = null;
+      } catch (err) {
+        console.debug("Audio pause ignored:", err);
+      }
     }
 
     const targetSessionId = voiceSessionId || 1;
@@ -317,12 +461,17 @@ export function InterviewSession({
 
   const handleSaveAndNext = async () => {
     const answerToSave = isTextMode ? textAnswer : finalAnswer;
+    let updatedQuestionsList = null;
     
     if (questionId && answerToSave && answerToSave.trim().length > 0) {
       setIsSavingAnswer(true);
       try {
         console.log(`Submitting answer for question ID ${questionId} to backend...`);
-        await submitAnswerApi(questionId, answerToSave.trim(), currentAudioUrl);
+        // Gửi kèm số lần vi phạm ánh mắt lên backend
+        const res = await submitAnswerApi(questionId, answerToSave.trim(), currentAudioUrl, accumulatedGazeViolations);
+        if (res && res.data) {
+          updatedQuestionsList = res.data.data?.updatedQuestions || res.data.updatedQuestions;
+        }
       } catch (err) {
         console.error("Failed to submit and grade answer:", err);
       } finally {
@@ -330,21 +479,28 @@ export function InterviewSession({
       }
     }
 
+    // Reset violations count for next question
+    if (interviewType === "voice") {
+      resetViolations();
+      setAccumulatedGazeViolations(0);
+    }
+
+    const activeQuestions = updatedQuestionsList || questions;
+
     // If it's the final question, trigger evaluation and Cloudinary upload
-    if (currentQuestion >= questions.length - 1) {
+    if (currentQuestion >= activeQuestions.length - 1) {
       if (interviewType === "voice") {
         handleFinalizeInterview();
       } else {
-        onNext();
+        onNext(activeQuestions);
       }
     } else {
       // Reset state variables for next question
       setTextAnswer("");
       setFinalAnswer("");
       setCurrentAudioUrl("");
-      setRealtimeTranscript("");
       setHasRecorded(false);
-      onNext();
+      onNext(activeQuestions);
     }
   };
 
@@ -390,6 +546,29 @@ export function InterviewSession({
           </div>
         </div>
         <div className="flex items-center gap-6">
+          {interviewType === "voice" && (
+            <button
+              onClick={toggleAiVoice}
+              className={`px-3 py-1.5 rounded-lg border transition-all duration-200 flex items-center gap-1.5 text-sm font-semibold ${
+                isAiVoiceEnabled
+                  ? "bg-slate-700/50 hover:bg-slate-700 text-sky-400 border-sky-500/20"
+                  : "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20"
+              }`}
+              title={isAiVoiceEnabled ? "Tắt giọng đọc của AI" : "Bật giọng đọc của AI"}
+            >
+              {isAiVoiceEnabled ? (
+                <>
+                  <Volume2 className="w-4 h-4 text-sky-400" />
+                  <span className="hidden sm:inline">Giọng AI: Bật</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 text-rose-400" />
+                  <span className="hidden sm:inline">Giọng AI: Tắt</span>
+                </>
+              )}
+            </button>
+          )}
           <div className="flex items-center gap-2 text-white bg-gray-700/50 px-3 py-1.5 rounded-lg border border-gray-600/50 text-sm">
             <Clock className="w-4 h-4 text-[#0ea5e9]" />
             <span>{formatTime(seconds)}</span>
@@ -405,25 +584,24 @@ export function InterviewSession({
         </div>
       </div>
 
-      {/* Main question area */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-3xl w-full">
-          <div className="bg-white rounded-3xl p-8 mb-6 text-center shadow-2xl relative overflow-hidden border border-gray-100">
-            {/* Decorative colored strip */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8]" />
-            <div className="text-xs font-bold text-[#0ea5e9] tracking-widest uppercase mb-2">Câu Hỏi {currentQuestion + 1}</div>
-            <h2 className="text-2xl md:text-3xl mb-4 font-bold text-gray-800 leading-snug">{questionText}</h2>
-            <div className="inline-flex px-3 py-1.5 bg-sky-50 text-[#0ea5e9] rounded-full text-xs font-semibold border border-sky-100/50">
-              Câu hỏi phỏng vấn AI
+      {/* Main question area - Bố cục căn giữa cho text, hoặc 2 cột cho voice */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-950 flex flex-col justify-between">
+        {isTextMode ? (
+          /* ================= TEXT MODE (Căn giữa đơn giản) ================= */
+          <div className="max-w-2xl mx-auto py-12 w-full flex-1 flex flex-col justify-center">
+            <div className="bg-slate-900 rounded-3xl p-6 md:p-8 mb-6 text-center border border-slate-800 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8]" />
+              <div className="text-xs font-bold text-[#0ea5e9] tracking-widest uppercase mb-2">Câu Hỏi {currentQuestion + 1}</div>
+              <h2 className="text-xl md:text-2xl mb-4 font-bold text-white leading-snug">{questionText}</h2>
+              <div className="inline-flex px-3 py-1.5 bg-sky-950/50 text-[#38bdf8] rounded-full text-xs font-semibold border border-sky-900/50">
+                Câu hỏi phỏng vấn AI
+              </div>
             </div>
-          </div>
 
-          {isTextMode ? (
-            /* ================= TEXT MODE ================= */
-            <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
+            <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl">
               <textarea
                 placeholder="Nhập câu trả lời của bạn vào đây..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:ring-2 focus:ring-[#0ea5e9]/10 focus:outline-none resize-none text-gray-700 transition-all"
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl focus:border-[#0ea5e9] focus:ring-2 focus:ring-[#0ea5e9]/10 focus:outline-none resize-none text-white transition-all placeholder-gray-500"
                 rows={6}
                 autoFocus
                 value={textAnswer}
@@ -431,132 +609,210 @@ export function InterviewSession({
               />
 
               <div className="flex items-center justify-between mt-4">
-                <div className="text-xs text-gray-500">
-                  <span className="text-[#0ea5e9] font-bold">Gợi ý:</span> Sử dụng phương pháp STAR để cấu trúc câu trả lời của bạn.
+                <div className="text-xs text-gray-400">
+                  <span className="text-[#38bdf8] font-bold">Gợi ý:</span> Sử dụng phương pháp STAR để cấu trúc câu trả lời của bạn.
                 </div>
                 <button
                   onClick={handleSaveAndNext}
                   disabled={isSavingAnswer || !textAnswer.trim()}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg hover:shadow-sky-100 transition-all font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl hover:shadow-lg hover:shadow-sky-500/20 transition-all font-semibold flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{currentQuestion < questions.length - 1 ? "Câu Tiếp Theo" : "Hoàn Thành"}</span>
                 </button>
               </div>
             </div>
-          ) : (
-            /* ================= VOICE MODE ================= */
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 space-y-6">
+          </div>
+        ) : (
+          /* ================= VOICE MODE (Giao diện 2 cột Premium PiP) ================= */
+          <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col lg:flex-row gap-6 items-stretch my-auto min-h-[480px]">
+            
+            {/* Cột trái: Camera của Candidate chiếm 2/3 */}
+            <div className="flex-1 lg:flex-[2] relative bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col justify-between">
               
-              {/* Case 0: AI is actively speaking TTS question */}
-              {isAiSpeaking && (
-                <div className="py-6 space-y-4">
-                  <AiWaveform />
-                </div>
-              )}
-
-              {/* Case 1: Idle state (ready to record) */}
-              {!isAiSpeaking && !isRecording && !isTranscribing && !hasRecorded && (
-                <div className="text-center py-6">
-                  <button
-                    onClick={startRecording}
-                    className="w-24 h-24 mx-auto mb-4 bg-sky-50 hover:bg-[#f0f9ff] border border-sky-100 rounded-full flex items-center justify-center text-[#0ea5e9] hover:scale-105 transition-all shadow-md group"
-                  >
-                    <Mic className="w-10 h-10 group-hover:scale-110 transition-transform" />
-                  </button>
-                  <p className="text-lg font-bold text-gray-800">Nhấn để bắt đầu trả lời</p>
-                  <p className="text-sm text-gray-500 mt-1">AI đã đọc xong. Sẵn sàng ghi âm giọng nói của bạn</p>
-                </div>
-              )}
-
-              {/* Case 2: Recording state */}
-              {!isAiSpeaking && isRecording && (
-                <div className="space-y-6">
-                  <div className="text-center py-4">
-                    <button
-                      onClick={stopRecording}
-                      className="w-24 h-24 mx-auto mb-4 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-600 hover:scale-105 transition-all animate-pulse shadow-md relative"
-                    >
-                      <MicOff className="w-10 h-10" />
-                      {/* Ocean blue waves around recording button */}
-                      <span className="absolute inset-0 rounded-full border-4 border-[#0ea5e9]/20 animate-ping" />
-                    </button>
-                    <p className="text-lg font-bold text-gray-800">Hệ thống đang ghi âm...</p>
-                    <p className="text-sm text-gray-500 mt-1">Nhấp nút ở trên để hoàn thành câu trả lời</p>
-                  </div>
-
-                  {/* Realtime voice visualizer */}
-                  <div className="max-w-md mx-auto">
-                    <AudioVisualizer audioLevel={audioLevel} />
-                  </div>
-
-                  {/* Live transcript text */}
-                  {realtimeTranscript && (
-                    <div className="p-4 bg-sky-50/50 border border-sky-100/50 rounded-2xl max-h-24 overflow-y-auto">
-                      <span className="text-xs font-bold text-[#0ea5e9] uppercase block mb-1">Đang nhận diện:</span>
-                      <p className="text-sm text-gray-600 italic">"{realtimeTranscript}"</p>
-                    </div>
+              {/* Warning Banner nhấp nháy đỏ */}
+              {gazeWarning && (
+                <div className="absolute top-4 left-4 right-4 bg-red-600/90 text-white font-bold px-4 py-3 rounded-2xl text-center text-sm shadow-xl backdrop-blur-md animate-pulse border border-red-500 z-30">
+                  {isFaceDetected ? (
+                    `⚠️ Cảnh báo: Vui lòng tập trung nhìn vào màn hình! (Số lần vi phạm: ${accumulatedGazeViolations})`
+                  ) : (
+                    `⚠️ Cảnh báo: Không phát hiện khuôn mặt ứng viên! (Số lần vi phạm: ${accumulatedGazeViolations})`
                   )}
                 </div>
               )}
 
-              {/* Case 3: Transcribing (loading state) */}
-              {!isAiSpeaking && isTranscribing && (
-                <div className="text-center py-10 space-y-4">
-                  <Loader2 className="w-12 h-12 text-[#0ea5e9] animate-spin mx-auto" />
-                  <p className="text-lg font-bold text-gray-800">AI đang phân tích câu trả lời...</p>
-                  <p className="text-sm text-gray-500">Chuyển âm thanh thành văn bản qua Speech-to-Text</p>
+              {/* Loader Loading Model AI */}
+              {isLoadingModel && (
+                <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center text-center p-4 z-40">
+                  <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mb-3" />
+                  <p className="text-sm font-bold text-white">Đang tải mô hình AI giám sát...</p>
+                  <p className="text-xs text-slate-400">Vui lòng cấp quyền camera và đợi trong giây lát</p>
                 </div>
               )}
 
-              {/* Case 4: Answer transcribing completed */}
-              {!isAiSpeaking && hasRecorded && !isTranscribing && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                    <div>
-                      <h4 className="font-bold text-sm">Ghi âm thành công!</h4>
-                      <p className="text-xs text-emerald-700/80">AI đã chuyển đổi giọng thoại của bạn thành văn bản bên dưới.</p>
-                    </div>
+              {/* Pause Overlay khi mất kết nối Camera */}
+              {!isCameraActive && !isLoadingModel && (
+                <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center text-center p-6 z-40">
+                  <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4 border border-rose-500/20">
+                    <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
                   </div>
+                  <p className="text-lg font-bold text-rose-500 mb-2">Đã tạm dừng phỏng vấn!</p>
+                  <p className="text-sm text-slate-300 max-w-md">
+                    {cameraErrorMessage || "Vui lòng giữ camera luôn kết nối và cấp quyền camera cho trình duyệt để tiếp tục buổi phỏng vấn."}
+                  </p>
+                </div>
+              )}
 
-                  {/* Editable transcription result */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                      Nội dung câu trả lời của bạn
-                    </label>
-                    <textarea
-                      value={finalAnswer}
-                      onChange={(e) => setFinalAnswer(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:border-[#0ea5e9] focus:outline-none text-gray-700 transition-all text-sm leading-relaxed"
-                      rows={5}
-                    />
+              {/* Webcam Video Stream */}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover rounded-3xl transform -scale-x-100 bg-slate-950"
+              />
+
+              {/* Floating Name Badge */}
+              <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-slate-900/80 text-white text-xs font-semibold rounded-full border border-slate-700/50 backdrop-blur-sm z-20">
+                {userDisplayName} (Webcam HD)
+              </div>
+
+              {/* Khung nhỏ Picture-in-Picture cho Avatar 3D phỏng vấn */}
+              <div className="absolute bottom-4 right-4 w-48 h-36 rounded-2xl overflow-hidden border border-sky-500/30 shadow-2xl bg-slate-950 z-20">
+                <Avatar3D volume={aiVolume} isListening={isRecording} emotion={isAiSpeaking ? "happy" : "idle"} />
+                <div className="absolute bottom-1.5 left-2 text-[9px] font-bold text-sky-400 bg-slate-900/90 px-2 py-0.5 rounded-full border border-sky-500/20 shadow z-30">
+                  X Interviewer
+                </div>
+              </div>
+            </div>
+
+            {/* Cột phải: Chatbot Log & Tiến Trình chiếm 1/3 */}
+            <div className="flex-1 lg:flex-[1] bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl p-6 flex flex-col justify-between space-y-6">
+              
+              {/* Tiêu đề & Thông báo */}
+              <div>
+                <div className="text-xs font-bold text-[#0ea5e9] tracking-wider uppercase mb-1">Tiến trình phỏng vấn</div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mb-4">
+                  <div 
+                    className="bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] h-full transition-all duration-300"
+                    style={{ width: `${Math.round(((currentQuestion + 1) / questions.length) * 100)}%` }}
+                  />
+                </div>
+                <div className="p-3 bg-sky-950/30 border border-sky-900/30 rounded-xl text-[10px] text-sky-400 leading-normal">
+                  💡 *Lưu ý:* Để kết quả phân tích đạt chất lượng tốt nhất, vui lòng luôn nhìn thẳng vào camera và trả lời tự nhiên.
+                </div>
+              </div>
+
+              {/* Câu hỏi chatbot box */}
+              <div className="flex-grow flex flex-col justify-center">
+                <div className="bg-slate-950 rounded-2xl p-5 border border-slate-800 shadow-inner space-y-3 relative overflow-hidden">
+                  <div className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">Câu hỏi {currentQuestion + 1}</div>
+                  <h3 className="text-sm font-bold text-white leading-relaxed">{questionText}</h3>
+                </div>
+              </div>
+
+              {/* Logic điều khiển Microphone & Trả lời */}
+              <div className="bg-slate-950 rounded-2xl p-4 border border-slate-800 space-y-4">
+                
+                {/* Case 0: AI is speaking */}
+                {isAiSpeaking && (
+                  <div className="py-4">
+                    <AiWaveform />
+                    <p className="text-[10px] text-center text-sky-400 animate-pulse mt-2">Trợ lý AI đang đọc câu hỏi...</p>
                   </div>
+                )}
 
-                  {/* Action buttons */}
-                  <div className="flex justify-between items-center gap-4">
+                {/* Case 1: Idle state (ready to record) */}
+                {!isAiSpeaking && !isRecording && !isTranscribing && !hasRecorded && (
+                  <div className="text-center py-4 space-y-3">
                     <button
                       onClick={startRecording}
-                      className="px-5 py-2.5 border-2 border-gray-200 hover:border-[#0ea5e9] text-gray-600 hover:text-[#0ea5e9] hover:bg-sky-50/20 rounded-xl transition-all text-sm font-semibold"
+                      disabled={!isCameraActive}
+                      className="w-16 h-16 mx-auto bg-sky-950 hover:bg-sky-900/60 border border-sky-800/50 rounded-full flex items-center justify-center text-[#38bdf8] hover:scale-105 transition-all shadow-lg shadow-sky-950/50 group disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      Ghi âm lại
+                      <Mic className="w-7 h-7 group-hover:scale-115 transition-transform" />
                     </button>
-                    <button
-                      onClick={handleSaveAndNext}
-                      disabled={isSavingAnswer || !finalAnswer.trim()}
-                      className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      {isSavingAnswer && <Loader2 className="w-4 h-4 animate-spin" />}
-                      <span>{currentQuestion < questions.length - 1 ? "Lưu & Tiếp Tục" : "Hoàn Thành"}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <div>
+                      <p className="text-xs font-bold text-white">Nhấp để bắt đầu trả lời</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Hệ thống sẽ ghi âm câu trả lời của bạn</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Case 2: Recording state */}
+                {!isAiSpeaking && isRecording && (
+                  <div className="space-y-4">
+                    <div className="text-center py-2 space-y-2">
+                      <button
+                        onClick={stopRecording}
+                        className="w-16 h-16 mx-auto bg-rose-950/80 hover:bg-rose-900 border border-rose-800 rounded-full flex items-center justify-center text-rose-400 hover:scale-105 transition-all animate-pulse shadow-lg relative"
+                      >
+                        <MicOff className="w-7 h-7" />
+                        <span className="absolute inset-0 rounded-full border-4 border-rose-500/20 animate-ping" />
+                      </button>
+                      <div>
+                        <p className="text-xs font-bold text-rose-400">AI Đang Lắng Nghe...</p>
+                        <p className="text-[10px] text-gray-400">Hãy trình bày câu trả lời. Bấm nút dừng khi xong.</p>
+                      </div>
+                    </div>
+
+                    <div className="max-w-xs mx-auto">
+                      <AudioVisualizer audioLevel={audioLevel} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Case 3: Transcribing */}
+                {!isAiSpeaking && isTranscribing && (
+                  <div className="text-center py-6 space-y-3">
+                    <Loader2 className="w-8 h-8 text-[#0ea5e9] animate-spin mx-auto" />
+                    <div>
+                      <p className="text-xs font-bold text-white">AI đang phân tích câu trả lời...</p>
+                      <p className="text-[10px] text-gray-400">Dịch thuật giọng nói thành văn bản (STT)</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Case 4: Recorded completed */}
+                {!isAiSpeaking && hasRecorded && !isTranscribing && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        Nội dung đã dịch (Có thể chỉnh sửa)
+                      </label>
+                      <textarea
+                        value={finalAnswer}
+                        onChange={(e) => setFinalAnswer(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl focus:border-[#0ea5e9] focus:outline-none text-white transition-all text-xs leading-relaxed"
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="flex justify-between items-center gap-3">
+                      <button
+                        onClick={startRecording}
+                        className="px-4 py-2 border border-slate-800 hover:border-sky-500/40 text-gray-400 hover:text-[#38bdf8] hover:bg-sky-950/20 rounded-xl transition-all text-xs font-semibold"
+                      >
+                        Ghi âm lại
+                      </button>
+                      <button
+                        onClick={handleSaveAndNext}
+                        disabled={isSavingAnswer || !finalAnswer.trim()}
+                        className="flex-1 py-2 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl text-xs font-bold hover:shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        {isSavingAnswer && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        <span>{currentQuestion < questions.length - 1 ? "Lưu & Tiếp Tục" : "Hoàn Thành"}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              </div>
 
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Progress tracker footbar */}

@@ -23,12 +23,31 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 - Module sẽ bao gồm các kỹ năng phỏng vấn như là xin chào, small talk, giao tiếp cơ bản trước khi đi vào phỏng vấn chuyên sâu về kỹ năng, điểm mạnh điểm yếu, câu hỏi chuyên môn, và kết thúc buổi phỏng vấn. Tương tác giữa user và AI sẽ là voice/video (có thể tắt camera).
 - User sẽ đưa CV vào và lựa chọn vị trí muốn ứng tuyển sau đó hệ thống AI sẽ đưa ra danh sách để cho phép user luyện tập phỏng vấn thông qua giọng nói (user và AI sẽ trò chuyện với nhau).
 - Sau khi hoàn tất buổi phỏng vấn với AI thì AI sẽ dựa vào câu trả lời của ứng viên để đánh giá sau đó đưa ra lộ trình luyện tập phỏng vấn và hướng dẫn cách trả lời các câu hỏi phỏng vấn cho ứng viên để có thể trả lời phỏng vấn tốt hơn.
+- [x] Cài đặt thư viện: `socket.io` ở backend và `socket.io-client` ở frontend.
+- [x] Cấu hình HTTP Server và Socket.io ở backend.
+- [x] Viết module `socket.js` quản lý kết nối socket và đẩy thông báo real-time.
+- [x] Thêm email template và hàm gửi email ứng tuyển trong `emailService.js`.
+- [x] Viết Controller và Route cho `applications` (Đơn ứng tuyển).
+- [x] Viết Controller và Route cho `notifications` (Thông báo).
+- [x] Đăng ký các route mới vào backend index.js.
+- [ ] Cài đặt Socket.io-client và tạo `SocketContext.jsx` ở frontend.
 
 ### 3. Triều - Module giao diện và chức năng cho HR đăng bài ứng tuyển
 - HR sẽ đăng bài ứng tuyển lên hệ thống.
 - Hệ thống sẽ dựa vào bài đăng tuyển để đưa ra danh sách các câu hỏi phỏng vấn.
 - HR sẽ xem danh sách các ứng viên và đánh giá.
 - HR sẽ xem danh sách các bài đánh giá CV và chấm điểm CV.
+
+## 🧪 Lát cắt 5: Kiểm thử E2E & Nghiệm thu
+- [x] **Task 5.1**: Kiểm thử thủ công luồng bật webcam, phân tích hướng nhìn, hiển thị Warning đỏ và Pause Overlay khi tắt camera. (Đã tối ưu sửa lỗi nhấp nháy webcam do re-render loop).
+- [x] **Task 5.2**: Kiểm tra API và Database lưu kết quả chấm điểm bị trừ và hiển thị lý do trừ điểm trên HR Dashboard.
+- [x] **Task 5.3**: Chạy lệnh Lint và build ứng dụng frontend để đảm bảo không lỗi:
+  - [x] Chạy `pnpm -C frontend run lint` và sửa hết lỗi lint thành công (0 errors).
+
+## 🛠️ Lát cắt 6: Bổ sung phát hiện trống người & Hiển thị tên (Yêu cầu mới)
+- [x] **Task 6.1**: Cập nhật hook [useGazeTracker.js](file:///c:/Users/ADMIN/Desktop/SWP/MockAI-Interview/frontend/src/hooks/useGazeTracker.js) để trả về thêm state `isFaceDetected`, và khi không có khuôn mặt trong 1.5 giây thì cảnh báo + đếm vi phạm (cooldown 3s) tương tự lúc nhìn lệch.
+- [x] **Task 6.2**: Cập nhật component [InterviewSession.jsx](file:///c:/Users/ADMIN/Desktop/SWP/MockAI-Interview/frontend/src/components/interview/InterviewSession.jsx) lấy tên thật của ứng viên từ `useAuthStore` hiển thị lên badge Webcam, đồng thời đổi nội dung cảnh báo động dựa trên `isFaceDetected`.
+- [x] **Task 6.3**: Tìm, lấy và sao chép tệp mô hình 3D `ready_player_me_male_avatar__vrchatgame_ready.glb` từ thư mục `Downloads` của hệ thống vào thư mục `frontend/public/models/` trong dự án để thay thế robot fallback bằng mô hình avatar 3D người thật hoàn chỉnh.
 
 ### 4. Huy - Module Đánh giá CV, chấm điểm CV và gợi ý chỉnh sửa CV & Blog Cộng đồng
 - User sẽ upload CV lên hệ thống.

@@ -1,5 +1,6 @@
 import db from '../db/knex.js';
 import { generateQuestionsFromGroq, evaluateCandidateAnswer } from './groqService.js';
+import { evaluateCandidateAnswerGemini } from './geminiService.js';
 import { 
   findInterviewWithOwner, 
   insertInterview, 
@@ -76,11 +77,13 @@ export const initInterviewSession = async ({
     question_text: q.question_text,
     expected_answer: q.expected_answer,
     score_weight: q.score_weight || 1,
+    order_index: (index + 1) * 10, // 10, 20, 30, 40, 50, 60, 70, 80
     created_at: new Date(),
     updated_at: new Date()
   }));
 
   const insertedQuestions = await insertQuestions(questionsToInsert);
+  insertedQuestions.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
 
   return {
     ...interview,
@@ -91,7 +94,7 @@ export const initInterviewSession = async ({
 /**
  * Submit candidate's answer for a question, evaluate using Groq, and persist to DB
  */
-export const submitCandidateAnswer = async (questionId, answerText, audioUrl = null) => {
+export const submitCandidateAnswer = async (questionId, answerText, audioUrl = null, gazeViolations = 0) => {
   // 1. Fetch targeted question details via interviewModel
   const question = await findQuestionById(Number(questionId));
 
@@ -99,13 +102,33 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     throw new NotFoundError('Interview question not found');
   }
 
-  // 2. Perform AI evaluation using Groq Qwen 3 32B model
-  console.log('Evaluating candidate answer using Qwen 3 32B...');
-  const evaluation = await evaluateCandidateAnswer(
-    question.question_text,
-    question.expected_answer,
-    answerText.trim()
-  );
+  // 1.5. Determine interview mode
+  const interviewId = question.interview_id;
+  const interview = await db('interviews').where({ id: interviewId }).first();
+  const isHRInterview = interview && interview.job_id != null;
+
+  let evaluation;
+  if (isHRInterview) {
+    console.log(`Skipping Gemini evaluation for HR interview (will bulk evaluate at the end).`);
+    evaluation = { score: null, feedback: null };
+  } else {
+    console.log(`Evaluating candidate answer using Groq...`);
+    evaluation = await evaluateCandidateAnswer(
+      question.question_text,
+      question.expected_answer,
+      answerText.trim()
+    );
+  }
+
+  // Tính toán trừ điểm vi phạm ánh mắt
+  const penalty = Math.min(50, (gazeViolations || 0) * 10);
+  const finalScore = Math.max(0, (evaluation.score || 0) - penalty);
+
+  // Bổ sung phản hồi về vi phạm ánh mắt nếu có
+  let feedback = evaluation.feedback || '';
+  if (gazeViolations > 0) {
+    feedback += `\n\n[Cảnh báo AI]: Phát hiện ${gazeViolations} lần ứng viên nhìn lệch khỏi khung hình phỏng vấn. Điểm số bị trừ ${penalty} điểm.`;
+  }
 
   // 3. Persist to candidate_answers table via interviewModel
   const existingAnswer = await findExistingAnswer(Number(questionId));
@@ -114,8 +137,10 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
   if (existingAnswer) {
     const updateData = {
       answer_text: answerText.trim(),
-      ai_feedback: evaluation.feedback,
-      score: evaluation.score,
+      ai_feedback: feedback,
+      score: finalScore,
+      gaze_violations: gazeViolations,
+      gaze_score_penalty: penalty,
       updated_at: new Date()
     };
     if (audioUrl) {
@@ -127,8 +152,10 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     const insertData = {
       interview_question_id: Number(questionId),
       answer_text: answerText.trim(),
-      ai_feedback: evaluation.feedback,
-      score: evaluation.score,
+      ai_feedback: feedback,
+      score: finalScore,
+      gaze_violations: gazeViolations,
+      gaze_score_penalty: penalty,
       created_at: new Date(),
       updated_at: new Date()
     };
@@ -139,7 +166,46 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     savedAnswer = inserted;
   }
 
-  return savedAnswer;
+  // 4. Dynamic follow-up question logic (only for PRACTICE mode)
+  if (interview && interview.type === 'PRACTICE' && evaluation.is_generic && evaluation.follow_up_question) {
+    // Check total questions count
+    const allQuestions = await db('interview_questions')
+      .where({ interview_id: interviewId })
+      .orderBy('order_index', 'asc');
+
+    if (allQuestions.length < 10) {
+      // Find index of current question in the sorted array
+      const currentIndex = allQuestions.findIndex(q => q.id === question.id);
+      let newOrderIndex;
+      if (currentIndex !== -1 && currentIndex < allQuestions.length - 1) {
+        newOrderIndex = (allQuestions[currentIndex].order_index + allQuestions[currentIndex + 1].order_index) / 2;
+      } else {
+        newOrderIndex = (question.order_index || 0) + 10;
+      }
+
+      const [followUpQuestion] = await db('interview_questions').insert({
+        interview_id: interviewId,
+        question_text: evaluation.follow_up_question.question_text,
+        expected_answer: evaluation.follow_up_question.expected_answer || 'Ứng viên giải thích chi tiết hơn câu trả lời.',
+        score_weight: 1,
+        order_index: newOrderIndex,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning('*');
+
+      console.log(`[Follow-up AI] Created dynamic follow-up question ID ${followUpQuestion.id} with order_index ${newOrderIndex} because candidate's answer was generic.`);
+    }
+  }
+
+  // Fetch updated list of questions sorted by order_index
+  const updatedQuestions = await db('interview_questions')
+    .where({ interview_id: interviewId })
+    .orderBy('order_index', 'asc');
+
+  return {
+    ...savedAnswer,
+    updatedQuestions
+  };
 };
 
 /**

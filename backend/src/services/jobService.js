@@ -1,4 +1,6 @@
 import db from '../db/knex.js';
+import { deleteCache, deleteCachePattern } from '../config/redis.js';
+import { generateCampaignReportFromGemini } from './geminiService.js';
 import { 
   insertJob, 
   insertJobRequirements 
@@ -22,10 +24,15 @@ export const createJob = async ({
   deadline = null,
   detailedRequirements = []
 }) => {
-  return await db.transaction(async (trx) => {
+  // Lấy company_id của HR tuyển dụng từ bảng users để liên kết công ty
+  const hrUser = await db('users').where({ id: hrId }).first();
+  const companyId = hrUser ? hrUser.company_id : null;
+
+  const result = await db.transaction(async (trx) => {
     // 1. Tạo bản ghi tin tuyển dụng trong bảng 'jobs' qua jobModel
     const [newJob] = await insertJob({
       hr_id: hrId,
+      company_id: companyId, // Lưu thông tin công ty của HR
       title,
       description: description || null,
       requirements: requirements || null,
@@ -57,10 +64,19 @@ export const createJob = async ({
     }
 
     return {
-      ...newJob,
-      detailed_requirements: insertedRequirements
+      newJob,
+      insertedRequirements
     };
   });
+
+  // Clear Jobs list cache SAU KHI TRANSACTION ĐÃ COMMIT THÀNH CÔNG
+  // Tránh Race Condition: client khác truy vấn DB cũ và ghi đè cache cũ vào Redis
+  await deleteCachePattern('jobs:list:*');
+
+  return {
+    ...result.newJob,
+    detailed_requirements: result.insertedRequirements
+  };
 };
 
 /**
@@ -211,6 +227,10 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
         .returning('*');
     }
 
+    // Clear cache list and detail of this job
+    await deleteCachePattern('jobs:list:*');
+    await deleteCache(`jobs:detail:${id}`);
+
     return {
       ...updatedJob,
       detailed_requirements: insertedRequirements
@@ -223,6 +243,13 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
  */
 export const deleteJobById = async (id) => {
   const deletedCount = await db('jobs').where({ id }).delete();
+  
+  if (deletedCount > 0) {
+    // Clear cache list and detail of this job
+    await deleteCachePattern('jobs:list:*');
+    await deleteCache(`jobs:detail:${id}`);
+  }
+
   return deletedCount > 0;
 };
 
@@ -234,12 +261,14 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
   const query = db('applications')
     .select(
       'applications.*',
-      'users.full_name as candidate_name',
-      'users.email as candidate_email',
-      'users.phone as candidate_phone',
+      db.raw('COALESCE(applications.candidate_name, users.full_name) as candidate_name'),
+      db.raw('COALESCE(applications.candidate_email, users.email) as candidate_email'),
+      db.raw('COALESCE(applications.candidate_phone, users.phone) as candidate_phone'),
       'users.avatar_url as candidate_avatar',
       'jobs.title as job_title',
-      'cvs.file_url as cv_file_url'
+      'cvs.file_url as cv_file_url',
+      'cvs.ai_feedback as cv_ai_feedback',
+      'cvs.parsed_text as cv_text'
     )
     .join('users', 'applications.candidate_id', 'users.id')
     .join('jobs', 'applications.job_id', 'jobs.id')
@@ -261,6 +290,8 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
  * Cập nhật thông tin chi tiết của hồ sơ ứng tuyển
  */
 export const updateJobApplicationService = async (applicationId, updateData) => {
+  const application = await getApplicationDetailById(applicationId);
+
   const [updatedApplication] = await db('applications')
     .where({ id: applicationId })
     .update({
@@ -273,6 +304,38 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
     })
     .returning('*');
 
+  if (application) {
+    // Check vacancy count to automatically close job if enough candidates are accepted/hired
+    const dbStatus = updateData.status;
+    if (dbStatus === 'ACCEPTED' || dbStatus === 'HIRED') {
+      const jobInfo = await db('jobs').where({ id: application.job_id }).first();
+      if (jobInfo && jobInfo.vacancy_count !== null && jobInfo.vacancy_count > 0) {
+        const acceptedCountRes = await db('applications')
+          .where({ job_id: application.job_id })
+          .whereIn('status', ['ACCEPTED', 'HIRED'])
+          .count('id as count')
+          .first();
+        const acceptedCount = parseInt(acceptedCountRes.count || 0);
+
+        if (acceptedCount >= jobInfo.vacancy_count) {
+          await db('jobs')
+            .where({ id: application.job_id })
+            .update({
+              status: 'CLOSED',
+              updated_at: new Date()
+            });
+          // Invalidate cache for job list and detail since status changed to CLOSED
+          await deleteCachePattern('jobs:list:*');
+          await deleteCache(`jobs:detail:${application.job_id}`);
+          console.log(`[Job Status] Job ID ${application.job_id} ("${jobInfo.title}") has been automatically CLOSED. Accepted count (${acceptedCount}) reached vacancy count (${jobInfo.vacancy_count}).`);
+        }
+      }
+    }
+
+    // Clear HR applications list cache
+    await deleteCachePattern(`applications:hr:${application.job_hr_id}:*`);
+  }
+
   return updatedApplication;
 };
 
@@ -281,9 +344,197 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
  */
 export const getApplicationDetailById = async (applicationId) => {
   return await db('applications')
-    .select('applications.*', 'jobs.hr_id as job_hr_id')
+    .select(
+      'applications.*', 
+      'jobs.hr_id as job_hr_id',
+      'jobs.title as job_title',
+      'users.full_name as candidate_name',
+      'users.email as candidate_email'
+    )
     .join('jobs', 'applications.job_id', 'jobs.id')
+    .join('users', 'applications.candidate_id', 'users.id')
     .where('applications.id', applicationId)
     .first();
+};
+
+/**
+
+ * Lấy danh sách việc làm đã lưu hoặc ID việc làm đã lưu của ứng viên
+ */
+export const getSavedJobsService = async (userId, returnIdsOnly = false) => {
+  if (returnIdsOnly) {
+    const savedJobs = await db('saved_jobs')
+      .where('user_id', userId)
+      .select('job_id');
+    return savedJobs.map(sj => sj.job_id);
+  }
+
+  // Lấy chi tiết việc làm đã lưu
+  const savedJobs = await db('saved_jobs')
+    .join('jobs', 'saved_jobs.job_id', '=', 'jobs.id')
+    .leftJoin('companies', 'jobs.company_id', 'companies.id')
+    .where('saved_jobs.user_id', userId)
+    .select(
+      'jobs.id',
+      'jobs.title',
+      'companies.name as company_name',
+      'companies.logo_url as company_logo',
+      'companies.address as company_address',
+      'jobs.salary_min',
+      'jobs.salary_max',
+      'jobs.salary_currency',
+      'jobs.is_salary_visible',
+      'jobs.experience_level as type',
+      'saved_jobs.created_at as savedDate',
+      'saved_jobs.note'
+    )
+    .orderBy('saved_jobs.created_at', 'desc');
+
+  // Format lại dữ liệu
+  return savedJobs.map(job => ({
+    id: job.id,
+    title: job.title,
+    company: job.company_name || 'Công ty ẩn danh',
+    logo: job.company_logo || '🚀',
+    location: job.company_address || 'Việt Nam',
+    salary: job.is_salary_visible && job.salary_min
+      ? `${(job.salary_min / 1000000).toFixed(0)} - ${(job.salary_max / 1000000).toFixed(0)} triệu ${job.salary_currency}`
+      : 'Thương lượng',
+    type: job.type || 'Không yêu cầu',
+    savedDate: job.savedDate,
+    note: job.note || '',
+    tags: [job.type, job.company_address].filter(Boolean)
+  }));
+};
+
+/**
+ * Bật/Tắt lưu việc làm
+ */
+export const toggleSavedJobService = async (userId, jobId) => {
+  // Check job exists
+  const job = await db('jobs').where({ id: jobId }).first();
+  if (!job) {
+    throw new Error('Không tìm thấy công việc.');
+  }
+
+  const existingSave = await db('saved_jobs')
+    .where({ user_id: userId, job_id: jobId })
+    .first();
+
+  if (existingSave) {
+    await db('saved_jobs').where({ id: existingSave.id }).delete();
+    return { message: 'Đã bỏ lưu việc làm.', isSaved: false };
+  } else {
+    await db('saved_jobs').insert({ user_id: userId, job_id: jobId });
+    return { message: 'Đã lưu việc làm.', isSaved: true };
+  }
+};
+
+/**
+ * Cập nhật ghi chú cho việc làm đã lưu
+ */
+export const updateSavedJobNoteService = async (userId, jobId, note) => {
+  const existingSave = await db('saved_jobs')
+    .where({ user_id: userId, job_id: jobId })
+    .first();
+
+  if (!existingSave) {
+    throw new Error('Công việc này chưa được lưu.');
+  }
+
+  await db('saved_jobs')
+    .where({ id: existingSave.id })
+    .update({ note, updated_at: db.fn.now() });
+};
+
+/**
+ * Tổng hợp toàn bộ dữ liệu ứng viên của 1 Job và gọi Gemini (Boss) để sinh Báo cáo Chiến dịch
+ */
+export const generateJobCampaignReportService = async (jobId, hrId) => {
+  // 1. Kiểm tra Job và quyền
+  const job = await db('jobs').where({ id: jobId }).first();
+  if (!job) throw new Error('Không tìm thấy tin tuyển dụng');
+  if (job.hr_id !== hrId) throw new Error('Bạn không có quyền truy cập tin tuyển dụng này');
+
+  // Lấy chi tiết yêu cầu công việc
+  const requirements = await db('job_requirements').where({ job_id: jobId });
+  const reqText = requirements.map(r => r.requirement_text).join(', ');
+
+  // 2. Lấy danh sách ứng viên đã hoàn thành phỏng vấn (có điểm)
+  const applications = await db('applications')
+    .join('users', 'applications.candidate_id', 'users.id')
+    .select(
+      'applications.id as app_id',
+      'applications.interview_score',
+      'applications.ai_summary',
+      'applications.updated_at',
+      'users.full_name as candidate_name'
+    )
+    .where('applications.job_id', jobId)
+    .whereNotNull('applications.interview_score') // Đã có điểm phỏng vấn
+    .orderBy('applications.interview_score', 'desc');
+
+  if (!applications || applications.length === 0) {
+    throw new Error('Chưa có ứng viên nào hoàn thành phỏng vấn để tổng hợp báo cáo.');
+  }
+
+  // 3. Cache Check
+  let maxAppUpdated = 0;
+  for (const app of applications) {
+    if (app.updated_at) {
+      const appTime = new Date(app.updated_at).getTime();
+      if (appTime > maxAppUpdated) maxAppUpdated = appTime;
+    }
+  }
+  const jobUpdated = job.updated_at ? new Date(job.updated_at).getTime() : 0;
+  const lastChangedAt = Math.max(jobUpdated, maxAppUpdated);
+  const cacheDate = job.campaign_report_updated_at ? new Date(job.campaign_report_updated_at).getTime() : 0;
+
+  if (job.campaign_report_cache && cacheDate >= lastChangedAt) {
+    console.log(`[Cache Hit] Returning cached Campaign Report for Job ${jobId}`);
+    
+    // Nếu data bị lưu nhầm thành string do lỗi trước đó, parse lại
+    let parsedCache = job.campaign_report_cache;
+    if (typeof parsedCache === 'string') {
+      try { parsedCache = JSON.parse(parsedCache); } catch(e) {}
+    }
+
+    return {
+      ...parsedCache,
+      is_cached: true,
+      generated_at: job.campaign_report_updated_at
+    };
+  }
+
+  // 4. Chuẩn bị dữ liệu để đưa cho Gemini Boss
+  const candidatesData = applications.map(app => ({
+    id: app.app_id,
+    name: app.candidate_name,
+    score: app.interview_score,
+    violations: 0, // Violations được tổng hợp ngầm hoặc có thể lấy từ db, tạm để 0 vì đã bị trừ điểm trực tiếp
+    summary: app.ai_summary || 'Không có nhận xét'
+  }));
+
+  // 5. Gọi Gemini
+  console.log(`Generating Boss Campaign Report for Job ${jobId} with ${candidatesData.length} candidates...`);
+  const report = await generateCampaignReportFromGemini({
+    jobTitle: job.title,
+    requirements: job.requirements || reqText,
+    candidatesData
+  });
+
+  // 6. Lưu Cache
+  const generatedDate = new Date();
+  await db('jobs').where({ id: jobId }).update({
+    campaign_report_cache: report,
+    campaign_report_updated_at: generatedDate
+  });
+
+  return {
+    ...report,
+    is_cached: false,
+    generated_at: generatedDate
+  };
+
 };
 

@@ -34,6 +34,13 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState(null); // "jobseeker" | "recruiter"
 
+  // HR Company Details State (Step 3)
+  const [companyName, setCompanyName] = useState("");
+  const [companySize, setCompanySize] = useState("");
+  const [companyIndustry, setCompanyIndustry] = useState("");
+  const [companyCity, setCompanyCity] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+
   // Forgot Password State
   const [forgotEmail, setForgotEmail] = useState("");
 
@@ -62,6 +69,9 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
       if (res.success && res.data) {
         const { token, user } = res.data;
         localStorage.setItem("token", token);
+        if (user.avatar_url && user.avatar_url.includes("googleusercontent.com")) {
+          localStorage.setItem("googleAvatar", user.avatar_url);
+        }
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();
@@ -183,12 +193,23 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await registerApi({ email: regEmail, password: regPassword, fullName, role });
+      const payload = { email: regEmail, password: regPassword, fullName, role };
+      if (role === 'recruiter') {
+        payload.companyDetails = {
+          companyName,
+          companySize,
+          companyIndustry,
+          companyCity,
+          companyAddress
+        };
+      }
+      const res = await registerApi(payload);
       if (res.success) {
         setOtpEmail(regEmail);
         setMode("verify-otp");
         setRegStep(1);
         setFullName(""); setRegEmail(""); setRegPassword(""); setConfirmPassword(""); setRole(null);
+        setCompanyName(""); setCompanySize(""); setCompanyIndustry(""); setCompanyCity(""); setCompanyAddress("");
       } else {
         setErrorMsg(res.error || "Đăng ký thất bại.");
       }
@@ -486,18 +507,20 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
             <div>
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-500">Bước {regStep} / 2</span>
-                  <span className="text-xs font-bold text-[#0ea5e9]">{regStep === 1 ? "Thông tin cá nhân" : "Xác nhận vai trò"}</span>
+                  <span className="text-xs font-medium text-gray-500">Bước {regStep} / {role === "recruiter" ? "3" : "2"}</span>
+                  <span className="text-xs font-bold text-[#0ea5e9]">
+                    {regStep === 1 ? "Thông tin cá nhân" : regStep === 2 ? "Xác nhận vai trò" : "Thông tin công ty"}
+                  </span>
                 </div>
                 <Progress.Root className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <Progress.Indicator
                     className="h-full bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] transition-all duration-500"
-                    style={{ width: `${regStep * 50}%` }}
+                    style={{ width: `${(regStep / (role === "recruiter" ? 3 : 2)) * 100}%` }}
                   />
                 </Progress.Root>
               </div>
 
-              {regStep === 1 ? (
+              {regStep === 1 && (
                 <form onSubmit={handleRegisterNext} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-gray-700">Họ và tên</label>
@@ -548,8 +571,17 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                     <div id="google-signin-btn" className="w-full min-h-[40px] flex justify-center"></div>
                   </div>
                 </form>
-              ) : (
-                <form onSubmit={handleRegister} className="space-y-4">
+              )}
+              
+              {regStep === 2 && (
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (role === "recruiter") {
+                    setRegStep(3);
+                  } else {
+                    handleRegister(e);
+                  }
+                }} className="space-y-4">
                   <p className="text-center text-[13px] font-medium mb-3 text-gray-700">Chọn vai trò của bạn</p>
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <button type="button" onClick={() => setRole("jobseeker")} className={`p-4 border-2 rounded-xl transition-all ${role === "jobseeker" ? "border-[#0ea5e9] bg-sky-50 shadow-sm" : "border-gray-100 hover:border-sky-200"}`}>
@@ -576,6 +608,53 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                       Quay lại
                     </button>
                     <button type="submit" disabled={!role || loading} className="w-2/3 py-3 bg-[#0ea5e9] text-white font-bold rounded-xl hover:bg-[#0284c7] hover:shadow-lg transition-all disabled:opacity-50 text-[13px] shadow-md shadow-sky-100">
+                      {role === "recruiter" ? "Tiếp tục" : (loading ? "Đang xử lý..." : "Hoàn Tất")}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {regStep === 3 && role === "recruiter" && (
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5 text-gray-700">Tên công ty <span className="text-red-500">*</span></label>
+                      <input type="text" placeholder="Ví dụ: Công ty TNHH MockAI" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5 text-gray-700">Quy mô</label>
+                        <select value={companySize} onChange={(e) => setCompanySize(e.target.value)} className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm">
+                          <option value="">Chọn quy mô</option>
+                          <option value="1-10">1-10 nhân viên</option>
+                          <option value="11-50">11-50 nhân viên</option>
+                          <option value="51-200">51-200 nhân viên</option>
+                          <option value="201-500">201-500 nhân viên</option>
+                          <option value="500+">500+ nhân viên</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5 text-gray-700">Ngành nghề</label>
+                        <input type="text" placeholder="CNTT, Tài chính..." value={companyIndustry} onChange={(e) => setCompanyIndustry(e.target.value)} className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5 text-gray-700">Thành phố</label>
+                        <input type="text" placeholder="TP.HCM, Hà Nội..." value={companyCity} onChange={(e) => setCompanyCity(e.target.value)} className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5 text-gray-700">Địa chỉ cụ thể</label>
+                        <input type="text" placeholder="Số 1, Đường X..." value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-4">
+                    <button type="button" onClick={() => setRegStep(2)} className="w-1/3 py-3 border-2 border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-all text-[13px]">
+                      Quay lại
+                    </button>
+                    <button type="submit" disabled={!companyName || loading} className="w-2/3 py-3 bg-[#0ea5e9] text-white font-bold rounded-xl hover:bg-[#0284c7] hover:shadow-lg transition-all disabled:opacity-50 text-[13px] shadow-md shadow-sky-100">
                       {loading ? "Đang xử lý..." : "Hoàn Tất"}
                     </button>
                   </div>

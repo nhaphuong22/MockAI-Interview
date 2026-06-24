@@ -1,6 +1,29 @@
 import { parseCVBuffer, evaluateCV } from '../services/cvService.js';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
+import path from 'path';
+import cloudinary from '../core/cloudinary.js';
+
+/**
+ * Helper: Upload file buffer lên Cloudinary dạng raw
+ */
+const uploadToCloudinary = (fileBuffer, originalName) => {
+  return new Promise((resolve, reject) => {
+    const cleanName = path.parse(originalName).name.replace(/[^a-zA-Z0-9_]/g, '_');
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'image',
+        folder: 'cvs',
+        public_id: `${Date.now()}-${cleanName}`
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    uploadStream.end(fileBuffer);
+  });
+};
 
 /**
  * Upload và bóc tách chữ từ CV PDF
@@ -13,18 +36,29 @@ export const uploadCV = async (req, res) => {
 
     const cvData = await parseCVBuffer(req.file.buffer);
 
+    // Upload buffer lên Cloudinary
+    console.log(`[CV] Đang upload buffer CV của file ${req.file.originalname} lên Cloudinary...`);
+    const cloudinaryResult = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+    const fileUrl = cloudinaryResult.secure_url;
+    console.log(`[CV] Upload Cloudinary thành công! URL: ${fileUrl}`);
+
     return res.status(200).json({
       message: 'Bóc tách CV thành công.',
-      data: cvData
+      data: {
+        ...cvData,
+        fileUrl: fileUrl
+      }
     });
   } catch (error) {
     if (
-      error.message === 'File PDF chứa lượng văn bản quá lớn, không giống một CV thông thường. Vui lòng tải lên CV ngắn gọn hơn!'
+      error.message.includes('không giống một CV thông thường') ||
+      error.message.includes('không hợp lệ hoặc bị hỏng') ||
+      error.message.includes('Không thể trích xuất văn bản')
     ) {
       return res.status(400).json({ message: error.message });
     }
-    console.error('Lỗi khi đọc file CV:', error);
-    return res.status(500).json({ message: 'Đã xảy ra lỗi khi bóc tách file CV.', error: error.message });
+    console.error('Lỗi khi đọc và upload file CV:', error);
+    return res.status(500).json({ message: 'Đã xảy ra lỗi khi tải CV lên Cloudinary.', error: error.message });
   }
 };
 
@@ -33,13 +67,13 @@ export const uploadCV = async (req, res) => {
  */
 export const scoreCV = async (req, res) => {
   try {
-    const { cv_text, job_description } = req.body;
+    const { cv_text, job_title, job_description } = req.body;
     
     if (!cv_text) {
       return res.status(400).json({ message: 'Vui lòng cung cấp nội dung CV (cv_text).' });
     }
 
-    const evaluationData = await evaluateCV(cv_text, job_description);
+    const evaluationData = await evaluateCV(cv_text, job_title, job_description);
 
     return res.status(200).json({
       message: 'Đánh giá CV thành công (Mô phỏng).',

@@ -44,7 +44,7 @@ export const startInterviewSession = async (req, res) => {
  */
 export const submitAnswer = async (req, res) => {
   try {
-    const { questionId, answerText, audioUrl, audio_url } = req.body;
+    const { questionId, answerText, audioUrl, audio_url, gazeViolations, gaze_violations } = req.body;
     
     if (!questionId) {
       return sendError(res, 400, 'questionId is required');
@@ -54,8 +54,9 @@ export const submitAnswer = async (req, res) => {
     }
 
     const actualAudioUrl = audioUrl || audio_url || null;
+    const actualGazeViolations = Number(gazeViolations || gaze_violations || 0);
 
-    const savedAnswer = await submitCandidateAnswer(questionId, answerText, actualAudioUrl);
+    const savedAnswer = await submitCandidateAnswer(questionId, answerText, actualAudioUrl, actualGazeViolations);
 
     return sendResponse(res, 200, {
       message: 'Candidate answer saved and graded successfully',
@@ -66,7 +67,11 @@ export const submitAnswer = async (req, res) => {
     if (error.message === 'Interview question not found') {
       return sendError(res, 404, error.message);
     }
-    console.error('Submit answer error:', error);
+    console.error('submitAnswer error:', error);
+    try {
+      const fs = await import('fs');
+      fs.appendFileSync('ERRORS.md', `\n## [${new Date().toISOString()}] - submitAnswer Error\n- **Error Message**:\n\`\`\`\n${error.stack || error.message}\n\`\`\`\n---\n`);
+    } catch(e) {}
     return sendError(res, 500, 'Failed to save and grade candidate answer');
   }
 };

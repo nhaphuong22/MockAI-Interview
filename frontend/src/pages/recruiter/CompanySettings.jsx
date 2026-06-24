@@ -1,11 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, Mail, Phone, MapPin, Camera, Loader2, Save, Lock } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { updateProfileApi, uploadAvatarApi, changePasswordApi } from "../../api/auth";
 
+const InputField = ({ label, name, icon: Icon, placeholder, value, onChange, type = "text", disabled = false }) => (
+  <div className="space-y-2">
+    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+      <Icon size={16} className="text-[#0ea5e9]" />
+      {label}
+    </label>
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      className={`w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#0ea5e9]/50 focus:border-[#0ea5e9] transition-all ${
+        disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed" : "bg-white dark:bg-[#0f172a] text-gray-900 dark:text-white"
+      }`}
+    />
+  </div>
+);
+
 export function CompanySettings() {
+  const queryClient = useQueryClient();
   const { user, setAuth } = useAuthStore();
   const [formData, setFormData] = useState({
     fullName: "",
@@ -48,6 +69,7 @@ export function CompanySettings() {
     mutationFn: (data) => updateProfileApi(data),
     onSuccess: (response) => {
       setAuth(response.data);
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       setMessage({ type: "success", text: "Cập nhật thông tin cá nhân thành công!" });
       setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     },
@@ -102,25 +124,7 @@ export function CompanySettings() {
     }
   };
 
-  const InputField = ({ label, name, icon: Icon, placeholder, value, onChange, type = "text", disabled = false }) => (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-        <Icon size={16} className="text-[#0ea5e9]" />
-        {label}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={`w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#0ea5e9]/50 focus:border-[#0ea5e9] transition-all ${
-          disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed" : "bg-white dark:bg-[#0f172a] text-gray-900 dark:text-white"
-        }`}
-      />
-    </div>
-  );
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0f1c] py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-500">

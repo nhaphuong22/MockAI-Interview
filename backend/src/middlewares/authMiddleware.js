@@ -60,7 +60,7 @@ export const requireAdmin = (req, res, next) => {
 /**
  * Middleware to authenticate JWT token from request headers (decoded payload only)
  */
-export const authenticateToken = (req, res, next) => {
+export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
 
@@ -70,12 +70,40 @@ export const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
+    
+    // Verify user exists in database to handle re-seeded database scenarios
+    const user = await db('users').where({ id: decoded.id }).first();
+    if (!user) {
+      return sendError(res, 401, 'Tài khoản không tồn tại trên hệ thống');
+    }
+    
     req.user = decoded;
     next();
   } catch (error) {
     console.error('JWT Verification Error:', error);
     return sendError(res, 403, 'Invalid or expired token');
   }
+};
+
+/**
+ * Middleware: Xác thực token tùy chọn (Không chặn nếu thiếu token, chỉ parse nếu có)
+ */
+export const optionalAuthenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token) {
+    try {
+      const decoded = verifyToken(token);
+      const user = await db('users').where({ id: decoded.id }).first();
+      if (user) {
+        req.user = decoded;
+      }
+    } catch (error) {
+      // Bỏ qua lỗi token trong chế độ tùy chọn
+    }
+  }
+  next();
 };
 
 /**

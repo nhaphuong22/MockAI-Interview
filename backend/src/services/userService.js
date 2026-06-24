@@ -1,4 +1,5 @@
 import db from '../db/knex.js';
+import { deleteCachePattern } from '../config/redis.js';
 import bcrypt from 'bcryptjs';
 import { mapRoleToClient, mapRoleToDb, ROLES } from '../data/roles.js';
 import { 
@@ -175,6 +176,9 @@ export const createNewUser = async ({ email, password, full_name, role, phone, a
     return insertedUser;
   });
 
+  // Clear Users list cache
+  await deleteCachePattern('users:list:*');
+
   return {
     id: newUser.id,
     email: newUser.email,
@@ -222,6 +226,9 @@ export const updateUserDetail = async (id, { name, phone, bio, address, dateOfBi
     }
   });
 
+  // Clear Users list cache
+  await deleteCachePattern('users:list:*');
+
   return true;
 };
 
@@ -245,6 +252,9 @@ export const toggleStatus = async (id, adminUserId) => {
     updated_at: new Date()
   });
 
+  // Clear Users list cache
+  await deleteCachePattern('users:list:*');
+
   return newStatus;
 };
 
@@ -262,5 +272,9 @@ export const removeUser = async (id, adminUserId) => {
   }
 
   await deleteUser(id);
+
+  // Clear Users list cache
+  await deleteCachePattern('users:list:*');
+
   return true;
 };

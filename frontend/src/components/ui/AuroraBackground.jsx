@@ -41,7 +41,7 @@ export function AuroraBackground({ children, className }) {
           className="absolute -bottom-[20%] left-[20%] w-[65vw] h-[50vw] max-w-[900px] max-h-[700px] rounded-[100%] bg-[#7dd3fc]/30 blur-[100px] sm:blur-[120px] dark:mix-blend-screen mix-blend-multiply"
         />
       </div>
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 flex-1 flex flex-col">
         {children}
       </div>
     </div>

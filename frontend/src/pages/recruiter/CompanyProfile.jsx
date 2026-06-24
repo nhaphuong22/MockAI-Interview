@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import {
@@ -25,10 +25,41 @@ const COMPANY_SIZE_OPTIONS = [
 ];
 
 const CITY_OPTIONS = [
-  "Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Bình Dương",
-  "Đồng Nai", "Khánh Hòa", "Bắc Ninh", "Quảng Ninh", "Thừa Thiên Huế", "Nghệ An",
-  "Thanh Hóa", "Bà Rịa - Vũng Tàu", "Long An", "Lâm Đồng", "Khác",
-];
+  "Thành phố Hà Nội",
+  "Thành phố Hồ Chí Minh",
+  "Thành phố Hải Phòng",
+  "Thành phố Đà Nẵng",
+  "Thành phố Cần Thơ",
+  "Thành phố Huế",
+  "Tỉnh Cao Bằng",
+  "Tỉnh Điện Biên",
+  "Tỉnh Hà Tĩnh",
+  "Tỉnh Lai Châu",
+  "Tỉnh Lạng Sơn",
+  "Tỉnh Nghệ An",
+  "Tỉnh Quảng Ninh",
+  "Tỉnh Thanh Hóa",
+  "Tỉnh Sơn La",
+  "Tỉnh Tuyên Quang",
+  "Tỉnh Lào Cai",
+  "Tỉnh Thái Nguyên",
+  "Tỉnh Phú Thọ",
+  "Tỉnh Bắc Ninh",
+  "Tỉnh Hưng Yên",
+  "Tỉnh Ninh Bình",
+  "Tỉnh Quảng Trị",
+  "Tỉnh Quảng Ngãi",
+  "Tỉnh Gia Lai",
+  "Tỉnh Khánh Hòa",
+  "Tỉnh Lâm Đồng",
+  "Tỉnh Đắk Lắk",
+  "Tỉnh Đồng Nai",
+  "Tỉnh Tây Ninh",
+  "Tỉnh Vĩnh Long",
+  "Tỉnh Đồng Tháp",
+  "Tỉnh Cà Mau",
+  "Tỉnh An Giang"
+].sort((a, b) => a.localeCompare(b, 'vi'));
 
 // ─── Reusable Sub-components (outside to prevent re-mount on re-render) ────────
 
@@ -97,13 +128,46 @@ export function CompanyProfile() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const toastTimerRef = useRef(null);
+  const [provinces, setProvinces] = useState([]);
 
-  const showToast = (message, type = "success") => {
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProvinces = async () => {
+      try {
+        const response = await fetch("https://provinces.open-api.vn/api/v2/p/");
+        if (response.ok && isMounted) {
+          const data = await response.json();
+          const sortedProvinces = data.map(p => p.name).sort((a, b) => a.localeCompare(b, 'vi'));
+          setProvinces(sortedProvinces);
+        }
+      } catch (error) {
+        console.error("Failed to fetch provinces from API v2:", error);
+      }
+    };
+    fetchProvinces();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const showToast = useCallback((message, type = "success") => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToast({ show: true, message, type });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast((prev) => ({ ...prev, show: false }));
     }, 4000);
-  };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -121,11 +185,6 @@ export function CompanyProfile() {
         contactPhone: user.contact_phone || user.contactPhone || "",
         contactPublic: user.contact_public !== undefined ? user.contact_public : (user.contactPublic !== undefined ? user.contactPublic : true),
       });
-
-      // Nếu chưa có thông tin công ty, mặc định mở form chỉnh sửa
-      if (!companyName) {
-        setIsEditing(true);
-      }
     }
   }, [user]);
 
@@ -155,7 +214,7 @@ export function CompanyProfile() {
     updateProfileMutation.mutate(formData);
   };
 
-  const processFileUpload = async (file) => {
+  const processFileUpload = useCallback(async (file) => {
     if (!file) return;
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -170,11 +229,12 @@ export function CompanyProfile() {
         showToast("Tải logo lên thành công!", "success");
       }
     } catch (error) {
+      console.error(error);
       showToast("Không thể tải ảnh lên. Vui lòng thử lại.", "error");
     } finally {
       setIsUploadingLogo(false);
     }
-  };
+  }, [showToast]);
 
   const handleFileUpload = async (e) => processFileUpload(e.target.files[0]);
 
@@ -190,7 +250,7 @@ export function CompanyProfile() {
     } else {
       showToast("Vui lòng chọn file ảnh (JPG, PNG).", "error");
     }
-  }, []);
+  }, [processFileUpload, showToast]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1c] py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-500 font-inter relative">
@@ -237,7 +297,7 @@ export function CompanyProfile() {
             </div>
           </div>
 
-          {!isEditing && formData.companyName && (
+          {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold rounded-xl hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors"
@@ -384,15 +444,13 @@ export function CompanyProfile() {
               
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-6 mb-6">
                  <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Chỉnh sửa hồ sơ</h2>
-                 {user.company_name && (
-                   <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors font-semibold"
-                   >
-                     <X size={18} /> Hủy bỏ
-                   </button>
-                 )}
+                 <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors font-semibold"
+                 >
+                   <X size={18} /> Hủy bỏ
+                 </button>
               </div>
 
               {/* Logo Upload */}
@@ -458,7 +516,7 @@ export function CompanyProfile() {
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">Địa chỉ trụ sở</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <SelectField label="Tỉnh / Thành phố" name="companyCity" icon={MapPin} options={CITY_OPTIONS} placeholder="-- Chọn tỉnh / thành phố --" value={formData.companyCity} onChange={handleChange} />
+                  <SelectField label="Tỉnh / Thành phố" name="companyCity" icon={MapPin} options={provinces.length > 0 ? provinces : CITY_OPTIONS} placeholder="-- Chọn tỉnh / thành phố --" value={formData.companyCity} onChange={handleChange} />
                   <InputField label="Địa chỉ chi tiết" name="companyAddress" icon={MapPin} placeholder="Số nhà, đường, quận/huyện..." value={formData.companyAddress} onChange={handleChange} />
                 </div>
               </div>
@@ -516,15 +574,13 @@ export function CompanyProfile() {
 
               {/* Submit */}
               <div className="pt-8 mt-4 border-t border-slate-100 dark:border-white/10 flex gap-4">
-                {user.company_name && (
-                   <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="w-1/3 py-4 bg-slate-100 text-slate-700 font-bold text-lg rounded-2xl hover:bg-slate-200 transition-colors"
-                   >
-                     Hủy
-                   </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="w-1/3 py-4 bg-slate-100 text-slate-700 font-bold text-lg rounded-2xl hover:bg-slate-200 transition-colors"
+                >
+                  Hủy
+                </button>
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}

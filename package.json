@@ -2,6 +2,7 @@
   "name": "mockai-interview-root",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@9.15.0",
   "description": "Root management for AI Mock Interview Platform",
   "workspaces": [
     "frontend",

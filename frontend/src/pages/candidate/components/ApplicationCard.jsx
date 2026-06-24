@@ -1,5 +1,5 @@
-import React from "react";
-import { Eye, Calendar } from "lucide-react";
+import { Calendar, Bot } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function ApplicationCard({ app, statusConfig }) {
   const config = statusConfig[app.status] || {
@@ -31,6 +31,15 @@ export function ApplicationCard({ app, statusConfig }) {
                 <span>{config.label.toUpperCase()}</span>
               </div>
             </div>
+
+            {app.rawStatus === 'ai_interview_invited' && (
+              <Link to={`/hr-interview/prep/${app.id}`}>
+                <button className="mt-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border-none">
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>Vào phỏng vấn AI →</span>
+                </button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -38,32 +47,23 @@ export function ApplicationCard({ app, statusConfig }) {
           <div className="relative">
             <div className="flex justify-between items-center mb-6">
               <h4 className="text-sm font-bold dark:text-slate-200 text-gray-900 uppercase tracking-widest">Tiến trình hồ sơ</h4>
-              <button className="text-xs font-bold text-[#0ea5e9] hover:underline flex items-center gap-1">
-                <Eye className="w-3.5 h-3.5" /> Chi tiết
-              </button>
             </div>
             <div className="space-y-6">
               {app.timeline.map((step, index) => (
                 <div key={index} className="relative flex items-center gap-4">
-                  <div className={`z-10 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    step.completed ? "bg-[#0ea5e9] border-[#0ea5e9]" : "dark:bg-[#0f172a] bg-white dark:border-slate-700 border-gray-200"
-                  }`}>
+                  <div className={`z-10 w-4 h-4 rounded-full border-2 flex items-center justify-center ${step.completed ? "bg-[#0ea5e9] border-[#0ea5e9]" : "dark:bg-[#0f172a] bg-white dark:border-slate-700 border-gray-200"
+                    }`}>
                     {step.completed && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                   </div>
                   {index < app.timeline.length - 1 && (
-                    <div className={`absolute left-2 top-4 w-px h-6 ${
-                      step.completed ? "bg-[#0ea5e9]" : "dark:bg-slate-700 bg-gray-100"
-                    }`} />
+                    <div className={`absolute left-2 top-4 w-px h-6 ${step.completed ? "bg-[#0ea5e9]" : "dark:bg-slate-700 bg-gray-100"
+                      }`} />
                   )}
                   <div className="flex-1 flex items-center justify-between">
                     <span className={`text-xs font-bold ${step.completed ? "dark:text-white text-gray-900" : "dark:text-slate-500 text-gray-400"}`}>
                       {step.step}
                     </span>
-                    {step.score && (
-                      <span className="text-[10px] font-bold dark:bg-green-900/20 bg-green-50 dark:text-green-400 text-green-600 px-2 py-0.5 rounded-lg border dark:border-green-800/30 border-green-100">
-                        AI: {step.score}%
-                      </span>
-                    )}
+                    {/* AI Review button removed */}
                   </div>
                 </div>
               ))}

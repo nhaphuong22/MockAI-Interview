@@ -55,7 +55,7 @@ export const loginUser = async (email, password) => {
 /**
  * Register a new user. Sends verification email instead of auto-login.
  */
-export const registerUser = async (email, password, fullName, roleName = 'USER') => {
+export const registerUser = async (email, password, fullName, roleName = 'USER', companyDetails = {}) => {
   const existingUser = await db('users').where({ email }).first();
   if (existingUser) {
     throw new Error('Email already registered');
@@ -76,6 +76,11 @@ export const registerUser = async (email, password, fullName, roleName = 'USER')
         email_verified: false,
         verification_token: verificationToken,
         verification_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        company_name: companyDetails.companyName || null,
+        company_size: companyDetails.companySize || null,
+        company_industry: companyDetails.companyIndustry || null,
+        company_city: companyDetails.companyCity || null,
+        company_address: companyDetails.companyAddress || null,
         created_at: trx.fn.now(),
         updated_at: trx.fn.now(),
       })
@@ -312,8 +317,8 @@ export const loginGoogleUser = async (idToken) => {
           full_name: fullName,
           avatar_url: avatarUrl || null,
           email_verified: true,
-          created_at: new Date(),
-          updated_at: new Date()
+          created_at: trx.fn.now(),
+          updated_at: trx.fn.now()
         })
         .returning('*');
 
@@ -327,8 +332,8 @@ export const loginGoogleUser = async (idToken) => {
       await trx('user_roles').insert({
         user_id: newUser.id,
         role_id: role.id,
-        created_at: new Date(),
-        updated_at: new Date()
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now()
       });
 
       return newUser;
@@ -342,6 +347,18 @@ export const loginGoogleUser = async (idToken) => {
       .first();
     
     roleName = userRole ? userRole.name : 'USER';
+
+    // Update avatar with Google's picture if candidate hasn't uploaded a custom avatar yet
+    if ((!user.avatar_url || user.avatar_url.trim() === "") && avatarUrl) {
+      const [updatedUser] = await db('users')
+        .where({ id: user.id })
+        .update({
+          avatar_url: avatarUrl,
+          updated_at: new Date()
+        })
+        .returning('*');
+      user = updatedUser;
+    }
   }
 
   // 4. Generate JWT
@@ -362,7 +379,7 @@ export const loginGoogleUser = async (idToken) => {
  * @param {object} data
  */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = data;
+  const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = data;
 
   const updateData = {};
   if (fullName !== undefined) updateData.full_name = fullName;
@@ -370,6 +387,7 @@ export const updateUserProfile = async (userId, data) => {
   if (address !== undefined) updateData.address = address;
   if (bio !== undefined) updateData.bio = bio;
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
+  if (isLookingForJob !== undefined) updateData.is_looking_for_job = isLookingForJob;
   if (companyName !== undefined) updateData.company_name = companyName;
   if (companyLogo !== undefined) updateData.company_logo = companyLogo;
   if (companyWebsite !== undefined) updateData.company_website = companyWebsite;
@@ -382,7 +400,7 @@ export const updateUserProfile = async (userId, data) => {
   if (contactPhone !== undefined) updateData.contact_phone = contactPhone;
   if (contactPublic !== undefined) updateData.contact_public = contactPublic;
 
-  updateData.updated_at = new Date();
+  updateData.updated_at = db.fn.now();
 
   const [updatedUser] = await db('users')
     .where({ id: userId })
@@ -397,6 +415,30 @@ export const updateUserProfile = async (userId, data) => {
 
   const { password_hash, verification_token, verification_token_expires_at,
           reset_password_token, reset_password_expires_at, ...userInfo } = updatedUser;
+  userInfo.role = roleName;
+
+  return userInfo;
+};
+
+/**
+ * Fetch user profile information including package name.
+ * @param {number} userId
+ */
+export const getUserProfile = async (userId) => {
+  const user = await db('users')
+    .select('users.*', 'packages.name as package_name')
+    .leftJoin('packages', 'users.package_id', 'packages.id')
+    .where({ 'users.id': userId })
+    .first();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const roleName = await getUserRole(user.id);
+
+  const { password_hash, verification_token, verification_token_expires_at,
+          reset_password_token, reset_password_expires_at, ...userInfo } = user;
   userInfo.role = roleName;
 
   return userInfo;
