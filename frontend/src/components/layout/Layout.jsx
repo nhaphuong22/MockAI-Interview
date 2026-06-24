@@ -90,6 +90,12 @@ export function Layout() {
   });
 
   const currentUser = userProfile || user;
+
+  useEffect(() => {
+    if (userProfile && JSON.stringify(userProfile) !== JSON.stringify(user)) {
+      useAuthStore.getState().setAuth(userProfile);
+    }
+  }, [userProfile, user]);
   const packageName = currentUser?.package_name || (isUserRecruiter ? "STARTER" : "MIỄN PHÍ");
 
   const rawAvatarUrl = currentUser?.avatar_url || currentUser?.avatarUrl || localStorage.getItem("googleAvatar") || "";
