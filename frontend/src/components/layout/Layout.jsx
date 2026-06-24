@@ -447,7 +447,7 @@ export function Layout() {
         </header>
       )}
 
-      <main className={`min-h-[calc(100vh-64px)] ${shouldHideNavbar ? 'pt-0' : (location.pathname === '/' && !isAuthenticated ? 'pt-0' : 'pt-24 md:pt-28')}`}>
+      <main className={`min-h-[calc(100vh-64px)] ${shouldHideNavbar ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28')}`}>
         <Outlet />
       </main>
 

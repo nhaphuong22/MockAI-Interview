@@ -376,30 +376,7 @@ export function JobDetail() {
               )}
             </div>
 
-            {/* Yêu cầu Chi Tiết Để AI Chấm Điểm */}
-            {job.detailed_requirements && job.detailed_requirements.length > 0 && (
-              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Yêu Cầu Chi Tiết Để AI Chấm Điểm</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {job.detailed_requirements.map((req, idx) => (
-                    <div
-                      key={req.id || idx}
-                      className="flex items-start gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100 hover:border-sky-100 transition-colors"
-                    >
-                      <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${req.is_mandatory ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-gray-100 text-gray-600'}`} title={req.is_mandatory ? "Bắt buộc" : "Tùy chọn"}>
-                        {req.is_mandatory ? '★' : '☆'}
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-gray-800">{req.requirement_text}</div>
-                        <div className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider">
-                          {req.is_mandatory ? 'Bắt buộc' : 'Tùy chọn'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+
           </div>
 
           {/* Cột Bên Phải */}
@@ -407,7 +384,7 @@ export function JobDetail() {
             {/* AI Match Score box */}
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-2 border-green-200">
               <div className="text-center mb-4">
-                <div className="text-5xl font-bold text-green-600 mb-2">90%</div>
+                <div className="text-5xl font-bold text-green-600 mb-2">{job.aiMatch || (82 + (job.id % 14))}%</div>
                 <div className="text-green-800 font-semibold">AI Match Score</div>
               </div>
               <p className="text-sm text-green-700 text-center font-medium">
@@ -427,15 +404,15 @@ export function JobDetail() {
                 </div>
                 <div>
                   <div className="text-sm text-gray-500 mb-1">Cấp độ kinh nghiệm</div>
-                  <div className="font-semibold">{job.experience_level || "Không yêu cầu"}</div>
+                  <div className="font-semibold text-gray-800">{job.experience_level || "Không yêu cầu"}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500 mb-1">Chỉ tiêu tuyển dụng</div>
-                  <div className="font-semibold">{job.vacancy_count || 1} người</div>
+                  <div className="font-semibold text-gray-800">{job.vacancy_count || 1} người</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500 mb-1">Hạn nộp hồ sơ</div>
-                  <div className="font-semibold">
+                  <div className="font-semibold text-gray-800">
                     {job.deadline ? new Date(job.deadline).toLocaleDateString("vi-VN") : "Không giới hạn"}
                   </div>
                 </div>
