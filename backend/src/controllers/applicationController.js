@@ -508,3 +508,44 @@ export const updateApplicationStatus = async (req, res) => {
     return sendError(res, 500, 'Lỗi hệ thống khi cập nhật trạng thái đơn tuyển.');
   }
 };
+
+/**
+ * PATCH /api/applications/:id/note
+ * HR saves an internal note for an application (not visible to candidates).
+ */
+export const saveApplicationNote = async (req, res) => {
+  try {
+    const appId = parseInt(req.params.id, 10);
+    const { note } = req.body;
+    const hrId = req.user.id;
+    const role = req.user.role?.toUpperCase();
+
+    if (isNaN(appId)) {
+      return sendError(res, 400, 'ID đơn ứng tuyển không hợp lệ.');
+    }
+
+    // Fetch application and verify HR ownership
+    const app = await db('applications')
+      .join('jobs', 'applications.job_id', 'jobs.id')
+      .select('applications.id', 'jobs.hr_id as job_hr_id')
+      .where('applications.id', appId)
+      .first();
+
+    if (!app) {
+      return sendError(res, 404, 'Không tìm thấy đơn ứng tuyển.');
+    }
+
+    if (app.job_hr_id !== hrId && role !== 'ADMIN') {
+      return sendError(res, 403, 'Bạn không có quyền ghi chú vào đơn ứng tuyển này.');
+    }
+
+    await db('applications')
+      .where({ id: appId })
+      .update({ hr_notes: note ?? null, updated_at: new Date() });
+
+    return sendResponse(res, 200, { id: appId, hr_notes: note }, 'Đã lưu ghi chú thành công.');
+  } catch (error) {
+    console.error('saveApplicationNote error:', error);
+    return sendError(res, 500, 'Lỗi khi lưu ghi chú.');
+  }
+};
