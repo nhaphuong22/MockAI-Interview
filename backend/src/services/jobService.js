@@ -503,6 +503,7 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
 
   // 4. Chuẩn bị dữ liệu để đưa cho Gemini Boss
   const candidatesData = applications.map(app => ({
+    id: app.app_id,
     name: app.candidate_name,
     score: app.interview_score,
     violations: 0, // Violations được tổng hợp ngầm hoặc có thể lấy từ db, tạm để 0 vì đã bị trừ điểm trực tiếp

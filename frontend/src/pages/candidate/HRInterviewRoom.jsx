@@ -229,14 +229,19 @@ const HRInterviewRoom = () => {
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let animationId;
+      let lastAiVolumeTime = 0;
 
-      const checkVolume = () => {
+      const checkVolume = (time = 0) => {
         if (audio.paused || audio.ended) { setAiVolume(0); return; }
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-        const average = sum / dataArray.length;
-        setAiVolume(Math.min(average / 90, 1.0));
+        
+        if (time - lastAiVolumeTime > 100 || time === 0) {
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          const average = sum / dataArray.length;
+          setAiVolume(Math.min(average / 90, 1.0));
+          lastAiVolumeTime = time === 0 ? performance.now() : time;
+        }
         animationId = requestAnimationFrame(checkVolume);
       };
 
@@ -276,14 +281,19 @@ const HRInterviewRoom = () => {
  
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
+      let lastAudioTime = 0;
  
-      const drawVolume = () => {
+      const drawVolume = (time = 0) => {
         if (!analyserRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
-        const avg = sum / bufferLength;
-        setAudioLevel(Math.min(Math.round((avg / 128) * 100), 100));
+        
+        if (time - lastAudioTime > 50 || time === 0) {
+          analyserRef.current.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+          const avg = sum / bufferLength;
+          setAudioLevel(Math.min(Math.round((avg / 128) * 100), 100));
+          lastAudioTime = time === 0 ? performance.now() : time;
+        }
         animationFrameRef.current = requestAnimationFrame(drawVolume);
       };
       drawVolume();

@@ -74,10 +74,32 @@ export function useGazeTracker({
 
         if (active) {
           landmarkerRef.current = landmarker;
-          console.log("MediaPipe Face Landmarker model initialized successfully!");
+          console.log("MediaPipe Face Landmarker model initialized successfully (GPU)!");
         }
       } catch (err) {
-        console.error("Failed to initialize MediaPipe Face Landmarker:", err);
+        console.warn("Failed to initialize with GPU, falling back to CPU:", err);
+        if (!active) return;
+        try {
+          const filesetResolver = await FilesetResolver.forVisionTasks(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
+          );
+          const landmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+            baseOptions: {
+              modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+              delegate: "CPU"
+            },
+            runningMode: "VIDEO",
+            numFaces: 1,
+            outputFaceBlendshapes: false,
+            outputFacialTransformationMatrixes: false
+          });
+          if (active) {
+            landmarkerRef.current = landmarker;
+            console.log("MediaPipe Face Landmarker model initialized successfully (CPU)!");
+          }
+        } catch (cpuErr) {
+          console.error("Failed to initialize MediaPipe Face Landmarker even on CPU:", cpuErr);
+        }
       } finally {
         if (active) setIsLoadingModel(false);
       }
@@ -309,7 +331,7 @@ export function useGazeTracker({
         clearTimeout(violationTimerRef.current);
       }
     };
-  }, [isActive, isCameraActive, isWarningActive]);
+  }, [isActive, isCameraActive, isWarningActive, isLoadingModel]);
 
   const resetViolations = () => {
     setGazeViolations(0);

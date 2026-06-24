@@ -332,13 +332,13 @@ Hãy trả về kết quả định dạng JSON duy nhất, KHÔNG chứa markdo
   "campaign_summary": "Tóm tắt cực kỳ ngắn gọn, đi thẳng vào vấn đề (tối đa 3 câu)...",
   "action_categories": {
     "interview_now": [
-      { "name": "Tên ứng viên", "score": 90, "reason": "Điểm mạnh nhất..." }
+      { "id": "ID_ứng_viên_ở_đây", "name": "Tên ứng viên", "score": 90, "reason": "Điểm mạnh nhất..." }
     ],
     "keep_in_pool": [
-      { "name": "Tên ứng viên", "score": 70, "reason": "Tiềm năng nhưng thiếu..." }
+      { "id": "ID_ứng_viên_ở_đây", "name": "Tên ứng viên", "score": 70, "reason": "Tiềm năng nhưng thiếu..." }
     ],
     "reject_immediately": [
-      { "name": "Tên ứng viên", "score": 65, "reason": "Lý do loại (VD: Gian lận liếc mắt 5 lần)..." }
+      { "id": "ID_ứng_viên_ở_đây", "name": "Tên ứng viên", "score": 65, "reason": "Lý do loại (VD: Gian lận liếc mắt 5 lần)..." }
     ]
   },
   "skill_gap_analysis": "Phân tích nhanh mảng kỹ năng mà đa số ứng viên đang yếu để HR báo cáo lại với Hiring Manager...",
@@ -351,7 +351,7 @@ Hãy trả về kết quả định dạng JSON duy nhất, KHÔNG chứa markdo
 
 - Danh sách Ứng viên:
 ${candidatesData.map((c, i) => `
-[Ứng viên ${i + 1}] Tên: ${c.name}
+[Ứng viên ${i + 1}] ID: ${c.id} | Tên: ${c.name}
 - Điểm: ${c.score}/100
 - Vi phạm quy chế: ${c.violations} lần
 - Nhận xét chi tiết từ AI: ${c.summary}

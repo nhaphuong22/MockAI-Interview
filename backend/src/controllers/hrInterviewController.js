@@ -80,6 +80,10 @@ export const inviteForAIInterview = async (req, res) => {
       .where({ 'applications.id': appId })
       .update({ status: 'AI_INTERVIEW_INVITED', updated_at: new Date() });
 
+    // Xóa cache của HR
+    const { deleteCachePattern } = await import('../config/redis.js');
+    await deleteCachePattern(`applications:hr:${app.job_hr_id}:*`);
+
     // Tạo notification cho ứng viên
     const [notification] = await db('notifications').insert({
       user_id: app.candidate_id,

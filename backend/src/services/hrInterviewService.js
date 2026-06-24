@@ -265,6 +265,13 @@ export const finishHRInterviewSession = async ({ interviewId, userId, totalTabVi
   // 6. Update interview status to COMPLETED
   await db('interviews').where({ id: interviewId }).update({ status: 'COMPLETED', ended_at: new Date() });
 
+  // 7. Clear Redis Cache for HR Applications
+  const jobInfo = await db('jobs').where({ id: interview.job_id }).first();
+  if (jobInfo) {
+    const { deleteCachePattern } = await import('../config/redis.js');
+    await deleteCachePattern(`applications:hr:${jobInfo.hr_id}:*`);
+  }
+
   return { success: true, overallScore };
 };
 

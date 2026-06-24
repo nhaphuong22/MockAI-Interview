@@ -328,7 +328,22 @@ export const getJobApplications = async (req, res) => {
       status
     });
 
-    return sendResponse(res, 200, applications);
+    const formattedApplications = applications.map(app => {
+      let aiFeedback = null;
+      if (app.cv_ai_feedback) {
+        try {
+          aiFeedback = typeof app.cv_ai_feedback === 'string' ? JSON.parse(app.cv_ai_feedback) : app.cv_ai_feedback;
+        } catch (e) {
+          console.error("Lỗi parse cv_ai_feedback:", e);
+        }
+      }
+      return {
+        ...app,
+        aiFeedback
+      };
+    });
+
+    return sendResponse(res, 200, formattedApplications);
   } catch (error) {
     console.error('Lỗi trong jobController.getJobApplications:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi lấy danh sách hồ sơ ứng tuyển.');
