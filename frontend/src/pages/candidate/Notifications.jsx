@@ -112,7 +112,7 @@ export function Notifications() {
   }
 
   return (
-    <div className="bg-gray-50/50 min-h-screen py-10">
+    <div className="dark:bg-transparent bg-gray-50/50 min-h-screen py-10">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>

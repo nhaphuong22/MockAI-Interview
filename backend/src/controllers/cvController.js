@@ -51,8 +51,9 @@ export const uploadCV = async (req, res) => {
     });
   } catch (error) {
     if (
-      error.message === 'File PDF chứa lượng văn bản quá lớn, không giống một CV thông thường. Vui lòng tải lên CV ngắn gọn hơn!' ||
-      error.message === 'File PDF không hợp lệ hoặc bị hỏng. Vui lòng kiểm tra lại định dạng file.'
+      error.message.includes('không giống một CV thông thường') ||
+      error.message.includes('không hợp lệ hoặc bị hỏng') ||
+      error.message.includes('Không thể trích xuất văn bản')
     ) {
       return res.status(400).json({ message: error.message });
     }
@@ -66,13 +67,13 @@ export const uploadCV = async (req, res) => {
  */
 export const scoreCV = async (req, res) => {
   try {
-    const { cv_text, job_description } = req.body;
+    const { cv_text, job_title, job_description } = req.body;
     
     if (!cv_text) {
       return res.status(400).json({ message: 'Vui lòng cung cấp nội dung CV (cv_text).' });
     }
 
-    const evaluationData = await evaluateCV(cv_text, job_description);
+    const evaluationData = await evaluateCV(cv_text, job_title, job_description);
 
     return res.status(200).json({
       message: 'Đánh giá CV thành công (Mô phỏng).',

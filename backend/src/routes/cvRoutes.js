@@ -77,11 +77,13 @@ router.post('/upload', authenticateToken, (req, res, next) => {
  *             type: object
  *             required:
  *               - cv_text
- *               - job_description
  *             properties:
  *               cv_text:
  *                 type: string
  *                 example: "Kinh nghiệm 3 năm làm ReactJS và NodeJS..."
+ *               job_title:
+ *                 type: string
+ *                 example: "Frontend Developer"
  *               job_description:
  *                 type: string
  *                 example: "Tuyển Frontend Developer giỏi React..."

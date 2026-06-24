@@ -119,6 +119,19 @@ export function Layout() {
   const isInterviewRoom = location.pathname.startsWith('/hr-interview');
   const shouldHideNavbar = hideNavbar || isInterviewRoom;
 
+  // Fix dark mode leaking into recruiter/admin dashboard
+  useEffect(() => {
+    if (!isCandidate) {
+      document.documentElement.classList.remove('dark');
+    } else {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, [isCandidate, theme]);
+
   // Xác định base path cho từng role
   const recruiterBase = "/hr/dashboard";
   const administratorBase = "/admin/dashboard";

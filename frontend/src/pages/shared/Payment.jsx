@@ -98,7 +98,7 @@ export function Payment() {
       ...freePlan,
       mappedFeatures: mapFeatures(freePlan),
       cta: "Gói Hiện Tại",
-      ctaStyle: "border-2 border-gray-100 text-gray-400 cursor-not-allowed font-bold"
+      ctaStyle: "border-2 border-gray-100 dark:border-white/10 text-gray-400 cursor-not-allowed font-bold"
     });
   }
 
@@ -161,26 +161,26 @@ export function Payment() {
   }
 
   return (
-    <div className="bg-gray-50/50 py-16">
+    <div className="dark:bg-transparent bg-gray-50/50 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">Chọn Gói Phù Hợp Với Bạn</h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">Chọn Gói Phù Hợp Với Bạn</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
             Nâng cấp để mở khóa tất cả tính năng ưu việt và tối ưu hiệu quả công việc.
           </p>
 
           {/* Chỉ hiển thị toggle tháng/năm nếu có gói năm */}
           {yearlyPlans.length > 0 && (
-            <div className="inline-flex items-center gap-4 bg-white rounded-full p-1.5 border border-gray-200 shadow-sm">
+            <div className="inline-flex items-center gap-4 bg-white dark:bg-slate-800 rounded-full p-1.5 border border-gray-200 dark:border-slate-700 shadow-sm">
               <button 
                 onClick={() => setIsYearly(false)}
-                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${!isYearly ? "bg-[#0ea5e9] text-white" : "text-gray-500 hover:text-gray-900"}`}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${!isYearly ? "bg-[#0ea5e9] text-white" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"}`}
               >
                 Hàng Tháng
               </button>
               <button 
                 onClick={() => setIsYearly(true)}
-                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${isYearly ? "bg-[#0ea5e9] text-white" : "text-gray-500 hover:text-gray-900"}`}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${isYearly ? "bg-[#0ea5e9] text-white" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"}`}
               >
                 Hàng Năm
                 <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] uppercase">
@@ -195,10 +195,10 @@ export function Payment() {
           {displayPlans.map((plan) => (
             <div
               key={plan.id}
-              className={`bg-white rounded-3xl p-8 relative transition-all duration-300 w-full max-w-sm mx-auto ${
+              className={`bg-white dark:bg-slate-800 rounded-3xl p-8 relative transition-all duration-300 w-full max-w-sm mx-auto ${
                 plan.popular
-                  ? "border-2 border-[#0ea5e9] shadow-2xl scale-105 z-10"
-                  : "border border-gray-100 shadow-lg hover:shadow-xl"
+                  ? "border-2 border-[#0ea5e9] shadow-2xl shadow-sky-900/20 scale-105 z-10"
+                  : "border border-gray-100 dark:border-slate-700 shadow-lg hover:shadow-xl dark:shadow-slate-900/50"
               }`}
             >
               {plan.popular && (
@@ -208,18 +208,18 @@ export function Payment() {
               )}
 
               <div className="text-center mb-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{plan.name}</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{plan.name}</h3>
                 <div className="flex items-baseline justify-center gap-1">
                   {!plan.price || plan.price === "0.00" || plan.price === 0 ? (
-                    <span className="text-4xl font-bold text-gray-900">
+                    <span className="text-4xl font-bold text-gray-900 dark:text-white">
                       Miễn Phí
                     </span>
                   ) : (
                     <>
-                      <span className="text-4xl font-bold text-gray-900">
+                      <span className="text-4xl font-bold text-gray-900 dark:text-white">
                         {Number(plan.price).toLocaleString("vi-VN")}
                       </span>
-                      <span className="text-gray-500 font-medium">đ/ {plan.duration_days === 365 ? "năm" : "tháng"}</span>
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">đ/ {plan.duration_days === 365 ? "năm" : "tháng"}</span>
                     </>
                   )}
                 </div>
@@ -229,15 +229,15 @@ export function Payment() {
                 {plan.mappedFeatures.map((feature, index) => (
                   <li key={index} className="flex items-start gap-3">
                     {feature.included ? (
-                      <div className="w-5 h-5 bg-sky-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-5 h-5 bg-sky-100 dark:bg-sky-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         <Check className="w-3.5 h-3.5 text-[#0ea5e9]" />
                       </div>
                     ) : (
-                      <div className="w-5 h-5 bg-gray-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-5 h-5 bg-gray-50 dark:bg-white/5 dark:bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         <X className="w-3.5 h-3.5 text-gray-300" />
                       </div>
                     )}
-                    <span className={`text-sm ${feature.included ? "text-gray-700 font-medium" : "text-gray-400"}`}>
+                    <span className={`text-sm ${feature.included ? "text-gray-700 dark:text-gray-300 font-medium" : "text-gray-400 dark:text-gray-500 dark:text-gray-400"}`}>
                       {feature.text}
                     </span>
                   </li>
@@ -263,19 +263,19 @@ export function Payment() {
         </div>
 
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8 uppercase tracking-widest">Hỗ trợ giải đáp</h2>
+          <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-8 uppercase tracking-widest">Hỗ trợ giải đáp</h2>
           <Accordion.Root type="single" collapsible className="space-y-3">
             {faqs.map((faq, index) => (
               <Accordion.Item
                 key={index}
                 value={`item-${index}`}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden"
               >
-                <Accordion.Trigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-all group outline-none">
-                  <span className="font-bold text-left text-gray-700 group-data-[state=open]:text-[#0ea5e9] transition-colors">{faq.question}</span>
+                <Accordion.Trigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:bg-white/5 dark:hover:bg-slate-700 transition-all group outline-none">
+                  <span className="font-bold text-left text-gray-700 dark:text-gray-300 group-data-[state=open]:text-[#0ea5e9] transition-colors">{faq.question}</span>
                   <ChevronDown className="w-5 h-5 text-gray-400 group-data-[state=open]:rotate-180 group-data-[state=open]:text-[#0ea5e9] transition-all" />
                 </Accordion.Trigger>
-                <Accordion.Content className="px-6 pb-5 text-sm text-gray-600 leading-relaxed animate-in slide-in-from-top-2">
+                <Accordion.Content className="px-6 pb-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed animate-in slide-in-from-top-2">
                   {faq.answer}
                 </Accordion.Content>
               </Accordion.Item>
