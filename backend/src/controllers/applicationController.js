@@ -86,7 +86,7 @@ export const applyJob = async (req, res) => {
     // Gọi Pipeline mới thay vì evaluateCV cũ
     const evaluation = await runHrScreeningPipeline(sanitizedCvText, job, jobRequirements);
 
-    // Xác định trạng thái ban đầu của Application (Rớt vòng knock-out thì REJECTED luôn)
+    // Xác định trạng thái ban đầu của Application dựa trên kết quả Knock-out của AI
     const initialStatus = evaluation.knockout_status === 'REJECTED' ? 'REJECTED' : 'SUBMITTED';
 
     // 3.1. Tạo PDF báo cáo và tải lên Cloudinary
