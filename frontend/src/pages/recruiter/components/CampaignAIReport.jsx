@@ -197,7 +197,7 @@ export function CampaignAIReport({ jobId }) {
                     </div>
                     <p className="text-xs text-gray-600 leading-relaxed flex-1 mb-3">{c.reason}</p>
                     <button
-                      onClick={() => handleAction(c.id, "ACCEPTED")}
+                      onClick={() => handleAction(c.id, "INTERVIEWED")}
                       disabled={updateStatusMutation.isPending}
                       className="mt-auto w-full flex items-center justify-center gap-2 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl text-xs font-bold transition-all border border-emerald-200"
                     >
@@ -232,7 +232,7 @@ export function CampaignAIReport({ jobId }) {
                     </div>
                     <p className="text-xs text-gray-600 leading-relaxed flex-1 mb-3">{c.reason}</p>
                     <button
-                      onClick={() => handleAction(c.id, "SHORTLISTED")}
+                      onClick={() => handleAction(c.id, "REVIEWED")}
                       disabled={updateStatusMutation.isPending}
                       className="mt-auto w-full flex items-center justify-center gap-2 py-2 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-xl text-xs font-bold transition-all border border-amber-200"
                     >
