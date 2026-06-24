@@ -40,14 +40,14 @@ export function ApplicationTracking() {
     if (rawStatus === "submitted" || rawStatus === "reviewing") status = "reviewing";
     else if (rawStatus === "ai_interview_invited") status = "ai_interview_invited";
     else if (rawStatus === "interviewed") status = "interview";
-    else if (rawStatus === "accepted") status = "accepted";
+    else if (rawStatus === "accepted" || rawStatus === "hired") status = "accepted";
     else if (rawStatus === "rejected") status = "rejected";
     // Sinh timeline động dựa trên trạng thái
     const timeline = [
       { step: "Nộp hồ sơ", completed: true, date: new Date(app.appliedDate).toLocaleDateString("vi-VN") },
       { step: "Chờ phản hồi", completed: rawStatus !== "submitted", date: rawStatus !== "submitted" ? new Date(app.appliedDate).toLocaleDateString("vi-VN") : null },
-      { step: "Phỏng vấn Nhà Tuyển Dụng", completed: rawStatus === "interviewed" || rawStatus === "accepted", date: null },
-      { step: "Kết quả cuối cùng", completed: rawStatus === "accepted" || rawStatus === "rejected", date: null },
+      { step: "Phỏng vấn Nhà Tuyển Dụng", completed: ["interviewed", "accepted", "hired"].includes(rawStatus), date: null },
+      { step: "Kết quả cuối cùng", completed: ["accepted", "hired", "rejected"].includes(rawStatus), date: null },
     ];
 
     return {

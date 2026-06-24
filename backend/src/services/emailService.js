@@ -339,13 +339,20 @@ export const sendApplicationStatusUpdateEmail = async (toEmail, candidateName, j
 
   const statusLabel = statusLabels[status] || status;
   const statusColor = statusColors[status] || '#64748b';
-  const loginUrl = `${FRONTEND_URL}/`;
+  
+  let actionUrl = `${FRONTEND_URL}/`;
+  let actionText = '🌐 Đi tới MockAI Interview';
+
+  if (status === 'INTERVIEWED' || status === 'AI_INTERVIEW_INVITED') {
+    actionUrl = `${FRONTEND_URL}/applications`; // Hoặc link trực tiếp vào phòng PV
+    actionText = '🎙 Tham Gia Phỏng Vấn';
+  }
 
   await sendMail({
     from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
     to: toEmail,
     subject: `[${APP_NAME}] Cập nhật trạng thái đơn ứng tuyển - Vị trí ${jobTitle}`,
-    text: `Chào ${candidateName},\n\nHồ sơ ứng tuyển của bạn cho vị trí "${jobTitle}" đã được cập nhật thành: ${statusLabel}.\n\nVui lòng đăng nhập vào hệ thống để xem chi tiết: ${loginUrl}\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    text: `Chào ${candidateName},\n\nHồ sơ ứng tuyển của bạn cho vị trí "${jobTitle}" đã được cập nhật thành: ${statusLabel}.\n\nVui lòng đăng nhập vào hệ thống để xem chi tiết: ${actionUrl}\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
     html: `
       <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #f8fafc; padding: 32px; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 32px;">
@@ -368,8 +375,8 @@ export const sendApplicationStatusUpdateEmail = async (toEmail, candidateName, j
           <p style="color: #64748b; line-height: 1.6; font-size: 14px;">Bạn có thể theo dõi tiến trình ứng tuyển, nhận xét của nhà tuyển dụng hoặc luyện tập phỏng vấn ảo trực tiếp trên hệ thống của chúng tôi.</p>
           
           <div style="text-align: center; margin: 28px 0 8px 0;">
-            <a href="${loginUrl}" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; text-decoration: none; padding: 12px 30px; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
-              🌐 Đi tới MockAI Interview
+            <a href="${actionUrl}" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; text-decoration: none; padding: 12px 30px; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
+              ${actionText}
             </a>
           </div>
         </div>

@@ -15,7 +15,7 @@ import {
   generateJobCampaignReportService
 
 } from '../services/jobService.js';
-import { sendApplicationResultEmail } from '../services/emailService.js';
+import { sendApplicationResultEmail, sendApplicationStatusUpdateEmail } from '../services/emailService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import db from '../db/knex.js';
 import { sendRealtimeNotification } from '../socket.js';
@@ -443,6 +443,18 @@ export const updateJobApplication = async (req, res) => {
         });
       } catch (notiError) {
         console.error('Lỗi khi tạo/gửi thông báo cập nhật trạng thái:', notiError);
+      }
+
+      // Gửi email thông báo trạng thái cập nhật tự động (nếu trạng thái nằm trong danh sách cần gửi)
+      const notifyStatuses = ['INTERVIEWED', 'ACCEPTED', 'REJECTED', 'AI_INTERVIEW_INVITED', 'HIRED'];
+      if (notifyStatuses.includes(finalStatus) && application.candidate_email) {
+        console.log(`[Application] Tự động gửi mail thông báo trạng thái ${finalStatus} tới Candidate: ${application.candidate_email}`);
+        sendApplicationStatusUpdateEmail(
+          application.candidate_email,
+          application.candidate_name || 'Ứng viên',
+          application.job_title,
+          finalStatus
+        ).catch(err => console.error('Lỗi khi tự động gửi email thông báo trạng thái:', err));
       }
     }
 
