@@ -188,9 +188,6 @@ export function Layout() {
                       <Link to={`${recruiterBase}/applications`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/applications`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                         Ứng Viên
                       </Link>
-                      <Link to={`${recruiterBase}/shortlist`} className={`text-sm font-medium transition-colors flex items-center gap-1 ${isActive(`${recruiterBase}/shortlist`) ? 'text-amber-500 font-bold' : 'text-gray-600 hover:text-amber-500'}`}>
-                        ⭐ Chọn Lọc
-                      </Link>
                       <Link to={`${recruiterBase}/analytics`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/analytics`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                         Phân Tích
                       </Link>
