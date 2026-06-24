@@ -18,13 +18,29 @@ axiosClient.interceptors.request.use((config) => {
   return config;
 });
 
+let isSessionExpiredAlertShown = false;
+
 // Interceptor cho response (xử lý lỗi chung)
 axiosClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
     // Xử lý lỗi 401 (Unauthorized) do JWT hết hạn hoặc không hợp lệ
     if (error.response && error.response.status === 401) {
+      // Nếu đã báo lỗi rồi thì không báo nữa để tránh bị đúp 2 lần
+      if (isSessionExpiredAlertShown) {
+        return Promise.reject(error);
+      }
+      
+      const token = localStorage.getItem("token");
+      // Nếu không có token, có nghĩa là người dùng vừa bấm đăng xuất, 
+      // API call nào đó chạy ngầm bị fail 401 thì bỏ qua luôn, không cảnh báo.
+      if (!token) {
+        return Promise.reject(error);
+      }
+
       console.warn("Phiên đăng nhập đã hết hạn hoặc token không hợp lệ.");
+      isSessionExpiredAlertShown = true;
+      
       useAuthStore.getState().logout();
       alert("Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục sử dụng hệ thống!");
       window.location.href = "/";
