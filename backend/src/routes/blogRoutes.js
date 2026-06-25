@@ -212,6 +212,44 @@ router.post('/:id/like', authenticateToken, toggleLike);
 
 /**
  * @swagger
+ * /api/blogs/{id}/react:
+ *   post:
+ *     summary: Thả biểu cảm bài viết (Reaction)
+ *     description: Thả biểu cảm hoặc thay đổi biểu cảm (LIKE, LOVE, HAHA, WOW, SAD, ANGRY) cho bài viết (yêu cầu đăng nhập).
+ *     tags:
+ *       - Community Blog
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài viết
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reaction_type
+ *             properties:
+ *               reaction_type:
+ *                 type: string
+ *                 enum: [LIKE, LOVE, HAHA, WOW, SAD, ANGRY]
+ *                 example: "LOVE"
+ *     responses:
+ *       200:
+ *         description: Thực hiện thành công.
+ *       400:
+ *         description: Loại biểu cảm không hợp lệ.
+ */
+router.post('/:id/react', authenticateToken, toggleLike);
+
+/**
+ * @swagger
  * /api/blogs/{id}/comments:
  *   post:
  *     summary: Đăng bình luận cho bài viết

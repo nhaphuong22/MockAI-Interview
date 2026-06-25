@@ -4,7 +4,7 @@ import {
   getPublishedBlogs as fetchPublishedBlogs, 
   getBlogById as fetchBlogById, 
   getRelatedBlogs as fetchRelatedBlogs,
-  toggleLikeBlog,
+  reactToBlog,
   addBlogComment,
   getBlogComments
 } from '../services/blogService.js';
@@ -145,23 +145,27 @@ export const getBlogById = async (req, res) => {
 };
 
 /**
- * Toggle thích bài viết
+ * Thả biểu cảm bài viết (React)
  */
 export const toggleLike = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    const { reaction_type } = req.body;
 
-    const result = await toggleLikeBlog(Number(id), userId);
+    const result = await reactToBlog(Number(id), userId, reaction_type || 'LIKE');
     return res.status(200).json({
-      message: result.liked ? 'Đã thích bài viết.' : 'Đã bỏ thích bài viết.',
+      message: 'Cập nhật biểu cảm thành công.',
       data: result
     });
   } catch (error) {
     if (error.message === 'Không tìm thấy bài viết.') {
       return res.status(404).json({ message: error.message });
     }
-    console.error('Lỗi khi toggle like bài viết:', error);
+    if (error.message === 'Loại biểu cảm không hợp lệ.') {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Lỗi khi react bài viết:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi tương tác thích.' });
   }
 };

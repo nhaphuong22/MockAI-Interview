@@ -25,6 +25,9 @@ export const blogApi = {
   toggleLikeBlog: (id) => {
     return axiosClient.post(`/blogs/${id}/like`);
   },
+  reactToBlog: (id, reactionType) => {
+    return axiosClient.post(`/blogs/${id}/react`, { reaction_type: reactionType });
+  },
   createComment: (id, content) => {
     return axiosClient.post(`/blogs/${id}/comments`, { content });
   },

@@ -1,9 +1,11 @@
 import React, { useState, useRef } from "react";
-import { TrendingUp, Heart, MessageCircle, Share2, Globe, Send, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Share, Forward, MoreHorizontal, Send, Image as ImageIcon, Smile, X, Edit, Trash2, TrendingUp, Globe, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { blogApi } from "../../../api/blogApi";
 import { useAuthStore } from "../../../store/useAuthStore";
 import { useUiStore } from "../../../store/useUiStore";
+import ReactionButton from "./ReactionButton";
+import ReactionSummary from "./ReactionSummary";
 
 export function PostCard({ post }) {
   const queryClient = useQueryClient();
@@ -49,27 +51,66 @@ export function PostCard({ post }) {
     }
   });
 
-  // TanStack Mutation: Like bài viết
-  const likeMutation = useMutation({
-    mutationFn: () => blogApi.toggleLikeBlog(post.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+  // TanStack Mutation: React bài viết (Optimistic UI)
+  const reactMutation = useMutation({
+    mutationFn: (reactionType) => blogApi.reactToBlog(post.id, reactionType),
+    onMutate: async (newReactionType) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["publishedBlogs"] });
+
+      // Snapshot the previous value
+      const previousBlogs = queryClient.getQueryData(["publishedBlogs"]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["publishedBlogs"], (old) => {
+        if (!old) return old;
+        return old.map(b => {
+          if (b.id === post.id) {
+            let updatedTotal = b.total_reactions || 0;
+            // Nếu trước đó chưa thả gì, thì cộng 1 tổng số
+            if (!b.user_reaction_type) {
+              updatedTotal += 1;
+            } else if (b.user_reaction_type === newReactionType) {
+              // Nếu bấm lại chính cái cũ -> hủy -> trừ 1 tổng số
+              updatedTotal = Math.max(0, updatedTotal - 1);
+            }
+            // Loại biểu cảm hiện tại (null nếu bấm lại chính nó)
+            const updatedReactionType = b.user_reaction_type === newReactionType ? null : newReactionType;
+            return {
+              ...b,
+              total_reactions: updatedTotal,
+              user_reaction_type: updatedReactionType
+            };
+          }
+          return b;
+        });
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousBlogs };
     },
-    onError: (err) => {
+    onError: (err, newReactionType, context) => {
+      // Rollback to the previous value
+      if (context?.previousBlogs) {
+        queryClient.setQueryData(["publishedBlogs"], context.previousBlogs);
+      }
       showToast({ 
-        message: err?.response?.data?.message || "Không thể thực hiện tương tác thích.", 
+        message: err?.response?.data?.message || "Không thể thực hiện tương tác biểu cảm.", 
         type: "error" 
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to sync fully
+      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
     }
   });
 
-  const handleLike = (e) => {
-    e.stopPropagation();
+  const handleReact = (reactionType) => {
     if (!isAuthenticated) {
       showToast({ message: "Yêu cầu đăng nhập để sử dụng tính năng này.", type: "error" });
       return;
     }
-    likeMutation.mutate();
+    reactMutation.mutate(reactionType);
   };
 
   const handleCommentClick = (e) => {
@@ -190,45 +231,40 @@ export function PostCard({ post }) {
       {/* Container thống kê & tương tác (Like, Comment, Share) */}
       <div className="px-6 md:px-8 py-4 bg-gray-50/30 dark:bg-[#090e1a]/20 border-t dark:border-slate-850 border-gray-100/50">
         
-        {/* Stats Line: Hiển thị đếm số lượng */}
-        <div className="flex justify-between items-center text-xs md:text-sm text-gray-400 dark:text-slate-500 pb-3 border-b dark:border-slate-850 border-gray-100/50">
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-[#0ea5e9] flex items-center justify-center shadow-md shadow-sky-100 dark:shadow-none">
-              <Heart className="w-3 h-3 text-white fill-white" />
-            </div>
-            <span className="font-semibold text-gray-600 dark:text-slate-300">{post.likes} lượt thích</span>
-          </div>
-          <div className="hover:underline cursor-pointer font-medium" onClick={handleCommentClick}>
-            {post.comments} bình luận
-          </div>
-        </div>
-
-        {/* Action Buttons: Hàng các nút Like, Comment, Share */}
-        <div className="grid grid-cols-3 gap-2 pt-2 text-sm text-gray-500 dark:text-slate-400 font-bold">
-          <button
-            onClick={handleLike}
-            className={`flex items-center justify-center gap-2.5 py-2.5 rounded-xl hover:bg-sky-50/50 dark:hover:bg-slate-900/50 transition-all cursor-pointer ${
-              post.isLiked ? "text-[#0ea5e9] dark:text-[#38bdf8]" : ""
-            }`}
-          >
-            <Heart className={`w-5 h-5 transition-transform active:scale-125 ${post.isLiked ? "fill-[#0ea5e9] dark:fill-[#38bdf8] text-[#0ea5e9] dark:text-[#38bdf8]" : ""}`} />
-            <span>Thích</span>
-          </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-6 pt-1 text-sm text-gray-500 dark:text-slate-400">
+          <ReactionButton 
+            userReaction={post.user_reaction_type}
+            onReact={handleReact}
+            count={post.total_reactions || 0}
+          />
 
           <button
             onClick={handleCommentClick}
-            className="flex items-center justify-center gap-2.5 py-2.5 rounded-xl hover:bg-sky-50/50 dark:hover:bg-slate-900/50 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-full hover:bg-sky-50/50 dark:hover:bg-slate-800/50 transition-all cursor-pointer text-gray-500 dark:text-slate-400"
           >
-            <MessageCircle className="w-5 h-5" />
-            <span>Bình luận</span>
+            <MessageCircle className="w-5 h-5 stroke-[2px]" />
+            <span className="font-semibold text-[15px]">{post.comments || 0}</span>
           </button>
 
           <button
             onClick={handleShare}
-            className="flex items-center justify-center gap-2.5 py-2.5 rounded-xl hover:bg-sky-50/50 dark:hover:bg-slate-900/50 transition-all cursor-pointer"
+            className="flex items-center justify-center p-2 rounded-full bg-transparent hover:bg-[#F3F4F6] dark:hover:bg-slate-800 transition-all cursor-pointer group"
+            title="Chia sẻ"
           >
-            <Share2 className="w-5 h-5" />
-            <span>Chia sẻ</span>
+            <svg 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="#6B7280" 
+              strokeWidth="2.2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className="group-hover:stroke-[#374151] dark:group-hover:stroke-slate-300 transition-colors"
+            >
+              <path d="M19 12L13 6V9.5C6 9.5 3 15 2 20C4.5 16 8 14.5 13 14.5V18L19 12Z" />
+            </svg>
           </button>
         </div>
 
