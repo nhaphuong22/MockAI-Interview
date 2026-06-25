@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { JobSearchBanner } from "./components/JobSearchBanner";
 import { JobCard } from "./components/JobCard";
+import { CompanyJobCard } from "./components/CompanyJobCard";
 import { AiTeaserSidebar } from "./components/AiTeaserSidebar";
 import { jobApi } from "../../api/jobApi";
 import { useUiStore } from "../../store/useUiStore";
@@ -300,12 +301,30 @@ export function Jobs() {
     return b.aiMatch - a.aiMatch;
   });
 
-  // Client-side Pagination
+  // Group jobs by company
+  const groupedJobsObj = {};
+  sortedJobs.forEach((job) => {
+    const compId = job.company_id || `unknown-${job.company}`;
+    if (!groupedJobsObj[compId]) {
+      groupedJobsObj[compId] = {
+        companyId: compId,
+        companyName: job.company,
+        companyLogo: job.logo,
+        companyLocation: job.location,
+        jobs: []
+      };
+    }
+    groupedJobsObj[compId].jobs.push(job);
+  });
+  const groupedJobsList = Object.values(groupedJobsObj);
+
+  // Client-side Pagination (by company groups)
+  const GROUPS_PER_PAGE = 5;
   const totalJobsCount = sortedJobs.length;
-  const totalPages = Math.ceil(totalJobsCount / JOBS_PER_PAGE);
-  const paginatedJobs = sortedJobs.slice(
-    (currentPage - 1) * JOBS_PER_PAGE,
-    currentPage * JOBS_PER_PAGE
+  const totalPages = Math.ceil(groupedJobsList.length / GROUPS_PER_PAGE);
+  const paginatedGroups = groupedJobsList.slice(
+    (currentPage - 1) * GROUPS_PER_PAGE,
+    currentPage * GROUPS_PER_PAGE
   );
 
   const handleClearFilters = () => {
@@ -388,7 +407,7 @@ export function Jobs() {
                   Thử lại
                 </button>
               </div>
-            ) : paginatedJobs.length === 0 ? (
+            ) : paginatedGroups.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-12 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-2xl min-h-[300px] text-center">
                 <p className="text-gray-500 dark:text-slate-400 font-semibold mb-2">Không tìm thấy công việc nào phù hợp.</p>
                 <button 
@@ -412,20 +431,23 @@ export function Jobs() {
                 }}
               >
                 <AnimatePresence mode="popLayout">
-                  {paginatedJobs.map((job) => (
+                  {paginatedGroups.map((group) => (
                     <motion.div
-                      key={job.id}
+                      key={group.companyId}
                       layout
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <JobCard
-                        job={job}
-                        isSelected={false}
-                        isBookmarked={savedJobIds.includes(job.id)}
-                        onSelect={() => navigate(`/jobs/${job.id}`)}
+                      <CompanyJobCard
+                        companyName={group.companyName}
+                        companyLogo={group.companyLogo}
+                        companyLocation={group.companyLocation}
+                        jobs={group.jobs}
+                        selectedJobId={null} // We don't have a split view in Jobs.jsx, it navigates on click
+                        bookmarked={savedJobIds}
+                        onSelectJob={(id) => navigate(`/jobs/${id}`)}
                         onToggleBookmark={toggleBookmark}
                       />
                     </motion.div>
