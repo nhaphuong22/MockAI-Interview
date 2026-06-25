@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Building2, Globe, Briefcase, Users, FileText, Camera, Loader2, Save,
-  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X
+  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { updateProfileApi, uploadAvatarApi } from "../../api/auth";
+import { companyApi } from "../../api/companyApi";
 import MDEditor from "@uiw/react-md-editor";
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
@@ -130,6 +131,16 @@ export function CompanyProfile() {
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const toastTimerRef = useRef(null);
   const [provinces, setProvinces] = useState([]);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+
+  const { data: followers = [], isLoading: isLoadingFollowers } = useQuery({
+    queryKey: ["company-followers", user?.company_id],
+    queryFn: async () => {
+      const res = await companyApi.getCompanyFollowers(user.company_id);
+      return res.data;
+    },
+    enabled: !!user?.company_id && !isEditing,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -337,13 +348,22 @@ export function CompanyProfile() {
                     <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">
                       {formData.companyName || "Chưa cập nhật tên công ty"}
                     </h2>
-                    {formData.companyIndustry && (
-                      <div className="mt-3">
+                    <div className="mt-3 flex items-center gap-3">
+                      {formData.companyIndustry && (
                         <span className="inline-flex items-center px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-sm rounded-lg">
                           {formData.companyIndustry}
                         </span>
-                      </div>
-                    )}
+                      )}
+                      {user?.company_id && (
+                        <button 
+                          onClick={() => setShowFollowersModal(true)}
+                          className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 text-rose-500 font-semibold text-sm rounded-lg transition-colors border border-rose-100 dark:border-rose-900"
+                        >
+                          <Heart size={16} className="fill-rose-500 text-rose-500" />
+                          <span>{isLoadingFollowers ? "..." : followers.length} người theo dõi</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex flex-wrap gap-y-3 gap-x-6 text-sm font-medium text-slate-600 dark:text-gray-300">
@@ -607,6 +627,82 @@ export function CompanyProfile() {
           )}
         </motion.div>
       </div>
+
+      {/* ── Followers Modal ────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showFollowersModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowFollowersModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl w-full max-w-xl relative z-10 overflow-hidden border border-slate-100 dark:border-white/10 flex flex-col max-h-[85vh]"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-rose-500 fill-rose-500" /> 
+                  Danh sách theo dõi
+                  <span className="bg-rose-100 text-rose-600 text-xs py-0.5 px-2 rounded-full ml-1">
+                    {followers.length}
+                  </span>
+                </h3>
+                <button onClick={() => setShowFollowersModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors bg-white dark:bg-slate-800 p-2 rounded-full shadow-sm">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                {isLoadingFollowers ? (
+                  <div className="flex flex-col items-center justify-center py-10">
+                    <Loader2 className="w-8 h-8 text-sky-500 animate-spin mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400">Đang tải danh sách...</p>
+                  </div>
+                ) : followers.length === 0 ? (
+                  <div className="text-center py-10">
+                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Users className="w-8 h-8 text-slate-300 dark:text-slate-500" />
+                    </div>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">Chưa có ai theo dõi công ty của bạn.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {followers.map((f) => (
+                      <div key={f.id} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div className="w-12 h-12 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center overflow-hidden shrink-0 border border-white dark:border-slate-700 shadow-sm">
+                          {f.avatar_url ? (
+                            <img src={f.avatar_url} alt={f.full_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="font-bold text-sky-600 dark:text-sky-400 text-lg">
+                              {f.full_name?.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-slate-800 dark:text-white truncate">{f.full_name}</h4>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{f.title || "Ứng viên"}</p>
+                          {f.city && (
+                            <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
+                              <MapPin size={12} /> <span className="truncate">{f.city}</span>
+                            </div>
+                          )}
+                        </div>
+                        <a href={`mailto:${f.email}`} className="p-2.5 rounded-full bg-white dark:bg-slate-700 text-sky-500 hover:bg-sky-50 dark:hover:bg-slate-600 transition-colors border border-slate-100 dark:border-transparent shadow-sm">
+                          <Mail size={16} />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

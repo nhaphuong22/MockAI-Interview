@@ -17,8 +17,9 @@ import {
 } from '../services/jobService.js';
 import { sendApplicationResultEmail, sendApplicationStatusUpdateEmail } from '../services/emailService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
-import db from '../db/knex.js';
+import { getCompanyFollowerIds } from '../services/companyService.js';
 import { sendRealtimeNotification } from '../socket.js';
+import db from '../db/knex.js';
 
 /**
  * Đăng tin tuyển dụng mới kèm theo các yêu cầu chi tiết
@@ -112,7 +113,41 @@ export const createNewJob = async (req, res) => {
       detailedRequirements: detailed_requirements || []
     });
 
-    return sendResponse(res, 201, result);
+    // Trả kết quả ngay cho client
+    sendResponse(res, 201, result);
+
+    // Gửi thông báo real-time tới tất cả những ứng viên đang follow công ty này
+    // Dùng setImmediate để chạy bất đồng bộ sau khi response được gửi, không làm chậm request
+    setImmediate(async () => {
+      try {
+        const hr = await db('users').where({ id: hrId }).select('company_id', 'full_name').first();
+        if (hr?.company_id) {
+          const company = await db('companies').where({ id: hr.company_id }).select('name').first();
+          const followerIds = await getCompanyFollowerIds(hr.company_id);
+          
+          for (const followerId of followerIds) {
+            // Lưu thông báo vào cơ sở dữ liệu để xem sau
+            const [savedNotification] = await db('notifications')
+              .insert({
+                user_id: followerId,
+                type: 'NEW_JOB',
+                title: `💼 ${company?.name || 'Công ty'} vừa đăng việc mới!`,
+                content: `Vị trí "${result.title}" vừa được đăng. Ứng tuyển ngay trước khi hết hạn!`,
+                link: `/jobs/${result.id}`,
+                reference_id: result.id,
+                reference_type: 'job'
+              })
+              .returning('*');
+
+            // Gửi qua socket.io
+            sendRealtimeNotification(followerId, savedNotification);
+          }
+          console.log(`[Follow Notify] Đã lưu và gửi thông báo việc mới "${result.title}" tới ${followerIds.length} người theo dõi.`);
+        }
+      } catch (notifyErr) {
+        console.error('[Follow Notify] Lỗi gửi thông báo follow:', notifyErr.message);
+      }
+    });
   } catch (error) {
     console.error('Lỗi trong jobController.createNewJob:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi đăng tin tuyển dụng.');

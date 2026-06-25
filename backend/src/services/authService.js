@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import db from '../db/knex.js';
 import { generateToken } from '../auth/jwt.js';
 import { sendVerificationEmail, sendResetPasswordEmail } from './emailService.js';
+import { deleteCachePattern } from '../config/redis.js';
 
 // ─── Helper ────────────────────────────────────────────────────────────────────
 
@@ -111,6 +112,9 @@ export const registerUser = async (email, password, fullName, roleName = 'USER',
 
   // Send verification email (non-blocking, errors are caught inside service)
   await sendVerificationEmail(email, verificationToken);
+
+  // Clear Users list cache so the admin dashboard immediately sees the new user
+  await deleteCachePattern('users:list:*');
 
   return { message: 'Registration successful. Please check your email to verify your account.' };
 };
@@ -346,6 +350,9 @@ export const loginGoogleUser = async (idToken) => {
 
       return newUser;
     });
+
+    // Clear Users list cache so the admin dashboard immediately sees the new Google user
+    await deleteCachePattern('users:list:*');
   } else {
     // Get existing user's role
     const userRole = await db('user_roles')
