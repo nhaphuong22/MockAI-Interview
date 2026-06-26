@@ -6,7 +6,9 @@ import {
   getRelatedBlogs as fetchRelatedBlogs,
   reactToBlog,
   addBlogComment,
-  getBlogComments
+  getBlogComments,
+  updateBlogComment,
+  deleteBlogComment
 } from '../services/blogService.js';
 import { containsBadWords } from '../helper/badWordsHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -236,5 +238,48 @@ export const getRelatedBlogs = async (req, res) => {
     }
     console.error('Lỗi khi lấy bài viết liên quan:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi tải bài viết liên quan.' });
+  }
+};
+
+/**
+ * Cập nhật bình luận
+ */
+export const updateComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+
+    const updatedComment = await updateBlogComment(commentId, userId, content);
+    return res.status(200).json({
+      message: 'Cập nhật bình luận thành công.',
+      data: updatedComment
+    });
+  } catch (error) {
+    if (error.message === 'Không tìm thấy bình luận.' || error.message === 'Bạn không có quyền chỉnh sửa bình luận này.') {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Lỗi khi cập nhật bình luận:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi cập nhật bình luận.' });
+  }
+};
+
+/**
+ * Xóa bình luận
+ */
+export const deleteComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role; // Assuming role is embedded in req.user
+
+    const result = await deleteBlogComment(commentId, userId, userRole);
+    return res.status(200).json(result);
+  } catch (error) {
+    if (error.message === 'Không tìm thấy bình luận.' || error.message === 'Bạn không có quyền xóa bình luận này.') {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Lỗi khi xóa bình luận:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi xóa bình luận.' });
   }
 };

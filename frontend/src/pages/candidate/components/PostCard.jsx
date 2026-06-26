@@ -6,13 +6,12 @@ import { useAuthStore } from "../../../store/useAuthStore";
 import { useUiStore } from "../../../store/useUiStore";
 import ReactionButton from "./ReactionButton";
 import ReactionSummary from "./ReactionSummary";
+import PostDetailModal from "./PostDetailModal";
 
 export function PostCard({ post }) {
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [commentText, setCommentText] = useState("");
-  const commentInputRef = useRef(null);
 
   const { isAuthenticated, user } = useAuthStore();
   const showToast = useUiStore((state) => state.showToast);
@@ -23,33 +22,6 @@ export function PostCard({ post }) {
   
   // Trích xuất hiển thị: nếu chưa mở rộng thì chỉ hiện 200 ký tự đầu
   const displayExcerpt = isExpanded ? rawExcerpt : (isLongContent ? rawExcerpt.substring(0, 200) + "..." : rawExcerpt);
-
-  // TanStack Query: Lấy danh sách bình luận của bài viết
-  const { data: comments = [], isLoading: isLoadingComments } = useQuery({
-    queryKey: ["blogComments", post.id],
-    queryFn: async () => {
-      const res = await blogApi.getComments(post.id);
-      return res.data || [];
-    },
-    enabled: showComments
-  });
-
-  // TanStack Mutation: Gửi bình luận
-  const commentMutation = useMutation({
-    mutationFn: (content) => blogApi.createComment(post.id, content),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["blogComments", post.id] });
-      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
-      setCommentText("");
-      showToast({ message: "Đăng bình luận thành công.", type: "success" });
-    },
-    onError: (err) => {
-      showToast({ 
-        message: err?.response?.data?.message || "Có lỗi xảy ra khi gửi bình luận.", 
-        type: "error" 
-      });
-    }
-  });
 
   // TanStack Mutation: React bài viết (Optimistic UI)
   const reactMutation = useMutation({
@@ -115,35 +87,10 @@ export function PostCard({ post }) {
 
   const handleCommentClick = (e) => {
     e.stopPropagation();
-    setShowComments(!showComments);
-    setTimeout(() => {
-      if (!showComments && commentInputRef.current) {
-        commentInputRef.current.focus();
-      }
-    }, 100);
+    setShowComments(true); // Re-used state as isModalOpen for simplicity
   };
 
-  const handleShare = (e) => {
-    e.stopPropagation();
-    const shareUrl = `${window.location.origin}/community/post/${post.id}`;
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => {
-        showToast({ message: "Đã sao chép liên kết bài viết vào bộ nhớ tạm!", type: "success" });
-      })
-      .catch(() => {
-        showToast({ message: "Không thể sao chép liên kết.", type: "error" });
-      });
-  };
 
-  const submitComment = (e) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      showToast({ message: "Yêu cầu đăng nhập để sử dụng tính năng này.", type: "error" });
-      return;
-    }
-    if (!commentText.trim()) return;
-    commentMutation.mutate(commentText);
-  };
 
   return (
     <article
@@ -247,109 +194,38 @@ export function PostCard({ post }) {
             <span className="font-semibold text-[15px]">{post.comments || 0}</span>
           </button>
 
-          <button
-            onClick={handleShare}
-            className="flex items-center justify-center p-2 rounded-full bg-transparent hover:bg-[#F3F4F6] dark:hover:bg-slate-800 transition-all cursor-pointer group"
-            title="Chia sẻ"
-          >
-            <svg 
-              width="24" 
-              height="24" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="#6B7280" 
-              strokeWidth="2.2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-              className="group-hover:stroke-[#374151] dark:group-hover:stroke-slate-300 transition-colors"
-            >
-              <path d="M19 12L13 6V9.5C6 9.5 3 15 2 20C4.5 16 8 14.5 13 14.5V18L19 12Z" />
-            </svg>
-          </button>
+
         </div>
 
-        {/* Comments Section: Khu vực bình luận thực tế */}
-        {showComments && (
-          <div className="mt-4 pt-4 border-t dark:border-slate-850 border-gray-100/50 flex flex-col gap-4">
-            
-            {/* Hộp nhập bình luận nhanh */}
-            <form onSubmit={submitComment} className="flex gap-3 items-center">
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-[#0ea5e9] flex items-center justify-center text-white text-sm font-bold border border-sky-100 shrink-0">
-                {isAuthenticated && user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="user avatar" className="w-full h-full object-cover" />
-                ) : (
-                  user?.full_name?.charAt(0) || "👤"
-                )}
-              </div>
-              <div className="flex-1 relative">
-                <input
-                  ref={commentInputRef}
-                  type="text"
-                  placeholder={isAuthenticated ? "Viết bình luận công khai..." : "Đăng nhập để viết bình luận..."}
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  disabled={commentMutation.isPending || !isAuthenticated}
-                  className="w-full pl-5 pr-12 py-2.5 dark:bg-slate-900 bg-gray-100 border-none rounded-2xl dark:text-slate-100 text-gray-800 text-sm focus:ring-2 focus:ring-[#0ea5e9] focus:outline-none transition-all placeholder-gray-400 dark:placeholder-slate-500 font-medium"
-                />
-                <button
-                  type="submit"
-                  disabled={commentMutation.isPending || !commentText.trim() || !isAuthenticated}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0ea5e9] dark:hover:text-[#38bdf8] disabled:opacity-50 disabled:hover:text-gray-400 transition-colors cursor-pointer"
-                >
-                  {commentMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#0ea5e9]" />
-                  ) : (
-                    <Send className="w-4.5 h-4.5" />
-                  )}
-                </button>
-              </div>
-            </form>
-
-            {/* Danh sách bình luận */}
-            <div className="flex flex-col gap-3 mt-2 max-h-72 overflow-y-auto pr-1">
-              {isLoadingComments ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#0ea5e9]" />
-                </div>
-              ) : comments.length > 0 ? (
-                comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3 items-start group">
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-sky-100 to-sky-50 dark:from-sky-950 dark:to-slate-900 flex items-center justify-center border border-sky-100/50 shrink-0 text-sm font-semibold">
-                      {comment.author_avatar ? (
-                        <img src={comment.author_avatar} alt="author avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        comment.author_name?.charAt(0) || "👤"
-                      )}
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                      <div className="dark:bg-slate-900 bg-gray-100 px-4 py-2.5 rounded-2xl max-w-full">
-                        <div className="text-xs font-extrabold dark:text-slate-200 text-gray-900 mb-0.5">
-                          {comment.author_name}
-                        </div>
-                        <p className="text-sm dark:text-slate-350 text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">
-                          {comment.content}
-                        </p>
-                      </div>
-                      <span className="text-[10px] text-gray-400 dark:text-slate-500 pl-3 font-semibold">
-                        {new Date(comment.created_at).toLocaleString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          day: "2-digit",
-                          month: "2-digit"
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                ))
+        {/* Comments Section: Fake input to open modal */}
+        <div className="mt-4 pt-4 border-t dark:border-slate-850 border-gray-100/50 flex flex-col gap-4">
+          <div className="flex gap-3 items-center cursor-pointer" onClick={handleCommentClick}>
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-[#0ea5e9] flex items-center justify-center text-white text-sm font-bold border border-sky-100 shrink-0">
+              {isAuthenticated && user?.avatar_url ? (
+                <img src={user.avatar_url} alt="user avatar" className="w-full h-full object-cover" />
               ) : (
-                <div className="text-center py-4 text-xs text-gray-400 dark:text-slate-500 font-medium">
-                  Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
-                </div>
+                user?.full_name?.charAt(0) || "👤"
               )}
             </div>
+            <div className="flex-1 relative">
+              <div className="w-full pl-5 pr-12 py-2.5 dark:bg-slate-900 bg-gray-100 border-none rounded-2xl dark:text-slate-400 text-gray-500 text-sm font-medium">
+                {isAuthenticated ? "Viết bình luận công khai..." : "Đăng nhập để viết bình luận..."}
+              </div>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <Send className="w-4.5 h-4.5" />
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Detail Modal */}
+      <PostDetailModal 
+        post={post}
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+        onReact={handleReact}
+      />
     </article>
   );
 }

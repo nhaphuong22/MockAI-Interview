@@ -264,3 +264,67 @@ export const getRelatedBlogs = async (id) => {
   const relatedBlogs = await findRelatedBlogs(id, blog.tags || []);
   return relatedBlogs;
 };
+
+/**
+ * Cập nhật bình luận bài viết
+ */
+export const updateBlogComment = async (commentId, userId, content) => {
+  if (!content || content.trim().length === 0) {
+    throw new Error('Nội dung bình luận không được để trống.');
+  }
+
+  const comment = await db('blog_comments').where({ id: commentId }).first();
+  if (!comment) {
+    throw new NotFoundError('Không tìm thấy bình luận.');
+  }
+
+  if (comment.user_id !== userId) {
+    throw new Error('Bạn không có quyền chỉnh sửa bình luận này.');
+  }
+
+  await db('blog_comments')
+    .where({ id: commentId })
+    .update({ 
+      content: content.trim(),
+      updated_at: new Date()
+    });
+
+  const updatedComment = await db('blog_comments')
+    .join('users', 'blog_comments.user_id', '=', 'users.id')
+    .where('blog_comments.id', commentId)
+    .select(
+      'blog_comments.*',
+      'users.full_name as author_name',
+      'users.avatar_url as author_avatar'
+    )
+    .first();
+
+  // Clear cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${comment.blog_id}`);
+
+  return updatedComment;
+};
+
+/**
+ * Xóa bình luận bài viết
+ */
+export const deleteBlogComment = async (commentId, userId, userRole) => {
+  const comment = await db('blog_comments').where({ id: commentId }).first();
+  if (!comment) {
+    throw new NotFoundError('Không tìm thấy bình luận.');
+  }
+
+  // Admin có quyền xóa bình luận của mọi người, user thường chỉ được xóa của chính mình
+  if (comment.user_id !== userId && userRole !== 'ADMIN') {
+    throw new Error('Bạn không có quyền xóa bình luận này.');
+  }
+
+  await db('blog_comments').where({ id: commentId }).del();
+
+  // Clear cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${comment.blog_id}`);
+
+  return { message: 'Xóa bình luận thành công.' };
+};

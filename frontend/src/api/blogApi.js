@@ -33,5 +33,11 @@ export const blogApi = {
   },
   getComments: (id) => {
     return axiosClient.get(`/blogs/${id}/comments`);
+  },
+  updateComment: (commentId, content) => {
+    return axiosClient.put(`/blogs/comments/${commentId}`, { content });
+  },
+  deleteComment: (commentId) => {
+    return axiosClient.delete(`/blogs/comments/${commentId}`);
   }
 };
