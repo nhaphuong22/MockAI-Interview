@@ -107,3 +107,17 @@ export const updateProfileApi = async (data) => {
 export const getProfileApi = async () => {
   return axiosClient.get("/auth/profile");
 };
+
+// ─── Company OTP ────────────────────────────────────────────────────────
+
+export const requestCompanyEmailOtpApi = async (data) => {
+  return axiosClient.post("/auth/company/request-otp", data);
+};
+
+export const verifyCompanyEmailOtpApi = async (data) => {
+  return axiosClient.post("/auth/company/verify-otp", data);
+};
+
+export const resendCompanyEmailOtpApi = async (data) => {
+  return axiosClient.post("/auth/company/resend-otp", data);
+};

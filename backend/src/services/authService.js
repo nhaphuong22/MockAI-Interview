@@ -2,8 +2,10 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import db from '../db/knex.js';
 import { generateToken } from '../auth/jwt.js';
-import { sendVerificationEmail, sendResetPasswordEmail } from './emailService.js';
+
+import { sendVerificationEmail, sendResetPasswordEmail, sendCompanyEmailOtp } from './emailService.js';
 import { deleteCachePattern } from '../config/redis.js';
+
 
 // ─── Helper ────────────────────────────────────────────────────────────────────
 
@@ -394,7 +396,7 @@ export const loginGoogleUser = async (idToken) => {
  * @param {object} data
  */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = data;
+  const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactPhone, contactPublic } = data;
 
   const updateData = {};
   if (fullName !== undefined) updateData.full_name = fullName;
@@ -403,7 +405,6 @@ export const updateUserProfile = async (userId, data) => {
   if (bio !== undefined) updateData.bio = bio;
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
   if (isLookingForJob !== undefined) updateData.is_looking_for_job = isLookingForJob;
-  if (contactEmail !== undefined) updateData.contact_email = contactEmail;
   if (contactPhone !== undefined) updateData.contact_phone = contactPhone;
   if (contactPublic !== undefined) updateData.contact_public = contactPublic;
 
@@ -484,4 +485,138 @@ export const getUserProfile = async (userId) => {
   userInfo.role = roleName;
 
   return userInfo;
+};
+
+// ─── Company Email OTP ────────────────────────────────────────────────────────
+
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+export const requestCompanyEmailOtp = async (userId, contactEmail, companyData) => {
+  if (!contactEmail) throw new Error('Vui lòng cung cấp email liên hệ');
+
+  // Check if contactEmail is already used by another user
+  const emailExists = await db('users')
+    .where(function() {
+      this.where('email', contactEmail).orWhere('contact_email', contactEmail);
+    })
+    .andWhere('id', '!=', userId)
+    .first();
+
+  if (emailExists) {
+    throw new Error('Email này đã được sử dụng bởi một tài khoản hoặc công ty khác');
+  }
+
+  const existing = await db('company_email_otps').where({ user_id: userId }).first();
+  if (existing) {
+    const diffInSeconds = (new Date() - new Date(existing.updated_at)) / 1000;
+    if (diffInSeconds < 60) {
+      throw new Error(`Vui lòng đợi ${Math.ceil(60 - diffInSeconds)} giây trước khi yêu cầu mã mới`);
+    }
+  }
+
+  const otp = generateOtp();
+  const otpHash = await bcrypt.hash(otp, 10);
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+  if (existing) {
+    await db('company_email_otps').where({ user_id: userId }).update({
+      email: contactEmail,
+      otp_hash: otpHash,
+      pending_data: companyData,
+      attempts: 0,
+      expires_at: expiresAt,
+      updated_at: new Date()
+    });
+  } else {
+    await db('company_email_otps').insert({
+      user_id: userId,
+      email: contactEmail,
+      otp_hash: otpHash,
+      pending_data: companyData,
+      attempts: 0,
+      expires_at: expiresAt,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+  }
+
+  await sendCompanyEmailOtp(contactEmail, otp);
+  return { message: 'OTP đã được gửi đến email của bạn' };
+};
+
+export const verifyCompanyEmailOtp = async (userId, contactEmail, otp) => {
+  const otpRecord = await db('company_email_otps').where({ user_id: userId, email: contactEmail }).first();
+  if (!otpRecord) throw new Error('Không tìm thấy yêu cầu xác thực OTP nào');
+
+  if (new Date() > new Date(otpRecord.expires_at)) {
+    throw new Error('Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.');
+  }
+
+  if (otpRecord.attempts >= 5) {
+    throw new Error('Bạn đã nhập sai quá 5 lần. Vui lòng gửi lại mã mới.');
+  }
+
+  const isMatch = await bcrypt.compare(otp, otpRecord.otp_hash);
+  if (!isMatch) {
+    await db('company_email_otps').where({ id: otpRecord.id }).increment('attempts', 1);
+    throw new Error('Mã OTP không hợp lệ');
+  }
+
+  // OTP is correct. Update profile using pending_data
+  let pendingData = typeof otpRecord.pending_data === 'string' ? JSON.parse(otpRecord.pending_data) : otpRecord.pending_data;
+  if (typeof pendingData === 'string') {
+    pendingData = JSON.parse(pendingData);
+  }
+
+  // Double check if contactEmail is still not used by someone else
+  const emailExists = await db('users')
+    .where(function() {
+      this.where('email', contactEmail).orWhere('contact_email', contactEmail);
+    })
+    .andWhere('id', '!=', userId)
+    .first();
+
+  if (emailExists) {
+    throw new Error('Email này đã được sử dụng bởi một tài khoản hoặc công ty khác');
+  }
+
+  // Call updateUserProfile to actually save the other data
+  await updateUserProfile(userId, pendingData);
+
+  // Update contact email and mark as verified
+  await db('users').where({ id: userId }).update({
+    contact_email: pendingData.contactEmail || contactEmail,
+    contact_email_verified: true
+  });
+
+  // Delete OTP record
+  await db('company_email_otps').where({ id: otpRecord.id }).del();
+
+  const user = await getUserProfile(userId);
+  return user;
+};
+
+export const resendCompanyEmailOtp = async (userId, contactEmail) => {
+  const otpRecord = await db('company_email_otps').where({ user_id: userId, email: contactEmail }).first();
+  if (!otpRecord) throw new Error('Không có yêu cầu xác thực OTP nào cần gửi lại');
+
+  // Check 60s cooldown
+  const diffInSeconds = (new Date() - new Date(otpRecord.updated_at)) / 1000;
+  if (diffInSeconds < 60) {
+    throw new Error(`Vui lòng đợi ${Math.ceil(60 - diffInSeconds)} giây trước khi gửi lại`);
+  }
+
+  const otp = generateOtp();
+  const otpHash = await bcrypt.hash(otp, 10);
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+  await db('company_email_otps').where({ id: otpRecord.id }).update({
+    otp_hash: otpHash,
+    attempts: 0,
+    expires_at: expiresAt,
+    updated_at: new Date()
+  });
+
+  await sendCompanyEmailOtp(contactEmail, otp);
+  return { message: 'OTP đã được gửi lại' };
 };

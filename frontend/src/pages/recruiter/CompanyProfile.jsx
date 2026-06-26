@@ -6,7 +6,9 @@ import {
   MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
-import { updateProfileApi, uploadAvatarApi } from "../../api/auth";
+
+import { updateProfileApi, uploadAvatarApi, requestCompanyEmailOtpApi, verifyCompanyEmailOtpApi, resendCompanyEmailOtpApi } from "../../api/auth";
+
 import { companyApi } from "../../api/companyApi";
 import MDEditor from "@uiw/react-md-editor";
 
@@ -131,6 +133,12 @@ export function CompanyProfile() {
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const toastTimerRef = useRef(null);
   const [provinces, setProvinces] = useState([]);
+
+  
+  // OTP States
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpCountdown, setOtpCountdown] = useState(0);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
 
   const { data: followers = [], isLoading: isLoadingFollowers } = useQuery({
@@ -141,6 +149,7 @@ export function CompanyProfile() {
     },
     enabled: !!user?.company_id && !isEditing,
   });
+
 
   useEffect(() => {
     let isMounted = true;
@@ -181,9 +190,16 @@ export function CompanyProfile() {
   }, []);
 
   useEffect(() => {
+    let timer;
+    if (otpCountdown > 0) {
+      timer = setTimeout(() => setOtpCountdown((c) => c - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpCountdown]);
+
+  useEffect(() => {
     if (user) {
       const companyName = user.company_name || user.companyName || "";
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         companyName,
         companyLogo: user.company_logo || user.companyLogo || "",
@@ -213,8 +229,44 @@ export function CompanyProfile() {
       setIsEditing(false); // Lưu thành công thì chuyển về chế độ View
     },
     onError: (error) => {
-      showToast(error?.response?.data?.message || "Đã xảy ra lỗi khi cập nhật hồ sơ.", "error");
+      showToast(error?.response?.data?.error || error?.response?.data?.message || "Đã xảy ra lỗi khi cập nhật hồ sơ.", "error");
     },
+  });
+
+  const requestOtpMutation = useMutation({
+    mutationFn: (data) => requestCompanyEmailOtpApi(data),
+    onSuccess: () => {
+      setShowOtpModal(true);
+      setOtpCountdown(60);
+      setOtpValue("");
+    },
+    onError: (error) => {
+      showToast(error?.response?.data?.error || error?.response?.data?.message || "Lỗi gửi OTP.", "error");
+    }
+  });
+
+  const verifyOtpMutation = useMutation({
+    mutationFn: (data) => verifyCompanyEmailOtpApi(data),
+    onSuccess: (response) => {
+      setAuth(response.data);
+      showToast("Cập nhật hồ sơ công ty thành công!", "success");
+      setIsEditing(false);
+      setShowOtpModal(false);
+    },
+    onError: (error) => {
+      showToast(error?.response?.data?.error || error?.response?.data?.message || "Mã OTP không hợp lệ.", "error");
+    }
+  });
+
+  const resendOtpMutation = useMutation({
+    mutationFn: (data) => resendCompanyEmailOtpApi(data),
+    onSuccess: () => {
+      setOtpCountdown(60);
+      showToast("Đã gửi lại OTP thành công.", "success");
+    },
+    onError: (error) => {
+      showToast(error?.response?.data?.error || error?.response?.data?.message || "Lỗi gửi lại OTP.", "error");
+    }
   });
 
   const handleSubmit = (e) => {
@@ -223,7 +275,19 @@ export function CompanyProfile() {
       showToast("Vui lòng nhập tên công ty.", "error");
       return;
     }
-    updateProfileMutation.mutate(formData);
+    if (!formData.contactEmail.trim()) {
+      showToast("Vui lòng nhập email liên hệ.", "error");
+      return;
+    }
+    
+    const originalEmail = user.contact_email || user.contactEmail || "";
+    const isVerified = user.contact_email_verified === true || user.contactEmailVerified === true;
+    
+    if (formData.contactEmail !== originalEmail || !isVerified) {
+      requestOtpMutation.mutate({ contactEmail: formData.contactEmail, companyData: formData });
+    } else {
+      updateProfileMutation.mutate(formData);
+    }
   };
 
   const processFileUpload = useCallback(async (file) => {
@@ -606,13 +670,13 @@ export function CompanyProfile() {
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   type="submit"
-                  disabled={updateProfileMutation.isPending}
+                  disabled={requestOtpMutation.isPending || updateProfileMutation.isPending}
                   className="flex-1 py-4 bg-sky-500 text-white font-bold text-lg rounded-2xl shadow-[0_4px_14px_0_rgba(14,165,233,0.39)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.23)] hover:bg-sky-400 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  {updateProfileMutation.isPending ? (
+                  {requestOtpMutation.isPending || updateProfileMutation.isPending ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Đang lưu...
+                      Đang xử lý...
                     </>
                   ) : (
                     <>
@@ -627,6 +691,116 @@ export function CompanyProfile() {
           )}
         </motion.div>
       </div>
+
+
+      {/* OTP Modal */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-2xl"
+            >
+              <button 
+                onClick={() => setShowOtpModal(false)}
+                disabled={verifyOtpMutation.isPending}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-sky-100 dark:bg-sky-900/30 text-sky-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Mail size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Xác Thực Email</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Mã OTP 6 số đã được gửi tới email<br/>
+                  <strong className="text-slate-700 dark:text-slate-300">{formData.contactEmail}</strong>
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex justify-center gap-2 sm:gap-3">
+                  {[...Array(6)].map((_, index) => (
+                    <input
+                      key={index}
+                      id={`otp-input-${index}`}
+                      type="text"
+                      maxLength={2}
+                      value={otpValue[index] || ''}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                        if (pastedData) {
+                          setOtpValue(pastedData);
+                          const focusIndex = Math.min(pastedData.length, 5);
+                          document.getElementById(`otp-input-${focusIndex}`)?.focus();
+                        }
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        if (val) {
+                          const newOtp = otpValue.split('');
+                          newOtp[index] = val.slice(-1);
+                          setOtpValue(newOtp.join('').slice(0, 6));
+                          if (index < 5) document.getElementById(`otp-input-${index + 1}`)?.focus();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Backspace') {
+                          const newOtp = otpValue.split('');
+                          if (!newOtp[index] && index > 0) {
+                            document.getElementById(`otp-input-${index - 1}`)?.focus();
+                            newOtp[index - 1] = '';
+                          } else {
+                            newOtp[index] = '';
+                          }
+                          setOtpValue(newOtp.join(''));
+                        } else if (e.key === 'ArrowLeft' && index > 0) {
+                          document.getElementById(`otp-input-${index - 1}`)?.focus();
+                        } else if (e.key === 'ArrowRight' && index < 5) {
+                          document.getElementById(`otp-input-${index + 1}`)?.focus();
+                        }
+                      }}
+                      className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-sky-500/20 focus:border-sky-500 outline-none transition-all dark:text-white shadow-inner"
+                    />
+                  ))}
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => verifyOtpMutation.mutate({ contactEmail: formData.contactEmail, otp: otpValue })}
+                  disabled={otpValue.length !== 6 || verifyOtpMutation.isPending}
+                  className="w-full py-4 bg-sky-500 text-white font-bold text-lg rounded-2xl shadow-[0_4px_14px_0_rgba(14,165,233,0.39)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.23)] hover:bg-sky-400 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {verifyOtpMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                  {verifyOtpMutation.isPending ? "Đang xác thực..." : "Xác Nhận OTP"}
+                </motion.button>
+                
+                <div className="text-center">
+                  <button 
+                    onClick={() => resendOtpMutation.mutate({ contactEmail: formData.contactEmail })}
+                    disabled={otpCountdown > 0 || resendOtpMutation.isPending}
+                    className="text-sm font-medium text-slate-500 hover:text-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {resendOtpMutation.isPending ? "Đang gửi lại..." : (otpCountdown > 0 ? `Gửi lại mã sau ${otpCountdown}s` : "Gửi lại mã OTP")}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Followers Modal ────────────────────────────────────────────── */}
       <AnimatePresence>

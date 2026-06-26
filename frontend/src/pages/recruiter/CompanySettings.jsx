@@ -46,7 +46,6 @@ export function CompanySettings() {
 
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         fullName: user.full_name || user.fullName || "",
         phone: user.phone || "",

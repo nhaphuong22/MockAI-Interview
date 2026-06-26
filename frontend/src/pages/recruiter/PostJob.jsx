@@ -27,7 +27,6 @@ export function PostJob() {
 
   useEffect(() => {
     if (verifyData?.status) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVerificationStatus(verifyData.status);
     }
   }, [verifyData]);

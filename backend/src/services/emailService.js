@@ -386,3 +386,41 @@ export const sendApplicationStatusUpdateEmail = async (toEmail, candidateName, j
   });
 };
 
+/**
+ * Gửi email chứa mã OTP để xác thực email liên hệ của công ty
+ * @param {string} toEmail - Email đích
+ * @param {string} otp - Mã OTP 6 số
+ */
+export const sendCompanyEmailOtp = async (toEmail, otp) => {
+  await sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Mã OTP xác thực email công ty`,
+    text: `Xin chào,\n\nBạn đang cập nhật hồ sơ công ty trên hệ thống. Mã OTP xác thực email của bạn là: ${otp}\n\nMã này có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.\n\nNếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #f8fafc; padding: 32px; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="background: #0ea5e9; display: inline-block; padding: 12px 20px; border-radius: 12px; margin-bottom: 16px;">
+            <span style="color: white; font-size: 20px; font-weight: 800;">${APP_NAME}</span>
+          </div>
+          <h1 style="color: #0f172a; font-size: 20px; margin: 0;">Xác Thực Email Liên Hệ</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(14,165,233,0.07);">
+          <p style="color: #334155; margin-top: 0; font-size: 15px;">Xin chào,</p>
+          <p style="color: #64748b; line-height: 1.6;">Hệ thống nhận được yêu cầu cập nhật hồ sơ công ty của bạn. Để đảm bảo tính bảo mật, vui lòng sử dụng mã OTP sau để xác nhận email liên hệ mới:</p>
+          
+          <div style="margin: 24px 0; padding: 20px; background: #f8fafc; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
+            <div style="color: #94a3b8; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Mã Xác Thực OTP</div>
+            <div style="font-size: 32px; font-weight: 800; color: #0ea5e9; letter-spacing: 4px;">
+              ${otp}
+            </div>
+          </div>
+
+          <p style="color: #64748b; line-height: 1.6; font-size: 14px;">Mã này có hiệu lực trong <strong>5 phút</strong>. Tuyệt đối không chia sẻ mã này cho bất kỳ ai.</p>
+          <p style="color: #64748b; line-height: 1.6; font-size: 14px; margin-bottom: 0;">Nếu bạn không thực hiện yêu cầu này, hãy đổi mật khẩu tài khoản và báo cáo với chúng tôi ngay lập tức.</p>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 11px; margin-top: 20px;">Email này được gửi tự động từ hệ thống MockAI Interview. Vui lòng không trả lời trực tiếp email này.</p>
+      </div>
+    `
+  });
+};
