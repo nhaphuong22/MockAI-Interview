@@ -12,6 +12,9 @@ import {
   changePasswordController,
   uploadAvatarController,
   getProfile,
+  requestCompanyOtpController,
+  verifyCompanyOtpController,
+  resendCompanyOtpController,
 } from '../controllers/authController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
@@ -279,6 +282,12 @@ router.post('/change-password', authenticateToken, changePasswordController);
  */
 router.get('/profile', authenticateToken, getProfile);
 router.put('/profile', authenticateToken, updateProfile);
+
+// ─── Company OTP Routes ────────────────────────────────────────────────────────
+
+router.post('/company/request-otp', authenticateToken, requestCompanyOtpController);
+router.post('/company/verify-otp', authenticateToken, verifyCompanyOtpController);
+router.post('/company/resend-otp', authenticateToken, resendCompanyOtpController);
 
 // ─── Avatar Upload ─────────────────────────────────────────────────────────────
 

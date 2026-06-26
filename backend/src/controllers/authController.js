@@ -9,6 +9,9 @@ import {
   resetPassword,
   changePassword,
   getUserProfile,
+  requestCompanyEmailOtp,
+  verifyCompanyEmailOtp,
+  resendCompanyEmailOtp,
 } from '../services/authService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -254,6 +257,54 @@ export const updateProfile = async (req, res) => {
     }
     console.error('Update profile controller error:', error);
     return sendError(res, 500, 'Internal server error');
+  }
+};
+
+// ─── Company Profile OTP Verification ───────────────────────────────────────────
+
+export const requestCompanyOtpController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { contactEmail, companyData } = req.body;
+    const result = await requestCompanyEmailOtp(userId, contactEmail, companyData);
+    return sendResponse(res, 200, result);
+  } catch (error) {
+    console.error('Request company OTP controller error:', error);
+    return sendError(res, error.message.includes('Vui lòng') ? 400 : 500, error.message);
+  }
+};
+
+export const verifyCompanyOtpController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { contactEmail, otp } = req.body;
+    
+    if (!contactEmail || !otp) {
+      return sendError(res, 400, 'Thiếu email hoặc mã OTP');
+    }
+
+    const result = await verifyCompanyEmailOtp(userId, contactEmail, otp);
+    return sendResponse(res, 200, result);
+  } catch (error) {
+    console.error('Verify company OTP controller error:', error);
+    return sendError(res, 400, error.message);
+  }
+};
+
+export const resendCompanyOtpController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { contactEmail } = req.body;
+    
+    if (!contactEmail) {
+      return sendError(res, 400, 'Thiếu email liên hệ');
+    }
+
+    const result = await resendCompanyEmailOtp(userId, contactEmail);
+    return sendResponse(res, 200, result);
+  } catch (error) {
+    console.error('Resend company OTP controller error:', error);
+    return sendError(res, 400, error.message);
   }
 };
 
