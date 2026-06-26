@@ -1,5 +1,6 @@
-import { getCompanyById, toggleCompanyFollow } from '../services/companyService.js';
+import { getCompanyById, toggleCompanyFollow, getCompanyFollowersProfiles } from '../services/companyService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
+import db from '../db/knex.js';
 
 /**
  * API lấy thông tin chi tiết của một công ty theo ID
@@ -76,16 +77,12 @@ export const getCompanyFollowers = async (req, res) => {
 
     // (Tùy chọn) Kiểm tra HR này có thuộc companyId đang request không
     if (userRole === 'HR') {
-      // Do req.user chỉ chứa thông tin từ token, ta cần fetch từ DB
-      const db = (await import('../db/knex.js')).default;
       const hrUser = await db('users').where({ id: req.user.id }).first();
       if (hrUser && hrUser.company_id !== companyId) {
         return sendError(res, 403, 'Bạn chỉ có quyền xem danh sách theo dõi của công ty mình.');
       }
     }
 
-    // import dynamically or we must import it at the top
-    const { getCompanyFollowersProfiles } = await import('../services/companyService.js');
     const followers = await getCompanyFollowersProfiles(companyId);
 
     return sendResponse(res, 200, followers);
