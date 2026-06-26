@@ -16,7 +16,7 @@ const cleanRawText = (text) => {
  * Kết hợp Rule-based (thông qua AI check) và Semantic Matching
  * 
  * @param {string} rawCvText - Text bóc tách từ PDF
- * @param {object} job - Thông tin công việc (title, description, requirements)
+ * @param {object} job - Thông tin công việc (title, description)
  * @param {Array} jobRequirements - Danh sách tiêu chí đánh giá tự động (is_mandatory, requirement_text)
  * @returns {Promise<object>} Kết quả đánh giá
  */
@@ -73,7 +73,6 @@ Bạn PHẢI trả về JSON duy nhất theo định dạng sau:
   const userPrompt = `
 THÔNG TIN CÔNG VIỆC:
 - Vị trí: ${job.title}
-- Yêu cầu tổng quan: ${job.requirements || "Không có"}
 - Mô tả chi tiết: ${job.description || "Không có"}
 
 TIÊU CHÍ ĐÁNH GIÁ TỰ ĐỘNG (TỪ HR):
@@ -88,7 +87,7 @@ ${cleanedCv || "Không có nội dung CV"}
 Hãy thực hiện đánh giá toàn diện và trả về kết quả định dạng JSON.`;
 
   console.log(`[HR Screening] Đang đánh giá CV qua AI Pipeline bằng model ${modelName}...`);
-  
+
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {

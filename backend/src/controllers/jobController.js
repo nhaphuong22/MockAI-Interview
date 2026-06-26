@@ -15,8 +15,11 @@ import {
   generateJobCampaignReportService
 
 } from '../services/jobService.js';
-import { sendApplicationResultEmail } from '../services/emailService.js';
+import { sendApplicationResultEmail, sendApplicationStatusUpdateEmail } from '../services/emailService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
+import { getCompanyFollowerIds } from '../services/companyService.js';
+import { sendRealtimeNotification } from '../socket.js';
+import db from '../db/knex.js';
 
 /**
  * Đăng tin tuyển dụng mới kèm theo các yêu cầu chi tiết
@@ -26,7 +29,6 @@ export const createNewJob = async (req, res) => {
     const { 
       title, 
       description, 
-      requirements, 
       status, 
       experience_level,
       salary_min,
@@ -100,7 +102,6 @@ export const createNewJob = async (req, res) => {
       hrId,
       title: title.trim(),
       description,
-      requirements,
       status,
       experienceLevel: experience_level || null,
       salaryMin: parsedSalaryMin,
@@ -112,7 +113,41 @@ export const createNewJob = async (req, res) => {
       detailedRequirements: detailed_requirements || []
     });
 
-    return sendResponse(res, 201, result);
+    // Trả kết quả ngay cho client
+    sendResponse(res, 201, result);
+
+    // Gửi thông báo real-time tới tất cả những ứng viên đang follow công ty này
+    // Dùng setImmediate để chạy bất đồng bộ sau khi response được gửi, không làm chậm request
+    setImmediate(async () => {
+      try {
+        const hr = await db('users').where({ id: hrId }).select('company_id', 'full_name').first();
+        if (hr?.company_id) {
+          const company = await db('companies').where({ id: hr.company_id }).select('name').first();
+          const followerIds = await getCompanyFollowerIds(hr.company_id);
+          
+          for (const followerId of followerIds) {
+            // Lưu thông báo vào cơ sở dữ liệu để xem sau
+            const [savedNotification] = await db('notifications')
+              .insert({
+                user_id: followerId,
+                type: 'NEW_JOB',
+                title: `💼 ${company?.name || 'Công ty'} vừa đăng việc mới!`,
+                content: `Vị trí "${result.title}" vừa được đăng. Ứng tuyển ngay trước khi hết hạn!`,
+                link: `/jobs/${result.id}`,
+                reference_id: result.id,
+                reference_type: 'job'
+              })
+              .returning('*');
+
+            // Gửi qua socket.io
+            sendRealtimeNotification(followerId, savedNotification);
+          }
+          console.log(`[Follow Notify] Đã lưu và gửi thông báo việc mới "${result.title}" tới ${followerIds.length} người theo dõi.`);
+        }
+      } catch (notifyErr) {
+        console.error('[Follow Notify] Lỗi gửi thông báo follow:', notifyErr.message);
+      }
+    });
   } catch (error) {
     console.error('Lỗi trong jobController.createNewJob:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi đăng tin tuyển dụng.');
@@ -179,7 +214,6 @@ export const updateJob = async (req, res) => {
     const { 
       title, 
       description, 
-      requirements, 
       status, 
       experience_level,
       salary_min,
@@ -261,7 +295,6 @@ export const updateJob = async (req, res) => {
     const result = await updateJobById(jobId, {
       title: title.trim(),
       description,
-      requirements,
       status,
       experienceLevel: experience_level || null,
       salaryMin: parsedSalaryMin,
@@ -383,20 +416,82 @@ export const updateJobApplication = async (req, res) => {
       'AI_REVIEWED', 
       'HR_REVIEWING', 
       'SHORTLISTED', 
+      'AI_INTERVIEW_INVITED',
+      'INTERVIEWED',
       'INTERVIEW_SCHEDULED', 
       'HIRED', 
+      'ACCEPTED',
       'REJECTED'
     ];
     if (status && !VALID_STATUSES.includes(status.toUpperCase())) {
       return sendError(res, 400, 'Trạng thái ứng tuyển không hợp lệ.');
     }
 
+    const finalStatus = status ? status.toUpperCase() : (application.status || '').toUpperCase();
+    const statusChanged = finalStatus !== (application.status || '').toUpperCase();
+
     const result = await updateJobApplicationService(applicationId, {
-      status: status ? status.toUpperCase() : application.status,
+      status: finalStatus,
       hrTag: hr_tag !== undefined ? hr_tag : application.hr_tag,
       hrNotes: hr_notes !== undefined ? hr_notes : application.hr_notes,
       reviewedBy: userId
     });
+
+    // Tạo thông báo in-app và gửi real-time qua Socket.io nếu trạng thái thay đổi
+    if (statusChanged) {
+      const statusLabels = {
+        SUBMITTED: 'Đã nộp',
+        AI_REVIEWED: 'AI đã duyệt',
+        HR_REVIEWING: 'HR Đang duyệt',
+        SHORTLISTED: 'Vào vòng trong',
+        AI_INTERVIEW_INVITED: 'Đã mời PV AI',
+        INTERVIEWED: 'Có kết quả PV',
+        INTERVIEW_SCHEDULED: 'Lịch phỏng vấn',
+        HIRED: 'Đã tuyển',
+        ACCEPTED: 'Trúng tuyển',
+        REJECTED: 'Từ chối'
+      };
+
+      try {
+        const [notification] = await db('notifications')
+          .insert({
+            user_id: application.candidate_id,
+            type: 'APPLICATION_UPDATE',
+            title: 'Cập nhật trạng thái đơn tuyển',
+            content: `Đơn ứng tuyển vị trí "${application.job_title}" của bạn đã được cập nhật thành: ${statusLabels[finalStatus] || finalStatus}`,
+            link: '/applications',
+            reference_id: applicationId,
+            reference_type: 'application',
+            is_read: false,
+            created_at: new Date(),
+            updated_at: new Date()
+          })
+          .returning('*');
+
+        sendRealtimeNotification(application.candidate_id, {
+          id: notification.id,
+          type: 'application',
+          title: notification.title,
+          content: notification.content,
+          time: 'Vừa xong',
+          isRead: false
+        });
+      } catch (notiError) {
+        console.error('Lỗi khi tạo/gửi thông báo cập nhật trạng thái:', notiError);
+      }
+
+      // Gửi email thông báo trạng thái cập nhật tự động (nếu trạng thái nằm trong danh sách cần gửi)
+      const notifyStatuses = ['INTERVIEWED', 'ACCEPTED', 'REJECTED', 'AI_INTERVIEW_INVITED', 'HIRED'];
+      if (notifyStatuses.includes(finalStatus) && application.candidate_email) {
+        console.log(`[Application] Tự động gửi mail thông báo trạng thái ${finalStatus} tới Candidate: ${application.candidate_email}`);
+        sendApplicationStatusUpdateEmail(
+          application.candidate_email,
+          application.candidate_name || 'Ứng viên',
+          application.job_title,
+          finalStatus
+        ).catch(err => console.error('Lỗi khi tự động gửi email thông báo trạng thái:', err));
+      }
+    }
 
     // 4. Gửi email nếu được yêu cầu
     if (send_email && email_content) {

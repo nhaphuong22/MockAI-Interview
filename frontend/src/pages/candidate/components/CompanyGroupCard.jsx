@@ -48,9 +48,6 @@ export function CompanyGroupCard({
                   {job.title}
                 </h3>
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="px-2 py-0.5 bg-gradient-to-r from-emerald-500/10 to-sky-500/10 dark:from-emerald-400/20 dark:to-sky-400/20 text-[#0ea5e9] dark:text-sky-400 rounded-full text-[10px] font-bold border border-sky-100/30 dark:border-sky-500/20">
-                    {job.aiMatch}% phù hợp
-                  </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

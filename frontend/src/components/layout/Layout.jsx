@@ -90,6 +90,14 @@ export function Layout() {
   });
 
   const currentUser = userProfile || user;
+
+  useEffect(() => {
+    // Chỉ đồng bộ lại store nếu user đang đăng nhập.
+    // Tránh việc logout() làm user=null, nhưng userProfile vẫn còn cache làm setAuth() gọi lại
+    if (isAuthenticated && userProfile && JSON.stringify(userProfile) !== JSON.stringify(user)) {
+      useAuthStore.getState().setAuth(userProfile);
+    }
+  }, [userProfile, user, isAuthenticated]);
   const packageName = currentUser?.package_name || (isUserRecruiter ? "STARTER" : "MIỄN PHÍ");
 
   const rawAvatarUrl = currentUser?.avatar_url || currentUser?.avatarUrl || localStorage.getItem("googleAvatar") || "";
@@ -106,6 +114,7 @@ export function Layout() {
     : getAbsoluteAvatarUrl(rawAvatarUrl);
 
   const handleLogout = () => {
+    queryClient.clear();
     logout();
     navigate('/');
   };
@@ -137,7 +146,7 @@ export function Layout() {
   const administratorBase = "/admin/dashboard";
 
   return (
-    <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark text-white' : 'bg-slate-50 text-gray-900'}`}>
+    <div className={`min-h-screen transition-colors duration-1000 ${isCandidate && theme === 'dark' ? 'dark bg-[#0a0f1c] text-white' : 'bg-slate-50 text-gray-900'}`}>
       {isCandidate && <GlobalBackground />}
       {!shouldHideNavbar && (
         <header className="fixed top-4 left-0 right-0 z-50 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -441,7 +450,7 @@ export function Layout() {
         </header>
       )}
 
-      <main className={`min-h-[calc(100vh-64px)] ${shouldHideNavbar ? 'pt-0' : (location.pathname === '/' && !isAuthenticated ? 'pt-0' : 'pt-24 md:pt-28')}`}>
+      <main className={`min-h-[calc(100vh-64px)] ${shouldHideNavbar ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28')}`}>
         <Outlet />
       </main>
 

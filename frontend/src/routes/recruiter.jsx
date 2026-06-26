@@ -3,6 +3,7 @@ import { PostJob } from "../pages/recruiter/PostJob";
 import { EditJob } from "../pages/recruiter/EditJob";
 import { ManageJobs } from "../pages/recruiter/ManageJobs";
 import { ManageApplications } from "../pages/recruiter/ManageApplications";
+import { ShortlistBoard } from "../pages/recruiter/ShortlistBoard";
 import { CandidateProfile } from "../pages/recruiter/CandidateProfile";
 import { CompanyProfile } from "../pages/recruiter/CompanyProfile";
 import { RecruitmentAnalytics } from "../pages/recruiter/RecruitmentAnalytics";
@@ -55,5 +56,9 @@ export const recruiterRoutes = [
   { 
     path: "notifications", 
     element: <ProtectedRoute requiredRole="hr"><RecruiterNotifications /></ProtectedRoute>
+  },
+  { 
+    path: "shortlist", 
+    element: <ProtectedRoute requiredRole="hr"><ShortlistBoard /></ProtectedRoute>
   },
 ];

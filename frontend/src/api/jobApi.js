@@ -88,6 +88,59 @@ export const jobApi = {
    */
   getJobCampaignReport: (jobId) => {
     return axiosClient.get(`/jobs/${jobId}/campaign-report`);
+  },
 
-  }
+  /**
+   * Xuất danh sách ứng viên đạt yêu cầu ra file Excel
+   * @param {number[]} jobIds - Danh sách job IDs cần xuất (rỗng = tất cả)
+   */
+  exportApplications: async ({ jobIds = [] } = {}) => {
+    const params = new URLSearchParams();
+    if (jobIds.length > 0) {
+      params.set("jobIds", jobIds.join(","));
+    }
+    params.set("format", "excel");
+
+    const token = localStorage.getItem("token");
+    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    
+    // Import axios dynamically or we can just use fetch to avoid interceptor issues and keep headers
+    const response = await fetch(`${baseURL}/applications/export?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Lỗi xuất file Excel");
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+
+    // Extract filename from headers
+    const disposition = response.headers.get("content-disposition") || "";
+    const filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
+    link.download = filenameMatch
+      ? decodeURIComponent(filenameMatch[1])
+      : `MockAI_Shortlist_${new Date().toLocaleDateString("vi-VN").replace(/\//g, "-")}.zip`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
+
+  /**
+   * Lưu ghi chú nội bộ của HR cho một đơn ứng tuyển
+   * @param {number} applicationId - ID đơn ứng tuyển
+   * @param {string} note - Nội dung ghi chú
+   */
+  saveApplicationNote: ({ applicationId, note }) => {
+    return axiosClient.patch(`/applications/${applicationId}/note`, { note });
+  },
 };
+

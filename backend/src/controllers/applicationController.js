@@ -82,17 +82,17 @@ export const applyJob = async (req, res) => {
 
     const formattedName = candidate_name || req.user.full_name || req.user.email;
     console.log(`[Application] Đang chấm điểm CV cho ứng viên ${formattedName} với HR Screening Pipeline...`);
-    
+
     // Gọi Pipeline mới thay vì evaluateCV cũ
     const evaluation = await runHrScreeningPipeline(sanitizedCvText, job, jobRequirements);
 
-    // Xác định trạng thái ban đầu của Application (Rớt vòng knock-out thì REJECTED luôn)
+    // Xác định trạng thái ban đầu của Application dựa trên kết quả Knock-out của AI
     const initialStatus = evaluation.knockout_status === 'REJECTED' ? 'REJECTED' : 'SUBMITTED';
 
     // 3.1. Tạo PDF báo cáo và tải lên Cloudinary
     const candidateName = candidate_name || req.user.full_name || req.user.email;
     console.log(`[Application] Đang tạo báo cáo đánh giá PDF cho ứng viên ${candidateName}...`);
-    
+
     // Map data mới sang chuẩn cũ để PDF vẫn tạo được không bị lỗi
     const mappedEvaluationForPDF = {
       overallScore: evaluation.semantic_score || 0,
@@ -107,7 +107,7 @@ export const applyJob = async (req, res) => {
     };
 
     const pdfReportBuffer = await generatePDFReportBuffer(mappedEvaluationForPDF, candidateName, job.title);
-    
+
     console.log(`[Application] Đang upload PDF báo cáo lên Cloudinary...`);
     const reportCloudinaryResult = await uploadReportToCloudinary(pdfReportBuffer, candidateName);
     const pdfReportUrl = reportCloudinaryResult.secure_url;
@@ -118,7 +118,7 @@ export const applyJob = async (req, res) => {
 
     if (existingApp) {
       console.log(`[Application] Ứng viên ${formattedName} cập nhật CV/đơn ứng tuyển cho Job ${job.title}...`);
-      
+
       // Lưu thông tin CV mới vào bảng `cvs`
       const [newCv] = await db('cvs')
         .insert({
@@ -205,7 +205,7 @@ export const applyJob = async (req, res) => {
           user_id: job.hr_id,
           type: 'APPLICATION_UPDATE',
           title: existingApp ? 'Cập nhật đơn ứng tuyển' : 'Đơn ứng tuyển mới',
-          content: existingApp 
+          content: existingApp
             ? `${req.user.full_name || req.user.email} đã cập nhật lại CV cho vị trí "${job.title}"`
             : `${req.user.full_name || req.user.email} đã nộp đơn ứng tuyển cho vị trí "${job.title}"`,
           link: `/hr/dashboard`,
@@ -217,20 +217,7 @@ export const applyJob = async (req, res) => {
         })
         .returning('*');
 
-      // Gửi mail cho HR thông qua SMTP kèm PDF báo cáo
-      if (hrUser && hrUser.email) {
-        console.log(`[Application] Đang gửi mail báo cáo tuyển dụng kèm PDF tới HR: ${hrUser.email}`);
-        await sendApplicationReportEmail(
-          hrUser.email,
-          hrUser.full_name || 'Nhà tuyển dụng',
-          candidateName,
-          job.title,
-          evaluation.semantic_score || 0,
-          pdfReportUrl,
-          true, // Gửi cho HR
-          pdfReportBuffer
-        );
-      }
+      // Đã vô hiệu hóa gửi mail cho HR khi có đơn mới theo yêu cầu của user
 
       // Đẩy thông báo tức thời (In-app notification) cho HR qua Socket.io
       sendRealtimeNotification(job.hr_id, {
@@ -256,21 +243,51 @@ export const applyJob = async (req, res) => {
       });
     }
 
-    // Gửi mail xác nhận và báo cáo chi tiết cho Candidate thông qua SMTP kèm PDF báo cáo
-    if (req.user.email) {
-      console.log(`[Application] Đang gửi mail xác nhận và báo cáo tuyển dụng tới Candidate: ${req.user.email}`);
-      await sendApplicationReportEmail(
-        req.user.email,
-        req.user.full_name || 'Ứng viên',
-        candidateName,
-        job.title,
-        evaluation.semantic_score || 0,
-        pdfReportUrl,
-        false, // Gửi cho Candidate
-        pdfReportBuffer
-      );
-    }
+    // Đã vô hiệu hóa gửi mail xác nhận cho ứng viên khi nộp đơn theo yêu cầu của user
 
+    // Tuy nhiên, nếu AI tự động đánh rớt (Knock-out REJECTED), thì tự động gửi mail báo Từ chối cho ứng viên luôn
+    if (initialStatus === 'REJECTED') {
+      const emailToUse = candidate_email || req.user.email;
+      const candidateNameToUse = candidate_name || req.user.full_name || req.user.email;
+      if (emailToUse) {
+        console.log(`[Application] AI Knock-out REJECTED - Tự động gửi mail báo rớt tới Candidate: ${emailToUse}`);
+        sendApplicationStatusUpdateEmail(
+          emailToUse,
+          candidateNameToUse,
+          job.title,
+          'REJECTED'
+        ).catch(err => console.error('Lỗi khi gửi email báo rớt AI Knock-out:', err));
+      }
+
+      // Tạo thông báo in-app cho ứng viên
+      try {
+        const [candidateNotification] = await db('notifications')
+          .insert({
+            user_id: candidateId,
+            type: 'APPLICATION_UPDATE',
+            title: 'Cập nhật trạng thái đơn tuyển',
+            content: `Đơn ứng tuyển vị trí "${job.title}" của bạn đã được cập nhật thành: Từ chối`,
+            link: '/applications',
+            reference_id: application.id,
+            reference_type: 'application',
+            is_read: false,
+            created_at: new Date(),
+            updated_at: new Date()
+          })
+          .returning('*');
+
+        sendRealtimeNotification(candidateId, {
+          id: candidateNotification.id,
+          type: 'application',
+          title: candidateNotification.title,
+          content: candidateNotification.content,
+          time: 'Vừa xong',
+          isRead: false
+        });
+      } catch (notiError) {
+        console.error('Lỗi khi tạo in-app notification cho Candidate bị AI từ chối:', notiError);
+      }
+    }
 
     return sendResponse(res, 201, {
       application_id: application.id,
@@ -389,7 +406,7 @@ export const updateApplicationStatus = async (req, res) => {
       return sendError(res, 400, 'ID đơn tuyển dụng không hợp lệ.');
     }
 
-    const VALID_STATUSES = ['new', 'reviewed', 'interviewed', 'accepted', 'rejected', 'SUBMITTED', 'REVIEWING', 'ACCEPTED', 'REJECTED'];
+    const VALID_STATUSES = ['new', 'reviewed', 'interviewed', 'accepted', 'rejected', 'hired', 'shortlisted', 'SUBMITTED', 'REVIEWING', 'ACCEPTED', 'REJECTED', 'HIRED', 'SHORTLISTED'];
     if (!status || !VALID_STATUSES.includes(status)) {
       return sendError(res, 400, 'Trạng thái cập nhật không hợp lệ.');
     }
@@ -399,8 +416,8 @@ export const updateApplicationStatus = async (req, res) => {
       .join('jobs', 'applications.job_id', 'jobs.id')
       .join('users', 'applications.candidate_id', 'users.id')
       .select(
-        'applications.*', 
-        'jobs.hr_id as job_hr_id', 
+        'applications.*',
+        'jobs.hr_id as job_hr_id',
         'jobs.title as job_title',
         'users.email as candidate_email',
         'users.full_name as candidate_name'
@@ -506,5 +523,46 @@ export const updateApplicationStatus = async (req, res) => {
   } catch (error) {
     console.error('Lỗi trong updateApplicationStatus controller:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi cập nhật trạng thái đơn tuyển.');
+  }
+};
+
+/**
+ * PATCH /api/applications/:id/note
+ * HR saves an internal note for an application (not visible to candidates).
+ */
+export const saveApplicationNote = async (req, res) => {
+  try {
+    const appId = parseInt(req.params.id, 10);
+    const { note } = req.body;
+    const hrId = req.user.id;
+    const role = req.user.role?.toUpperCase();
+
+    if (isNaN(appId)) {
+      return sendError(res, 400, 'ID đơn ứng tuyển không hợp lệ.');
+    }
+
+    // Fetch application and verify HR ownership
+    const app = await db('applications')
+      .join('jobs', 'applications.job_id', 'jobs.id')
+      .select('applications.id', 'jobs.hr_id as job_hr_id')
+      .where('applications.id', appId)
+      .first();
+
+    if (!app) {
+      return sendError(res, 404, 'Không tìm thấy đơn ứng tuyển.');
+    }
+
+    if (app.job_hr_id !== hrId && role !== 'ADMIN') {
+      return sendError(res, 403, 'Bạn không có quyền ghi chú vào đơn ứng tuyển này.');
+    }
+
+    await db('applications')
+      .where({ id: appId })
+      .update({ hr_notes: note ?? null, updated_at: new Date() });
+
+    return sendResponse(res, 200, { id: appId, hr_notes: note }, 'Đã lưu ghi chú thành công.');
+  } catch (error) {
+    console.error('saveApplicationNote error:', error);
+    return sendError(res, 500, 'Lỗi khi lưu ghi chú.');
   }
 };

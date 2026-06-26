@@ -7,6 +7,7 @@
 export async function seed(knex) {
   // Clear dependent tables first
   await knex('blogs').del();
+  await knex('job_requirements').del();
   await knex('jobs').del();
   await knex('companies').del();
   await knex('job_types').del();
@@ -53,6 +54,7 @@ export async function seed(knex) {
       email: 'contact@techcorp.vn',
       tax_code: '0101234567',
       is_verified: true,
+      verification_status: 'APPROVED',
       created_at: new Date(),
       updated_at: new Date()
     },
@@ -69,6 +71,7 @@ export async function seed(knex) {
       email: 'contact@vinagroup.com',
       tax_code: '0201234567',
       is_verified: true,
+      verification_status: 'APPROVED',
       created_at: new Date(),
       updated_at: new Date()
     },
@@ -84,7 +87,8 @@ export async function seed(knex) {
       phone: '0236123456',
       email: 'contact@greenenergy.com',
       tax_code: '0301234567',
-      is_verified: false,
+      is_verified: true,
+      verification_status: 'APPROVED',
       created_at: new Date(),
       updated_at: new Date()
     },
@@ -100,7 +104,8 @@ export async function seed(knex) {
       phone: '028987654',
       email: 'contact@fastfinance.com',
       tax_code: '0401234567',
-      is_verified: false,
+      is_verified: true,
+      verification_status: 'APPROVED',
       created_at: new Date(),
       updated_at: new Date()
     },
@@ -117,23 +122,31 @@ export async function seed(knex) {
       email: 'contact@smartedu.vn',
       tax_code: '0501234567',
       is_verified: true,
+      verification_status: 'APPROVED',
       created_at: new Date(),
       updated_at: new Date()
     }
   ]);
 
+  // Map 5 HR accounts to 5 Companies
+  await knex('users').where({ id: 3 }).update({ company_id: 1 });
+  await knex('users').where({ id: 4 }).update({ company_id: 2 });
+  await knex('users').where({ id: 5 }).update({ company_id: 3 });
+  await knex('users').where({ id: 6 }).update({ company_id: 4 });
+  await knex('users').where({ id: 7 }).update({ company_id: 5 });
+
   // 5. Seed Jobs (linked to Companies, Locations, Job Types, Categories)
+  // NOTE: 'requirements' column is removed, inserted into job_requirements table instead.
   await knex('jobs').insert([
     {
       id: 1,
-      hr_id: 3, // Recruiter
+      hr_id: 3, // TechCorp HR
       company_id: 1,
       category_id: 1,
       location_id: 1,
       job_type_id: 1,
       title: 'Senior React Developer',
       description: 'Phát triển ứng dụng Web chất lượng cao sử dụng React và Next.js.',
-      requirements: 'Có từ 3 năm kinh nghiệm lập trình ReactJS, Tailwind CSS, JavaScript ES6+.',
       experience_level: 'SENIOR',
       salary_min: 35000000,
       salary_max: 45000000,
@@ -151,39 +164,13 @@ export async function seed(knex) {
     },
     {
       id: 2,
-      hr_id: 3,
-      company_id: 1,
-      category_id: 1,
-      location_id: 2,
-      job_type_id: 1,
-      title: 'AI Engineer (Python / PyTorch)',
-      description: 'Nghiên cứu và tích hợp các mô hình Generative AI vào nền tảng phỏng vấn.',
-      requirements: 'Kinh nghiệm với Python, PyTorch, Node-Llama-Cpp, NLP, LLMs.',
-      experience_level: 'MID',
-      salary_min: 40000000,
-      salary_max: 60000000,
-      salary_currency: 'VND',
-      is_salary_visible: true,
-      vacancy_count: 2,
-      deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
-      approval_status: 'APPROVED',
-      approved_by: 1,
-      approved_at: new Date(),
-      view_count: 289,
-      status: 'OPEN',
-      created_at: new Date(),
-      updated_at: new Date()
-    },
-    {
-      id: 3,
-      hr_id: 3,
+      hr_id: 4, // VinaGroup HR
       company_id: 2,
       category_id: 2,
-      location_id: 3,
+      location_id: 2,
       job_type_id: 1,
       title: 'Chuyên viên Marketing Online',
       description: 'Lên kế hoạch và chạy các chiến dịch truyền thông cộng đồng trực tuyến.',
-      requirements: 'Có kinh nghiệm SEO, Google Ads, Facebook Ads và xây dựng hình ảnh thương hiệu.',
       experience_level: 'JUNIOR',
       salary_min: 15000000,
       salary_max: 22000000,
@@ -198,15 +185,38 @@ export async function seed(knex) {
       updated_at: new Date()
     },
     {
+      id: 3,
+      hr_id: 5, // GreenEnergy HR
+      company_id: 3,
+      category_id: 3,
+      location_id: 3,
+      job_type_id: 1,
+      title: 'Kỹ sư Năng lượng Mặt trời',
+      description: 'Nghiên cứu và triển khai hệ thống năng lượng mặt trời cho dự án lớn.',
+      experience_level: 'MID',
+      salary_min: 25000000,
+      salary_max: 35000000,
+      salary_currency: 'VND',
+      is_salary_visible: true,
+      vacancy_count: 2,
+      deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+      approval_status: 'APPROVED',
+      approved_by: 1,
+      approved_at: new Date(),
+      view_count: 289,
+      status: 'OPEN',
+      created_at: new Date(),
+      updated_at: new Date()
+    },
+    {
       id: 4,
-      hr_id: 3,
-      company_id: 5,
-      category_id: 1,
+      hr_id: 6, // FastFinance HR
+      company_id: 4,
+      category_id: 4,
       location_id: 4,
       job_type_id: 3,
       title: 'Node.js Backend Developer',
       description: 'Phát triển RESTful APIs hiệu năng cao sử dụng Node.js, Express, Postgres và Knex.',
-      requirements: 'Thành thạo Javascript, Express, SQL, cơ chế xác thực JWT và bảo mật hệ thống.',
       experience_level: 'MID',
       salary_min: 20000000,
       salary_max: 30000000,
@@ -224,14 +234,13 @@ export async function seed(knex) {
     },
     {
       id: 5,
-      hr_id: 3,
-      company_id: 4,
-      category_id: 4,
+      hr_id: 7, // SmartEdu HR
+      company_id: 5,
+      category_id: 5,
       location_id: 2,
       job_type_id: 1,
-      title: 'Project Manager',
-      description: 'Quản lý tiến độ các dự án phát triển phần mềm theo mô hình Agile/Scrum.',
-      requirements: 'Có kinh nghiệm quản lý tối thiểu 3 năm, chứng chỉ PMP hoặc CSM là lợi thế.',
+      title: 'Project Manager (EdTech)',
+      description: 'Quản lý tiến độ các dự án phát triển phần mềm giáo dục theo mô hình Agile/Scrum.',
       experience_level: 'LEAD',
       salary_min: 30000000,
       salary_max: 40000000,
@@ -249,7 +258,17 @@ export async function seed(knex) {
     }
   ]);
 
-  // 6. Seed Blogs
+  // 6. Seed Job Requirements
+  await knex('job_requirements').insert([
+    { job_id: 1, requirement_text: 'Có từ 3 năm kinh nghiệm lập trình ReactJS', is_mandatory: true, created_at: new Date(), updated_at: new Date() },
+    { job_id: 1, requirement_text: 'Thành thạo Tailwind CSS và JavaScript ES6+', is_mandatory: true, created_at: new Date(), updated_at: new Date() },
+    { job_id: 2, requirement_text: 'Kinh nghiệm SEO, Google Ads, Facebook Ads', is_mandatory: true, created_at: new Date(), updated_at: new Date() },
+    { job_id: 3, requirement_text: 'Có kiến thức về hệ thống điện và năng lượng tái tạo', is_mandatory: true, created_at: new Date(), updated_at: new Date() },
+    { job_id: 4, requirement_text: 'Thành thạo Node.js, Express, SQL, cơ chế xác thực JWT', is_mandatory: true, created_at: new Date(), updated_at: new Date() },
+    { job_id: 5, requirement_text: 'Có chứng chỉ PMP hoặc Scrum Master', is_mandatory: false, created_at: new Date(), updated_at: new Date() }
+  ]);
+
+  // 7. Seed Blogs
   await knex('blogs').insert([
     {
       id: 1,
@@ -321,5 +340,6 @@ export async function seed(knex) {
   await knex.raw("SELECT setval('categories_id_seq', (SELECT MAX(id) FROM categories))");
   await knex.raw("SELECT setval('companies_id_seq', (SELECT MAX(id) FROM companies))");
   await knex.raw("SELECT setval('jobs_id_seq', (SELECT MAX(id) FROM jobs))");
+  await knex.raw("SELECT setval('job_requirements_id_seq', (SELECT MAX(id) FROM job_requirements))");
   await knex.raw("SELECT setval('blogs_id_seq', (SELECT MAX(id) FROM blogs))");
 };

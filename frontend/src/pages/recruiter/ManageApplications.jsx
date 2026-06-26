@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Loader2, Users, User, Filter, Eye, Briefcase,
-  Sparkles, Phone, CheckCircle2, X, Clock, BarChart2, ArrowUpDown
+  Sparkles, Phone, CheckCircle2, X, Clock, BarChart2, ArrowUpDown, Star
 } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -153,15 +153,24 @@ export function ManageApplications() {
                 : "Theo dõi và đánh giá ứng viên cho tất cả các vị trí tuyển dụng"}
             </p>
           </div>
-          {selectedJobId !== "all" && jobTitle && (
+          <div className="flex items-center gap-3 shrink-0">
             <Link
-              to={`/hr/dashboard/campaign/${selectedJobId}`}
-              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all whitespace-nowrap"
+              to="/hr/dashboard/shortlist"
+              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all whitespace-nowrap"
             >
-              <Sparkles className="w-4 h-4 animate-pulse" />
-              Báo Cáo Chiến Dịch AI
+              <Star className="w-4 h-4 fill-white" />
+              Bảng Chọn Lọc
             </Link>
-          )}
+            {selectedJobId !== "all" && jobTitle && (
+              <Link
+                to={`/hr/dashboard/campaign/${selectedJobId}`}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all whitespace-nowrap"
+              >
+                <Sparkles className="w-4 h-4 animate-pulse" />
+                Báo Cáo Chiến Dịch AI
+              </Link>
+            )}
+          </div>
         </div>
 
 

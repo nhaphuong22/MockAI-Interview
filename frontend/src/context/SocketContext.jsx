@@ -61,6 +61,12 @@ export const SocketProvider = ({ children }) => {
 
       // Làm mới danh sách thông báo trên giao diện
       queryClient.invalidateQueries(["notifications"]);
+
+      // Nếu là thông báo cập nhật đơn, làm mới danh sách đơn ứng tuyển để giao diện cập nhật ngay lập tức
+      if (notification.type === 'application') {
+        queryClient.invalidateQueries(["candidate-applications"]);
+        queryClient.invalidateQueries(["manage-applications"]);
+      }
     });
 
     let disconnectToastShown = false;

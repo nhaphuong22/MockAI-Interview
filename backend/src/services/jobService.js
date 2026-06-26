@@ -13,7 +13,6 @@ export const createJob = async ({
   hrId,
   title,
   description = '',
-  requirements = '',
   status = 'OPEN',
   experienceLevel = null,
   salaryMin = null,
@@ -35,7 +34,6 @@ export const createJob = async ({
       company_id: companyId, // Lưu thông tin công ty của HR
       title,
       description: description || null,
-      requirements: requirements || null,
       status: status || 'OPEN',
       experience_level: experienceLevel || null,
       salary_min: salaryMin || null,
@@ -196,7 +194,6 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
       .update({
         title: updateData.title,
         description: updateData.description || null,
-        requirements: updateData.requirements || null,
         status: updateData.status || 'OPEN',
         experience_level: updateData.experienceLevel || null,
         salary_min: updateData.salaryMin || null,
@@ -519,7 +516,7 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
   console.log(`Generating Boss Campaign Report for Job ${jobId} with ${candidatesData.length} candidates...`);
   const report = await generateCampaignReportFromGemini({
     jobTitle: job.title,
-    requirements: job.requirements || reqText,
+    requirements: reqText,
     candidatesData
   });
 

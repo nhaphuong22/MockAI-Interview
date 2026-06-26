@@ -181,7 +181,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
       return;
     }
 
-    if (role === 'RECRUITER') {
+    if (role === 'recruiter') {
       const publicDomains = ['gmail.com', 'yahoo.com', 'yahoo.com.vn', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com', 'protonmail.com'];
       const emailDomain = regEmail.split('@')[1]?.toLowerCase();
       if (publicDomains.includes(emailDomain)) {

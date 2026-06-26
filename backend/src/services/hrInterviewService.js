@@ -20,7 +20,6 @@ export const initHRInterviewSession = async ({ userId, applicationId }) => {
       'jobs.id as job_id',
       'jobs.title as job_title',
       'jobs.experience_level',
-      'jobs.requirements as job_requirements_text',
       'companies.name as company_name',
       'cvs.parsed_text as cv_text'
     )
@@ -43,7 +42,7 @@ export const initHRInterviewSession = async ({ userId, applicationId }) => {
     ? jobRequirements.map((r, i) =>
         `${i + 1}. ${r.requirement_text}${r.is_mandatory ? ' [Bắt buộc]' : ' [Ưu tiên]'}`
       ).join('\n')
-    : application.job_requirements_text || '';
+    : '';
 
   // 3. Build enhanced CV prompt: CV text + Job Requirements
   const cvContext = application.cv_text || '';
