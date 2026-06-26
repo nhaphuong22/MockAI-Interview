@@ -41,6 +41,12 @@ export const createNewJob = async (req, res) => {
     } = req.body;
     const hrId = req.user.id;
 
+    // Kiểm tra xem HR đã liên kết công ty và được phê duyệt chưa
+    const hrUser = await db('users').where({ id: hrId }).first();
+    if (!hrUser || !hrUser.company_id || hrUser.company_join_status !== 'APPROVED') {
+      return sendError(res, 403, 'Tài khoản của bạn chưa liên kết doanh nghiệp hoặc đang chờ phê duyệt. Không thể đăng tuyển dụng.');
+    }
+
     // 1. Kiểm tra validation cơ bản cho job title
     if (!title || typeof title !== 'string' || title.trim() === '') {
       return sendError(res, 400, 'Tiêu đề tin tuyển dụng (title) là bắt buộc và không được để trống.');
