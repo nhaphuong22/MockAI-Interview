@@ -496,11 +496,18 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 export const requestCompanyEmailOtp = async (userId, contactEmail, companyData) => {
   if (!contactEmail) throw new Error('Vui lòng cung cấp email liên hệ');
 
+  const existing = await db('company_email_otps').where({ user_id: userId }).first();
+  if (existing) {
+    const diffInSeconds = (new Date() - new Date(existing.updated_at)) / 1000;
+    if (diffInSeconds < 60) {
+      throw new Error(`Vui lòng đợi ${Math.ceil(60 - diffInSeconds)} giây trước khi yêu cầu mã mới`);
+    }
+  }
+
   const otp = generateOtp();
   const otpHash = await bcrypt.hash(otp, 10);
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  const existing = await db('company_email_otps').where({ user_id: userId }).first();
   if (existing) {
     await db('company_email_otps').where({ user_id: userId }).update({
       email: contactEmail,

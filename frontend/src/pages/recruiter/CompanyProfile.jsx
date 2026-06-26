@@ -702,7 +702,6 @@ export function CompanyProfile() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-              onClick={() => !verifyOtpMutation.isPending && setShowOtpModal(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -736,7 +735,7 @@ export function CompanyProfile() {
                       key={index}
                       id={`otp-input-${index}`}
                       type="text"
-                      maxLength={1}
+                      maxLength={2}
                       value={otpValue[index] || ''}
                       onPaste={(e) => {
                         e.preventDefault();
@@ -751,7 +750,7 @@ export function CompanyProfile() {
                         const val = e.target.value.replace(/\D/g, '');
                         if (val) {
                           const newOtp = otpValue.split('');
-                          newOtp[index] = val;
+                          newOtp[index] = val.slice(-1);
                           setOtpValue(newOtp.join('').slice(0, 6));
                           if (index < 5) document.getElementById(`otp-input-${index + 1}`)?.focus();
                         }
@@ -761,8 +760,10 @@ export function CompanyProfile() {
                           const newOtp = otpValue.split('');
                           if (!newOtp[index] && index > 0) {
                             document.getElementById(`otp-input-${index - 1}`)?.focus();
+                            newOtp[index - 1] = '';
+                          } else {
+                            newOtp[index] = '';
                           }
-                          newOtp[index] = '';
                           setOtpValue(newOtp.join(''));
                         } else if (e.key === 'ArrowLeft' && index > 0) {
                           document.getElementById(`otp-input-${index - 1}`)?.focus();
