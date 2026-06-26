@@ -8,7 +8,7 @@ import {
 import { useAuthStore } from "../../store/useAuthStore";
 
 import { updateProfileApi, uploadAvatarApi, requestCompanyEmailOtpApi, verifyCompanyEmailOtpApi, resendCompanyEmailOtpApi } from "../../api/auth";
-import { updateProfileApi, uploadAvatarApi } from "../../api/auth";
+
 import { companyApi } from "../../api/companyApi";
 import MDEditor from "@uiw/react-md-editor";
 
@@ -795,6 +795,11 @@ export function CompanyProfile() {
                     {resendOtpMutation.isPending ? "Đang gửi lại..." : (otpCountdown > 0 ? `Gửi lại mã sau ${otpCountdown}s` : "Gửi lại mã OTP")}
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Followers Modal ────────────────────────────────────────────── */}
       <AnimatePresence>
