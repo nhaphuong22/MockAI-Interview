@@ -229,7 +229,7 @@ export function CompanyProfile() {
       setIsEditing(false); // Lưu thành công thì chuyển về chế độ View
     },
     onError: (error) => {
-      showToast(error?.response?.data?.message || "Đã xảy ra lỗi khi cập nhật hồ sơ.", "error");
+      showToast(error?.response?.data?.error || error?.response?.data?.message || "Đã xảy ra lỗi khi cập nhật hồ sơ.", "error");
     },
   });
 
@@ -241,7 +241,7 @@ export function CompanyProfile() {
       setOtpValue("");
     },
     onError: (error) => {
-      showToast(error?.response?.data?.message || "Lỗi gửi OTP.", "error");
+      showToast(error?.response?.data?.error || error?.response?.data?.message || "Lỗi gửi OTP.", "error");
     }
   });
 
@@ -254,7 +254,7 @@ export function CompanyProfile() {
       setShowOtpModal(false);
     },
     onError: (error) => {
-      showToast(error?.response?.data?.message || "Mã OTP không hợp lệ.", "error");
+      showToast(error?.response?.data?.error || error?.response?.data?.message || "Mã OTP không hợp lệ.", "error");
     }
   });
 
@@ -265,7 +265,7 @@ export function CompanyProfile() {
       showToast("Đã gửi lại OTP thành công.", "success");
     },
     onError: (error) => {
-      showToast(error?.response?.data?.message || "Lỗi gửi lại OTP.", "error");
+      showToast(error?.response?.data?.error || error?.response?.data?.message || "Lỗi gửi lại OTP.", "error");
     }
   });
 

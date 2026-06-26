@@ -270,7 +270,7 @@ export const requestCompanyOtpController = async (req, res) => {
     return sendResponse(res, 200, result);
   } catch (error) {
     console.error('Request company OTP controller error:', error);
-    return sendError(res, error.message.includes('Vui lòng') ? 400 : 500, error.message);
+    return sendError(res, error.message.includes('Vui lòng') || error.message.includes('Email này') ? 400 : 500, error.message);
   }
 };
 
