@@ -396,7 +396,7 @@ export const loginGoogleUser = async (idToken) => {
  * @param {object} data
  */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = data;
+  const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactPhone, contactPublic } = data;
 
   const updateData = {};
   if (fullName !== undefined) updateData.full_name = fullName;
@@ -405,7 +405,6 @@ export const updateUserProfile = async (userId, data) => {
   if (bio !== undefined) updateData.bio = bio;
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
   if (isLookingForJob !== undefined) updateData.is_looking_for_job = isLookingForJob;
-  if (contactEmail !== undefined) updateData.contact_email = contactEmail;
   if (contactPhone !== undefined) updateData.contact_phone = contactPhone;
   if (contactPublic !== undefined) updateData.contact_public = contactPublic;
 
@@ -495,6 +494,18 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 export const requestCompanyEmailOtp = async (userId, contactEmail, companyData) => {
   if (!contactEmail) throw new Error('Vui lòng cung cấp email liên hệ');
 
+  // Check if contactEmail is already used by another user
+  const emailExists = await db('users')
+    .where(function() {
+      this.where('email', contactEmail).orWhere('contact_email', contactEmail);
+    })
+    .andWhere('id', '!=', userId)
+    .first();
+
+  if (emailExists) {
+    throw new Error('Email này đã được sử dụng bởi một tài khoản hoặc công ty khác');
+  }
+
   const existing = await db('company_email_otps').where({ user_id: userId }).first();
   if (existing) {
     const diffInSeconds = (new Date() - new Date(existing.updated_at)) / 1000;
@@ -556,12 +567,25 @@ export const verifyCompanyEmailOtp = async (userId, contactEmail, otp) => {
   if (typeof pendingData === 'string') {
     pendingData = JSON.parse(pendingData);
   }
-  
-  // Call updateUserProfile to actually save the data
+
+  // Double check if contactEmail is still not used by someone else
+  const emailExists = await db('users')
+    .where(function() {
+      this.where('email', contactEmail).orWhere('contact_email', contactEmail);
+    })
+    .andWhere('id', '!=', userId)
+    .first();
+
+  if (emailExists) {
+    throw new Error('Email này đã được sử dụng bởi một tài khoản hoặc công ty khác');
+  }
+
+  // Call updateUserProfile to actually save the other data
   await updateUserProfile(userId, pendingData);
 
-  // Mark contact email as verified
+  // Update contact email and mark as verified
   await db('users').where({ id: userId }).update({
+    contact_email: pendingData.contactEmail || contactEmail,
     contact_email_verified: true
   });
 
