@@ -94,10 +94,13 @@ export function Layout() {
   useEffect(() => {
     // Chỉ đồng bộ lại store nếu user đang đăng nhập.
     // Tránh việc logout() làm user=null, nhưng userProfile vẫn còn cache làm setAuth() gọi lại
-    if (isAuthenticated && userProfile && JSON.stringify(userProfile) !== JSON.stringify(user)) {
-      useAuthStore.getState().setAuth(userProfile);
+    if (isAuthenticated && userProfile) {
+      const currentUserStore = useAuthStore.getState().user;
+      if (JSON.stringify(userProfile) !== JSON.stringify(currentUserStore)) {
+        useAuthStore.getState().setAuth(userProfile);
+      }
     }
-  }, [userProfile, user, isAuthenticated]);
+  }, [userProfile, isAuthenticated]);
   const packageName = currentUser?.package_name || (isUserRecruiter ? "STARTER" : "MIỄN PHÍ");
 
   const rawAvatarUrl = currentUser?.avatar_url || currentUser?.avatarUrl || localStorage.getItem("googleAvatar") || "";
