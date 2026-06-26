@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Building, 
   MapPin, 
@@ -11,18 +11,27 @@ import {
   ChevronRight, 
   Loader2, 
   ArrowLeft,
-  DollarSign
+  DollarSign,
+  Bell,
+  BellOff,
+  Heart
 } from "lucide-react";
 import MDEditor from "@uiw/react-md-editor";
 import { companyApi } from "../../api/companyApi";
 import { jobApi } from "../../api/jobApi";
 import { useThemeStore } from "../../store/useThemeStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useUiStore } from "../../store/useUiStore";
 
 export function CompanyDetail() {
   const { id } = useParams();
   const { theme } = useThemeStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
+  const showToast = useUiStore((state) => state.showToast);
+  const queryClient = useQueryClient();
 
-  // 1. Lấy thông tin chi tiết công ty
+  // 1. Lấy thông tin chi tiết công ty (bao gồm is_following và follower_count)
   const { data: companyResponse, isLoading: isCompanyLoading, isError: isCompanyError } = useQuery({
     queryKey: ["company-detail", id],
     queryFn: async () => {
@@ -36,11 +45,29 @@ export function CompanyDetail() {
   const { data: jobsResponse, isLoading: isJobsLoading } = useQuery({
     queryKey: ["company-jobs", id],
     queryFn: async () => {
-      // Gửi param company_id lên backend để lọc các jobs thuộc company này
       const res = await jobApi.getJobs({ company_id: id, status: "OPEN", limit: 100 });
       return res.data;
     },
     enabled: !!id
+  });
+
+  // 3. Mutation toggle follow
+  const followMutation = useMutation({
+    mutationFn: () => companyApi.toggleFollow(id),
+    onSuccess: (res) => {
+      const { is_following, follower_count, message } = res.data;
+      // Cập nhật cache ngay lập tức để UI cập nhật tức thì (optimistic-like)
+      queryClient.setQueryData(["company-detail", id], (old) => ({
+        ...old,
+        is_following,
+        follower_count,
+      }));
+      showToast({ message, type: "success" });
+    },
+    onError: (error) => {
+      const msg = error?.response?.data?.message || "Không thể cập nhật trạng thái theo dõi.";
+      showToast({ message: msg, type: "error" });
+    }
   });
 
   const company = companyResponse;
@@ -74,7 +101,6 @@ export function CompanyDetail() {
 
   const companyLogo = company.logo_url || company.name?.substring(0, 1).toUpperCase() || "C";
 
-  // Định dạng hiển thị mức lương
   const formatSalary = (min, max, currency, visible) => {
     if (!visible) return "Thương lượng (Ẩn)";
     if (!min && !max) return "Thương lượng";
@@ -89,6 +115,11 @@ export function CompanyDetail() {
     if (min) return `Từ ${formatNumber(min)} ${currency}`;
     return `Lên đến ${formatNumber(max)} ${currency}`;
   };
+
+  // Kiểm tra người dùng hiện tại có phải ứng viên không (không phải HR/Admin)
+  const isCandidate = isAuthenticated && user?.role?.toUpperCase() === 'USER';
+  const isFollowing = company.is_following || false;
+  const followerCount = company.follower_count || 0;
 
   return (
     <div className="min-h-screen dark:bg-[#0a0f1c] bg-gray-50 pb-16">
@@ -126,9 +157,49 @@ export function CompanyDetail() {
               </h1>
 
               {company.industry && (
-                <span className="inline-block px-3 py-1 bg-sky-50 dark:bg-sky-950/40 text-[#0ea5e9] dark:text-[#38bdf8] text-xs font-semibold rounded-full mb-4">
+                <span className="inline-block px-3 py-1 bg-sky-50 dark:bg-sky-950/40 text-[#0ea5e9] dark:text-[#38bdf8] text-xs font-semibold rounded-full mb-3">
                   {company.industry}
                 </span>
+              )}
+
+              {/* Số người theo dõi */}
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-slate-400 mb-4">
+                <Heart className="w-4 h-4 text-rose-400" />
+                <span><strong className="text-gray-800 dark:text-white">{followerCount.toLocaleString()}</strong> người theo dõi</span>
+              </div>
+
+              {/* Nút Follow / Unfollow */}
+              {isCandidate && (
+                <button
+                  onClick={() => followMutation.mutate()}
+                  disabled={followMutation.isPending}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-sm transition-all duration-200 mb-4 ${
+                    isFollowing
+                      ? "bg-sky-50 dark:bg-sky-950/30 text-[#0ea5e9] border-2 border-[#0ea5e9]/30 hover:bg-red-50 hover:text-red-500 hover:border-red-200 dark:hover:bg-red-950/20 dark:hover:border-red-800"
+                      : "bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white shadow-md shadow-sky-100 dark:shadow-sky-950 hover:shadow-lg hover:opacity-90"
+                  }`}
+                  id={`follow-btn-company-${id}`}
+                >
+                  {followMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isFollowing ? (
+                    <>
+                      <BellOff className="w-4 h-4" />
+                      <span>Đang theo dõi</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="w-4 h-4" />
+                      <span>Theo dõi công ty</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              {!isAuthenticated && (
+                <p className="text-xs text-gray-400 dark:text-slate-500 italic mb-4">
+                  <Link to="/login" className="text-[#0ea5e9] hover:underline font-semibold">Đăng nhập</Link> để theo dõi công ty này.
+                </p>
               )}
 
               <div className="w-full border-t border-gray-100 dark:border-white/5 pt-4 space-y-3 text-left">
