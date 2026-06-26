@@ -230,6 +230,13 @@ export function CompanyDetail() {
                     <span className="line-clamp-2">{company.address}</span>
                   </div>
                 )}
+
+                {company.is_tax_code_public && company.tax_code && (
+                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
+                    <Briefcase className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <span className="line-clamp-1">MST: {company.tax_code}</span>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -396,7 +396,7 @@ export const loginGoogleUser = async (idToken) => {
  * @param {object} data
  */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactPhone, contactPublic } = data;
+  const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactPhone, contactPublic, taxCode, isTaxCodePublic } = data;
 
   const updateData = {};
   if (fullName !== undefined) updateData.full_name = fullName;
@@ -430,6 +430,18 @@ export const updateUserProfile = async (userId, data) => {
   if (companyIndustry !== undefined) { companyUpdateData.industry = companyIndustry; updateCompany = true; }
   if (companyCity !== undefined) { companyUpdateData.city = companyCity; updateCompany = true; }
   if (companyAddress !== undefined) { companyUpdateData.address = companyAddress; updateCompany = true; }
+  
+  if (taxCode !== undefined) {
+    if (/[a-zA-Z]/.test(taxCode)) {
+      throw new Error('Mã số thuế không được chứa chữ cái');
+    }
+    companyUpdateData.tax_code = taxCode;
+    updateCompany = true;
+  }
+  if (isTaxCodePublic !== undefined) {
+    companyUpdateData.is_tax_code_public = isTaxCodePublic;
+    updateCompany = true;
+  }
 
   if (updateCompany) {
     companyUpdateData.updated_at = db.fn.now();
@@ -442,6 +454,9 @@ export const updateUserProfile = async (userId, data) => {
       await db('users').where({ id: userId }).update({ company_id: newId });
       updatedUser.company_id = newId;
     }
+    
+    // Invalidate jobs cache since company info like logo/name might have changed
+    await deleteCachePattern('jobs:*');
   }
 
   const roleName = await getUserRole(updatedUser.id);
@@ -467,7 +482,9 @@ export const getUserProfile = async (userId) => {
       'companies.city as company_city',
       'companies.address as company_address',
       'companies.verification_status as company_verification_status',
-      'companies.document_url as company_document_url'
+      'companies.document_url as company_document_url',
+      'companies.tax_code as company_tax_code',
+      'companies.is_tax_code_public as company_is_tax_code_public'
     )
     .leftJoin('packages', 'users.package_id', 'packages.id')
     .leftJoin('companies', 'users.company_id', 'companies.id')
