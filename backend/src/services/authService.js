@@ -511,7 +511,7 @@ export const requestCompanyEmailOtp = async (userId, contactEmail, companyData) 
     await db('company_email_otps').where({ user_id: userId }).update({
       email: contactEmail,
       otp_hash: otpHash,
-      pending_data: JSON.stringify(companyData),
+      pending_data: companyData,
       attempts: 0,
       expires_at: expiresAt,
       updated_at: new Date()
@@ -521,7 +521,7 @@ export const requestCompanyEmailOtp = async (userId, contactEmail, companyData) 
       user_id: userId,
       email: contactEmail,
       otp_hash: otpHash,
-      pending_data: JSON.stringify(companyData),
+      pending_data: companyData,
       attempts: 0,
       expires_at: expiresAt,
       created_at: new Date(),
@@ -552,7 +552,10 @@ export const verifyCompanyEmailOtp = async (userId, contactEmail, otp) => {
   }
 
   // OTP is correct. Update profile using pending_data
-  const pendingData = typeof otpRecord.pending_data === 'string' ? JSON.parse(otpRecord.pending_data) : otpRecord.pending_data;
+  let pendingData = typeof otpRecord.pending_data === 'string' ? JSON.parse(otpRecord.pending_data) : otpRecord.pending_data;
+  if (typeof pendingData === 'string') {
+    pendingData = JSON.parse(pendingData);
+  }
   
   // Call updateUserProfile to actually save the data
   await updateUserProfile(userId, pendingData);
