@@ -4,7 +4,6 @@ import db from '../db/knex.js';
 import { generateToken } from '../auth/jwt.js';
 
 import { sendVerificationEmail, sendResetPasswordEmail, sendCompanyEmailOtp } from './emailService.js';
-import { sendVerificationEmail, sendResetPasswordEmail } from './emailService.js';
 import { deleteCachePattern } from '../config/redis.js';
 
 
