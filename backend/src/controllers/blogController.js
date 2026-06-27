@@ -4,9 +4,11 @@ import {
   getPublishedBlogs as fetchPublishedBlogs, 
   getBlogById as fetchBlogById, 
   getRelatedBlogs as fetchRelatedBlogs,
-  toggleLikeBlog,
+  reactToBlog,
   addBlogComment,
-  getBlogComments
+  getBlogComments,
+  updateBlogComment,
+  deleteBlogComment
 } from '../services/blogService.js';
 import { containsBadWords } from '../helper/badWordsHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -145,23 +147,27 @@ export const getBlogById = async (req, res) => {
 };
 
 /**
- * Toggle thích bài viết
+ * Thả biểu cảm bài viết (React)
  */
 export const toggleLike = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    const { reaction_type } = req.body;
 
-    const result = await toggleLikeBlog(Number(id), userId);
+    const result = await reactToBlog(Number(id), userId, reaction_type || 'LIKE');
     return res.status(200).json({
-      message: result.liked ? 'Đã thích bài viết.' : 'Đã bỏ thích bài viết.',
+      message: 'Cập nhật biểu cảm thành công.',
       data: result
     });
   } catch (error) {
     if (error.message === 'Không tìm thấy bài viết.') {
       return res.status(404).json({ message: error.message });
     }
-    console.error('Lỗi khi toggle like bài viết:', error);
+    if (error.message === 'Loại biểu cảm không hợp lệ.') {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Lỗi khi react bài viết:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi tương tác thích.' });
   }
 };
@@ -232,5 +238,48 @@ export const getRelatedBlogs = async (req, res) => {
     }
     console.error('Lỗi khi lấy bài viết liên quan:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi tải bài viết liên quan.' });
+  }
+};
+
+/**
+ * Cập nhật bình luận
+ */
+export const updateComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+
+    const updatedComment = await updateBlogComment(commentId, userId, content);
+    return res.status(200).json({
+      message: 'Cập nhật bình luận thành công.',
+      data: updatedComment
+    });
+  } catch (error) {
+    if (error.message === 'Không tìm thấy bình luận.' || error.message === 'Bạn không có quyền chỉnh sửa bình luận này.') {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Lỗi khi cập nhật bình luận:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi cập nhật bình luận.' });
+  }
+};
+
+/**
+ * Xóa bình luận
+ */
+export const deleteComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role; // Assuming role is embedded in req.user
+
+    const result = await deleteBlogComment(commentId, userId, userRole);
+    return res.status(200).json(result);
+  } catch (error) {
+    if (error.message === 'Không tìm thấy bình luận.' || error.message === 'Bạn không có quyền xóa bình luận này.') {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Lỗi khi xóa bình luận:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi xóa bình luận.' });
   }
 };

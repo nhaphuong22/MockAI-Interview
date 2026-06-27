@@ -25,10 +25,19 @@ export const blogApi = {
   toggleLikeBlog: (id) => {
     return axiosClient.post(`/blogs/${id}/like`);
   },
+  reactToBlog: (id, reactionType) => {
+    return axiosClient.post(`/blogs/${id}/react`, { reaction_type: reactionType });
+  },
   createComment: (id, content) => {
     return axiosClient.post(`/blogs/${id}/comments`, { content });
   },
   getComments: (id) => {
     return axiosClient.get(`/blogs/${id}/comments`);
+  },
+  updateComment: (commentId, content) => {
+    return axiosClient.put(`/blogs/comments/${commentId}`, { content });
+  },
+  deleteComment: (commentId) => {
+    return axiosClient.delete(`/blogs/comments/${commentId}`);
   }
 };

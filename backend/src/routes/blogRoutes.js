@@ -10,7 +10,9 @@ import {
   getRelatedBlogs,
   toggleLike,
   createComment,
-  getComments
+  getComments,
+  updateComment,
+  deleteComment
 } from '../controllers/blogController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
@@ -212,6 +214,44 @@ router.post('/:id/like', authenticateToken, toggleLike);
 
 /**
  * @swagger
+ * /api/blogs/{id}/react:
+ *   post:
+ *     summary: Thả biểu cảm bài viết (Reaction)
+ *     description: Thả biểu cảm hoặc thay đổi biểu cảm (LIKE, LOVE, HAHA, WOW, SAD, ANGRY) cho bài viết (yêu cầu đăng nhập).
+ *     tags:
+ *       - Community Blog
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của bài viết
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reaction_type
+ *             properties:
+ *               reaction_type:
+ *                 type: string
+ *                 enum: [LIKE, LOVE, HAHA, WOW, SAD, ANGRY]
+ *                 example: "LOVE"
+ *     responses:
+ *       200:
+ *         description: Thực hiện thành công.
+ *       400:
+ *         description: Loại biểu cảm không hợp lệ.
+ */
+router.post('/:id/react', authenticateToken, toggleLike);
+
+/**
+ * @swagger
  * /api/blogs/{id}/comments:
  *   post:
  *     summary: Đăng bình luận cho bài viết
@@ -265,5 +305,64 @@ router.post('/:id/comments', authenticateToken, createComment);
  *         description: Lấy bình luận thành công.
  */
 router.get('/:id/comments', getComments);
+
+/**
+ * @swagger
+ * /api/blogs/comments/{commentId}:
+ *   put:
+ *     summary: Cập nhật bình luận bài viết
+ *     description: Cập nhật nội dung bình luận (yêu cầu là chủ sở hữu).
+ *     tags:
+ *       - Community Blog
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công.
+ *       400:
+ *         description: Lỗi cập nhật.
+ */
+router.put('/comments/:commentId', authenticateToken, updateComment);
+
+/**
+ * @swagger
+ * /api/blogs/comments/{commentId}:
+ *   delete:
+ *     summary: Xóa bình luận bài viết
+ *     description: Xóa bình luận (yêu cầu là chủ sở hữu hoặc Admin).
+ *     tags:
+ *       - Community Blog
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Xóa thành công.
+ *       400:
+ *         description: Lỗi xóa.
+ */
+router.delete('/comments/:commentId', authenticateToken, deleteComment);
 
 export default router;

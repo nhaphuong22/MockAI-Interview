@@ -97,9 +97,10 @@ export const getPublishedBlogs = async (currentUserId = null) => {
   // Format properties to boolean/integer correctly
   return blogs.map(blog => ({
     ...blog,
-    likes_count: parseInt(blog.likes_count || 0),
+    total_reactions: parseInt(blog.total_reactions || 0),
     comments_count: parseInt(blog.comments_count || 0),
-    is_liked_by_user: blog.is_liked_by_user ? parseInt(blog.is_liked_by_user) > 0 : false
+    reaction_counts: blog.reaction_counts || {},
+    user_reaction_type: blog.user_reaction_type || null
   }));
 };
 
@@ -117,45 +118,83 @@ export const getBlogById = async (id, currentUserId = null) => {
   
   // Trả về dữ liệu đã cộng view và format kiểu dữ liệu
   blog.view_count += 1;
-  blog.likes_count = parseInt(blog.likes_count || 0);
+  blog.total_reactions = parseInt(blog.total_reactions || 0);
   blog.comments_count = parseInt(blog.comments_count || 0);
-  blog.is_liked_by_user = blog.is_liked_by_user ? parseInt(blog.is_liked_by_user) > 0 : false;
+  blog.reaction_counts = blog.reaction_counts || {};
+  blog.user_reaction_type = blog.user_reaction_type || null;
   
   return blog;
 };
 
 /**
- * Thích hoặc bỏ thích bài viết (Toggle Like)
+ * Thả biểu cảm hoặc bỏ biểu cảm bài viết (React to Blog)
  */
-export const toggleLikeBlog = async (blogId, userId) => {
+export const reactToBlog = async (blogId, userId, reactionType = 'LIKE') => {
+  const allowedReactions = ['LIKE', 'LOVE', 'HAHA', 'WOW', 'SAD', 'ANGRY'];
+  if (!allowedReactions.includes(reactionType)) {
+    throw new Error('Loại biểu cảm không hợp lệ.');
+  }
+
   // Kiểm tra bài viết tồn tại
   const blog = await findBlogById(blogId);
   if (!blog) {
     throw new NotFoundError('Không tìm thấy bài viết.');
   }
 
-  const existingLike = await db('blog_likes')
+  const existingReaction = await db('blog_reactions')
     .where({ blog_id: blogId, user_id: userId })
     .first();
 
-  let liked = false;
-  if (existingLike) {
-    await db('blog_likes')
-      .where({ id: existingLike.id })
-      .del();
+  let action = '';
+  if (existingReaction) {
+    if (existingReaction.reaction_type === reactionType) {
+      // Nếu click lại đúng reaction cũ -> Unlike
+      await db('blog_reactions')
+        .where({ id: existingReaction.id })
+        .del();
+      action = 'REMOVED';
+    } else {
+      // Nếu chọn reaction khác -> Update
+      await db('blog_reactions')
+        .where({ id: existingReaction.id })
+        .update({ reaction_type: reactionType });
+      action = 'UPDATED';
+    }
   } else {
-    await db('blog_likes').insert({
+    // Chưa có reaction -> Insert
+    await db('blog_reactions').insert({
       blog_id: blogId,
-      user_id: userId
+      user_id: userId,
+      reaction_type: reactionType
     });
-    liked = true;
+    action = 'ADDED';
   }
 
   // Clear cache của bài viết
   await deleteCachePattern('blogs:published*');
   await deleteCache(`blogs:detail:${blogId}`);
 
-  return { liked };
+  // Trả về số liệu count mới nhất
+  const currentReactionCounts = await db('blog_reactions')
+    .where('blog_id', blogId)
+    .select('reaction_type')
+    .count('* as count')
+    .groupBy('reaction_type');
+
+  const formattedCounts = {};
+  let totalReactions = 0;
+  currentReactionCounts.forEach(row => {
+    const c = parseInt(row.count);
+    formattedCounts[row.reaction_type] = c;
+    totalReactions += c;
+  });
+
+  return {
+    action,
+    user_reaction_type: action === 'REMOVED' ? null : reactionType,
+    total_reactions: totalReactions,
+    reaction_counts: formattedCounts
+  };
 };
 
 /**
@@ -224,4 +263,68 @@ export const getRelatedBlogs = async (id) => {
 
   const relatedBlogs = await findRelatedBlogs(id, blog.tags || []);
   return relatedBlogs;
+};
+
+/**
+ * Cập nhật bình luận bài viết
+ */
+export const updateBlogComment = async (commentId, userId, content) => {
+  if (!content || content.trim().length === 0) {
+    throw new Error('Nội dung bình luận không được để trống.');
+  }
+
+  const comment = await db('blog_comments').where({ id: commentId }).first();
+  if (!comment) {
+    throw new NotFoundError('Không tìm thấy bình luận.');
+  }
+
+  if (comment.user_id !== userId) {
+    throw new Error('Bạn không có quyền chỉnh sửa bình luận này.');
+  }
+
+  await db('blog_comments')
+    .where({ id: commentId })
+    .update({ 
+      content: content.trim(),
+      updated_at: new Date()
+    });
+
+  const updatedComment = await db('blog_comments')
+    .join('users', 'blog_comments.user_id', '=', 'users.id')
+    .where('blog_comments.id', commentId)
+    .select(
+      'blog_comments.*',
+      'users.full_name as author_name',
+      'users.avatar_url as author_avatar'
+    )
+    .first();
+
+  // Clear cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${comment.blog_id}`);
+
+  return updatedComment;
+};
+
+/**
+ * Xóa bình luận bài viết
+ */
+export const deleteBlogComment = async (commentId, userId, userRole) => {
+  const comment = await db('blog_comments').where({ id: commentId }).first();
+  if (!comment) {
+    throw new NotFoundError('Không tìm thấy bình luận.');
+  }
+
+  // Admin có quyền xóa bình luận của mọi người, user thường chỉ được xóa của chính mình
+  if (comment.user_id !== userId && userRole !== 'ADMIN') {
+    throw new Error('Bạn không có quyền xóa bình luận này.');
+  }
+
+  await db('blog_comments').where({ id: commentId }).del();
+
+  // Clear cache
+  await deleteCachePattern('blogs:published*');
+  await deleteCache(`blogs:detail:${comment.blog_id}`);
+
+  return { message: 'Xóa bình luận thành công.' };
 };
