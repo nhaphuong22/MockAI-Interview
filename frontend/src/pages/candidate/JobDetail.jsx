@@ -292,12 +292,12 @@ export function JobDetail() {
             <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-white/5">
               <div className="flex items-start gap-6 mb-6">
                 {job.company_id ? (
-                  <Link to={`/companies/${job.company_id}`} className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-4xl font-bold text-white flex-shrink-0 hover:opacity-90 transition-opacity">
-                    {companyLogo}
+                  <Link to={`/companies/${job.company_id}`} className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center overflow-hidden text-4xl font-bold text-white flex-shrink-0 hover:opacity-90 transition-opacity">
+                    {job.company_logo ? <img src={job.company_logo} alt={job.company_name} className="w-full h-full object-cover" /> : companyLogo}
                   </Link>
                 ) : (
-                  <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-4xl font-bold text-white flex-shrink-0">
-                    {companyLogo}
+                  <div className="w-20 h-20 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center overflow-hidden text-4xl font-bold text-white flex-shrink-0">
+                    {job.company_logo ? <img src={job.company_logo} alt={job.company_name} className="w-full h-full object-cover" /> : companyLogo}
                   </div>
                 )}
                 <div className="flex-1">

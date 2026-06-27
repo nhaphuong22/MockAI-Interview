@@ -136,11 +136,12 @@ export function Community() {
             <span className="font-extrabold text-white text-sm">{user?.full_name?.charAt(0) || "👤"}</span>
           ),
           readTime: Math.max(1, Math.ceil(postContent.length / 1000)) + " phút đọc",
-          likes: 0,
+          total_reactions: 0,
           comments: 0,
           tags: tagsArray,
           image: uploadedImageUrl || "📄",
-          isLiked: false,
+          user_reaction_type: null,
+          reaction_counts: {},
           isPendingApproval: false,
           isRejected: false,
           rejectReason: null
@@ -225,11 +226,12 @@ export function Community() {
         <span className="font-extrabold text-white text-sm">{(post.author_name || "A").charAt(0)}</span>
       ),
       readTime: Math.max(1, Math.ceil(plainText.length / 1000)) + " phút đọc",
-      likes: post.likes_count || 0,
+      total_reactions: post.total_reactions || 0,
       comments: post.comments_count || 0,
       tags: tagsArray.filter(t => t),
       image: post.cover_image_url || "📄",
-      isLiked: post.is_liked_by_user || false,
+      user_reaction_type: post.user_reaction_type || null,
+      reaction_counts: post.reaction_counts || {},
       category: post.category || ""
     };
   });

@@ -119,20 +119,28 @@ export const getJobsList = async ({
     query.where('jobs.company_id', companyId);
   }
   if (search) {
-    query.where('jobs.title', 'ilike', `%${search}%`); // ilike cho PostgreSQL để tìm kiếm không phân biệt hoa thường
+    query.where(function() {
+      this.where('jobs.title', 'ilike', `%${search}%`)
+          .orWhere('companies.name', 'ilike', `%${search}%`);
+    });
   }
 
   const offset = (page - 1) * limit;
   
-  // Tạo query đếm tổng số bản ghi
-  const countQuery = db('jobs');
-  if (status) countQuery.where('status', status);
-  if (experienceLevel) countQuery.where('experience_level', experienceLevel);
-  if (hrId) countQuery.where('hr_id', hrId);
-  if (companyId) countQuery.where('company_id', companyId);
-  if (search) countQuery.where('title', 'ilike', `%${search}%`);
+  // Tạo query đếm tổng số bản ghi (luôn join companies để có thể lọc theo tên công ty)
+  const countQuery = db('jobs').leftJoin('companies', 'jobs.company_id', 'companies.id');
+  if (status) countQuery.where('jobs.status', status);
+  if (experienceLevel) countQuery.where('jobs.experience_level', experienceLevel);
+  if (hrId) countQuery.where('jobs.hr_id', hrId);
+  if (companyId) countQuery.where('jobs.company_id', companyId);
+  if (search) {
+    countQuery.where(function() {
+      this.where('jobs.title', 'ilike', `%${search}%`)
+          .orWhere('companies.name', 'ilike', `%${search}%`);
+    });
+  }
 
-  const [countResult] = await countQuery.count('id as count');
+  const [countResult] = await countQuery.count('jobs.id as count');
   const count = parseInt(countResult.count || 0);
 
   const items = await query

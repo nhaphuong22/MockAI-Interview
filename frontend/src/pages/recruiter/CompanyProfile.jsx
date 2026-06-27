@@ -127,6 +127,8 @@ export function CompanyProfile() {
     contactEmail: "",
     contactPhone: "",
     contactPublic: true,
+    taxCode: "",
+    isTaxCodePublic: false,
   });
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -260,6 +262,8 @@ export function CompanyProfile() {
         contactEmail: user.contact_email || user.contactEmail || "",
         contactPhone: user.contact_phone || user.contactPhone || "",
         contactPublic: user.contact_public !== undefined ? user.contact_public : (user.contactPublic !== undefined ? user.contactPublic : true),
+        taxCode: user.company_tax_code || "",
+        isTaxCodePublic: user.company_is_tax_code_public || false,
       });
     }
   }, [user]);
@@ -579,6 +583,17 @@ export function CompanyProfile() {
                         <ExternalLink size={14} className="opacity-70" />
                       </a>
                     )}
+                    {formData.taxCode && (
+                      <div className="flex items-center gap-2">
+                        <FileText size={18} className="text-slate-400" />
+                        <span>Mã số thuế: {formData.taxCode}</span>
+                        {formData.isTaxCodePublic ? (
+                          <span className="text-xs text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded ml-2">Công khai</span>
+                        ) : (
+                          <span className="text-xs text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded ml-2">Đang ẩn</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -727,6 +742,30 @@ export function CompanyProfile() {
                   <InputField label="Website công ty" name="companyWebsite" icon={Globe} placeholder="https://..." value={formData.companyWebsite} onChange={handleChange} />
                   <SelectField label="Ngành nghề" name="companyIndustry" icon={Briefcase} options={INDUSTRY_OPTIONS} placeholder="-- Chọn ngành nghề --" value={formData.companyIndustry} onChange={handleChange} />
                   <SelectField label="Quy mô nhân sự" name="companySize" icon={Users} options={COMPANY_SIZE_OPTIONS} placeholder="-- Chọn quy mô --" value={formData.companySize} onChange={handleChange} />
+                  <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2 p-5 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-100 dark:border-white/5">
+                    <InputField label="Mã số thuế" name="taxCode" icon={FileText} placeholder="Ví dụ: 0312345678" value={formData.taxCode} onChange={handleChange} />
+                    <div className="flex flex-col justify-center pt-2 md:pt-6">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, isTaxCodePublic: !prev.isTaxCodePublic }))}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            formData.isTaxCodePublic ? "bg-sky-500" : "bg-slate-200 dark:bg-gray-700"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
+                              formData.isTaxCodePublic ? "translate-x-6" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                        <span className="text-sm font-medium text-slate-700 dark:text-gray-300 flex items-center gap-1.5">
+                          {formData.isTaxCodePublic ? <Eye size={16} className="text-sky-500" /> : <EyeOff size={16} className="text-slate-400" />}
+                          {formData.isTaxCodePublic ? "Hiển thị mã số thuế cho ứng viên" : "Ẩn mã số thuế với ứng viên"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

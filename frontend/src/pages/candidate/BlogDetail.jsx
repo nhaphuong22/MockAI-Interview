@@ -1,19 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Heart, Share2, Bookmark, Clock, User, MessageCircle } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Loader2, Heart, Share, Bookmark, Clock, User, MessageCircle } from "lucide-react";
 import MDEditor from "@uiw/react-md-editor";
 import { blogApi } from "../../api/blogApi";
 import { useThemeStore } from "../../store/useThemeStore";
+import { useAuthStore } from "../../store/useAuthStore";
 import { motion, useScroll } from "framer-motion";
+import ReactionButton from "./components/ReactionButton";
+import ReactionSummary from "./components/ReactionSummary";
 
 export function BlogDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { theme } = useThemeStore();
+  const { isAuthenticated } = useAuthStore();
   const { scrollYProgress } = useScroll();
-  const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch blog detail
   const { data: blogResponse, isLoading, error } = useQuery({
@@ -25,6 +29,48 @@ export function BlogDetail() {
   });
 
   const blog = blogResponse;
+
+  // React Mutation (Optimistic UI)
+  const reactMutation = useMutation({
+    mutationFn: (reactionType) => blogApi.reactToBlog(id, reactionType),
+    onMutate: async (newReactionType) => {
+      await queryClient.cancelQueries({ queryKey: ["blog", id] });
+      const previousBlog = queryClient.getQueryData(["blog", id]);
+      
+      queryClient.setQueryData(["blog", id], (old) => {
+        if (!old) return old;
+        let updatedTotal = old.total_reactions || 0;
+        if (!old.user_reaction_type) {
+          updatedTotal += 1;
+        } else if (old.user_reaction_type === newReactionType) {
+          updatedTotal = Math.max(0, updatedTotal - 1);
+        }
+        const updatedReactionType = old.user_reaction_type === newReactionType ? null : newReactionType;
+        return {
+          ...old,
+          total_reactions: updatedTotal,
+          user_reaction_type: updatedReactionType
+        };
+      });
+      return { previousBlog };
+    },
+    onError: (err, newReactionType, context) => {
+      if (context?.previousBlog) {
+        queryClient.setQueryData(["blog", id], context.previousBlog);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["blog", id] });
+    }
+  });
+
+  const handleReact = (reactionType) => {
+    if (!isAuthenticated) {
+      alert("Vui lòng đăng nhập để thực hiện tương tác này.");
+      return;
+    }
+    reactMutation.mutate(reactionType);
+  };
 
   if (isLoading) {
     return (
@@ -92,7 +138,7 @@ export function BlogDetail() {
               <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
             </button>
             <button className="p-2.5 rounded-full backdrop-blur-md bg-black/20 text-white hover:bg-black/40 transition-all">
-              <Share2 className="w-5 h-5" />
+              <Share className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -168,13 +214,20 @@ export function BlogDetail() {
             {/* Interaction Bar */}
             <div className="mt-8 flex items-center justify-between dark:bg-[#0f172a] bg-white rounded-2xl p-6 shadow-xl shadow-gray-200/50 dark:shadow-none border dark:border-white/5 border-gray-100">
               <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setIsLiked(!isLiked)}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${isLiked ? 'bg-pink-50 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'}`}
-                >
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                  <span>{isLiked ? (blog.view_count + 1) : blog.view_count} Thích</span>
-                </button>
+                <div className="w-32">
+                  <ReactionButton 
+                    userReaction={blog.user_reaction_type}
+                    onReact={handleReact}
+                  />
+                </div>
+                <div className="min-w-32">
+                  <ReactionSummary 
+                    reactionCounts={blog.reaction_counts} 
+                    totalReactions={blog.total_reactions} 
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
                 <button className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 transition-all">
                   <MessageCircle className="w-5 h-5" />
                   <span>Bình luận</span>

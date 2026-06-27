@@ -12,16 +12,17 @@ export const findPublishedBlogs = async (currentUserId = null) => {
       'blogs.*',
       'users.full_name as author_name',
       'users.avatar_url as author_avatar',
-      db('blog_likes').whereRaw('blog_likes.blog_id = blogs.id').count().as('likes_count'),
-      db('blog_comments').whereRaw('blog_comments.blog_id = blogs.id').count().as('comments_count')
+      db('blog_reactions').whereRaw('blog_reactions.blog_id = blogs.id').count().as('total_reactions'),
+      db('blog_comments').whereRaw('blog_comments.blog_id = blogs.id').count().as('comments_count'),
+      db.raw(`(SELECT json_object_agg(reaction_type, count) FROM (SELECT reaction_type, count(*) FROM blog_reactions WHERE blog_id = blogs.id GROUP BY reaction_type) t) as reaction_counts`)
     );
 
   if (currentUserId) {
     query.select(
-      db('blog_likes')
-        .whereRaw('blog_likes.blog_id = blogs.id and blog_likes.user_id = ?', [currentUserId])
-        .count()
-        .as('is_liked_by_user')
+      db('blog_reactions')
+        .whereRaw('blog_reactions.blog_id = blogs.id and blog_reactions.user_id = ?', [currentUserId])
+        .select('reaction_type')
+        .as('user_reaction_type')
     );
   }
 
@@ -52,16 +53,17 @@ export const findBlogWithAuthor = async (id, currentUserId = null) => {
       'blogs.*',
       'users.full_name as author_name',
       'users.avatar_url as author_avatar',
-      db('blog_likes').whereRaw('blog_likes.blog_id = blogs.id').count().as('likes_count'),
-      db('blog_comments').whereRaw('blog_comments.blog_id = blogs.id').count().as('comments_count')
+      db('blog_reactions').whereRaw('blog_reactions.blog_id = blogs.id').count().as('total_reactions'),
+      db('blog_comments').whereRaw('blog_comments.blog_id = blogs.id').count().as('comments_count'),
+      db.raw(`(SELECT json_object_agg(reaction_type, count) FROM (SELECT reaction_type, count(*) FROM blog_reactions WHERE blog_id = blogs.id GROUP BY reaction_type) t) as reaction_counts`)
     );
 
   if (currentUserId) {
     query.select(
-      db('blog_likes')
-        .whereRaw('blog_likes.blog_id = blogs.id and blog_likes.user_id = ?', [currentUserId])
-        .count()
-        .as('is_liked_by_user')
+      db('blog_reactions')
+        .whereRaw('blog_reactions.blog_id = blogs.id and blog_reactions.user_id = ?', [currentUserId])
+        .select('reaction_type')
+        .as('user_reaction_type')
     );
   }
 
