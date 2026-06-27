@@ -165,6 +165,15 @@ export function Layout() {
                   {isAdministrator && <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full ml-1 uppercase">Quản trị viên</span>}
                 </Link>
 
+                {isUserRecruiter && isCandidate && (
+                  <Link 
+                    to="/hr/dashboard" 
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-950/60 text-sky-600 dark:text-sky-400 font-bold text-xs rounded-full border border-sky-100 dark:border-sky-900/50 transition-all hover:scale-105"
+                  >
+                    <span>Bạn là HR? Đăng tin ngay →</span>
+                  </Link>
+                )}
+
                 <nav className="hidden md:flex items-center gap-6">
                   {isCandidate && (
                     <>

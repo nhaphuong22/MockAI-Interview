@@ -27,17 +27,21 @@ export function ManageCompanies() {
     queryKey: ['pendingVerifications'],
     queryFn: async () => {
       const res = await axiosClient.get('/verification/pending');
-      // map backend data to frontend format
-      return res.data.map(u => ({
-        id: u.id,
-        name: u.company_name,
-        industry: "N/A",
-        status: "Pending", // backend only returns PENDING
+      return res.data.map(c => ({
+        id: c.company_id,
+        name: c.company_name,
+        taxCode: c.company_tax_code,
+        industry: c.company_industry || "N/A",
+        status: "Pending",
         logo: "🏢",
+        employees: c.company_size || "N/A",
         jobCount: 0,
         applicationsCount: 0,
-        documentUrl: u.company_document_url,
-        email: u.email
+        documentUrl: c.company_document_url,
+        email: c.hr_email,
+        hrName: c.hr_name,
+        website: c.company_website,
+        address: `${c.company_address ? c.company_address + ', ' : ''}${c.company_city || ''}`
       }));
     }
   });
@@ -206,15 +210,33 @@ export function ManageCompanies() {
                   </div>
                 </div>
 
-                {/* Data Overview */}
-                <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
+                {/* Detailed Verification Info */}
+                <div className="space-y-3 text-xs font-semibold max-h-[30vh] overflow-y-auto pr-1">
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-[10px] text-slate-400">Tin Đăng Hoạt Động</p>
-                    <p className="text-slate-800 text-sm mt-0.5">{selectedCompany.jobCount}</p>
+                    <p className="text-[10px] text-slate-400">Mã Số Thuế</p>
+                    <p className="text-slate-800 text-sm mt-0.5">{selectedCompany.taxCode}</p>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-[10px] text-slate-400">Tổng Lượt Ứng Tuyển</p>
-                    <p className="text-slate-800 text-sm mt-0.5">{selectedCompany.applicationsCount}</p>
+                    <p className="text-[10px] text-slate-400">Người Đại Diện (HR)</p>
+                    <p className="text-slate-800 text-sm mt-0.5">{selectedCompany.hrName} ({selectedCompany.email})</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-[10px] text-slate-400">Địa chỉ</p>
+                    <p className="text-slate-800 text-sm mt-0.5">{selectedCompany.address || "N/A"}</p>
+                  </div>
+                  {selectedCompany.website && (
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <p className="text-[10px] text-slate-400">Website</p>
+                      <a href={selectedCompany.website} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline text-sm mt-0.5 block">
+                        {selectedCompany.website}
+                      </a>
+                    </div>
+                  )}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-[10px] text-slate-400">Giấy phép Đăng ký Kinh doanh</p>
+                    <a href={selectedCompany.documentUrl} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline flex items-center gap-1 mt-1">
+                      <FileText size={16} /> Xem giấy phép (PDF/Ảnh)
+                    </a>
                   </div>
                 </div>
 

@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Building2, Globe, Briefcase, Users, FileText, Camera, Loader2, Save,
-  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart
+  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart, AlertTriangle
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
+import axiosClient from "../../api/axiosClient";
 
 import { updateProfileApi, uploadAvatarApi, requestCompanyEmailOtpApi, verifyCompanyEmailOtpApi, resendCompanyEmailOtpApi } from "../../api/auth";
 
@@ -140,6 +141,53 @@ export function CompanyProfile() {
   const [otpValue, setOtpValue] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState("info"); // "info" | "requests"
+
+  const { data: verifyStatus } = useQuery({
+    queryKey: ['companyVerificationStatusDetail'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/verification/status');
+      return res.data;
+    }
+  });
+  const isCreator = verifyStatus?.isCreator === true;
+
+  // Query fetch join requests
+  const { data: joinRequests = [], refetch: refetchJoinRequests } = useQuery({
+    queryKey: ['companyJoinRequests'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/companies/my-company/join-requests');
+      return res.data;
+    },
+    enabled: isCreator && !isEditing && activeSubTab === 'requests'
+  });
+
+  // Mutation approve/reject requests
+  const approveMutation = useMutation({
+    mutationFn: async (targetUserId) => {
+      return axiosClient.post(`/companies/my-company/join-requests/${targetUserId}/approve`);
+    },
+    onSuccess: () => {
+      showToast("Đã phê duyệt thành viên!", "success");
+      refetchJoinRequests();
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể phê duyệt.", "error");
+    }
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (targetUserId) => {
+      return axiosClient.post(`/companies/my-company/join-requests/${targetUserId}/reject`);
+    },
+    onSuccess: () => {
+      showToast("Đã từ chối yêu cầu gia nhập!", "success");
+      refetchJoinRequests();
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể từ chối.", "error");
+    }
+  });
 
   const { data: followers = [], isLoading: isLoadingFollowers } = useQuery({
     queryKey: ["company-followers", user?.company_id],
@@ -373,7 +421,7 @@ export function CompanyProfile() {
             </div>
           </div>
 
-          {!isEditing && (
+          {!isEditing && isCreator && (
             <button
               onClick={() => setIsEditing(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold rounded-xl hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors"
@@ -393,9 +441,96 @@ export function CompanyProfile() {
         >
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-sky-500/5 blur-3xl pointer-events-none"></div>
 
+          {/* Banner alert for non-creator HR members */}
+          {!isCreator && !isEditing && (
+            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-300 rounded-2xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-xs font-semibold">
+                <p className="font-bold">HR thành viên</p>
+                <p className="mt-0.5 text-amber-700 dark:text-amber-400 font-medium leading-relaxed">
+                  Tài khoản của bạn là thành viên công ty. Chỉ HR quản lý (người tạo hồ sơ doanh nghiệp) mới có quyền chỉnh sửa thông tin doanh nghiệp này.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Toggle for Creator */}
+          {isCreator && !isEditing && (
+            <div className="flex border-b border-slate-100 dark:border-white/10 mb-6 gap-6">
+              <button
+                onClick={() => setActiveSubTab('info')}
+                className={`pb-3 font-bold text-sm transition-all border-b-2 outline-none ${
+                  activeSubTab === 'info'
+                    ? 'border-[#0ea5e9] text-[#0ea5e9]'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Hồ sơ công ty
+              </button>
+              <button
+                onClick={() => setActiveSubTab('requests')}
+                className={`pb-3 font-bold text-sm transition-all border-b-2 outline-none flex items-center gap-1.5 ${
+                  activeSubTab === 'requests'
+                    ? 'border-[#0ea5e9] text-[#0ea5e9]'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <span>Yêu cầu gia nhập</span>
+                {joinRequests.length > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {joinRequests.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
           {!isEditing ? (
-            // ================= VIEW MODE =================
-            <div className="space-y-10 relative z-10">
+            activeSubTab === 'requests' && isCreator ? (
+              // ================= JOIN REQUESTS TAB =================
+              <div className="space-y-6 relative z-10">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                  <Users className="text-sky-500" size={20} />
+                  Danh sách yêu cầu gia nhập
+                </h3>
+                
+                <div className="space-y-4">
+                  {joinRequests.length > 0 ? (
+                    joinRequests.map((req) => (
+                      <div key={req.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 gap-4">
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-800 dark:text-white text-sm">{req.full_name}</p>
+                          <p className="text-xs text-slate-400 font-semibold">{req.email} • {req.phone || "Không có SĐT"}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">Ngày yêu cầu: {new Date(req.created_at).toLocaleDateString('vi-VN')}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => approveMutation.mutate(req.id)}
+                            disabled={approveMutation.isPending}
+                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                          >
+                            Duyệt
+                          </button>
+                          <button
+                            onClick={() => rejectMutation.mutate(req.id)}
+                            disabled={rejectMutation.isPending}
+                            className="px-4 py-2 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 font-bold text-xs rounded-xl transition-all"
+                          >
+                            Từ chối
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12 text-slate-400 dark:text-gray-500 text-xs font-semibold">
+                      Không có yêu cầu gia nhập nào đang chờ duyệt!
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // ================= VIEW MODE =================
+              <div className="space-y-10 relative z-10">
               {/* Header Info */}
               <div className="flex flex-col sm:flex-row gap-8 items-start pb-8 border-b border-slate-100 dark:border-white/10">
                 <div className="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white shrink-0">
@@ -523,6 +658,7 @@ export function CompanyProfile() {
               </div>
 
             </div>
+            )
           ) : (
             // ================= EDIT MODE =================
             <form onSubmit={handleSubmit} className="space-y-10 relative z-10">

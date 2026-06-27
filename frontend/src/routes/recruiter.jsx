@@ -11,6 +11,7 @@ import { CampaignAnalytics } from "../pages/recruiter/CampaignAnalytics";
 import { CompanySettings } from "../pages/recruiter/CompanySettings";
 import { RecruiterNotifications } from "../pages/recruiter/HRNotifications";
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
+import { CompanySetup } from "../pages/recruiter/CompanySetup";
 
 export const recruiterRoutes = [
   { 
@@ -20,6 +21,10 @@ export const recruiterRoutes = [
   { 
     path: "post-job", 
     element: <ProtectedRoute requiredRole="hr"><PostJob /></ProtectedRoute>
+  },
+  { 
+    path: "company-setup", 
+    element: <ProtectedRoute requiredRole="hr"><CompanySetup /></ProtectedRoute>
   },
   { 
     path: "edit-job/:id", 
