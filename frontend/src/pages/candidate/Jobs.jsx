@@ -1,5 +1,5 @@
 import { SlidersHorizontal, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,6 +60,17 @@ export function Jobs() {
     }
   }, [routeLocation]);
 
+  // Debounced search — chỉ gọi API sau khi người dùng dừng gõ 400ms
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceTimer = useRef(null);
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 400);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search]);
+
   // Reset page to 1 when filters or sort change
   useEffect(() => {
     setCurrentPage(1);
@@ -67,11 +78,11 @@ export function Jobs() {
 
   // 1. Fetch Job Listings from API
   const { data: response, isLoading, isError, refetch } = useQuery({
-    queryKey: ["candidate-jobs-list", search, location],
+    queryKey: ["candidate-jobs-list", debouncedSearch, location],
     queryFn: async () => {
       const res = await jobApi.getJobs({
         status: "OPEN",
-        search: search.trim() || undefined,
+        search: debouncedSearch || undefined,
       });
       return res;
     }
@@ -159,9 +170,9 @@ export function Jobs() {
 
   // Client-side filtering logic with complete TopCV options
   const filteredJobs = formattedJobs.filter(job => {
-    // 1. Search Query filter
-    if (search.trim() !== "") {
-      const searchLower = search.toLowerCase();
+    // 1. Search Query filter (dùng debouncedSearch đã trim để tránh lỗi trailing space)
+    if (debouncedSearch !== "") {
+      const searchLower = debouncedSearch.toLowerCase();
       const matchTitle = job.title.toLowerCase().includes(searchLower);
       const matchCompany = job.company.toLowerCase().includes(searchLower);
       const matchReq = (job.requirements || "").toLowerCase().includes(searchLower);
