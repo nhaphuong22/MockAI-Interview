@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Play, Mic, MessageCircle, BarChart3, History, Sparkles, Trophy } from "lucide-react";
 import { DailyStreakWidget } from "./DailyStreakWidget";
 import { Leaderboard } from "./Leaderboard";
+import SkillTreeGraph from "../../pages/candidate/components/SkillTreeGraph";
 
 /**
  * InterviewSelection Component
@@ -78,30 +79,24 @@ export function InterviewSelection({ onStartInterview, previousSessions = [], on
 
         {/* Tab 1: New Practice Options */}
         {activeTab === "practice" && (
-          <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-300">
+          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
             {/* Daily Challenge Streak Widget */}
             <DailyStreakWidget />
 
-            {/* Voice Practice Option */}
-            <div
-              onClick={() => onStartInterview("voice")}
-              className="dark:bg-[#0f172a] bg-white rounded-3xl p-8 md:p-10 shadow-2xl border-2 border-dashed border-sky-200 dark:border-sky-500/20 hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] hover:shadow-sky-500/10 hover:-translate-y-1 transition-all cursor-pointer group text-center flex flex-col items-center justify-center relative overflow-hidden"
-            >
-              {/* Premium Glow effect */}
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-sky-400/10 dark:bg-sky-500/5 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-sky-400/10 dark:bg-sky-500/5 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-500" />
-              
-              <div className="w-20 h-20 dark:bg-[#1e293b] bg-[#f0f9ff] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-md">
-                <Mic className="w-10 h-10 text-[#0ea5e9]" />
-              </div>
-              <h2 className="text-2xl md:text-3xl dark:text-white font-extrabold mb-4">Luyện Phỏng Vấn Bằng Giọng Nói AI</h2>
-              <p className="dark:text-slate-400 text-gray-600 mb-6 leading-relaxed text-sm md:text-base font-medium max-w-lg">
-                Thực hành phản xạ phỏng vấn trực tiếp bằng giọng nói qua Microphone với AI Coach. AI tự động bóc tách giọng nói, phân tích độ sâu kỹ thuật, mức độ tự tin, cấu trúc STAR và xây dựng biểu đồ năng lực thời gian thực.
-              </p>
-              <div className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-2xl font-extrabold hover:shadow-xl hover:shadow-sky-500/15 group-hover:scale-105 active:scale-95 transition-all">
-                <Play className="w-5 h-5 fill-white" />
-                <span>Bắt Đầu Luyện Tập Giọng Nói</span>
-              </div>
+            {/* RPG Skill Tree Section as primary focal point */}
+            <div className="dark:bg-[#0f172a] bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-xl border dark:border-white/5 border-gray-200">
+              <SkillTreeGraph />
+            </div>
+
+            {/* Custom/Free Form Configuration option */}
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => onStartInterview("voice")}
+                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-dashed border-sky-300 dark:border-sky-500/40 hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] rounded-2xl dark:text-sky-400 text-[#0ea5e9] font-bold text-sm hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer shadow-sm shadow-sky-500/5 bg-sky-50/20 dark:bg-sky-950/10"
+              >
+                <Mic className="w-4 h-4" />
+                <span>Tự cấu hình buổi phỏng vấn tùy chỉnh (không theo Cây Kỹ Năng)</span>
+              </button>
             </div>
           </div>
         )}

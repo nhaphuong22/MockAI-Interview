@@ -32,7 +32,7 @@ export function CVReview() {
   };
 
   const scoreMutation = useMutation({
-    mutationFn: (data) => cvApi.scoreCV(data.cvText, data.jobTitle, data.jobDescription),
+    mutationFn: (data) => cvApi.scoreCV(data.cvText, data.jobTitle, data.jobDescription, data.fileUrl),
     onSuccess: (res) => {
       // res from interceptor is { message, data }
       setAiResults(res.data);
@@ -54,12 +54,13 @@ export function CVReview() {
     onSuccess: (res) => {
       // res is from axios interceptor which already returns response.data
       const text = res.data?.text || '';
+      const fileUrl = res.data?.fileUrl || '';
       console.log('CV Text Extracted:', text.substring(0, 100) + '...');
       setCvText(text);
       setHasCV(true);
       
       // Auto trigger scoreCV with job description
-      scoreMutation.mutate({ cvText: text, jobTitle, jobDescription });
+      scoreMutation.mutate({ cvText: text, jobTitle, jobDescription, fileUrl });
     },
     onError: (error) => {
       console.error('Lỗi khi tải CV:', error);

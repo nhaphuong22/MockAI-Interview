@@ -1,5 +1,6 @@
 import db from '../db/knex.js';
 import { generateOverallAssessmentFromGroq } from './groqService.js';
+import { updateSkillTreeOnInterviewComplete } from './skillTreeService.js';
 import { 
   findSessionById, 
   insertSession, 
@@ -271,19 +272,30 @@ export const assessAndPackageResult = async (sessionId, userId) => {
       updated_at: new Date()
     });
   } else {
-    await insertAssessment({
-      interview_id: interview.id,
-      overall_score: overallScore,
-      feedback_summary: feedbackSummary,
-      learning_path: JSON.stringify(learningPath),
-      radar_skills: JSON.stringify(radarSkills),
-      qa_details: JSON.stringify(qaDetails),
-      created_at: new Date(),
-      updated_at: new Date()
-    });
-  }
+      await insertAssessment({
+        interview_id: interview.id,
+        overall_score: overallScore,
+        feedback_summary: feedbackSummary,
+        learning_path: JSON.stringify(learningPath),
+        radar_skills: JSON.stringify(radarSkills),
+        qa_details: JSON.stringify(qaDetails),
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    }
 
-  // 5. Package results as JSON object
+    // 4.5. Cập nhật cây kỹ năng của ứng viên
+    try {
+      await updateSkillTreeOnInterviewComplete(
+        interview.user_id,
+        interview.custom_skills,
+        overallScore
+      );
+    } catch (stErr) {
+      console.error('[SkillTree] Lỗi khi cập nhật cây kỹ năng sau buổi phỏng vấn thử:', stErr.message);
+    }
+
+    // 5. Package results as JSON object
   return {
     interview_id: interview.id,
     session_id: Number(sessionId),

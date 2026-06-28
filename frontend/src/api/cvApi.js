@@ -10,8 +10,8 @@ export const cvApi = {
       }
     });
   },
-  scoreCV: (cv_text, job_title, job_description) => {
-    return axiosClient.post('/cv/score', { cv_text, job_title, job_description });
+  scoreCV: (cv_text, job_title, job_description, fileUrl) => {
+    return axiosClient.post('/cv/score', { cv_text, job_title, job_description, fileUrl });
   },
   exportPdf: (aiResults) => {
     return axiosClient.post('/cv/export-pdf', aiResults, {

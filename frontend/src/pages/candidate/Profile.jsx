@@ -65,8 +65,6 @@ export function Profile() {
                 <AboutSection user={user} />
               </Tabs.Content>
 
-
-
               <Tabs.Content value="ats-report" className="p-6">
                 <AtsReportDashboard />
               </Tabs.Content>
