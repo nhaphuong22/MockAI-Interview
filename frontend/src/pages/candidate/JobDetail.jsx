@@ -352,7 +352,13 @@ export function JobDetail() {
                   <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-[#0ea5e9] text-[#0ea5e9]" : ""}`} />
                   <span>{isBookmarked ? "Đã lưu" : "Lưu việc"}</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 border-2 border-gray-200 dark:border-white/10 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] dark:hover:bg-sky-500/10 transition-all text-sm cursor-pointer">
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    addToast("Đã sao chép liên kết việc làm vào khay nhớ tạm!", "success");
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 border-2 border-gray-200 dark:border-white/10 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] dark:hover:bg-sky-500/10 transition-all text-sm cursor-pointer"
+                >
                   <Share2 className="w-5 h-5" />
                   <span>Chia sẻ</span>
                 </button>

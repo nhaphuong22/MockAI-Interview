@@ -14,7 +14,7 @@ export function SettingsSidebar({ user, activeTab, setActiveTab, menuItems, logo
         </div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white truncate">{fullName || "Ứng viên MockAI"}</h3>
         <p className="text-[11px] text-gray-400 font-medium truncate mt-1">{user?.email}</p>
-        <p className="text-xs text-[#0ea5e9] font-bold uppercase tracking-widest mt-2 px-3 py-1 bg-sky-50 rounded-full inline-block">
+        <p className="text-xs text-[#0ea5e9] dark:text-sky-400 font-bold uppercase tracking-widest mt-2 px-3 py-1 bg-sky-50 dark:bg-sky-500/10 rounded-full inline-block">
           {user?.role === "HR" ? "Recruiter Member" : "Candidate Member"}
         </p>
       </div>
@@ -25,14 +25,14 @@ export function SettingsSidebar({ user, activeTab, setActiveTab, menuItems, logo
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all group ${
+              className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all group cursor-pointer ${
                 activeTab === item.id 
-                  ? "bg-sky-50 text-[#0ea5e9]" 
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-white/5 hover:text-gray-900 dark:text-white"
+                  ? "bg-sky-50 dark:bg-sky-500/15 text-[#0ea5e9] dark:text-sky-400 font-bold" 
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <div className="flex items-center gap-4">
-                <div className={`p-2 rounded-xl transition-colors ${activeTab === item.id ? "bg-white dark:bg-[#0f172a] shadow-sm" : "bg-gray-100 group-hover:bg-white dark:bg-[#0f172a]"}`}>
+                <div className={`p-2 rounded-xl transition-colors ${activeTab === item.id ? "bg-white dark:bg-sky-500/20 text-[#0ea5e9] dark:text-sky-400 shadow-sm" : "bg-gray-100 dark:bg-white/5 group-hover:bg-white dark:group-hover:bg-white/10"}`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="text-left">
@@ -48,9 +48,9 @@ export function SettingsSidebar({ user, activeTab, setActiveTab, menuItems, logo
       <div className="mt-4 pt-4 border-t border-gray-50 dark:border-white/5">
         <button 
           onClick={logout}
-          className="w-full flex items-center gap-4 p-4 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold text-sm cursor-pointer"
+          className="w-full flex items-center gap-4 p-4 rounded-2xl text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all font-bold text-sm cursor-pointer"
         >
-          <div className="p-2 bg-red-100 rounded-xl">
+          <div className="p-2 bg-red-100 dark:bg-red-500/20 rounded-xl">
             <LogOut className="w-5 h-5" />
           </div>
           Đăng xuất
