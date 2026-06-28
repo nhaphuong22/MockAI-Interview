@@ -1,16 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Lock, Bell, CreditCard, Shield, Globe, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import { AccountSettings } from "./components/AccountSettings";
 import { PlaceholderSettings } from "./components/PlaceholderSettings";
 import { SecuritySettings } from "./components/SecuritySettings";
+import { getAbsoluteMediaUrl } from "../../utils/mediaUtils";
 
 export function Settings() {
   const { user, setAuth, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("account");
+
+  useEffect(() => {
+    if (searchParams.get("focus")) {
+      setActiveTab("account");
+    }
+  }, [searchParams]);
 
   const menuItems = [
     { id: "account", icon: User, title: "Thông tin cá nhân", desc: "Quản lý tên, email và số điện thoại" },
@@ -31,17 +39,9 @@ export function Settings() {
   const activeMenu = menuItems.find(item => item.id === activeTab);
   const fullName = user?.full_name || user?.fullName || "";
   const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || localStorage.getItem("googleAvatar") || "";
-  const getAbsoluteAvatarUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    const backendUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace("/api", "")
-      : "http://localhost:5000";
-    return `${backendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
-  };
   const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
     ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
-    : getAbsoluteAvatarUrl(rawAvatarUrl);
+    : getAbsoluteMediaUrl(rawAvatarUrl);
 
   return (
     <div className="dark:bg-transparent bg-gray-50/50 min-h-screen py-10">
@@ -78,6 +78,7 @@ export function Settings() {
                 <AccountSettings 
                   user={user} 
                   onUpdateUser={handleUpdateUser} 
+                  focusField={searchParams.get("focus")}
                 />
               ) : activeTab === "security" ? (
                 <SecuritySettings />

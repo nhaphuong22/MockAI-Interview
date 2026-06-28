@@ -95,7 +95,7 @@ export function SecuritySettings() {
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Nhập mật khẩu hiện tại"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl focus:bg-white dark:focus:bg-[#1e293b] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-200 dark:border-white/10 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
@@ -123,7 +123,7 @@ export function SecuritySettings() {
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Tối thiểu 6 ký tự"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl focus:bg-white dark:focus:bg-[#1e293b] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-200 dark:border-white/10 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
@@ -172,7 +172,7 @@ export function SecuritySettings() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Nhập lại mật khẩu mới"
               required
-              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl focus:bg-white dark:bg-[#0f172a] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-100 dark:border-white/10 [&::-ms-reveal]:hidden"
+              className="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl focus:bg-white dark:focus:bg-[#1e293b] focus:border-[#0ea5e9] focus:outline-none transition-all font-medium border border-gray-200 dark:border-white/10 [&::-ms-reveal]:hidden"
             />
             <button
               type="button"
@@ -191,9 +191,9 @@ export function SecuritySettings() {
         </div>
 
         {/* Security Tips */}
-        <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4">
-          <p className="text-xs font-bold text-sky-700 mb-2">💡 Gợi ý tạo mật khẩu mạnh:</p>
-          <ul className="text-xs text-sky-600 space-y-1 list-disc list-inside">
+        <div className="bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20 rounded-2xl p-4">
+          <p className="text-xs font-bold text-sky-700 dark:text-sky-400 mb-2">💡 Gợi ý tạo mật khẩu mạnh:</p>
+          <ul className="text-xs text-sky-600 dark:text-sky-300 space-y-1 list-disc list-inside">
             <li>Ít nhất 10 ký tự</li>
             <li>Kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt</li>
             <li>Không dùng thông tin cá nhân như ngày sinh, tên</li>

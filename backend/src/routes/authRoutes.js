@@ -11,6 +11,7 @@ import {
   resetPasswordController,
   changePasswordController,
   uploadAvatarController,
+  uploadCoverController,
   getProfile,
   requestCompanyOtpController,
   verifyCompanyOtpController,
@@ -304,5 +305,6 @@ router.post('/company/resend-otp', authenticateToken, resendCompanyOtpController
  *         description: Tải lên thành công.
  */
 router.post('/upload-avatar', authenticateToken, uploadAvatar.single('avatar'), uploadAvatarController);
+router.post('/upload-cover', authenticateToken, uploadAvatar.single('cover'), uploadCoverController);
 
 export default router;

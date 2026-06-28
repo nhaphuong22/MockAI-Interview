@@ -37,6 +37,21 @@ export const uploadAvatarApi = async (file) => {
 };
 
 /**
+ * Upload cover image
+ * @param {File} file
+ */
+export const uploadCoverApi = async (file) => {
+  const formData = new FormData();
+  formData.append("cover", file);
+
+  return axiosClient.post("/auth/upload-cover", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+/**
  * Login user via Google OAuth.
  * @param {string} idToken
  */
