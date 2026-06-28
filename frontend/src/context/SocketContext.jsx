@@ -69,6 +69,26 @@ export const SocketProvider = ({ children }) => {
       }
     });
 
+    // Lắng nghe sự kiện cập nhật skill tree real-time
+    socketInstance.on("skill_tree_update", (updatedTree) => {
+      console.log("[Socket] Nhận cập nhật skill tree mới:", updatedTree);
+      
+      showToast({
+        message: "Sơ đồ cây kỹ năng của bạn đã được cập nhật!",
+        type: "success"
+      });
+
+      // Cập nhật trực tiếp cache query cho "skillTree"
+      queryClient.setQueryData(["skillTree"], (oldData) => {
+        if (!oldData) return updatedTree;
+        return {
+          ...oldData,
+          graph_data: updatedTree.graph_data,
+          last_updated: updatedTree.last_updated
+        };
+      });
+    });
+
     let disconnectToastShown = false;
 
     socketInstance.on("connect_error", (error) => {
