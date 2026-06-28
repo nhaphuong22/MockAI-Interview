@@ -627,4 +627,118 @@ ${content.substring(0, 1000)} ${content.length > 1000 ? '...' : ''}`;
   }
 };
 
+/**
+ * Generate a single daily flash question with expected answer guidelines
+ * for a specific career track using Groq Cloud API (Qwen 3 32B model)
+ * 
+ * @param {string} track - Career track (e.g., 'frontend', 'backend', etc.)
+ * @returns {Promise<{question_text: string, sample_answer: string}>}
+ */
+export const generateDailyQuestionFromGroq = async (track = '') => {
+  const apiKey = process.env.GROQ_API_KEY;
+  const modelName = process.env.GROQ_MODEL || 'qwen/qwen3-32b';
+
+  if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
+    throw new Error('GROQ_API_KEY chưa được cấu hình hoặc giá trị không hợp lệ trong file .env ở Backend!');
+  }
+
+  if (apiKey === 'mock-groq-key') {
+    const mockQuestions = {
+      frontend: {
+        question_text: "Restful API là gì? Hãy cho tôi biết về 1 số Http method và khi nào thì dùng nó?",
+        sample_answer: "RESTful API là chuẩn thiết kế API sử dụng HTTP methods: GET (lấy dữ liệu), POST (tạo mới), PUT (cập nhật toàn bộ), PATCH (cập nhật một phần), DELETE (xóa)."
+      },
+      backend: {
+        question_text: "Hãy giải thích về cơ chế connection pooling trong PostgreSQL và tại sao nó quan trọng?",
+        sample_answer: "Connection pooling giữ các kết nối database mở sẵn và dùng lại chúng, tránh việc tạo/đóng kết nối liên tục giúp giảm thiểu độ trễ và tải cho DB."
+      },
+      fullstack: {
+        question_text: "So sánh Server-Side Rendering (SSR) và Client-Side Rendering (CSR) về SEO và trải nghiệm người dùng?",
+        sample_answer: "SSR render HTML ở server nên tốt cho SEO và load lần đầu nhanh. CSR render ở client nên mượt mà sau khi load xong nhưng kém SEO hơn."
+      },
+      design: {
+        question_text: "Quy tắc 60-30-10 trong phối màu UI/UX thiết kế là gì?",
+        sample_answer: "Quy tắc phối màu gồm: 60% màu chủ đạo (nền), 30% màu phụ (cấu trúc/text), và 10% màu nhấn (CTA, highlight)."
+      },
+      qa: {
+        question_text: "Phân biệt Regression Testing và Sanity Testing?",
+        sample_answer: "Regression testing kiểm thử toàn bộ hệ thống sau thay đổi để đảm bảo không lỗi cũ. Sanity testing kiểm tra nhanh một phần tính năng cụ thể vừa cập nhật."
+      },
+      pm: {
+        question_text: "Khái niệm MVP (Minimum Viable Product) là gì và làm thế nào để xác định phạm vi của MVP?",
+        sample_answer: "MVP là phiên bản sản phẩm tối giản nhất chứa đủ tính năng cốt lõi để thu thập phản hồi từ người dùng thực tế nhằm tối ưu hóa chi phí."
+      },
+      data_science: {
+        question_text: "Phân biệt Overfitting và Underfitting trong mô hình học máy?",
+        sample_answer: "Overfitting là mô hình quá khớp dữ liệu train nhưng kém trên dữ liệu mới. Underfitting là mô hình quá đơn giản không học được cấu trúc dữ liệu."
+      }
+    };
+    return mockQuestions[track.toLowerCase()] || {
+      question_text: `Hãy trả lời câu hỏi chuyên môn ngắn gọn về ngành nghề: ${track}`,
+      sample_answer: `Gợi ý câu trả lời cho ngành nghề: ${track}.`
+    };
+  }
+
+  const systemPrompt = `Bạn là một Chuyên gia Tuyển dụng AI cao cấp.
+Nhiệm vụ của bạn là sinh ra duy nhất **1 câu hỏi phỏng vấn nhanh hóc búa** (Daily Flash Interview) và **câu trả lời gợi ý cực kỳ súc tích** cho ngành nghề (career track) được cung cấp.
+
+Yêu cầu câu hỏi:
+1. Câu hỏi phải mang tính thực chiến, tập trung vào các vấn đề hóc búa, kỹ thuật chuyên sâu hoặc các tình huống giải quyết vấn đề của ngành nghề đó.
+2. Ngôn ngữ câu hỏi phải là tiếng Việt tự nhiên, chuyên nghiệp và chuẩn xác thuật ngữ chuyên ngành.
+3. Câu hỏi phải rõ ràng, kích thích tư duy và trả lời được trong vòng 60 giây.
+
+Yêu cầu câu trả lời gợi ý (sample_answer):
+1. Phải cực kỳ ngắn gọn, súc tích (dưới 40 từ).
+2. Tóm tắt các ý chính cốt lõi nhất ứng viên cần trả lời để đạt điểm tối đa.
+
+Bạn PHẢI trả về kết quả ở định dạng JSON duy nhất, có cấu trúc như sau:
+{
+  "question_text": "Nội dung câu hỏi phỏng vấn...",
+  "sample_answer": "Ý chính cốt lõi ứng viên cần trình bày (cực kỳ ngắn gọn)..."
+}`;
+
+  const userPrompt = `Hãy sinh 1 câu hỏi phỏng vấn nhanh hàng ngày cho ngành nghề (career track): ${track}`;
+
+  try {
+    const url = 'https://api.groq.com/openai/v1/chat/completions';
+    const response = await fetchWithRetry(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: modelName,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Groq API request failed with status: ${response.status}`);
+    }
+
+    const resData = await response.json();
+    const content = resData.choices[0].message.content;
+    const parsedData = safeParseJSON(content);
+
+    if (parsedData && parsedData.question_text) {
+      return {
+        question_text: parsedData.question_text,
+        sample_answer: parsedData.sample_answer || 'Không có gợi ý câu trả lời.'
+      };
+    } else {
+      throw new Error('Groq returned invalid JSON schema for daily question');
+    }
+  } catch (error) {
+    console.error(`Failed to generate daily question for track ${track} from Groq API:`, error);
+    throw error;
+  }
+};
+
+
 

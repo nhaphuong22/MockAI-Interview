@@ -1,4 +1,5 @@
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
+import { runDailyQuestionGeneration } from '../services/dailySchedulerService.js';
 
 const getSystemPrompt = (isAuthenticated) => `Bạn là MockAI Assistant — trợ lý AI thông minh của nền tảng MockAI Interview.
 
@@ -105,5 +106,19 @@ export const aiChat = async (req, res) => {
   } catch (error) {
     console.error('[AI Chat] Unexpected error:', error);
     return sendError(res, 500, 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại.');
+  }
+};
+
+/**
+ * POST /api/ai/trigger-daily-questions
+ * Manually trigger daily question generation for all tracks (for testing)
+ */
+export const triggerDailyQuestions = async (req, res) => {
+  try {
+    await runDailyQuestionGeneration();
+    return sendResponse(res, 200, { message: 'Đã trigger thành công sinh câu hỏi hàng ngày cho các track.' });
+  } catch (error) {
+    console.error('[AI Trigger Daily] Error:', error);
+    return sendError(res, 500, `Lỗi khi sinh câu hỏi: ${error.message}`);
   }
 };
