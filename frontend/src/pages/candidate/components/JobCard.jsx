@@ -27,13 +27,21 @@ export function JobCard({
           <Link
             to={`/companies/${job.company_id}`}
             onClick={(e) => e.stopPropagation()}
-            className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md shadow-sky-100 dark:shadow-none hover:opacity-90 transition-opacity"
+            className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md shadow-sky-100 dark:shadow-none hover:opacity-90 transition-opacity overflow-hidden"
           >
-            {job.logo}
+            {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
+              <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+            ) : (
+              job.logo
+            )}
           </Link>
         ) : (
-          <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md shadow-sky-100 dark:shadow-none">
-            {job.logo}
+          <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md shadow-sky-100 dark:shadow-none overflow-hidden">
+            {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
+              <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+            ) : (
+              job.logo
+            )}
           </div>
         )}
 
