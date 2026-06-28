@@ -29,6 +29,7 @@ if (missingEnv.length > 0) {
 import app from './src/app.js';
 
 import { setupSocket } from './src/socket.js';
+import { initDailyScheduler } from './src/services/dailySchedulerService.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -36,6 +37,9 @@ const server = http.createServer(app);
 
 // Khởi tạo Socket.io
 setupSocket(server);
+
+// Khởi tạo Scheduler sinh câu hỏi hàng ngày
+initDailyScheduler();
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Play, Mic, MessageCircle, BarChart3, History, Sparkles } from "lucide-react";
+import { Play, Mic, MessageCircle, BarChart3, History, Sparkles, Trophy } from "lucide-react";
+import { DailyStreakWidget } from "./DailyStreakWidget";
+import { Leaderboard } from "./Leaderboard";
 
 /**
  * InterviewSelection Component
@@ -60,12 +62,26 @@ export function InterviewSelection({ onStartInterview, previousSessions = [], on
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab("leaderboard")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                activeTab === "leaderboard"
+                  ? "bg-white dark:bg-[#0ea5e9] dark:text-white text-gray-900 shadow-md scale-105"
+                  : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              <span>Bảng Xếp Hạng</span>
+            </button>
           </div>
         </div>
 
         {/* Tab 1: New Practice Options */}
         {activeTab === "practice" && (
-          <div className="max-w-2xl mx-auto animate-in fade-in zoom-in-95 duration-300">
+          <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-300">
+            {/* Daily Challenge Streak Widget */}
+            <DailyStreakWidget />
+
             {/* Voice Practice Option */}
             <div
               onClick={() => onStartInterview("voice")}
@@ -157,6 +173,13 @@ export function InterviewSelection({ onStartInterview, previousSessions = [], on
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab 3: Global Leaderboard */}
+        {activeTab === "leaderboard" && (
+          <div className="animate-in fade-in zoom-in-95 duration-300">
+            <Leaderboard />
           </div>
         )}
       </div>
