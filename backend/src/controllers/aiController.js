@@ -60,7 +60,20 @@ export const aiChat = async (req, res) => {
     
     // Check if user is authenticated via Authorization header
     const authHeader = req.headers.authorization;
-    const isAuthenticated = authHeader && authHeader.startsWith('Bearer ') && authHeader.length > 20;
+    let isAuthenticated = false;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        // Verify the token using the application's JWT secret
+        const jwt = await import('jsonwebtoken');
+        const secret = process.env.JWT_SECRET || 'supersecretmockai2026';
+        jwt.default.verify(token, secret);
+        isAuthenticated = true; // Token is valid
+      } catch (err) {
+        isAuthenticated = false; // Token is invalid or expired
+      }
+    }
 
     const messages = [
       { role: 'system', content: getSystemPrompt(isAuthenticated) },
