@@ -83,7 +83,7 @@ export const requestBlogReview = async (blogId, authorId) => {
 
   // Clear blogs cache
   await deleteCachePattern('blogs:published*');
-  await deleteCache(`blogs:detail:${blogId}`);
+  await deleteCachePattern(`blogs:detail:*blogs/${blogId}*`);
 
   return updatedArticle;
 };
@@ -172,7 +172,7 @@ export const reactToBlog = async (blogId, userId, reactionType = 'LIKE') => {
 
   // Clear cache của bài viết
   await deleteCachePattern('blogs:published*');
-  await deleteCache(`blogs:detail:${blogId}`);
+  await deleteCachePattern(`blogs:detail:*blogs/${blogId}*`);
 
   // Trả về số liệu count mới nhất
   const currentReactionCounts = await db('blog_reactions')
@@ -230,7 +230,7 @@ export const addBlogComment = async (blogId, userId, content) => {
 
   // Clear cache
   await deleteCachePattern('blogs:published*');
-  await deleteCache(`blogs:detail:${blogId}`);
+  await deleteCachePattern(`blogs:detail:*blogs/${blogId}*`);
 
   return newComment;
 };

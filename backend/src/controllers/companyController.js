@@ -1,6 +1,9 @@
 import { getCompanyById, toggleCompanyFollow, getCompanyFollowersProfiles } from '../services/companyService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import db from '../db/knex.js';
+import cloudinary from '../core/cloudinary.js';
+import fs from 'fs';
+import { deleteCachePattern } from '../config/redis.js';
 
 /**
  * API lấy danh sách các công ty đã được phê duyệt hoạt động
@@ -15,7 +18,7 @@ export const getCompanies = async (req, res) => {
       query.where('name', 'ilike', `%${search}%`);
     }
     
-    const list = await query.select('id', 'name', 'logo_url', 'website', 'address', 'city', 'industry', 'company_size');
+    const list = await query.select('id', 'name', 'tax_code', 'logo_url', 'website', 'address', 'city', 'industry', 'company_size');
     return sendResponse(res, 200, list);
   } catch (error) {
     console.error('Lỗi trong companyController.getCompanies:', error);
@@ -31,7 +34,8 @@ export const createCompany = async (req, res) => {
     const userId = req.user.id;
     const { 
       name, taxCode, website, logoUrl, description, 
-      companySize, industry, city, address, documentUrl 
+      companySize, industry, city, address, businessType,
+      idCardNumber, urls
     } = req.body;
 
     if (!name || !taxCode) {
@@ -48,6 +52,7 @@ export const createCompany = async (req, res) => {
     const [newCompany] = await db('companies').insert({
       name,
       tax_code: taxCode,
+      business_type: businessType || 'ENTERPRISE',
       website: website || null,
       logo_url: logoUrl || null,
       description: description || null,
@@ -55,7 +60,7 @@ export const createCompany = async (req, res) => {
       industry: industry || null,
       city: city || null,
       address: address || null,
-      document_url: documentUrl || null,
+      document_url: urls?.licenseFileUrl || null,
       verification_status: 'PENDING', // Đang chờ Admin duyệt
       creator_id: userId,
       created_at: new Date(),
@@ -64,10 +69,14 @@ export const createCompany = async (req, res) => {
 
     const newCompanyId = newCompany.id || newCompany;
 
-    // Cập nhật thông tin user: liên kết với công ty này và set join status là APPROVED (vì là chủ/creator)
+    // Cập nhật thông tin user: liên kết với công ty này và set join status là APPROVED (vì là chủ/creator), cập nhật giấy tờ
     await db('users').where({ id: userId }).update({
       company_id: newCompanyId,
       company_join_status: 'APPROVED',
+      id_card_number: idCardNumber || null,
+      id_front_url: urls?.idFrontUrl || null,
+      id_back_url: urls?.idBackUrl || null,
+      auth_letter_url: urls?.authFileUrl || null,
       updated_at: new Date()
     });
 
@@ -87,7 +96,7 @@ export const createCompany = async (req, res) => {
 export const joinCompany = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { companyId } = req.body;
+    const { companyId, idCardNumber, urls } = req.body;
 
     if (!companyId) {
       return sendError(res, 400, 'ID công ty là bắt buộc.');
@@ -108,10 +117,14 @@ export const joinCompany = async (req, res) => {
       return sendError(res, 400, 'Bạn đã liên kết với một công ty khác. Vui lòng rời công ty cũ trước.');
     }
 
-    // Cập nhật yêu cầu gia nhập
+    // Cập nhật yêu cầu gia nhập, cập nhật trạng thái PENDING cho HR Gốc duyệt, cập nhật giấy tờ
     await db('users').where({ id: userId }).update({
       company_id: companyId,
       company_join_status: 'PENDING',
+      id_card_number: idCardNumber || null,
+      id_front_url: urls?.idFrontUrl || null,
+      id_back_url: urls?.idBackUrl || null,
+      auth_letter_url: urls?.authFileUrl || null,
       updated_at: new Date()
     });
 
@@ -139,7 +152,7 @@ export const getJoinRequests = async (req, res) => {
 
     const requests = await db('users')
       .where({ company_id: myCompany.id, company_join_status: 'PENDING' })
-      .select('id', 'email', 'full_name', 'phone', 'created_at');
+      .select('id', 'email', 'full_name', 'phone', 'created_at', 'id_front_url', 'id_back_url', 'auth_letter_url');
 
     return sendResponse(res, 200, requests);
   } catch (error) {
@@ -308,5 +321,126 @@ export const getCompanyFollowers = async (req, res) => {
   } catch (error) {
     console.error('Lỗi trong companyController.getCompanyFollowers:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi lấy danh sách theo dõi.');
+  }
+};
+
+// ─── Verification Docs Upload ──────────────────────────────────────────────────
+
+export const uploadVerificationDocsController = async (req, res) => {
+  try {
+    const files = req.files;
+
+    // Helper to upload a single file to Cloudinary and delete local temp file
+    const uploadToCloudinary = async (fileArray, folder) => {
+      if (fileArray && fileArray.length > 0) {
+        const file = fileArray[0];
+        try {
+          const result = await cloudinary.uploader.upload(file.path, { folder });
+          return result.secure_url;
+        } finally {
+          await fs.promises.unlink(file.path).catch(e => console.error(e));
+        }
+      }
+      return null;
+    };
+
+    const urls = {};
+
+    if (files?.authFile) {
+      urls.authFileUrl = await uploadToCloudinary(files.authFile, 'company_docs/auth_letters');
+    }
+    if (files?.idFrontFile) {
+      urls.idFrontUrl = await uploadToCloudinary(files.idFrontFile, 'company_docs/id_cards');
+    }
+    if (files?.idBackFile) {
+      urls.idBackUrl = await uploadToCloudinary(files.idBackFile, 'company_docs/id_cards');
+    }
+    if (files?.licenseFile) {
+      urls.licenseFileUrl = await uploadToCloudinary(files.licenseFile, 'company_docs/licenses');
+    }
+
+    return sendResponse(res, 200, {
+      message: 'Tải lên tài liệu thành công.',
+      urls
+    });
+  } catch (error) {
+    console.error('Lỗi tải lên tài liệu xác minh:', error);
+    return sendError(res, 500, 'Lỗi hệ thống khi tải lên tài liệu.');
+  }
+};
+
+/**
+ * API HR phụ rời khỏi công ty hiện tại
+ */
+export const leaveCompany = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Tìm thông tin user
+    const user = await db('users').where({ id: userId }).first();
+    if (!user) {
+      return sendError(res, 404, 'Không tìm thấy thông tin tài khoản.');
+    }
+
+    if (!user.company_id) {
+      return sendError(res, 400, 'Bạn chưa liên kết với bất kỳ doanh nghiệp nào.');
+    }
+
+    // Kiểm tra xem user có phải là chủ sở hữu (HR gốc) của công ty hay không
+    const company = await db('companies').where({ id: user.company_id }).first();
+    if (company && company.creator_id === userId) {
+      return sendError(res, 400, 'Bạn là người tạo (HR gốc) của công ty này. Bạn không thể rời đi. Vui lòng chọn Xóa doanh nghiệp nếu muốn xóa hoàn toàn.');
+    }
+
+    // Tiến hành rời công ty (reset company_id và company_join_status)
+    await db('users').where({ id: userId }).update({
+      company_id: null,
+      company_join_status: null,
+      updated_at: new Date()
+    });
+
+    return sendResponse(res, 200, { message: 'Đã rời khỏi doanh nghiệp thành công.' });
+  } catch (error) {
+    console.error('Lỗi trong companyController.leaveCompany:', error);
+    return sendError(res, 500, 'Lỗi hệ thống khi rời công ty.');
+  }
+};
+
+/**
+ * API HR gốc xóa công ty và toàn bộ dữ liệu liên quan
+ */
+export const deleteCompany = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Tìm công ty do user này sở hữu làm creator
+    const company = await db('companies').where({ creator_id: userId }).first();
+    if (!company) {
+      return sendError(res, 403, 'Bạn không phải là chủ sở hữu (HR gốc) của bất kỳ doanh nghiệp nào.');
+    }
+
+    await db.transaction(async (trx) => {
+      // 1. Cập nhật reset company liên kết của toàn bộ HR thành viên thuộc công ty này về null
+      await trx('users').where({ company_id: company.id }).update({
+        company_id: null,
+        company_join_status: null,
+        updated_at: new Date()
+      });
+
+      // 2. Xóa các tin tuyển dụng liên quan
+      await trx('jobs').where({ company_id: company.id }).delete();
+      
+      // 3. Xóa công ty khỏi bảng companies
+      await trx('companies').where({ id: company.id }).delete();
+    });
+
+    // Xóa cache liên quan
+    await deleteCachePattern('jobs:*');
+    await deleteCachePattern('companies:*');
+
+    return sendResponse(res, 200, { message: 'Xóa doanh nghiệp và tất cả tin tuyển dụng liên quan thành công.' });
+  } catch (error) {
+    console.error('Lỗi trong companyController.deleteCompany:', error);
+    return sendError(res, 500, 'Lỗi hệ thống khi xóa doanh nghiệp.');
   }
 };

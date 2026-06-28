@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Building2, Globe, Briefcase, Users, FileText, Camera, Loader2, Save,
-  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart, AlertTriangle
+  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart, AlertTriangle, Trash2, LogOut
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import axiosClient from "../../api/axiosClient";
@@ -143,6 +143,8 @@ export function CompanyProfile() {
   const [otpValue, setOtpValue] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState("info"); // "info" | "requests"
 
   const { data: verifyStatus } = useQuery({
@@ -188,6 +190,40 @@ export function CompanyProfile() {
     },
     onError: (err) => {
       showToast(err.response?.data?.message || "Không thể từ chối.", "error");
+    }
+  });
+
+  const leaveCompanyMutation = useMutation({
+    mutationFn: async () => {
+      return axiosClient.post('/companies/my-company/leave');
+    },
+    onSuccess: (res) => {
+      showToast(res.data?.message || "Đã rời khỏi công ty thành công!", "success");
+      const updatedUser = { ...user, company_id: null, company_join_status: null };
+      setAuth(updatedUser, localStorage.getItem('token'));
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể rời khỏi công ty.", "error");
+    }
+  });
+
+  const deleteCompanyMutation = useMutation({
+    mutationFn: async () => {
+      return axiosClient.delete('/companies/my-company');
+    },
+    onSuccess: (res) => {
+      showToast(res.data?.message || "Đã xóa công ty thành công!", "success");
+      const updatedUser = { ...user, company_id: null, company_join_status: null };
+      setAuth(updatedUser, localStorage.getItem('token'));
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể xóa công ty.", "error");
     }
   });
 
@@ -425,14 +461,37 @@ export function CompanyProfile() {
             </div>
           </div>
 
-          {!isEditing && isCreator && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold rounded-xl hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors"
-            >
-              <Edit3 size={18} />
-              <span>Chỉnh sửa hồ sơ</span>
-            </button>
+          {!isEditing && (
+            <div className="flex items-center gap-3">
+              {isCreator ? (
+                <>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold rounded-xl hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors cursor-pointer"
+                  >
+                    <Edit3 size={18} />
+                    <span>Chỉnh sửa hồ sơ</span>
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold rounded-xl hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={18} />
+                    <span>Xóa doanh nghiệp</span>
+                  </button>
+                </>
+              ) : (
+                user?.company_id && (
+                  <button
+                    onClick={() => setShowLeaveConfirm(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold rounded-xl hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors cursor-pointer"
+                  >
+                    <LogOut size={18} />
+                    <span>Rời khỏi công ty</span>
+                  </button>
+                )
+              )}
+            </div>
           )}
         </motion.div>
 
@@ -502,10 +561,28 @@ export function CompanyProfile() {
                   {joinRequests.length > 0 ? (
                     joinRequests.map((req) => (
                       <div key={req.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 gap-4">
-                        <div className="space-y-1">
+                        <div className="space-y-1 flex-1">
                           <p className="font-bold text-slate-800 dark:text-white text-sm">{req.full_name}</p>
                           <p className="text-xs text-slate-400 font-semibold">{req.email} • {req.phone || "Không có SĐT"}</p>
-                          <p className="text-[10px] text-slate-400 font-semibold">Ngày yêu cầu: {new Date(req.created_at).toLocaleDateString('vi-VN')}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mb-2">Ngày yêu cầu: {new Date(req.created_at).toLocaleDateString('vi-VN')}</p>
+                          
+                          <div className="flex gap-3 text-xs mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded-lg inline-flex flex-wrap">
+                            {req.id_front_url && (
+                              <a href={req.id_front_url} target="_blank" rel="noopener noreferrer" className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold">
+                                <ExternalLink size={12}/> CCCD (Trước)
+                              </a>
+                            )}
+                            {req.id_back_url && (
+                              <a href={req.id_back_url} target="_blank" rel="noopener noreferrer" className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold">
+                                <ExternalLink size={12}/> CCCD (Sau)
+                              </a>
+                            )}
+                            {req.auth_letter_url && (
+                              <a href={req.auth_letter_url} target="_blank" rel="noopener noreferrer" className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold">
+                                <ExternalLink size={12}/> Giấy Uỷ quyền
+                              </a>
+                            )}
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -1047,6 +1124,91 @@ export function CompanyProfile() {
                     ))}
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal xác nhận rời công ty */}
+      <AnimatePresence>
+        {showLeaveConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 max-w-md w-full border border-slate-100 dark:border-white/10 shadow-2xl relative"
+            >
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+                <AlertTriangle className="text-amber-500" size={24} />
+                Xác nhận rời công ty
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed font-medium">
+                Bạn có chắc chắn muốn rời khỏi công ty hiện tại không? Mọi quyền hạn tuyển dụng của bạn tại công ty này sẽ bị hủy bỏ ngay lập tức.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowLeaveConfirm(false)}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl transition-colors cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={() => {
+                    leaveCompanyMutation.mutate();
+                    setShowLeaveConfirm(false);
+                  }}
+                  disabled={leaveCompanyMutation.isPending}
+                  className="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {leaveCompanyMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+                  Xác nhận Rời
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal xác nhận xóa công ty */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 max-w-md w-full border border-slate-100 dark:border-white/10 shadow-2xl relative"
+            >
+              <h3 className="text-xl font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2 mb-3">
+                <AlertTriangle className="text-rose-500 animate-bounce" size={24} />
+                CẢNH BÁO XÓA CÔNG TY
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed font-medium">
+                Hành động này <span className="font-bold text-rose-500">KHÔNG THỂ hoàn tác</span>. Xóa công ty sẽ đồng thời:
+                <br />- Gỡ bỏ hoàn toàn hồ sơ công ty khỏi hệ thống.
+                <br />- Hủy bỏ toàn bộ liên kết của tất cả HR thành viên khác.
+                <br />- Xóa vĩnh viễn toàn bộ các tin tuyển dụng đang đăng của công ty này.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl transition-colors cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={() => {
+                    deleteCompanyMutation.mutate();
+                    setShowDeleteConfirm(false);
+                  }}
+                  disabled={deleteCompanyMutation.isPending}
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {deleteCompanyMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                  Xác nhận Xóa
+                </button>
               </div>
             </motion.div>
           </div>

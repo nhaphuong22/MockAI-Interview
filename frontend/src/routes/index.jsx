@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "../components/layout/Layout";
+import { DataPrivacyAgreement } from "../pages/recruiter/DataPrivacyAgreement";
 import { candidateRoutes } from "./candidate";
 import { recruiterRoutes } from "./recruiter";
 import { adminRoutes } from "./admin";
@@ -29,4 +30,10 @@ export const router = createBrowserRouter([
 
   // Auth standalone pages (no Layout wrapper)
   ...authRoutes,
+
+  // Public Legal/Information standalone pages
+  {
+    path: "/data-privacy-agreement",
+    Component: DataPrivacyAgreement,
+  }
 ]);

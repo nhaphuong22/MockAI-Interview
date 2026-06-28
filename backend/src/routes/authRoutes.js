@@ -15,11 +15,28 @@ import {
   requestCompanyOtpController,
   verifyCompanyOtpController,
   resendCompanyOtpController,
+  acceptPrivacyAgreementController,
 } from '../controllers/authController.js';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
+
+// ─── Verification & Privacy ──────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/auth/privacy-agreement:
+ *   post:
+ *     summary: Chấp nhận thoả thuận dữ liệu cá nhân
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Đã chấp nhận thành công
+ */
+router.post('/privacy-agreement', authenticateToken, acceptPrivacyAgreementController);
 
 // ─── Register & Login ──────────────────────────────────────────────────────────
 

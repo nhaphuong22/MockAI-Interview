@@ -468,7 +468,7 @@ export const updateApplicationStatus = async (req, res) => {
             });
           // Invalidate cache for job list and detail since status changed to CLOSED
           await deleteCachePattern('jobs:list:*');
-          await deleteCache(`jobs:detail:${app.job_id}`);
+          await deleteCachePattern(`jobs:detail:*jobs/${app.job_id}*`);
           console.log(`[Job Status] Job ID ${app.job_id} ("${jobInfo.title}") has been automatically CLOSED. Accepted count (${acceptedCount}) reached vacancy count (${jobInfo.vacancy_count}).`);
         }
       }

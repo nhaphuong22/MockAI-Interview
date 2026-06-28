@@ -16,48 +16,44 @@ import {
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import cloudinary from '../core/cloudinary.js';
 import fs from 'fs';
+import db from '../db/knex.js';
 
 // ─── Register ──────────────────────────────────────────────────────────────────
 
 export const register = async (req, res) => {
   try {
-    const { email, password, fullName, role, companyDetails } = req.body;
+    const { email, password, fullName, role, gender } = req.body;
 
     if (!email || !password || !fullName) {
-      return sendError(res, 400, 'Email, password, and full name are required');
+      return sendError(res, 400, 'Vui lòng cung cấp đầy đủ thông tin bắt buộc (Email, Mật khẩu, Họ tên).');
     }
 
-    // Map role from frontend (jobseeker -> USER, recruiter -> HR)
+    if (password.length < 6) {
+      return sendError(res, 400, 'Mật khẩu phải chứa ít nhất 6 ký tự.');
+    }
+
     let roleName = 'USER';
-    if (role) {
-      const normalizedRole = role.toUpperCase();
-      if (normalizedRole === 'RECRUITER' || normalizedRole === 'HR') {
-        roleName = 'HR';
-      } else if (normalizedRole === 'JOBSEEKER' || normalizedRole === 'USER') {
-        roleName = 'USER';
-      } else if (normalizedRole === 'ADMIN') {
-        roleName = 'ADMIN';
-      }
+    if (role === 'recruiter') {
+      roleName = 'HR';
+    } else if (role === 'admin') {
+      return sendError(res, 403, 'Bạn không có quyền đăng ký tài khoản Quản trị viên.');
     }
 
     // Block public emails for HR
     if (roleName === 'HR') {
       const publicDomains = [
-        'gmail.com', 'yahoo.com', 'yahoo.com.vn', 'hotmail.com', 
+        'gmail.com', 'yahoo.com', 'yahoo.com.vn', 'hotmail.com',
         'outlook.com', 'icloud.com', 'aol.com', 'protonmail.com'
       ];
       const emailDomain = email.split('@')[1]?.toLowerCase();
       if (publicDomains.includes(emailDomain)) {
         return sendError(res, 400, 'Vui lòng sử dụng email công ty để đăng ký tài khoản Nhà tuyển dụng.');
       }
-      
-      if (!companyDetails || !companyDetails.companyName) {
-        return sendError(res, 400, 'Thông tin công ty là bắt buộc đối với Nhà tuyển dụng.');
-      }
     }
 
-    const result = await registerUser(email, password, fullName, roleName, companyDetails);
-    return sendResponse(res, 201, result);
+    const result = await registerUser(email, password, fullName, roleName, gender);
+
+    return sendResponse(res, 201, 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.', result);
   } catch (error) {
     if (error.message === 'Email already registered') {
       return sendError(res, 400, 'Email is already in use');
@@ -247,9 +243,9 @@ export const changePasswordController = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic } = req.body;
+    const { fullName, phone, address, bio, avatarUrl, gender, isLookingForJob, contactPhone, contactPublic } = req.body;
 
-    const result = await updateUserProfile(userId, { fullName, phone, address, bio, avatarUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic });
+    const result = await updateUserProfile(userId, { fullName, phone, address, bio, avatarUrl, gender, isLookingForJob, contactPhone, contactPublic });
     return sendResponse(res, 200, result);
   } catch (error) {
     if (error.message === 'User not found') {
@@ -278,7 +274,7 @@ export const verifyCompanyOtpController = async (req, res) => {
   try {
     const userId = req.user.id;
     const { contactEmail, otp } = req.body;
-    
+
     if (!contactEmail || !otp) {
       return sendError(res, 400, 'Thiếu email hoặc mã OTP');
     }
@@ -295,7 +291,7 @@ export const resendCompanyOtpController = async (req, res) => {
   try {
     const userId = req.user.id;
     const { contactEmail } = req.body;
-    
+
     if (!contactEmail) {
       return sendError(res, 400, 'Thiếu email liên hệ');
     }
@@ -360,4 +356,32 @@ export const logout = async (req, res) => {
   // JWT is stateless — client must delete the token.
   // This endpoint exists for consistency and future token-blacklist support.
   return sendResponse(res, 200, { message: 'Logged out successfully' });
+};
+// ─── Verification & Privacy ───────────────────────────────────────────────────
+
+export const acceptPrivacyAgreementController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const agreed = req.body.agreed !== undefined ? !!req.body.agreed : true;
+
+    // Update the user
+    await db('users')
+      .where({ id: userId })
+      .update({
+        privacy_agreed: agreed,
+        privacy_agreed_at: agreed ? db.fn.now() : null
+      });
+
+    // Fetch the updated user to return (including roles and details)
+    const updatedUser = await getUserProfile(userId);
+
+    res.json({
+      message: 'Đã chấp nhận thoả thuận dữ liệu cá nhân',
+      user: updatedUser
+    });
+  } catch (error) {
+    import('fs').then(fs => fs.writeFileSync('privacy_error.log', String(error.stack || error)));
+    console.error('Accept privacy agreement error:', error);
+    res.status(500).json({ message: 'Lỗi server khi cập nhật thoả thuận dữ liệu.', error: String(error) });
+  }
 };

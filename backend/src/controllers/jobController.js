@@ -73,7 +73,7 @@ export const createNewJob = async (req, res) => {
       if (isNaN(parsedSalaryMax) || parsedSalaryMax < 0) {
         return sendError(res, 400, 'Mức lương tối đa (salary_max) phải là số nguyên dương.');
       }
-      if (parsedSalaryMin !== null && parsedSalaryMax < parsedSalaryMin) {
+      if (parsedSalaryMin !== null && parsedSalaryMax !== null && parsedSalaryMax < parsedSalaryMin) {
         return sendError(res, 400, 'Mức lương tối đa không được nhỏ hơn mức lương tối thiểu.');
       }
     }
@@ -269,7 +269,7 @@ export const updateJob = async (req, res) => {
       if (isNaN(parsedSalaryMax) || parsedSalaryMax < 0) {
         return sendError(res, 400, 'Mức lương tối đa (salary_max) phải là số nguyên dương.');
       }
-      if (parsedSalaryMin !== null && parsedSalaryMax < parsedSalaryMin) {
+      if (parsedSalaryMin !== null && parsedSalaryMax !== null && parsedSalaryMax < parsedSalaryMin) {
         return sendError(res, 400, 'Mức lương tối đa không được nhỏ hơn mức lương tối thiểu.');
       }
     }

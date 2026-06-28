@@ -8,11 +8,35 @@ import {
   joinCompany,
   getJoinRequests,
   approveJoinRequest,
-  rejectJoinRequest
+  rejectJoinRequest,
+  uploadVerificationDocsController,
+  leaveCompany,
+  deleteCompany
 } from '../controllers/companyController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
+import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
+
+/**
+ * @swagger
+ * /api/companies/upload-verification-docs:
+ *   post:
+ *     summary: Tải lên tài liệu xác minh công ty
+ *     tags:
+ *       - Companies
+ */
+router.post(
+  '/upload-verification-docs', 
+  authenticateToken, 
+  uploadAvatar.fields([
+    { name: 'licenseFile', maxCount: 1 },
+    { name: 'authFile', maxCount: 1 },
+    { name: 'idFrontFile', maxCount: 1 },
+    { name: 'idBackFile', maxCount: 1 }
+  ]), 
+  uploadVerificationDocsController
+);
 
 /**
  * @swagger
@@ -73,6 +97,26 @@ router.post('/my-company/join-requests/:userId/approve', authenticateToken, appr
  *       - Companies
  */
 router.post('/my-company/join-requests/:userId/reject', authenticateToken, rejectJoinRequest);
+
+/**
+ * @swagger
+ * /api/companies/my-company/leave:
+ *   post:
+ *     summary: HR phụ rời công ty hiện tại
+ *     tags:
+ *       - Companies
+ */
+router.post('/my-company/leave', authenticateToken, leaveCompany);
+
+/**
+ * @swagger
+ * /api/companies/my-company:
+ *   delete:
+ *     summary: HR gốc xóa công ty của mình
+ *     tags:
+ *       - Companies
+ */
+router.delete('/my-company', authenticateToken, deleteCompany);
 
 /**
  * @swagger

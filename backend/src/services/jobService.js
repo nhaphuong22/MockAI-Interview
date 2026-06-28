@@ -234,7 +234,7 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
 
     // Clear cache list and detail of this job
     await deleteCachePattern('jobs:list:*');
-    await deleteCache(`jobs:detail:${id}`);
+    await deleteCachePattern(`jobs:detail:*jobs/${id}*`);
 
     return {
       ...updatedJob,
@@ -252,7 +252,7 @@ export const deleteJobById = async (id) => {
   if (deletedCount > 0) {
     // Clear cache list and detail of this job
     await deleteCachePattern('jobs:list:*');
-    await deleteCache(`jobs:detail:${id}`);
+    await deleteCachePattern(`jobs:detail:*jobs/${id}*`);
   }
 
   return deletedCount > 0;
@@ -331,7 +331,7 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
             });
           // Invalidate cache for job list and detail since status changed to CLOSED
           await deleteCachePattern('jobs:list:*');
-          await deleteCache(`jobs:detail:${application.job_id}`);
+          await deleteCachePattern(`jobs:detail:*jobs/${application.job_id}*`);
           console.log(`[Job Status] Job ID ${application.job_id} ("${jobInfo.title}") has been automatically CLOSED. Accepted count (${acceptedCount}) reached vacancy count (${jobInfo.vacancy_count}).`);
         }
       }

@@ -209,8 +209,8 @@ export function Layout() {
                       <Link to={`${recruiterBase}/applications`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/applications`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                         Ứng Viên
                       </Link>
-                      <Link to={`${recruiterBase}/analytics`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/analytics`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
-                        Phân Tích
+                      <Link to={`${recruiterBase}/company-profile`} className={`text-sm font-medium transition-colors ${isActive(`${recruiterBase}/company-profile`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
+                        Công Ty
                       </Link>
                     </>
                   )}
@@ -378,19 +378,21 @@ export function Layout() {
                           className="min-w-[200px] bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 z-50 animate-in fade-in zoom-in-95"
                           sideOffset={5}
                         >
-                          <DropdownMenu.Item asChild>
-                            <Link
-                              to={isUserRecruiter ? `${recruiterBase}/company-profile` : isUserAdmin ? `${administratorBase}/analytics` : "/profile"}
-                              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
-                            >
-                              {isUserRecruiter ? <Building className="w-4 h-4" /> : isUserAdmin ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                              <span>{isUserRecruiter ? "Hồ sơ Công ty" : isUserAdmin ? "Quản trị viên" : "Hồ sơ Cá nhân"}</span>
-                            </Link>
-                          </DropdownMenu.Item>
+                          {!isUserRecruiter && (
+                            <DropdownMenu.Item asChild>
+                              <Link
+                                to={isUserAdmin ? `${administratorBase}/analytics` : "/profile"}
+                                className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
+                              >
+                                {isUserAdmin ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                                <span>{isUserAdmin ? "Quản trị viên" : "Hồ sơ Cá nhân"}</span>
+                              </Link>
+                            </DropdownMenu.Item>
+                          )}
 
                           <DropdownMenu.Item asChild>
                             <Link
-                              to={isUserRecruiter ? `${recruiterBase}/settings` : isUserAdmin ? `${administratorBase}/system-settings` : "/settings"}
+                              to={isUserRecruiter ? `${recruiterBase}/settings?tab=account` : isUserAdmin ? `${administratorBase}/system-settings` : "/settings"}
                               className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
                             >
                               <Settings className="w-4 h-4" />

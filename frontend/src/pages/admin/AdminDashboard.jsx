@@ -54,15 +54,17 @@ export function AdminDashboard() {
   const { data: pendingCompanies = [], isLoading: isCompaniesLoading } = useQuery({
     queryKey: ['pendingVerificationsDashboard'],
     queryFn: async () => {
-      const res = await axiosClient.get('/verification/pending');
-      return res.data.map(u => ({
-        id: u.id,
-        name: u.company_name,
-        industry: "IT / Tech", // Mock industry for now
-        status: "Pending",
-        logo: "🏢",
-        employees: 50,
-      }));
+      const res = await axiosClient.get('/verification/all');
+      return res.data
+        .filter(u => u.verification_status === "PENDING")
+        .map(u => ({
+          id: u.company_id,
+          name: u.company_name,
+          industry: "IT / Tech", // Mock industry for now
+          status: "Pending",
+          logo: "🏢",
+          employees: 50,
+        }));
     }
   });
 

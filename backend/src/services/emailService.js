@@ -424,3 +424,47 @@ export const sendCompanyEmailOtp = async (toEmail, otp) => {
     `
   });
 };
+
+/**
+ * Send company verification rejection email
+ */
+export const sendCompanyRejectionEmail = async (toEmail, companyName, reason) => {
+  return sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Thông báo từ chối hồ sơ xác thực doanh nghiệp`,
+    text: `Chào bạn,\n\nHồ sơ xác thực cho công ty ${companyName} đã bị từ chối.\n\nLý do:\n${reason}\n\nVui lòng đăng nhập vào hệ thống để cập nhật lại hồ sơ.\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #fff0f2; padding: 32px; border-radius: 16px; border: 1px solid #ffe4e6;">
+        <h1 style="color: #be123c; font-size: 20px; margin-bottom: 20px;">Hồ sơ xác thực bị từ chối</h1>
+        <p style="color: #334155;">Chào bạn,</p>
+        <p style="color: #334155;">Rất tiếc, hồ sơ xác thực cho công ty <strong>${companyName}</strong> chưa đạt yêu cầu.</p>
+        <p style="color: #334155;">Lý do từ chối:</p>
+        <div style="margin: 16px 0; padding: 16px; background: white; border-left: 4px solid #be123c; border-radius: 4px;">
+          <p style="color: #881337; margin: 0;">${reason.replace(/\n/g, '<br>')}</p>
+        </div>
+        <p style="color: #334155;">Vui lòng đăng nhập vào hệ thống và cập nhật lại hồ sơ theo hướng dẫn.</p>
+      </div>
+    `
+  });
+};
+
+/**
+ * Send company verification approval email
+ */
+export const sendCompanyApprovalEmail = async (toEmail, companyName) => {
+  return sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Chúc mừng! Hồ sơ xác thực doanh nghiệp đã được phê duyệt`,
+    text: `Chào bạn,\n\nHồ sơ xác thực cho công ty ${companyName} đã được phê duyệt thành công!\n\nBây giờ bạn có thể đăng tin tuyển dụng và tìm kiếm ứng viên.\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #ecfdf5; padding: 32px; border-radius: 16px; border: 1px solid #d1fae5;">
+        <h1 style="color: #047857; font-size: 20px; margin-bottom: 20px;">Hồ sơ xác thực thành công 🎉</h1>
+        <p style="color: #334155;">Chào bạn,</p>
+        <p style="color: #334155;">Chúc mừng! Hồ sơ xác thực cho công ty <strong>${companyName}</strong> đã được phê duyệt.</p>
+        <p style="color: #334155;">Tài khoản của bạn đã được cấp quyền Nhà tuyển dụng đầy đủ. Bạn có thể bắt đầu đăng tin tuyển dụng và kết nối với các ứng viên tài năng.</p>
+      </div>
+    `
+  });
+};

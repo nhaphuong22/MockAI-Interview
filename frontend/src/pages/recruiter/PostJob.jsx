@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2, Loader2 } from "lucide-react";
+import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2, Loader2, Clock, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { jobApi } from "../../api/jobApi";
 import axiosClient from "../../api/axiosClient";
-import { VerifyCompany } from "./components/VerifyCompany";
 
 
 export function PostJob() {
@@ -26,8 +25,8 @@ export function PostJob() {
   });
 
   useEffect(() => {
-    if (verifyData?.status) {
-      setVerificationStatus(verifyData.status);
+    if (verifyData) {
+      setVerificationStatus(verifyData.verificationStatus || 'UNVERIFIED');
     }
   }, [verifyData]);
 
@@ -35,7 +34,6 @@ export function PostJob() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    requirements: "",
     experienceLevel: "JUNIOR",
     salaryMin: "",
     salaryMax: "",
@@ -121,7 +119,7 @@ export function PostJob() {
     },
     onError: (error) => {
       console.error("Lỗi khi đăng tin tuyển dụng:", error);
-      const errorMessage = error.response?.data?.message || "Đã xảy ra lỗi khi kết nối hệ thống.";
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || "Đã xảy ra lỗi khi kết nối hệ thống.";
       showToast(errorMessage, "error");
     }
   });
@@ -144,7 +142,6 @@ export function PostJob() {
     const payload = {
       title: formData.title.trim(),
       description: formData.description.trim() || null,
-      requirements: formData.requirements.trim() || null,
       experience_level: formData.experienceLevel,
       salary_min: formData.salaryMin ? parseInt(formData.salaryMin) : null,
       salary_max: formData.salaryMax ? parseInt(formData.salaryMax) : null,
@@ -185,7 +182,49 @@ export function PostJob() {
   }
 
   if (verificationStatus !== 'APPROVED') {
-    return <VerifyCompany status={verificationStatus} setStatus={setVerificationStatus} />;
+    const isPending = verificationStatus === 'PENDING';
+    const isSuspended = verificationStatus === 'SUSPENDED' || verificationStatus === 'REJECTED';
+    
+    return (
+      <div className="bg-slate-50 min-h-screen py-16 px-4 flex items-center justify-center font-inter">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-100 shadow-lg text-center"
+        >
+          {isPending ? (
+            <Clock className="w-20 h-20 text-amber-500 mx-auto mb-6 animate-pulse" />
+          ) : (
+            <AlertCircle className="w-20 h-20 text-rose-500 mx-auto mb-6" />
+          )}
+          <h2 className="text-2xl font-black text-slate-800 mb-3">
+            {isPending ? "Đang chờ phê duyệt doanh nghiệp" : "Doanh nghiệp chưa được xác minh"}
+          </h2>
+          <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+            {isPending 
+              ? "Tài khoản của bạn đang liên kết với công ty đang chờ duyệt. Vui lòng liên hệ Admin để được phê duyệt trước khi đăng tin tuyển dụng."
+              : isSuspended 
+                ? `Yêu cầu xác thực doanh nghiệp bị từ chối hoặc tạm khóa${verifyData?.rejectReason ? `: "${verifyData.rejectReason}"` : ""}. Vui lòng truy cập trang Cài đặt & Xác minh để nộp lại giấy tờ.`
+                : "Để đăng tin tuyển dụng, tài khoản của bạn cần phải được liên kết với một doanh nghiệp đã được xác thực trên hệ thống."
+            }
+          </p>
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => navigate('/hr/dashboard/company-setup')}
+              className="w-full py-3 bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold rounded-xl transition-all shadow-lg shadow-sky-500/20"
+            >
+              Cài đặt & Xác minh doanh nghiệp
+            </button>
+            <button 
+              onClick={() => navigate('/hr/dashboard')}
+              className="w-full py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
+            >
+              Quay lại Dashboard
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
   }
 
 
@@ -398,24 +437,6 @@ export function PostJob() {
                   />
                 </div>
 
-                <div className="bg-sky-50/50 p-5 rounded-2xl border border-sky-100/50">
-                  <label className="block text-sm font-bold text-slate-800 mb-2 flex items-center justify-between">
-                    <span>Yêu cầu tổng quan</span>
-                    <span className="text-[10px] uppercase tracking-wider font-bold bg-sky-200 text-sky-700 px-2 py-0.5 rounded-full">AI Context</span>
-                  </label>
-                  <textarea
-                    name="requirements"
-                    value={formData.requirements}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-4 py-3.5 bg-white border border-sky-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none resize-none transition-all duration-200 text-slate-700 leading-relaxed placeholder-slate-400 shadow-sm"
-                    placeholder="VD: Thành thạo ReactJS, hiểu biết về CI/CD..."
-                  />
-                  <p className="text-sky-600/80 text-xs mt-2 font-medium flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    AI sẽ dùng thông tin này để thiết kế bộ câu hỏi phỏng vấn phù hợp
-                  </p>
-                </div>
               </div>
             </motion.div>
 
