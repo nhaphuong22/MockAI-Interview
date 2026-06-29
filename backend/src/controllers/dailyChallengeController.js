@@ -2,6 +2,7 @@ import fs from 'fs';
 import db from '../db/knex.js';
 import { transcribeAudio } from '../services/sttService.js';
 import { evaluateCandidateAnswer } from '../services/groqService.js';
+import { getTodayDateStrVN } from '../services/dailySchedulerService.js';
 
 /**
  * GET /api/daily-challenge/streak
@@ -16,7 +17,7 @@ export const getStreakStatus = async (req, res) => {
 
     let has_answered_today = false;
     if (streak && streak.last_answered_at) {
-      const getLocalDateStr = (date) => new Date(date).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const getLocalDateStr = (date) => getTodayDateStrVN(date);
       const todayStr = getLocalDateStr(new Date());
       const lastAnsweredStr = getLocalDateStr(streak.last_answered_at);
       has_answered_today = (todayStr === lastAnsweredStr);
@@ -51,12 +52,14 @@ export const getStreakStatus = async (req, res) => {
 export const getDailyQuestion = async (req, res) => {
   try {
     const track = req.query.track || 'frontend';
+    const todayStr = getTodayDateStrVN();
 
-    // Query latest challenge question for the requested track
-    const question = await db('daily_questions')
+    const questions = await db('daily_questions')
       .where({ track })
-      .orderBy('created_at', 'desc')
-      .first();
+      .orderBy('created_at', 'desc');
+
+    const question = questions.find((q) => getTodayDateStrVN(q.created_at) === todayStr)
+      || questions[0];
 
     if (!question) {
       return res.status(404).json({
