@@ -69,7 +69,7 @@ const defaultBackendTree = {
  * @param {number} atsScore - The semantic score of the CV, used as initial node scores.
  * @returns {Promise<object>} The created or existing user skill tree database record.
  */
-export const initializeSkillTreeFromCV = async (userId, matchedSkills = [], jobTitle = '', atsScore = 60) => {
+export const initializeSkillTreeFromCV = async (userId, customSkillTree = null, matchedSkills = [], jobTitle = '', atsScore = 60) => {
   // 1. Check if user already has a skill tree
   const existingTree = await db('user_skill_trees').where({ user_id: userId }).first();
   if (existingTree) {
@@ -77,50 +77,58 @@ export const initializeSkillTreeFromCV = async (userId, matchedSkills = [], jobT
     return existingTree;
   }
 
-  // 2. Determine track based on job title keywords
-  let track = 'Frontend Developer';
-  let skillTree = JSON.parse(JSON.stringify(defaultFrontendTree));
+  let skillTree = null;
+  let track = '';
 
-  const titleLower = (jobTitle || '').toLowerCase();
-  if (
-    titleLower.includes('backend') ||
-    titleLower.includes('node') ||
-    titleLower.includes('java') ||
-    titleLower.includes('python') ||
-    titleLower.includes('golang') ||
-    titleLower.includes('c#') ||
-    titleLower.includes('php') ||
-    titleLower.includes('ruby') ||
-    titleLower.includes('devops')
-  ) {
-    track = 'Backend Developer';
-    skillTree = JSON.parse(JSON.stringify(defaultBackendTree));
-  }
+  if (customSkillTree && Array.isArray(customSkillTree.nodes)) {
+    skillTree = customSkillTree;
+    track = customSkillTree.track || 'Custom Track';
+  } else {
+    // 2. Determine track based on job title keywords (fallback)
+    track = 'Frontend Developer';
+    skillTree = JSON.parse(JSON.stringify(defaultFrontendTree));
 
-  // 3. Normalize matched skills from AI for robust matching
-  const normalizedMatched = (matchedSkills || []).map(s => s.toLowerCase().replace(/[^a-z0-9]/g, ''));
-
-  // 4. Update node status and scores based on matched skills
-  skillTree.nodes = skillTree.nodes.map(node => {
-    const nodeIdClean = node.id.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const nodeLabelClean = node.label.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-    const isMatched = normalizedMatched.some(skill => 
-      skill.includes(nodeIdClean) || 
-      nodeIdClean.includes(skill) || 
-      skill.includes(nodeLabelClean) || 
-      nodeLabelClean.includes(skill)
-    );
-
-    if (isMatched) {
-      return {
-        ...node,
-        status: 'unlocked',
-        score: atsScore || 60
-      };
+    const titleLower = (jobTitle || '').toLowerCase();
+    if (
+      titleLower.includes('backend') ||
+      titleLower.includes('node') ||
+      titleLower.includes('java') ||
+      titleLower.includes('python') ||
+      titleLower.includes('golang') ||
+      titleLower.includes('c#') ||
+      titleLower.includes('php') ||
+      titleLower.includes('ruby') ||
+      titleLower.includes('devops')
+    ) {
+      track = 'Backend Developer';
+      skillTree = JSON.parse(JSON.stringify(defaultBackendTree));
     }
-    return node;
-  });
+
+    // 3. Normalize matched skills from AI for robust matching
+    const normalizedMatched = (matchedSkills || []).map(s => s.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+    // 4. Update node status and scores based on matched skills
+    skillTree.nodes = skillTree.nodes.map(node => {
+      const nodeIdClean = node.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const nodeLabelClean = node.label.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      const isMatched = normalizedMatched.some(skill => 
+        skill.includes(nodeIdClean) || 
+        nodeIdClean.includes(skill) || 
+        skill.includes(nodeLabelClean) || 
+        nodeLabelClean.includes(skill)
+      );
+
+      if (isMatched) {
+        return {
+          ...node,
+          status: 'unlocked',
+          score: 0
+        };
+      }
+      return node;
+    });
+  }
 
   // 5. Save to database
   const [newRecord] = await db('user_skill_trees')

@@ -16,7 +16,10 @@ export const startInterviewSession = async (req, res) => {
       cvId,
       cv_id,
       cvText,
-      type = 'PRACTICE' 
+      type = 'PRACTICE',
+      questions,
+      companyName,
+      jobDescription
     } = req.body;
 
     const sessionData = await initInterviewSession({
@@ -27,7 +30,10 @@ export const startInterviewSession = async (req, res) => {
       experienceLevel,
       cvId: cvId || cv_id ? Number(cvId || cv_id) : null,
       cvText,
-      type
+      type,
+      questions,
+      companyName: companyName || '',
+      jobDescription: jobDescription || ''
     });
 
     return sendResponse(res, 201, sessionData);

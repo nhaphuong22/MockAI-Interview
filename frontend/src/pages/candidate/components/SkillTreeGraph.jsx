@@ -44,8 +44,49 @@ export default function SkillTreeGraph() {
   }
 
   const { graph_data: graphData } = data;
-  const nodes = graphData?.nodes || [];
+  const rawNodes = graphData?.nodes || [];
   const links = graphData?.links || [];
+
+  // Calculate coordinates dynamically for nodes that lack x or y
+  const nodes = (() => {
+    const needsLayout = rawNodes.some(n => n.x === undefined || n.y === undefined);
+    if (!needsLayout) {
+      return rawNodes;
+    }
+
+    const nodesWithLevel = rawNodes.map(n => ({
+      ...n,
+      level: n.level || (n.x ? (n.x < 250 ? 1 : n.x < 500 ? 2 : 3) : 2)
+    }));
+
+    const levelGroups = { 1: [], 2: [], 3: [] };
+    nodesWithLevel.forEach(n => {
+      const lvl = n.level === 1 || n.level === 2 || n.level === 3 ? n.level : 2;
+      levelGroups[lvl].push(n);
+    });
+
+    const xCoordinates = {
+      1: 160,
+      2: 400,
+      3: 640
+    };
+
+    return nodesWithLevel.map(n => {
+      const lvl = n.level === 1 || n.level === 2 || n.level === 3 ? n.level : 2;
+      const group = levelGroups[lvl];
+      const index = group.findIndex(item => item.id === n.id);
+      
+      const x = n.x !== undefined ? n.x : xCoordinates[lvl];
+      
+      // Distribute nodes evenly along the Y axis
+      const totalNodesInLvl = group.length;
+      const height = 450;
+      const stepY = height / (totalNodesInLvl + 1);
+      const y = n.y !== undefined ? n.y : (index + 1) * stepY;
+
+      return { ...n, x, y };
+    });
+  })();
 
   // Helper to find node by id
   const findNode = (id) => nodes.find((n) => n.id === id);
@@ -126,14 +167,14 @@ export default function SkillTreeGraph() {
               if (!source || !target) return null;
 
               const isTargetUnlocked = target.status === "unlocked";
+              const midX = (source.x + target.x) / 2;
+              const pathData = `M ${source.x} ${source.y} C ${midX} ${source.y}, ${midX} ${target.y}, ${target.x} ${target.y}`;
 
               return (
-                <line
+                <path
                   key={`link-${idx}`}
-                  x1={source.x}
-                  y1={source.y}
-                  x2={target.x}
-                  y2={target.y}
+                  d={pathData}
+                  fill="none"
                   stroke={isTargetUnlocked ? "#0ea5e9" : "#94a3b8"}
                   strokeOpacity={isTargetUnlocked ? 0.7 : 0.3}
                   strokeWidth={isTargetUnlocked ? 3 : 2}
@@ -169,8 +210,8 @@ export default function SkillTreeGraph() {
                     />
                   )}
 
-                  {/* Outer shadow/glow circle for Unlocked Nodes */}
-                  {isUnlocked && (
+                  {/* Outer shadow/glow circle for Unlocked Nodes (Only glow when score > 0) */}
+                  {isUnlocked && node.score > 0 && (
                     <circle
                       r="25"
                       fill="#0ea5e9"
@@ -183,25 +224,36 @@ export default function SkillTreeGraph() {
                   {/* Core Node Circle */}
                   <circle
                     r="22"
-                    fill={isUnlocked ? "url(#oceanGradient)" : "#e2e8f0"}
-                    stroke={isUnlocked ? "#ffffff" : "#cbd5e1"}
-                    strokeWidth={isUnlocked ? 1.5 : 1}
+                    fill={isUnlocked ? (node.score > 0 ? "url(#oceanGradient)" : "rgba(14, 165, 233, 0.1)") : "#e2e8f0"}
+                    stroke={isUnlocked ? "#0ea5e9" : "#cbd5e1"}
+                    strokeWidth={isUnlocked ? 2 : 1}
                     className="transition-all duration-300 group-hover:stroke-white dark:fill-slate-800 dark:stroke-slate-700"
                     style={{
-                      fill: isUnlocked ? "url(#oceanGradient)" : undefined,
+                      fill: isUnlocked ? (node.score > 0 ? "url(#oceanGradient)" : "rgba(14, 165, 233, 0.1)") : undefined,
                     }}
                   />
 
                   {/* Icon/Badge indicator */}
                   {isUnlocked ? (
-                    // Unlocked Score Text
-                    <text
-                      textAnchor="middle"
-                      dy=".3em"
-                      className="text-[10px] font-bold fill-white"
-                    >
-                      {node.score}
-                    </text>
+                    node.score > 0 ? (
+                      // Unlocked Score Text
+                      <text
+                        textAnchor="middle"
+                        dy=".3em"
+                        className="text-[10px] font-bold fill-white"
+                      >
+                        {node.score}
+                      </text>
+                    ) : (
+                      // Unlocked but not practiced: Show Sword to challenge
+                      <text
+                        textAnchor="middle"
+                        dy=".3em"
+                        className="text-[11px] font-bold fill-[#0ea5e9] group-hover:fill-white"
+                      >
+                        ⚔️
+                      </text>
+                    )
                   ) : (
                     // Locked Padlock Icon
                     <path

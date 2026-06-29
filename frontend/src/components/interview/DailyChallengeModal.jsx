@@ -223,17 +223,12 @@ export function DailyChallengeModal({ isOpen, onClose, onSuccess }) {
       setPhase("result");
       if (onSuccess) onSuccess();
     } catch (err) {
-      console.warn("Daily grading submission API failed, running mock simulation.");
-      // Simulated AI assessment result
-      setTimeout(() => {
-        setGradingResult({
-          score: 88,
-          feedback: "Câu trả lời có cấu trúc mạch lạc, sử dụng đúng thuật ngữ chuyên môn. Âm lượng nói tốt và tốc độ phát âm chuẩn xác trong 60 giây.",
-          sample_answer: questionData?.sample_answer || "Gợi ý câu trả lời."
-        });
-        setPhase("result");
-        if (onSuccess) onSuccess();
-      }, 3500); // 3.5s premium grading animation delay
+      console.error("Daily grading submission API failed:", err);
+      showToast({
+        message: err.response?.data?.message || "Gửi câu trả lời thất bại! Vui lòng thử lại.",
+        type: "error"
+      });
+      setPhase("review");
     }
   };
 

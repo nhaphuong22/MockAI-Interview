@@ -13,6 +13,17 @@ import {
 } from '../models/interviewModel.js';
 import { NotFoundError, ValidationError } from '../core/customErrors.js';
 
+const STAGE_HINTS = [
+  'GĐ1-Nhập cuộc',
+  'GĐ2-Điểm mạnh/yếu',
+  'GĐ2-Định hướng',
+  'GĐ3-Tình huống',
+  'GĐ3-Dự án CV',
+  'GĐ3-Chuyên môn',
+  'GĐ4-Lương/Kỳ vọng',
+  'GĐ4-Câu hỏi ngược'
+];
+
 /**
  * Initialize a new interview and generate dynamic questions based on CV + Position + Skills
  * Utilizes Qwen 3 32B on Groq for ultra-personalized evaluation questions.
@@ -22,10 +33,13 @@ export const initInterviewSession = async ({
   jobId = null,
   customPosition = '',
   customSkills = '',
+  companyName = '',
+  jobDescription = '',
   experienceLevel = 'JUNIOR',
   cvId = null,
   cvText = '',
-  type = 'PRACTICE'
+  type = 'PRACTICE',
+  questions = []
 }) => {
   // 1. Retrieve the candidate's CV
   let finalCvText = cvText || '';
@@ -63,16 +77,35 @@ export const initInterviewSession = async ({
     updated_at: new Date()
   });
 
-  // 3. Generate customized interview questions using Qwen 3 32B on Groq
-  const aiQuestions = await generateQuestionsFromGroq({
-    position: customPosition || 'Software Engineer',
-    skills: customSkills || 'Programming',
-    experienceLevel: experienceLevel,
-    cvText: finalCvText
-  });
+  // 3. Generate customized interview questions using Qwen 3 32B on Groq or use custom questions
+  let finalQuestions = [];
+  if (questions && questions.length > 0) {
+    console.log(`[InterviewService] Using ${questions.length} pre-defined questions for skill practice.`);
+    finalQuestions = questions.map(q => ({
+      question_text: q.question_text || q.question,
+      expected_answer: q.expected_answer || 'Ứng viên trả lời theo kiến thức chuyên môn.',
+      score_weight: q.score_weight || 1
+    }));
+  } else {
+    const aiQuestions = await generateQuestionsFromGroq({
+      position: customPosition || 'Software Engineer',
+      skills: customSkills || 'Programming',
+      companyName: companyName || '',
+      jobDescription: jobDescription || '',
+      experienceLevel: experienceLevel,
+      cvText: finalCvText
+    });
+    finalQuestions = aiQuestions;
+    console.log(`[InterviewService] Interview #${interview.id} — generated ${finalQuestions.length} questions for position "${customPosition || 'N/A'}"`);
+    finalQuestions.forEach((q, i) => {
+      const preview = (q.question_text || '').slice(0, 70).replace(/\n/g, ' ');
+      const isSupplement = /^Câu hỏi bổ sung/i.test(q.question_text || '');
+      console.log(`  [Q${i + 1}] ${STAGE_HINTS[i] || 'Extra'}${isSupplement ? ' (legacy supplement)' : ''}: ${preview}...`);
+    });
+  }
 
   // 4. Save dynamic questions to interview_questions table via interviewModel
-  const questionsToInsert = aiQuestions.map((q, index) => ({
+  const questionsToInsert = finalQuestions.map((q, index) => ({
     interview_id: interview.id,
     question_text: q.question_text,
     expected_answer: q.expected_answer,
@@ -166,8 +199,9 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     savedAnswer = inserted;
   }
 
-  // 4. Dynamic follow-up question logic (only for PRACTICE mode)
-  if (interview && interview.type === 'PRACTICE' && evaluation.is_generic && evaluation.follow_up_question) {
+  // 4. Dynamic follow-up question logic (only for PRACTICE mode, not for specific skill node practice)
+  const isSkillPractice = interview && interview.custom_position && interview.custom_position.startsWith('Luyện tập kỹ năng');
+  if (interview && interview.type === 'PRACTICE' && !isSkillPractice && evaluation.is_generic && evaluation.follow_up_question) {
     // Check total questions count
     const allQuestions = await db('interview_questions')
       .where({ interview_id: interviewId })
@@ -185,7 +219,7 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
 
       const [followUpQuestion] = await db('interview_questions').insert({
         interview_id: interviewId,
-        question_text: evaluation.follow_up_question.question_text,
+        question_text: `[Xoáy sâu] ${evaluation.follow_up_question.question_text}`,
         expected_answer: evaluation.follow_up_question.expected_answer || 'Ứng viên giải thích chi tiết hơn câu trả lời.',
         score_weight: 1,
         order_index: newOrderIndex,
@@ -193,7 +227,7 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
         updated_at: new Date()
       }).returning('*');
 
-      console.log(`[Follow-up AI] Created dynamic follow-up question ID ${followUpQuestion.id} with order_index ${newOrderIndex} because candidate's answer was generic.`);
+      console.log(`[Follow-up AI] Interview #${interviewId} — inserted follow-up after Q#${questionId} (generic answer). Total questions: ${allQuestions.length + 1}. Preview: "${(evaluation.follow_up_question.question_text || '').slice(0, 60)}..."`);
     }
   }
 

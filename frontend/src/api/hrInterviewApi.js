@@ -33,3 +33,18 @@ export const finishHRInterviewApi = async (interviewId, totalTabViolations) => {
 export const inviteAIInterviewApi = (applicationId) => {
   return axiosClient.patch(`/applications/${applicationId}/invite-ai-interview`);
 };
+
+/**
+ * Lấy Highlights của phiên phỏng vấn AI (Dành cho HR)
+ */
+export const getHRInterviewHighlightsApi = async (interviewId) => {
+  return await axiosClient.get(`/interviews/hr/highlights/${interviewId}`);
+};
+
+/**
+ * Lấy URL của Audio Slice (để nhúng trực tiếp vào thẻ src của audio)
+ */
+export const getAudioSliceUrl = (audioUrl, start, duration) => {
+  const token = localStorage.getItem("token") || "";
+  return `${axiosClient.defaults.baseURL}/interviews/hr/audio/slice?audioUrl=${encodeURIComponent(audioUrl)}&start=${start}&duration=${duration}&token=${token}`;
+};

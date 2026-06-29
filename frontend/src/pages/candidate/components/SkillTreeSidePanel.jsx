@@ -17,8 +17,13 @@ export default function SkillTreeSidePanel({ nodeId, nodeLabel, status, score, o
   });
 
   const handleStartPractice = () => {
-    // Navigate to InterviewPractice and pass the skill label to auto-start
-    navigate("/interview-practice", { state: { autoStartSkill: nodeLabel } });
+    // Navigate to InterviewPractice and pass the skill label to auto-start, along with its specific questions
+    navigate("/interview-practice", { 
+      state: { 
+        autoStartSkill: nodeLabel,
+        skillQuestions: data?.practice_questions || []
+      } 
+    });
   };
 
   const isUnlocked = status === "unlocked";

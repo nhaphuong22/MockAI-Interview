@@ -62,7 +62,12 @@ export const requireAdmin = (req, res, next) => {
  */
 export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+  let token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+  // Fallback to query parameter if not found in header
+  if (!token && req.query.token) {
+    token = req.query.token;
+  }
 
   if (!token) {
     return sendError(res, 401, 'Access token is required');

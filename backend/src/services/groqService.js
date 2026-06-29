@@ -38,7 +38,574 @@ const fetchWithRetry = async (url, options, maxRetries = 3, delayMs = 1500) => {
   }
 };
 
+const STAGE_LABELS = [
+  'Giai đoạn 1 - Nhập cuộc',
+  'Giai đoạn 2 - Điểm mạnh/yếu',
+  'Giai đoạn 2 - Định hướng',
+  'Giai đoạn 3 - Tình huống',
+  'Giai đoạn 3 - Dự án CV',
+  'Giai đoạn 3 - Kiến thức chuyên môn',
+  'Giai đoạn 4 - Lương & kỳ vọng',
+  'Giai đoạn 4 - Câu hỏi ngược'
+];
 
+const PLACEHOLDER_RE = /\[(?:Tên dự án|tên dự án|Tên|X|Y|dự án cụ thể|kỹ thuật\/phương pháp|vấn đề cụ thể)\]/i;
+
+const MODEL_ANSWER_PLACEHOLDER_RE = /\[[^\]]{2,60}\]|\$\{(?:co|sk2?|pos)\}/i;
+
+const hasUnresolvedPlaceholders = (text = '') =>
+  PLACEHOLDER_RE.test(text) || MODEL_ANSWER_PLACEHOLDER_RE.test(text);
+
+const hasCvContent = (cvText) => {
+  const t = (cvText || '').trim();
+  return t.length > 50 && !t.toLowerCase().includes('không có cv');
+};
+
+const TECH_KEYWORD_RE = /\b(?:React(?:\.js|JS)?|Vue(?:\.js)?|Angular|Node\.js|TypeScript|JavaScript|Python|Java|SQL|MongoDB|PostgreSQL|GraphQL|REST(?:ful)?(?:\s+API)?|Jest|Docker|Kubernetes|AWS|Git|HTML|CSS|Tailwind|Next\.js|Redux|Webpack)\b/gi;
+
+/**
+ * Extract short skill labels for question templates — never inject full job descriptions.
+ */
+const extractSkillKeywords = (skillsText = '', jobDescription = '', position = '') => {
+  const combined = `${skillsText}\n${jobDescription}`.trim();
+  if (!combined) {
+    return position ? [position] : ['kỹ năng chuyên môn'];
+  }
+
+  const commaParts = combined.split(/[,;]/).map((s) => s.trim()).filter((s) => s.length > 0 && s.length < 60);
+  if (commaParts.length > 1) {
+    return commaParts.slice(0, 5);
+  }
+
+  const techMatches = combined.match(TECH_KEYWORD_RE);
+  if (techMatches && techMatches.length > 0) {
+    const normalized = [...new Set(techMatches.map((s) => s.replace(/\.js$/i, '.js')))];
+    return normalized.slice(0, 5);
+  }
+
+  const toolMatches = [...combined.matchAll(/bằng\s+([A-Za-z0-9.#+\/]+)/gi)].map((m) => m[1].trim());
+  if (toolMatches.length > 0) {
+    return [...new Set(toolMatches)].slice(0, 5);
+  }
+
+  if (position && position.length < 60) {
+    return [position];
+  }
+
+  return ['kỹ năng chuyên môn'];
+};
+
+const encodeExpectedAnswer = (modelAnswer, steps, suggestedTime = 120) =>
+  JSON.stringify({ model_answer: modelAnswer, steps, suggested_time: suggestedTime });
+
+const MIN_STEP_DESC_LEN = 60;
+
+const sanitizeStepDesc = (desc = '') =>
+  desc
+    .replace(/\s*Lý do:\s*/gi, ' ')
+    .replace(/\s*Ví dụ:\s*.+$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const isValidStepDesc = (desc = '') =>
+  desc.length >= MIN_STEP_DESC_LEN && !/\b(?:lý do|ví dụ)\s*:/i.test(desc);
+
+/** Prefer AI desc when long enough; otherwise use stage fallback for that label. */
+const resolveStepDesc = (aiDesc, fallbackDesc = '') => {
+  const cleaned = sanitizeStepDesc(aiDesc);
+  const fb = sanitizeStepDesc(fallbackDesc);
+  if (isValidStepDesc(cleaned)) return cleaned;
+  if (isValidStepDesc(fb)) return fb;
+  return fb || cleaned;
+};
+
+/** Build one answer-step line — single instructional sentence, min 60 chars, no examples. */
+const richStep = (instruction) =>
+  sanitizeStepDesc(String(instruction).replace(/\s+/g, ' ').trim());
+
+const GENERIC_STEP_PHRASES = [
+  'nêu 1–2 điểm mạnh có ví dụ',
+  'thừa nhận điểm yếu thực tế',
+  'mô tả kế hoạch cải thiện đang thực hiện',
+  'chào hỏi lịch sự, giới thiệu tên',
+  'kết bằng định hướng phát triển',
+  'đặt 1–2 câu hỏi thông minh',
+  'nêu khoảng lương hoặc cách định giá',
+  'định nghĩa hoặc giải thích khái niệm cốt lõi',
+  'đưa ví dụ thực tế hoặc use case',
+  'mô tả cách tiếp cận có cấu trúc'
+];
+
+const isShallowAnswerSteps = (expectedAnswer) => {
+  try {
+    const parsed = JSON.parse(expectedAnswer);
+    const steps = parsed?.steps;
+    if (!Array.isArray(steps) || steps.length < 4) return true;
+    const hasStart = steps.some((s) => s.label === 'START');
+    const hasEnd = steps.some((s) => s.label === 'END');
+    const numbered = steps.filter((s) => /^\d+$/.test(String(s.label))).length;
+    if (!hasStart || !hasEnd || numbered < 2) return true;
+    return steps.some((s) => {
+      const d = (s.desc || '').trim();
+      if (!isValidStepDesc(d)) return true;
+      return GENERIC_STEP_PHRASES.some((p) => d.toLowerCase().includes(p.toLowerCase()) && d.length < 80);
+    });
+  } catch {
+    return true;
+  }
+};
+
+/** Detailed answer_steps per interview slot — golden format for fallbacks. */
+const buildDetailedAnswerSteps = (slotIndex, { pos, company, sk, sk2, projectHint }) => {
+  const co = company || 'công ty';
+  const templates = [
+    [
+      { label: 'START', desc: richStep(
+        `Mở đầu bằng lời chào lịch sự và giới thiệu họ tên, trình độ hoặc kinh nghiệm nổi bật nhất liên quan trực tiếp đến vị trí ${pos}, tạo ấn tượng chuyên nghiệp ngay từ những giây đầu tiên.`
+      ) },
+      { label: '1', desc: richStep(
+        'Tóm tắt 1–2 dự án hoặc thành tựu có số liệu đo lường được như tăng hiệu năng, giảm bug hoặc số tính năng đã hoàn thành trong thời gian cụ thể, tránh mô tả chung chung không kiểm chứng được.'
+      ) },
+      { label: '2', desc: richStep(
+        `Nêu định hướng phát triển ngắn hạn (6–12 tháng) và dài hạn (2–3 năm) trong lĩnh vực ${pos}, thể hiện lộ trình rõ ràng và cam kết phát triển thay vì chỉ ứng tuyển vì cần việc.`
+      ) },
+      { label: 'END', desc: richStep(
+        `Kết bằng câu thể hiện sự hứng thú đóng góp cho ${co} và mong muốn được trao đổi sâu hơn về vai trò, trách nhiệm cũng như cơ hội phát triển nghề nghiệp tại đây.`
+      ) }
+    ],
+    [
+      { label: 'START', desc: richStep(
+        `Chọn 1–2 điểm mạnh cốt lõi phù hợp JD (ví dụ kỹ năng ${sk}) và mở đầu bằng dẫn chứng thực tế từ dự án hoặc công việc đã làm.`
+      ) },
+      { label: '1', desc: richStep(
+        'Thừa nhận 1 điểm yếu thật sự (không phải điểm mạnh giả dạng yếu) và mô tả ngắn gọn tác động của nó đến chất lượng hoặc tiến độ công việc hàng ngày.'
+      ) },
+      { label: '2', desc: richStep(
+        'Trình bày hành động cụ thể đang thực hiện để cải thiện điểm yếu: khóa học, mentor, quy trình mới hoặc công cụ hỗ trợ, kèm timeline và cách đo tiến độ.'
+      ) },
+      { label: 'END', desc: richStep(
+        `Liên hệ điểm mạnh và kế hoạch cải thiện điểm yếu với giá trị bạn mang lại cho team nếu được nhận vào vị trí ${pos} tại ${co}.`
+      ) }
+    ],
+    [
+      { label: 'START', desc: richStep(
+        `Mở đầu bằng câu khẳng định sự quan tâm và phù hợp của bạn với vị trí ${pos} tại ${co}, kết hợp định hướng phát triển nghề nghiệp dài hạn một cách rõ ràng.`
+      ) },
+      { label: '1', desc: richStep(
+        `Nêu rõ mục tiêu nghề nghiệp dài hạn trong lĩnh vực ${pos}: chuyên gia framework, Tech Lead, mảng UI/UX, hiệu năng hoặc hướng bạn thực sự muốn theo đuổi.`
+      ) },
+      { label: '2', desc: richStep(
+        `Giải thích tại sao ${co} là môi trường phù hợp để đạt mục tiêu — liên kết văn hóa, dự án thực tế, cơ hội học hỏi và stack công nghệ ${sk} của công ty.`
+      ) },
+      { label: '3', desc: richStep(
+        'Trình bày kế hoạch cụ thể 3–5 năm: kỹ năng muốn học thêm, loại dự án muốn đóng góp và vị trí mục tiêu (Senior, Lead hoặc chuyên gia mảng).'
+      ) },
+      { label: 'END', desc: richStep(
+        `Khẳng định cam kết và mong muốn đóng góp lâu dài cho sự phát triển của ${co}, thể hiện thái độ chủ động và gắn bó với tổ chức.`
+      ) }
+    ],
+    [
+      { label: 'START', desc: richStep(
+        'Nhắc lại tình huống giả định bằng lời của bạn để chứng minh bạn hiểu đề bài trước khi đi vào phân tích nguyên nhân và đề xuất giải pháp.'
+      ) },
+      { label: '1', desc: richStep(
+        'Phân tích nguyên nhân gốc rễ (root cause) và liệt kê 2–3 phương án khả thi kèm trade-off về chi phí, thời gian triển khai và tác động đến hệ thống.'
+      ) },
+      { label: '2', desc: richStep(
+        `Chọn phương án tối ưu cho bối cảnh ${pos}, mô tả các bước triển khai cụ thể với ${sk} và cách bạn sẽ kiểm chứng hiệu quả sau khi áp dụng.`
+      ) },
+      { label: 'END', desc: richStep(
+        'Nêu cách đo lường kết quả (metrics/KPI) và rủi ro còn lại sau khi áp dụng giải pháp, kèm biện pháp giảm thiểu nếu kết quả chưa đạt kỳ vọng.'
+      ) }
+    ],
+    [
+      { label: 'START', desc: richStep(
+        `Đặt bối cảnh dự án${projectHint ? ` "${projectHint}"` : ''}: thời gian, quy mô team và vai trò chính xác của bạn trong dự án theo khung STAR (Situation).`
+      ) },
+      { label: '1', desc: richStep(
+        'Mô tả thách thức hoặc nhiệm vụ khó nhất (Task) — phải cụ thể về mặt kỹ thuật hoặc nghiệp vụ, tránh mô tả chung chung không kiểm chứng được.'
+      ) },
+      { label: '2', desc: richStep(
+        `Trình bày hành động bạn đã làm (Action): công nghệ ${sk}, quyết định kiến trúc, cách debug hoặc tối ưu — làm rõ phần việc do bạn trực tiếp đảm nhiệm.`
+      ) },
+      { label: 'END', desc: richStep(
+        'Chốt bằng kết quả đo lường được (Result): số liệu cụ thể, phản hồi từ stakeholder và bài học rút ra để áp dụng cho dự án tương tự sau này.'
+      ) }
+    ],
+    [
+      { label: 'START', desc: richStep(
+        `Định nghĩa ${sk} bằng ngôn ngữ chuyên môn chuẩn, sau đó giải thích vai trò của nó trong stack và quy trình phát triển phần mềm cho vị trí ${pos}.`
+      ) },
+      { label: '1', desc: richStep(
+        `So sánh ${sk} với ${sk2 !== sk ? sk2 : 'giải pháp thay thế phổ biến'} — nêu ưu điểm, nhược điểm và tiêu chí quyết định nên dùng công nghệ nào trong từng bối cảnh.`
+      ) },
+      { label: '2', desc: richStep(
+        `Mô tả cách bạn đã áp dụng ${sk} trong dự án thực tế: vấn đề gặp phải, quyết định kỹ thuật đã chọn và kết quả đạt được sau khi triển khai.`
+      ) },
+      { label: 'END', desc: richStep(
+        'Tóm tắt best practice hoặc anti-pattern cần tránh khi làm việc với công nghệ này, thể hiện chiều sâu kinh nghiệm thực chiến thay vì chỉ lý thuyết.'
+      ) }
+    ],
+    [
+      { label: 'START', desc: richStep(
+        `Mở bằng cách nêu phương pháp định giá bản thân: research thị trường, level hiện tại, yêu cầu JD và kinh nghiệm thực tế liên quan đến vị trí ${pos}.`
+      ) },
+      { label: '1', desc: richStep(
+        `Đưa khoảng lương mong muốn hoặc mức linh hoạt, giải thích căn cứ dựa trên kỹ năng ${sk}, dự án đã làm và mức thị trường cho level tương ứng.`
+      ) },
+      { label: '2', desc: richStep(
+        `Nêu kỳ vọng về quyền lợi và văn hóa tại ${co}: cơ hội học hỏi, work-life balance, công nghệ, lộ trình thăng tiến và môi trường làm việc bạn quan tâm.`
+      ) },
+      { label: 'END', desc: richStep(
+        'Kết bằng thái độ cởi mở trao đổi chi tiết sau khi hiểu rõ JD và benefit package, thể hiện linh hoạt trong đàm phán mà không chỉ tập trung vào con số lương.'
+      ) }
+    ],
+    [
+      { label: 'START', desc: richStep(
+        'Cảm ơn chân thành HR vì thời gian phỏng vấn trước khi đặt câu hỏi ngược, thể hiện sự tôn trọng và chuyên nghiệp ở giai đoạn kết thúc buổi phỏng vấn.'
+      ) },
+      { label: '1', desc: richStep(
+        `Đặt câu hỏi về lộ trình phát triển ${pos} và cơ cấu team: số người, quy trình Agile/Scrum, tiêu chí đánh giá thăng tiến và thời gian mentor junior.`
+      ) },
+      { label: '2', desc: richStep(
+        `Hỏi thêm về stack công nghệ hoặc dự án sắp tới liên quan ${sk} tại ${co}, thể hiện bạn đã research công ty và quan tâm đến công việc thực tế sẽ làm.`
+      ) },
+      { label: 'END', desc: richStep(
+        `Chào tạm biệt lịch sự, nhắc lại sự hứng thú với vị trí tại ${co} và mong chờ phản hồi từ phía công ty trong thời gian sớm nhất.`
+      ) }
+    ]
+  ];
+  const steps = templates[slotIndex] || templates[0];
+  steps.forEach((s) => {
+    if (!isValidStepDesc(s.desc)) {
+      console.warn(`[Groq] Fallback step ${s.label} slot ${slotIndex} only ${(s.desc || '').length} chars`);
+    }
+  });
+  return steps;
+};
+
+const ANSWER_STEPS_GOLDEN_EXAMPLE = `MẪU CHUẨN answer_steps (BẮT BUỘC bám sát format này cho TẤT CẢ 8 câu):
+{
+  "question_text": "Bạn có thể chia sẻ định hướng nghề nghiệp trong 2–5 năm tới không? Và tại sao bạn chọn ứng tuyển vị trí Front End Developer tại FPT Software?",
+  "expected_answer": "Dạ thưa anh/chị, trong 2–5 năm tới em hướng tới trở thành Senior Front-end Developer chuyên sâu về hiệu năng và design system. Em chọn FPT Software vì công ty có nhiều dự án quy mô lớn dùng React.js, phù hợp lộ trình em muốn phát triển. Năm 1–2 em tập trung TypeScript và Jest; năm 3–5 em mong lead module front-end. Em cam kết đồng hành lâu dài với FPT Software.",
+  "answer_steps": [
+    { "label": "START", "desc": "Mở đầu bằng câu khẳng định sự quan tâm và phù hợp của bạn với vị trí Front End Developer tại FPT Software, kết hợp định hướng phát triển nghề nghiệp dài hạn một cách rõ ràng và tự nhiên." },
+    { "label": "1", "desc": "Nêu rõ mục tiêu nghề nghiệp dài hạn trong lĩnh vực Front End Development: chuyên gia framework, đóng góp dự án lớn, phát triển UI/UX và tối ưu hiệu năng." },
+    { "label": "2", "desc": "Giải thích tại sao FPT Software là môi trường lý tưởng để đạt mục tiêu — liên kết văn hóa, dự án thực tế, cơ hội học hỏi và stack công nghệ của công ty." },
+    { "label": "3", "desc": "Trình bày kế hoạch cụ thể 3–5 năm: kỹ năng muốn học thêm, loại dự án muốn đóng góp, vị trí mục tiêu (Senior Developer, Tech Lead, chuyên gia mảng)." },
+    { "label": "END", "desc": "Khẳng định cam kết và mong muốn đóng góp lâu dài cho sự phát triển của FPT Software, thể hiện thái độ chủ động và gắn bó với tổ chức." }
+  ],
+  "suggested_time": 150
+}
+
+QUY TẮC answer_steps (TUYỆT ĐỐI):
+- Mỗi bước chỉ là một câu hướng dẫn cụ thể việc cần làm — tối thiểu 60 ký tự.
+- KHÔNG dùng nhãn "Lý do:" hay "Ví dụ:"; KHÔNG chèn câu mẫu hay ví dụ minh họa trong desc.
+- Cấu trúc bắt buộc: START + ít nhất 2 bước số (1,2 hoặc 1,2,3) + END = tối thiểu 4 bước.
+- suggested_time: 120–180 giây tùy độ phức tạp câu hỏi.`;
+
+const mapRawQuestions = (parsedQuestions) =>
+  parsedQuestions.map((q) => {
+    const modelAnswer = q.expected_answer || '';
+    const answerSteps = Array.isArray(q.answer_steps) && q.answer_steps.length > 0
+      ? q.answer_steps.map((s) => ({ ...s, desc: sanitizeStepDesc(s.desc || '') }))
+      : null;
+    const suggestedTime = Number(q.suggested_time) || 120;
+    const encodedAnswer = answerSteps
+      ? encodeExpectedAnswer(modelAnswer, answerSteps, suggestedTime)
+      : modelAnswer;
+
+    return {
+      question_text: q.question_text,
+      expected_answer: encodedAnswer,
+      score_weight: Number(q.score_weight) || 1
+    };
+  });
+
+/**
+ * Full first-person model answer — no [brackets] or ${variable} tags.
+ */
+const buildCompleteModelAnswer = (slotIndex, { pos, company, sk, sk2, projectHint }) => {
+  const co = company || 'công ty';
+  const proj = projectHint || 'dự án gần nhất';
+  const answers = [
+    `Dạ em chào anh/chị. Em tên là Nguyễn Văn A, hiện có khoảng 2 năm kinh nghiệm phát triển giao diện với ${sk}. Trước đây em đã tối ưu bundle React giúp giảm 35% thời gian tải trang cho một ứng dụng thương mại điện tử. Trong 2–3 năm tới em muốn trở thành ${pos} chuyên sâu về hiệu năng và trải nghiệm người dùng. Em rất mong được đóng góp cho ${co} và trao đổi thêm về vị trí hôm nay.`,
+    `Điểm mạnh lớn nhất của em là debug nhanh các lỗi state phức tạp trong ${sk} nhờ React DevTools và kinh nghiệm thực chiến. Điểm yếu em đang khắc phục là thiên hướng tối ưu quá sớm trước khi hoàn thiện tính năng, đôi khi làm chậm tiến độ sprint. Để cải thiện, em áp dụng time-box 2 giờ mỗi ngày cho feature chính và chỉ refactor sau khi có feedback từ code review. Em tin thế mạnh ${sk} kết hợp quy trình team sẽ giúp em đóng góp hiệu quả nếu được nhận.`,
+    `Dạ thưa anh/chị, trong 2–5 năm tới em hướng tới trở thành Senior ${pos} chuyên sâu về hiệu năng và xây dựng design system. Em chọn ${co} vì công ty có nhiều dự án quy mô lớn sử dụng ${sk}, môi trường học hỏi tốt và định hướng công nghệ phù hợp với lộ trình cá nhân. Cụ thể, năm 1–2 em muốn thành thạo ${sk2} và kiểm thử tự động với Jest; năm 3–5 em mong lead module front-end hoặc mentor các bạn junior. Em cam kết đồng hành lâu dài và đóng góp tích cực vào sự phát triển của ${co}.`,
+    `Em hiểu đây là bài toán tối ưu hiệu năng khi hệ thống ${pos} xử lý lượng dữ liệu lớn. Trước tiên em sẽ đo đạc bottleneck bằng Lighthouse và profiling để xác định nguyên nhân gốc rễ thay vì đoán mò. Sau đó em cân nhắc các phương án như lazy loading component, memoization, cache API và phân trang — so sánh trade-off về độ phức tạp và tác động. Em sẽ chọn giải pháp có ROI cao nhất, triển khai theo sprint nhỏ và đo lại KPI. Mục tiêu là giảm ít nhất 25–30% thời gian phản hồi mà vẫn đảm bảo chất lượng code.`,
+    `Trong dự án ${proj}, em đảm nhận vai trò front-end developer phụ trách module xác thực và giao diện học tập. Thách thức lớn nhất là tích hợp OAuth 2.0 và Web Speech API đồng thời giữ latency dưới 200ms trên thiết bị cấu hình thấp. Em tách logic speech ra custom hook, dùng Context API quản lý state và viết integration test bằng Jest để tránh regression. Kết quả là giảm 35% thời gian onboarding người dùng mới và không có critical bug sau 3 sprint release.`,
+    `${sk} là thư viện JavaScript phổ biến để xây dựng giao diện người dùng theo mô hình component, cho phép render hiệu quả nhờ Virtual DOM. Trong công việc ${pos}, em dùng ${sk} kết hợp ${sk2} để quản lý state và tách biệt logic UI. So với framework khác, ${sk} linh hoạt hơn khi tích hợp dần vào dự án có sẵn nhưng đòi hỏi kỷ luật về cấu trúc component. Em thường áp dụng useMemo, useCallback và code splitting để tối ưu re-render. Trong dự án trước, cách tiếp cận này giúp giảm 40% thời gian tải trang đầu.`,
+    `Em đã tham khảo mức lương thị trường cho ${pos} ở khu vực TP.HCM trên TopCV và Glassdoor. Với kinh nghiệm hiện tại và kỹ năng ${sk}, em kỳ vọng mức lương gross khoảng 18–22 triệu, linh hoạt theo toàn bộ package và phạm vi công việc thực tế. Ngoài lương, em quan tâm đến môi trường code review chất lượng, thời gian học ${sk2} mỗi tuần và lộ trình thăng tiến rõ ràng tại ${co}. Em sẵn sàng trao đổi chi tiết sau khi hiểu rõ JD và cơ cấu benefit của công ty.`,
+    `Dạ em xin cảm ơn anh/chị đã dành thời gian phỏng vấn em hôm nay. Em muốn hỏi lộ trình phát triển từ mid lên senior cho vị trí ${pos} tại ${co} thường mất bao lâu và tiêu chí đánh giá cụ thể là gì. Em cũng muốn biết team hiện đang dùng ${sk} phiên bản nào và có kế hoạch nâng cấp stack trong năm tới không. Em rất hứng thú với vị trí này và mong có cơ hội đóng góp cho ${co}. Em chào anh/chị ạ!`
+  ];
+  return answers[slotIndex] || answers[0];
+};
+
+const buildStepContext = ({ position, skills, companyName, cvText, jobDescription = '' }) => {
+  const skillList = extractSkillKeywords(skills, jobDescription, position);
+  const cvSnippet = (cvText || '').slice(0, 500);
+  const projectHint = cvSnippet.match(/(?:dự án|project)[:\s]+([^\n,.]{3,60})/i)?.[1]?.trim()
+    || cvSnippet.match(/(?:công ty|company)[:\s]+([^\n,.]{3,60})/i)?.[1]?.trim()
+    || null;
+  const sk = skillList[0] || 'kỹ năng chuyên môn';
+  return {
+    pos: position || 'vị trí ứng tuyển',
+    company: companyName || 'công ty',
+    sk,
+    sk2: skillList[1] || sk,
+    projectHint
+  };
+};
+
+/** Enforce ≥60-char desc per step; replace short AI steps with stage fallback text. */
+const applyAnswerStepsEnforcement = (expectedAnswer, slotIndex, context) => {
+  const ctx = buildStepContext(context);
+  const fallbackSteps = buildDetailedAnswerSteps(slotIndex, ctx);
+  const fallbackByLabel = Object.fromEntries(fallbackSteps.map((s) => [String(s.label), s.desc]));
+
+  let parsed;
+  try {
+    parsed = JSON.parse(expectedAnswer);
+  } catch {
+    return encodeExpectedAnswer(buildCompleteModelAnswer(slotIndex, ctx), fallbackSteps, 120);
+  }
+
+  const rawSteps = Array.isArray(parsed.steps) && parsed.steps.length > 0 ? parsed.steps : fallbackSteps;
+  const steps = rawSteps.map((s) => ({
+    label: String(s.label),
+    desc: resolveStepDesc(s.desc, fallbackByLabel[String(s.label)])
+  }));
+
+  const modelAnswer = parsed.model_answer && !hasUnresolvedPlaceholders(parsed.model_answer)
+    ? parsed.model_answer
+    : buildCompleteModelAnswer(slotIndex, ctx);
+
+  const encoded = encodeExpectedAnswer(modelAnswer, steps, Number(parsed.suggested_time) || 120);
+  if (isShallowAnswerSteps(encoded)) {
+    return encodeExpectedAnswer(modelAnswer, fallbackSteps, Number(parsed.suggested_time) || 120);
+  }
+  return encoded;
+};
+
+/**
+ * Stage-aware fallback for each of the 8 mandatory interview slots (index 0–7).
+ */
+const buildStageFallback = (slotIndex, { position, skills, companyName, cvText, jobDescription = '' }) => {
+  const ctx = buildStepContext({ position, skills, companyName, cvText, jobDescription });
+  const { pos, company, sk, sk2, projectHint } = ctx;
+
+  const fallbacks = [
+    {
+      question_text: `Xin chào! Rất vui được gặp bạn trong buổi phỏng vấn hôm nay cho vị trí ${pos}. Bạn có thể giới thiệu ngắn gọn về bản thân và định hướng phát triển sự nghiệp của mình không?`,
+      expected_answer: encodeExpectedAnswer(
+        buildCompleteModelAnswer(0, { pos, company, sk, sk2, projectHint }),
+        buildDetailedAnswerSteps(0, { pos, company, sk, sk2, projectHint }),
+        120
+      ),
+      score_weight: 1
+    },
+    {
+      question_text: 'Trong quá trình làm việc, bạn tự nhận thấy đâu là điểm mạnh vượt trội và điểm yếu lớn nhất của mình? Bạn đã và đang làm gì để khắc phục điểm yếu đó?',
+      expected_answer: encodeExpectedAnswer(
+        buildCompleteModelAnswer(1, { pos, company, sk, sk2, projectHint }),
+        buildDetailedAnswerSteps(1, { pos, company, sk, sk2, projectHint }),
+        150
+      ),
+      score_weight: 1
+    },
+    {
+      question_text: `Bạn có thể chia sẻ định hướng nghề nghiệp trong 2–5 năm tới không? Và tại sao bạn chọn ứng tuyển vị trí ${pos}${companyName ? ` tại ${company}` : ''}?`,
+      expected_answer: encodeExpectedAnswer(
+        buildCompleteModelAnswer(2, { pos, company, sk, sk2, projectHint }),
+        buildDetailedAnswerSteps(2, { pos, company, sk, sk2, projectHint }),
+        150
+      ),
+      score_weight: 1
+    },
+    {
+      question_text: `Giả sử bạn đang xử lý một tình huống khó khăn đặc thù của ngành ${pos} (không liên quan trực tiếp đến CV), bạn sẽ phân tích và giải quyết như thế nào?`,
+      expected_answer: encodeExpectedAnswer(
+        buildCompleteModelAnswer(3, { pos, company, sk, sk2, projectHint }),
+        buildDetailedAnswerSteps(3, { pos, company, sk, sk2, projectHint }),
+        180
+      ),
+      score_weight: 2
+    },
+    {
+      question_text: projectHint
+        ? `Trong CV bạn có đề cập đến "${projectHint}". Bạn có thể chia sẻ vai trò, thách thức và cách bạn giải quyết trong dự án đó không?`
+        : hasCvContent(cvText)
+          ? 'Trong CV của bạn, hãy chọn một dự án hoặc kinh nghiệm làm việc nổi bật nhất và mô tả vai trò, thách thức cũng như kết quả đạt được?'
+          : `Vì CV chưa ghi chi tiết dự án, bạn có thể kể về một dự án thực tế liên quan đến ${pos} mà bạn từng tham gia?`,
+      expected_answer: encodeExpectedAnswer(
+        buildCompleteModelAnswer(4, { pos, company, sk, sk2, projectHint }),
+        buildDetailedAnswerSteps(4, { pos, company, sk, sk2, projectHint }),
+        180
+      ),
+      score_weight: 2
+    },
+    {
+      question_text: `Hãy trình bày kiến thức chuyên môn cốt lõi về ${sk} cho vị trí ${pos}. ${sk2 !== sk ? `Bạn cũng có thể đề cập thêm về ${sk2}.` : ''}`,
+      expected_answer: encodeExpectedAnswer(
+        buildCompleteModelAnswer(5, { pos, company, sk, sk2, projectHint }),
+        buildDetailedAnswerSteps(5, { pos, company, sk, sk2, projectHint }),
+        150
+      ),
+      score_weight: 2
+    },
+    {
+      question_text: `Kỳ vọng của bạn về mức lương, quyền lợi và môi trường làm việc lý tưởng tại ${company} là gì?`,
+      expected_answer: encodeExpectedAnswer(
+        buildCompleteModelAnswer(6, { pos, company, sk, sk2, projectHint }),
+        buildDetailedAnswerSteps(6, { pos, company, sk, sk2, projectHint }),
+        120
+      ),
+      score_weight: 1
+    },
+    {
+      question_text: `Cảm ơn bạn đã tham gia buổi phỏng vấn cho vị trí ${pos}. Buổi phỏng vấn đến đây là kết thúc — bạn có câu hỏi ngược nào dành cho chúng tôi không?`,
+      expected_answer: encodeExpectedAnswer(
+        buildCompleteModelAnswer(7, { pos, company, sk, sk2, projectHint }),
+        buildDetailedAnswerSteps(7, { pos, company, sk, sk2, projectHint }),
+        90
+      ),
+      score_weight: 1
+    }
+  ];
+
+  const fb = fallbacks[slotIndex] || fallbacks[fallbacks.length - 1];
+  return { ...fb, _source: 'stage-fallback', _stage: STAGE_LABELS[slotIndex] };
+};
+
+/**
+ * Validate AI-generated questions against the 8-slot stage contract.
+ */
+const validateQuestionSet = (questions, cvText) => {
+  const issues = [];
+
+  if (!Array.isArray(questions) || questions.length === 0) {
+    issues.push({ type: 'empty', detail: 'No questions returned' });
+    return issues;
+  }
+
+  if (questions.length !== 8) {
+    issues.push({ type: 'count', detail: `Expected 8, got ${questions.length}` });
+  }
+
+  const normalizedTexts = questions.map((q) => (q.question_text || '').trim().toLowerCase());
+  const seen = new Map();
+
+  normalizedTexts.forEach((text, i) => {
+    if (!text) {
+      issues.push({ type: 'empty_slot', slot: i + 1, detail: `Slot ${i + 1} has empty question_text` });
+      return;
+    }
+    if (seen.has(text)) {
+      issues.push({ type: 'duplicate', slot: i + 1, detail: `Slot ${i + 1} duplicates slot ${seen.get(text) + 1}` });
+    } else {
+      seen.set(text, i);
+    }
+    if (hasCvContent(cvText) && PLACEHOLDER_RE.test(questions[i].question_text)) {
+      issues.push({ type: 'placeholder', slot: i + 1, detail: `Slot ${i + 1} contains unresolved placeholder` });
+    }
+    if (isShallowAnswerSteps(questions[i].expected_answer)) {
+      issues.push({ type: 'shallow_steps', slot: i + 1, detail: `Slot ${i + 1} answer_steps too short — each step needs >= 60 chars` });
+    }
+    try {
+      const parsed = JSON.parse(questions[i].expected_answer);
+      if (parsed?.model_answer && hasUnresolvedPlaceholders(parsed.model_answer)) {
+        issues.push({ type: 'model_placeholder', slot: i + 1, detail: `Slot ${i + 1} model_answer contains [brackets] or unresolved tags` });
+      }
+    } catch {
+      if (hasUnresolvedPlaceholders(questions[i].expected_answer)) {
+        issues.push({ type: 'model_placeholder', slot: i + 1, detail: `Slot ${i + 1} expected_answer contains placeholders` });
+      }
+    }
+  });
+
+  return issues;
+};
+
+/**
+ * Normalize to exactly 8 stage-aligned questions; replace invalid/duplicate/missing slots.
+ */
+const normalizeToEightStages = (questions, context, genLog) => {
+  const slots = Array.from({ length: 8 }, (_, i) => {
+    const aiQ = questions[i];
+    if (aiQ?.question_text?.trim()) {
+      return { ...aiQ, _source: 'ai', _stage: STAGE_LABELS[i] };
+    }
+    genLog.paddedSlots.push({ slot: i + 1, stage: STAGE_LABELS[i], reason: 'missing' });
+    return buildStageFallback(i, context);
+  });
+
+  const seen = new Map();
+  return slots.map((q, i) => {
+    const key = (q.question_text || '').trim().toLowerCase();
+    const hasPlaceholder = hasCvContent(context.cvText) && PLACEHOLDER_RE.test(q.question_text || '');
+    const isDuplicate = seen.has(key);
+    seen.set(key, i);
+
+    if (hasPlaceholder || isDuplicate || !key) {
+      const reason = hasPlaceholder ? 'placeholder' : isDuplicate ? 'duplicate' : 'empty';
+      genLog.replacedSlots.push({ slot: i + 1, stage: STAGE_LABELS[i], reason, original: (q.question_text || '').slice(0, 80) });
+      return buildStageFallback(i, context);
+    }
+    if (isShallowAnswerSteps(q.expected_answer)) {
+      const fb = buildStageFallback(i, context);
+      genLog.replacedSlots.push({ slot: i + 1, stage: STAGE_LABELS[i], reason: 'shallow_steps', original: 'answer_steps enriched' });
+      return { ...q, expected_answer: fb.expected_answer, _source: 'steps-enriched' };
+    }
+    try {
+      const parsed = JSON.parse(q.expected_answer);
+      if (parsed?.model_answer && hasUnresolvedPlaceholders(parsed.model_answer)) {
+        const fb = buildStageFallback(i, context);
+        genLog.replacedSlots.push({ slot: i + 1, stage: STAGE_LABELS[i], reason: 'model_placeholder', original: parsed.model_answer.slice(0, 60) });
+        return { ...q, expected_answer: fb.expected_answer, _source: 'model-enriched' };
+      }
+    } catch { /* plain text */ }
+
+    const enforced = applyAnswerStepsEnforcement(q.expected_answer, i, context);
+    if (enforced !== q.expected_answer) {
+      genLog.replacedSlots.push({ slot: i + 1, stage: STAGE_LABELS[i], reason: 'steps_min_length', original: 'short step desc replaced' });
+    }
+    return { ...q, expected_answer: enforced, _source: q._source || 'ai' };
+  });
+};
+
+const callGroqQuestionAPI = async (apiKey, modelName, systemPrompt, userPrompt) => {
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+  const response = await fetchWithRetry(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: modelName,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.7
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Groq API request failed with status: ${response.status}`);
+  }
+
+  const resData = await response.json();
+  const content = resData.choices[0].message.content;
+  const parsedData = safeParseJSON(content);
+
+  if (!parsedData || !Array.isArray(parsedData.questions) || parsedData.questions.length === 0) {
+    throw new Error('Groq returned invalid JSON schema');
+  }
+
+  return parsedData.questions;
+};
 
 /**
  * Generate 8 dynamic, highly-customized interview questions using Qwen 3 32B on Groq
@@ -53,6 +620,8 @@ const fetchWithRetry = async (url, options, maxRetries = 3, delayMs = 1500) => {
 export const generateQuestionsFromGroq = async ({
   position = '',
   skills = '',
+  companyName = '',
+  jobDescription = '',
   experienceLevel = 'JUNIOR',
   cvText = ''
 }) => {
@@ -81,41 +650,46 @@ export const generateQuestionsFromGroq = async ({
 Nhiệm vụ của bạn là dựa vào CV của ứng viên, vị trí ứng tuyển và kỹ năng chuyên môn được cung cấp để sinh ra chính xác **8 câu hỏi phỏng vấn** theo lộ trình thực tế như phỏng vấn với HR dưới đây:
 
 - **Câu 1 (Giai đoạn 1 - Nhập cuộc & Giới thiệu bản thân)**: Lời chào và gợi ý ứng viên thực hiện giao tiếp xã giao nhẹ nhàng (small talk), giới thiệu ngắn gọn, lịch sự về bản thân cũng như định hướng phát triển tổng quan.
-  - expected_answer: "Ứng viên chào hỏi lịch thiệp, giới thiệu bản thân súc tích và nêu định hướng công việc mong muốn."
 - **Câu 2 (Giai đoạn 2 - Khai thác điểm mạnh & điểm yếu)**: Câu hỏi yêu cầu ứng viên tự nhận định về các điểm mạnh vượt trội và điểm yếu lớn nhất của bản thân trong công việc, đồng thời nêu cách cải thiện điểm yếu đó.
-  - expected_answer: "Ứng viên nêu rõ điểm mạnh phù hợp với công việc và điểm yếu thực tế kèm giải pháp khắc phục cụ thể."
 - **Câu 3 (Giai đoạn 2 - Định hướng nghề nghiệp & Lý do ứng tuyển)**: Câu hỏi khai thác định hướng nghề nghiệp chi tiết (ngắn hạn & dài hạn) và lý do tại sao ứng viên muốn ứng tuyển vào vị trí này.
-  - expected_answer: "Ứng viên nêu rõ lộ trình nghề nghiệp rõ ràng, lý do ứng tuyển thuyết phục thể hiện sự quan tâm tới vị trí và công việc."
 - **Câu 4 (Giai đoạn 3 - Tư duy giải quyết vấn đề qua tình huống thực tế ngoài CV)**: Đưa ra một tình huống thực tế giả định hóc búa đặc thù của ngành nghề đó (không có trong CV) để đánh giá tư duy giải quyết vấn đề của ứng viên.
   *Ví dụ với ngành IT: "Hãy nêu phương án tối ưu một truy vấn SQL trong bảng chứa hơn 1 triệu bản ghi người dùng khi hệ thống bị chậm."*
   *Ví dụ với Sales/Marketing: "Làm thế nào bạn thuyết phục một khách hàng lớn đang từ chối mua sản phẩm vì chê giá cao?"*
-  - expected_answer: "Ứng viên phân tích tình huống một cách logic, đưa ra phương án xử lý cụ thể, khả thi và tối ưu."
 - **Câu 5 (Giai đoạn 3 - Kinh nghiệm thực tế & Dự án trong CV)**: Các câu hỏi khai thác sâu vào các dự án cụ thể và lịch sử làm việc được liệt kê trong CV của ứng viên. Bạn BẮT BUỘC phải trích xuất và gọi tên cụ thể dự án hoặc tên công ty cũ có trong CV để làm bối cảnh câu hỏi nhằm kiểm tra tính thực chiến.
-  - expected_answer: "Ứng viên giải trình chi tiết về công nghệ/quy trình, kiến trúc/giải pháp sử dụng trong dự án của họ, mô tả rõ vai trò và nhiệm vụ cụ thể."
 - **Câu 6 (Giai đoạn 3 - Câu hỏi về kiến thức chuyên môn)**: Các câu hỏi đặt nặng về lý thuyết của vị trí mà ứng viên đang ứng tuyển.
   * ví dụ với ngành IT: "Restful API là gì? Hãy cho tôi biết về 1 số Http method và khi nào thì dùng nó??", "Hãy giải thích về cơ chế polling và websocket??"
   * ví dụ với ngành Marketing: "SEO on-page và SEO off-page là gì? Hãy cho tôi biết 1 số công cụ SEO và khi nào thì dùng nó??"
-  - expected_answer: "Ứng viên trả lời các câu hỏi về kiến thức chuyên môn một cách tự tin và chuyên nghiệp, thể hiện sự hiểu biết về bản thân và khả năng làm việc trong môi trường công sở."
 - **Câu 7 (Giai đoạn 4 - Lương, quyền lợi & Kỳ vọng)**: Câu hỏi khai thác kỳ vọng của ứng viên về mức lương mong muốn, quyền lợi cũng như văn hóa, môi trường làm việc lý tưởng mà họ mong đợi ở công ty.
-  - expected_answer: "Ứng viên đưa ra mức lương mong muốn hợp lý và bày tỏ kỳ vọng cụ thể về môi trường làm việc một cách chuyên nghiệp."
 - **Câu 8 (Giai đoạn 4 - Câu hỏi ngược & Chào tạm biệt)**: Lời kết luận từ người phỏng vấn thông báo buổi phỏng vấn kết thúc, đồng thời gợi ý và kiểm tra xem ứng viên có câu hỏi ngược nào dành cho nhà tuyển dụng/HR để thể hiện sự quan tâm, sau đó chào tạm biệt lịch sự hay không.
-  - expected_answer: "Ứng viên đặt 1-2 câu hỏi thông minh, chủ động gửi lời cảm ơn và chào tạm biệt lịch sự để kết thúc."
 
 Các câu hỏi phải tuân thủ nghiêm ngặt các quy tắc tuyệt đối sau:
 1. Thiết kế linh hoạt dựa trên vị trí ứng tuyển và kỹ năng yêu cầu để áp dụng cho mọi ngành nghề khác nhau (IT, Sales, Marketing, Nhân sự, Tài chính, v.v.).
 2. BẮT BUỘC Câu 5 phải chứa thông tin bối cảnh cụ thể trích xuất trực tiếp từ các DỰ ÁN (Projects) hoặc KINH NGHIỆM LÀM VIỆC (Work Experience) ghi trong CV của ứng viên. Nếu CV thực sự trống rỗng, hãy mở đầu câu hỏi bằng: "Vì CV của bạn chưa ghi chi tiết các dự án thực tế, tôi muốn hỏi bạn về..." để ứng viên rõ bối cảnh.
-3. Ngôn ngữ câu hỏi phải là tiếng Việt tự nhiên, chuyên nghiệp và chuẩn xác thuật ngữ chuyên ngành.
+3. Nếu có Mô tả công việc (Job Description) được cung cấp, BẮT BUỘC phải tập trung generate câu hỏi xoay quanh các yêu cầu kỹ thuật và kỹ năng được liệt kê trong JD đó, thay vì sinh câu hỏi chung chung.
+4. Nếu có Tên công ty được cung cấp, hãy cá nhân hóa câu hỏi bối cảnh để phù hợp với lĩnh vực hoạt động, sản phẩm và văn hóa của công ty đó.
+5. Ngôn ngữ câu hỏi phải là tiếng Việt tự nhiên, chuyên nghiệp và chuẩn xác thuật ngữ chuyên ngành.
 
-Bạn PHẢI trả về kết quả ở định dạng JSON duy nhất, có cấu trúc như sau:
+⚠️ PHÂN BIỆT RÕ CÁC PHẦN DỮ LIỆU:
+- "question_text": Câu hỏi DO NGƯỜI PHỎNG VẤN (HR) đặt ra.
+- "expected_answer": Câu trả lời mẫu HOÀN CHỈNH của ứng viên — viết ngôi thứ nhất, 3–6 câu đầy đủ ý (100–200 từ), CÓ SỐ LIỆU/DỰ ÁN CỤ THỂ. TUYỆT ĐỐI KHÔNG dùng placeholder [trong ngoặc vuông] hay biến \${co}/\${sk} — phải ghi tên công ty, công nghệ, con số thật.
+- "answer_steps": Lộ trình ANSWER STRUCTURE trên UI. Mỗi "desc" là **một câu hướng dẫn cụ thể** (tối thiểu 60 ký tự), bám sát câu hỏi, vị trí, công ty, CV. Chỉ mô tả việc cần làm — KHÔNG "Lý do:", KHÔNG "Ví dụ:", KHÔNG câu mẫu minh họa.
+- "suggested_time": Tổng thời gian khuyến nghị (giây, 120–180). UI hiển thị: "Phân bổ thời gian hợp lý... trong {suggested_time} giây."
+
+${ANSWER_STEPS_GOLDEN_EXAMPLE}
+
+Bạn PHẢI trả về kết quả ở định dạng JSON duy nhất — mỗi câu trong mảng "questions" phải có answer_steps theo ĐÚNG format mẫu trên:
 {
-  "questions": [
-    {
-      "question_text": "Nội dung câu hỏi phỏng vấn...",
-      "expected_answer": "Các ý chính, giải pháp cụ thể mà ứng viên cần trình bày...",
-      "score_weight": 1
-    }
-  ]
-}`;
+  "questions": [ /* 8 objects, mỗi object có question_text, expected_answer, answer_steps, suggested_time, score_weight */ ]
+}
+
+LƯU Ý TUYỆT ĐỐI:
+1. "question_text" PHẢI là câu hỏi của HR/phỏng vấn viên — KHÔNG bao giờ viết theo ngôi thứ nhất của ứng viên.
+2. "expected_answer" PHẢI là đoạn văn hoàn chỉnh ứng viên có thể đọc ngay — KHÔNG chứa [mục tiêu], [Tên], \${co} hay bất kỳ chỗ trống nào.
+3. "answer_steps" PHẢI có START + ít nhất 2 bước số + END; mỗi desc ĐẾM KÝ TỰ ≥ 60 (viết dài, chi tiết), chỉ hướng dẫn hành động — không "Lý do:", không "Ví dụ:", không chèn câu trả lời mẫu.
+4. BẮT BUỘC phải sinh đủ CHÍNH XÁC 8 CÂU HỎI — không ít hơn, không nhiều hơn. Đây là yêu cầu bắt buộc và tuyệt đối không được bỏ qua.`;
+
+  const companyContext = companyName ? `\n5. TÊN CÔNG TY (Company Context):\n   => ${companyName} (Hãy cá nhân hóa câu hỏi theo lĩnh vực, sản phẩm và văn hóa làm việc của công ty này)` : '';
+  const jdContext = jobDescription ? `\n6. MÔ TẢ CÔNG VIỆC / YÊU CẦU KỸ NĂNG (Job Description):\n=========================================\n${jobDescription}\n=========================================\n(Ưu tiên generate câu hỏi xoay quanh các kỹ năng và yêu cầu cụ thể từ JD này)` : '';
 
   const userPrompt = `Dưới đây là thông tin chi tiết và dữ liệu bối cảnh phỏng vấn của ứng viên:
 
@@ -126,92 +700,101 @@ Bạn PHẢI trả về kết quả ở định dạng JSON duy nhất, có cấ
    => ${experienceLevel}
 
 3. KỸ NĂNG CHUYÊN MÔN YÊU CẦU (Target Skills):
-   => ${skills}
+   => ${skills}${companyContext}${jdContext}
 
 4. NỘI DUNG CHI TIẾT TỪ CV BÓC TÁCH CỦA ỨNG VIÊN (Candidate CV Raw Text):
 =========================================
-${cvText || "Không có CV tải lên (Hãy sinh câu hỏi thực chiến chuẩn hóa dựa trên Vị trí và Kỹ năng chuyên môn yêu cầu)"}
+${cvText || 'Không có CV tải lên (Hãy sinh câu hỏi thực chiến chuẩn hóa dựa trên Vị trí và Kỹ năng chuyên môn yêu cầu)'}
 =========================================
 
 Dựa trên toàn bộ dữ liệu bối cảnh thực tế ở trên, hãy thực thi nhiệm vụ và sinh ra chính xác **8 câu hỏi phỏng vấn** dưới dạng JSON theo đúng rào chắn cấu hình trong System Prompt!`;
 
+  const context = { position, skills, companyName, jobDescription, experienceLevel, cvText };
+  const genLog = {
+    timestamp: new Date().toISOString(),
+    position,
+    experienceLevel,
+    cvLength: (cvText || '').length,
+    hasCv: hasCvContent(cvText),
+    model: modelName,
+    aiRawCount: 0,
+    retries: 0,
+    validationIssues: [],
+    paddedSlots: [],
+    replacedSlots: [],
+    finalSources: []
+  };
+
+  const MAX_RETRIES = 2;
+  let lastIssues = [];
+  let mappedQuestions = [];
+
   try {
-    const url = 'https://api.groq.com/openai/v1/chat/completions';
+    let userPromptCurrent = userPrompt;
 
-    // Call Groq API via fetchWithRetry
-    const response = await fetchWithRetry(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: modelName,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7
-      })
-    });
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        genLog.retries = attempt;
+        const issueSummary = lastIssues.map((i) => i.detail).join('; ');
+        userPromptCurrent = `${userPrompt}
 
-    if (!response.ok) {
-      throw new Error(`Groq API request failed with status: ${response.status}`);
+⚠️ LẦN SINH TRƯỚC KHÔNG HỢP LỆ. Vui lòng sửa và sinh lại CHÍNH XÁC 8 câu hỏi:
+- Các lỗi phát hiện: ${issueSummary}
+- TUYỆT ĐỐI KHÔNG lặp lại cùng một câu hỏi ở nhiều vị trí.
+- Câu 5 BẮT BUỘC gọi tên dự án/công ty CỤ THỂ từ CV — KHÔNG dùng placeholder như [Tên dự án].
+- Câu 6 phải là câu hỏi lý thuyết/chuyên môn, Câu 7 về lương/kỳ vọng, Câu 8 là câu hỏi ngược/chào tạm biệt.
+- answer_steps MỖI CÂU: START + 2-3 bước số + END; mỗi desc ĐẾM KÝ TỰ ≥ 60 (viết dài, chi tiết), chỉ hướng dẫn hành động — không "Lý do:", không "Ví dụ:", không câu mẫu.
+- expected_answer MỖI CÂU phải là đoạn văn hoàn chỉnh, không có [brackets] hay \${tags}.`;
+        console.warn(`[Groq QuestionGen] Retry ${attempt}/${MAX_RETRIES} due to validation issues:`, issueSummary);
+      }
+
+      const rawQuestions = await callGroqQuestionAPI(apiKey, modelName, systemPrompt, userPromptCurrent);
+      genLog.aiRawCount = rawQuestions.length;
+
+      mappedQuestions = mapRawQuestions(rawQuestions);
+      if (mappedQuestions.length > 8) {
+        console.warn(`[Groq QuestionGen] AI returned ${mappedQuestions.length} questions, trimming to 8.`);
+        mappedQuestions = mappedQuestions.slice(0, 8);
+      }
+
+      lastIssues = validateQuestionSet(mappedQuestions, cvText);
+      genLog.validationIssues = lastIssues;
+
+      if (lastIssues.length === 0 && mappedQuestions.length === 8) {
+        break;
+      }
     }
 
-    const resData = await response.json();
-    const content = resData.choices[0].message.content;
-    const parsedData = safeParseJSON(content);
-
-    if (parsedData && Array.isArray(parsedData.questions) && parsedData.questions.length > 0) {
-      // Ensure score_weight is a number
-      return parsedData.questions.map(q => ({
-        question_text: q.question_text,
-        expected_answer: q.expected_answer || 'Không có gợi ý câu trả lời mong đợi.',
-        score_weight: Number(q.score_weight) || 1
-      }));
-    } else {
-      throw new Error('Groq returned invalid JSON schema');
+    if (lastIssues.length > 0) {
+      console.warn('[Groq QuestionGen] Validation issues remain after retries; applying stage-aware normalization.', lastIssues);
+      genLog.fallbackAfterRetries = true;
     }
+
+    const finalQuestions = normalizeToEightStages(mappedQuestions, context, genLog);
+    genLog.finalSources = finalQuestions.map((q, i) => ({
+      slot: i + 1,
+      stage: STAGE_LABELS[i],
+      source: q._source || 'ai'
+    }));
+    genLog.finalCount = finalQuestions.length;
+
+    const cleaned = finalQuestions.map(({ _source, _stage, ...q }) => q);
+    console.log('[Groq QuestionGen] Session log:', JSON.stringify(genLog, null, 2));
+    return cleaned;
 
   } catch (error) {
-    console.warn('[Groq API] Gặp lỗi rate limit hoặc sự cố kết nối, kích hoạt bộ câu hỏi tĩnh dự phòng chất lượng cao:', error.message);
-    
-    const fallbackQuestions = [];
-    const skillList = (skills || 'kỹ năng chuyên môn').split(',').map(s => s.trim()).filter(Boolean);
-    
-    const targetSkills = skillList.length > 0 ? skillList : ['kỹ năng chuyên môn'];
+    console.warn('[Groq API] Gặp lỗi rate limit hoặc sự cố kết nối, kích hoạt bộ câu hỏi stage-fallback:', error.message);
 
-    targetSkills.forEach((sk) => {
-      fallbackQuestions.push(
-        {
-          question_text: `Hãy trình bày những kiến thức cơ bản nhất về kỹ năng/công nghệ ${sk} và cách bạn áp dụng nó trong dự án thực tế?`,
-          expected_answer: `Ứng viên giải thích được khái niệm cốt lõi của ${sk}, các thành phần quan trọng và liên hệ cụ thể tới một bài toán/dự án cũ.`,
-          score_weight: 1
-        },
-        {
-          question_text: `Khi làm việc với ${sk}, những thách thức lớn nhất về mặt kiến trúc hoặc tối ưu hiệu năng mà bạn từng gặp phải là gì? Bạn đã giải quyết như thế nào?`,
-          expected_answer: `Nêu được vấn đề kỹ thuật đặc thù của ${sk} (ví dụ re-render, blocking event loop, query performance...) và mô tả chi tiết phương án giải quyết (cách config, code optimization...).`,
-          score_weight: 1
-        },
-        {
-          question_text: `Làm thế nào bạn so sánh ${sk} với các giải pháp công nghệ thay thế khác trong cùng lĩnh vực? Ưu nhược điểm là gì?`,
-          expected_answer: `So sánh đa chiều về hiệu năng, tốc độ phát triển, độ phức tạp của mã nguồn và tính mở rộng.`,
-          score_weight: 1
-        }
-      );
-    });
+    const genLog = { paddedSlots: [], replacedSlots: [], fallbackMode: 'api-error' };
+    const finalQuestions = Array.from({ length: 8 }, (_, i) => buildStageFallback(i, context));
+    genLog.finalSources = finalQuestions.map((q, i) => ({
+      slot: i + 1,
+      stage: STAGE_LABELS[i],
+      source: 'stage-fallback-api-error'
+    }));
+    console.log('[Groq QuestionGen] Session log (API error fallback):', JSON.stringify(genLog, null, 2));
 
-    if (fallbackQuestions.length < 3) {
-      fallbackQuestions.push({
-        question_text: "Hãy tự đánh giá mức độ thành thạo của bản thân đối với các kỹ năng được yêu cầu trong buổi phỏng vấn hôm nay?",
-        expected_answer: "Ứng viên tự tin nêu các thế mạnh và hướng học tập cải thiện kỹ năng.",
-        score_weight: 1
-      });
-    }
-
-    return fallbackQuestions.slice(0, 5);
+    return finalQuestions.map(({ _source, _stage, ...q }) => q);
   }
 };
 
