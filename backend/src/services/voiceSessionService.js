@@ -157,6 +157,7 @@ export const assessAndPackageResult = async (sessionId, userId) => {
     .select(
       'interview_questions.id as question_id',
       'interview_questions.question_text',
+      'interview_questions.expected_answer',
       'interview_questions.order_index',
       'candidate_answers.answer_text',
       'candidate_answers.audio_url',
@@ -191,6 +192,7 @@ export const assessAndPackageResult = async (sessionId, userId) => {
       answer: answerText,
       score: score,
       feedback: feedback,
+      expected_answer: qa.expected_answer || null,
       audioUrl: qa.audio_url || null
     };
   });

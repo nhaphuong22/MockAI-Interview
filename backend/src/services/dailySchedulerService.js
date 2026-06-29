@@ -130,10 +130,7 @@ export const runDailyQuestionGeneration = async () => {
   console.log('[Daily Scheduler] Completed daily question generation.');
 };
 
-/**
- * Initialize background cron job
- */
-export const initDailyScheduler = () => {
+export const initDailyScheduler = async () => {
   console.log('[Daily Scheduler] Initializing daily challenge scheduler cron job...');
   
   // Schedule to run at 00:00 every day
@@ -147,4 +144,18 @@ export const initDailyScheduler = () => {
   });
 
   console.log('[Daily Scheduler] Cron job scheduled successfully for 00:00 daily.');
+
+  // Tự động kích hoạt sinh câu hỏi ban đầu bằng AI nếu cơ sở dữ liệu trống
+  try {
+    const countResult = await db('daily_questions').count('id as cnt').first();
+    const count = Number(countResult?.cnt || 0);
+    if (count === 0) {
+      console.log('[Daily Scheduler] Bảng daily_questions trống. Tự động chạy sinh câu hỏi ban đầu bằng AI...');
+      runDailyQuestionGeneration().catch(err => {
+        console.error('[Daily Scheduler] Lỗi khi sinh câu hỏi ban đầu bằng AI:', err.message);
+      });
+    }
+  } catch (err) {
+    console.error('[Daily Scheduler] Lỗi khi kiểm tra dữ liệu bảng daily_questions:', err.message);
+  }
 };

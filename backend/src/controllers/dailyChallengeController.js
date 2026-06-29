@@ -16,8 +16,9 @@ export const getStreakStatus = async (req, res) => {
 
     let has_answered_today = false;
     if (streak && streak.last_answered_at) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const lastAnsweredStr = new Date(streak.last_answered_at).toISOString().split('T')[0];
+      const getLocalDateStr = (date) => new Date(date).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const todayStr = getLocalDateStr(new Date());
+      const lastAnsweredStr = getLocalDateStr(streak.last_answered_at);
       has_answered_today = (todayStr === lastAnsweredStr);
     }
 
@@ -160,7 +161,8 @@ export const submitDailyAnswer = async (req, res) => {
 
     // 6. Update streak count
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const getLocalDateStr = (date) => new Date(date).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const todayStr = getLocalDateStr(now);
 
     const existingStreak = await db('daily_streaks').where({ user_id: userId }).first();
     let newStreakCount = 1;
@@ -175,13 +177,12 @@ export const submitDailyAnswer = async (req, res) => {
         updated_at: now
       });
     } else {
-      const lastAnswered = new Date(existingStreak.last_answered_at);
-      const lastAnsweredStr = lastAnswered.toISOString().split('T')[0];
+      const lastAnsweredStr = getLocalDateStr(existingStreak.last_answered_at);
 
       if (lastAnsweredStr !== todayStr) {
-        const yesterday = new Date();
+        const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = getLocalDateStr(yesterday);
 
         if (lastAnsweredStr === yesterdayStr) {
           newStreakCount = existingStreak.streak_count + 1;

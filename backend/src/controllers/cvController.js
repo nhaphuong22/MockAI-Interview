@@ -103,19 +103,9 @@ export const scoreCV = async (req, res) => {
       });
     }
 
-    // 2. Trích xuất kỹ năng thô từ CV text để khởi tạo cây
-    const allKnownSkills = [
-      'HTML', 'CSS', 'JavaScript', 'React', 'Vue', 'Next.js', 'Tailwind', 'Redux', 'TypeScript', 'Testing',
-      'Node.js', 'Express', 'NestJS', 'PostgreSQL', 'MongoDB', 'Redis', 'Docker', 'AWS', 'CI/CD', 'REST API'
-    ];
-    const matchedSkills = allKnownSkills.filter(skill => 
-      new RegExp(`\\b${skill.replace('.', '\\.')}\\b`, 'i').test(cv_text) || 
-      cv_text.toLowerCase().includes(skill.toLowerCase())
-    );
-
-    // 3. Khởi tạo Cây kỹ năng RPG dựa trên CV vừa tải
+    // 2. Khởi tạo Cây kỹ năng RPG dựa trên Cây kỹ năng AI vừa sinh ra
     try {
-      await initializeSkillTreeFromCV(userId, matchedSkills, job_title || '', overallScore);
+      await initializeSkillTreeFromCV(userId, evaluationData.skillTree);
     } catch (stErr) {
       console.error('[SkillTree] Lỗi khi tự động khởi tạo cây từ CV Review:', stErr.message);
     }

@@ -71,13 +71,20 @@ export function InterviewPractice() {
         setIsSubmitting(true);
         try {
           console.log(`[Practice] Tự động khởi tạo phỏng vấn thử cho kỹ năng: ${location.state.autoStartSkill}`);
+          
+          const formattedQuestions = location.state.skillQuestions?.map(q => ({
+            question_text: q.question_text || q.question || "",
+            expected_answer: q.expected_answer || ""
+          })) || [];
+
           const response = await initInterviewApi({
             customPosition: `Luyện tập kỹ năng ${location.state.autoStartSkill}`,
             customSkills: [location.state.autoStartSkill],
             experienceLevel: "JUNIOR",
             cvId: null,
             cvText: "",
-            type: "PRACTICE"
+            type: "PRACTICE",
+            questions: formattedQuestions
           });
           const interviewData = response.data;
           setInterviewId(interviewData.id);
@@ -134,6 +141,8 @@ export function InterviewPractice() {
       const response = await initInterviewApi({
         customPosition: info.position,
         customSkills: info.skills,
+        companyName: info.companyName || "",
+        jobDescription: info.jobDescription || "",
         experienceLevel: info.level,
         cvId: info.cvId, // Truyền cvId động nếu có
         cvText: info.cvText, // Truyền trực tiếp CV text bóc tách từ sessionStorage

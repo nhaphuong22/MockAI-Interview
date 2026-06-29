@@ -377,3 +377,112 @@ Dựa vào dữ liệu trên, hãy sinh Báo Cáo Tổng Hợp dưới dạng JS
     throw err;
   }
 };
+
+/**
+ * Generate 1-minute summary and timestamps of key interview moments using Gemini
+ */
+export const generateHighlightsFromGemini = async ({
+  candidateName = '',
+  position = '',
+  qaDetails = [],
+  totalViolations = 0,
+  isSuspended = false
+}) => {
+  if (process.env.GEMINI_API_KEY === 'mock-gemini-key') {
+    if (isSuspended) {
+      return {
+        highlight_summary: `Hệ thống phỏng vấn AI đã đình chỉ buổi phỏng vấn của ứng viên ${candidateName} do ghi nhận tổng cộng ${totalViolations} lần vi phạm quy chế (chuyển tab hoặc hướng nhìn lệch màn hình). Báo cáo cảnh báo gian lận đã được gửi tới HR.`,
+        is_flagged: true,
+        timestamps_data: [
+          { timestamp: 30, label: 'Phát hiện chuyển tab trình duyệt lần 1', duration: 10, type: 'VIOLATION' },
+          { timestamp: 75, label: 'Ứng viên rời mắt khỏi màn hình (Gaze Violation)', duration: 15, type: 'VIOLATION' },
+          { timestamp: 110, label: 'Phát hiện chuyển tab liên tục quá giới hạn', duration: 30, type: 'VIOLATION' }
+        ]
+      };
+    } else {
+      return {
+        highlight_summary: `Ứng viên ${candidateName} hoàn thành tốt buổi phỏng vấn vị trí ${position}. Thể hiện kỹ năng kỹ thuật sâu sắc ở các câu hỏi thiết kế component, giao tiếp lưu loát và chuyên nghiệp, có một vài giây ngập ngừng nhỏ nhưng không đáng kể.`,
+        is_flagged: false,
+        timestamps_data: [
+          { timestamp: 15, label: 'Trả lời tốt về tối ưu hóa render React', duration: 30, type: 'STRENGTH' },
+          { timestamp: 45, label: 'Ngập ngừng nhẹ khi giải thích cleanup function của useEffect', duration: 15, type: 'HESITATION' },
+          { timestamp: 120, label: 'Thể hiện xuất sắc tư duy giải quyết vấn đề thực tế', duration: 30, type: 'STRENGTH' }
+        ]
+      };
+    }
+  }
+
+  const systemPrompt = `Bạn là một Chuyên gia Đánh giá Tuyển dụng AI cao cấp. 
+Nhiệm vụ của bạn là phân tích transcript buổi phỏng vấn (danh sách câu hỏi và câu trả lời) để trích xuất ra:
+1. Một bản tóm tắt ngắn gọn dài khoảng 1 phút (highlight_summary) nêu rõ năng lực chuyên môn, phong thái trả lời của ứng viên, hoặc cảnh báo gian lận thi cử nếu có.
+2. Một cờ hiệu (is_flagged) kiểu boolean: Đánh dấu true nếu buổi phỏng vấn bị đình chỉ (isSuspended = true) hoặc số lần vi phạm quy chế (chuyển tab/nhìn lệch màn hình) vượt quá 5 lần.
+3. Danh sách các mốc thời gian nổi bật (timestamps_data): Gồm tối đa 3-4 mốc thời gian quan trọng trong buổi phỏng vấn (Ví dụ: điểm mạnh kỹ thuật STRENGTH, điểm yếu WEAKNESS, giây ngập ngừng HESITATION, vi phạm quy chế VIOLATION).
+
+Quy tắc sinh mốc thời gian (timestamps_data):
+- Hãy ánh xạ mỗi mốc thời gian tương ứng với mốc giây (timestamp) ước lượng trong audio phỏng vấn (ví dụ: mốc bắt đầu trả lời câu hỏi 1 là 15s, câu hỏi 2 là 45s, v.v.).
+- Mỗi mốc thời gian phải gồm các trường:
+  - timestamp: số nguyên (giây bắt đầu, ví dụ: 15).
+  - label: mô tả cực kỳ ngắn gọn (dưới 15 từ) về khoảnh khắc đó.
+  - duration: số nguyên thời lượng (giây), mặc định là 30.
+  - type: một trong các giá trị: "STRENGTH", "WEAKNESS", "HESITATION", "VIOLATION".
+
+Rào cản an toàn (Guardrails):
+- Nếu isSuspended = true hoặc totalViolations > 5, bạn PHẢI đánh dấu is_flagged = true, và phần highlight_summary PHẢI bắt đầu bằng lời cảnh báo đỏ nêu rõ hành vi gian lận và lý do đình chỉ buổi phỏng vấn.
+- Ngôn ngữ đầu ra phải là tiếng Việt chuẩn xác, chuyên nghiệp, tự nhiên và súc tích.
+
+Bạn PHẢI trả về duy nhất định dạng JSON có cấu trúc sau, không kèm bất kỳ markdown hay text thừa:
+{
+  "highlight_summary": "Tóm tắt ngắn gọn...",
+  "is_flagged": false,
+  "timestamps_data": [
+    {
+      "timestamp": 15,
+      "label": "Mô tả ngắn...",
+      "duration": 30,
+      "type": "STRENGTH"
+    }
+  ]
+}`;
+
+  const userPrompt = `Dữ liệu cuộc phỏng vấn thực tế:
+- Tên ứng viên: ${candidateName}
+- Vị trí phỏng vấn: ${position}
+- Trạng thái đình chỉ (isSuspended): ${isSuspended ? 'Bị đình chỉ do gian lận' : 'Hoàn thành bình thường'}
+- Tổng số lần vi phạm quy chế (chuyển tab/nhìn lệch): ${totalViolations} lần
+
+Danh sách Câu hỏi và Câu trả lời (Transcript):
+======================================================
+${qaDetails.map((qa, index) => `
+[CÂU HỎI ${index + 1}] (ID: ${qa.id}): ${qa.question}
+- Đáp án mong đợi: ${qa.expected_answer}
+- Câu trả lời của ứng viên: ${qa.answer}
+`).join('\n')}
+======================================================
+
+Hãy sinh Highlights và mốc thời gian dưới dạng JSON theo đúng yêu cầu!`;
+
+  try {
+    const model = getGeminiModel(systemPrompt);
+    const result = await model.generateContent(userPrompt);
+    const text = result.response.text();
+    const parsedData = safeParseJSON(text);
+
+    return {
+      highlight_summary: parsedData?.highlight_summary || 'Đã tạo thành công tóm tắt nổi bật.',
+      is_flagged: parsedData?.is_flagged === true || parsedData?.is_flagged === 'true' || isSuspended || totalViolations > 5,
+      timestamps_data: parsedData?.timestamps_data || []
+    };
+  } catch (err) {
+    console.error('Failed to generate interview highlights via Gemini:', err);
+    // Fallback an toàn
+    return {
+      highlight_summary: isSuspended 
+        ? `Buổi phỏng vấn của ứng viên ${candidateName} bị đình chỉ do vi phạm quy chế phỏng vấn (${totalViolations} lần vi phạm).` 
+        : `Ứng viên ${candidateName} đã hoàn thành buổi phỏng vấn vị trí ${position}.`,
+      is_flagged: isSuspended || totalViolations > 5,
+      timestamps_data: isSuspended 
+        ? [{ timestamp: 30, label: 'Phát hiện vi phạm quy chế phỏng vấn', duration: 30, type: 'VIOLATION' }]
+        : [{ timestamp: 15, label: 'Ứng viên trả lời phỏng vấn', duration: 30, type: 'STRENGTH' }]
+    };
+  }
+};

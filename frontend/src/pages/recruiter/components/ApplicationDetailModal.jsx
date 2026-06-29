@@ -3,12 +3,13 @@ import {
   X, User, Briefcase, Calendar, Mail, Phone, FileText,
   CheckCircle2, Star, Edit, Save, Loader2, Globe,
   ExternalLink, MapPin, AlertTriangle, Award, MessageSquare,
-  Download, TrendingUp, Clock, BarChart2, Mic
+  Download, TrendingUp, Clock, BarChart2, Mic, Sparkles, XCircle,
+  Play, Pause
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { jobApi } from "../../../api/jobApi";
-import { inviteAIInterviewApi, getHRInterviewTranscriptApi } from "../../../api/hrInterviewApi";
+import { inviteAIInterviewApi, getHRInterviewTranscriptApi, getHRInterviewHighlightsApi, getAudioSliceUrl } from "../../../api/hrInterviewApi";
 import { useUiStore } from "../../../store/useUiStore";
 import MDEditor from "@uiw/react-md-editor";
 
@@ -53,6 +54,158 @@ const TONE = {
   red:    { bg: "bg-red-50",     border: "border-red-200",     text: "text-red-700",     score: "text-red-600",     bar: "bg-red-500" },
 };
 
+// ─── Mini Audio Player ────────────────────────────────────────────────────────
+function MiniAudioPlayer({ audioUrl, start, duration }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const audioRef = useRef(null);
+
+  const sliceUrl = getAudioSliceUrl(audioUrl, start, duration);
+
+  const togglePlay = (e) => {
+    e.stopPropagation();
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      setIsLoading(true);
+      audioRef.current.play().then(() => {
+        setIsLoading(false);
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error("Play audio failed:", err);
+        setIsLoading(false);
+        setIsPlaying(false);
+      });
+    }
+  };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleLoadedMetadata = () => {
+      audio.currentTime = start;
+      setIsLoading(false);
+    };
+
+    const handleCanPlay = () => {
+      setIsLoading(false);
+    };
+
+    const handleTimeUpdate = () => {
+      const current = audio.currentTime;
+      const relativeTime = Math.max(0, current - start);
+      const pct = Math.min(100, (relativeTime / duration) * 100);
+      setProgress(pct);
+      setCurrentTime(relativeTime);
+
+      if (current >= start + duration) {
+        audio.pause();
+        audio.currentTime = start;
+        setIsPlaying(false);
+        setProgress(0);
+        setCurrentTime(0);
+      }
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setProgress(0);
+      setCurrentTime(0);
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("canplay", handleCanPlay);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("pause", handlePause);
+
+    // Set src directly to sync with sliceUrl updates
+    if (audio.src !== sliceUrl) {
+      audio.src = sliceUrl;
+      audio.load();
+    }
+
+    return () => {
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("canplay", handleCanPlay);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("pause", handlePause);
+      audio.pause();
+    };
+  }, [sliceUrl, start, duration]);
+
+  const formatTime = (time) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="flex items-center gap-3 bg-sky-50/80 border border-sky-100/70 rounded-xl p-2 mt-2 w-full max-w-[280px] shadow-sm backdrop-blur-sm select-none">
+      <audio ref={audioRef} preload="none" />
+      
+      <button
+        onClick={togglePlay}
+        disabled={isLoading}
+        className="w-7 h-7 rounded-full bg-[#0ea5e9] hover:bg-[#0284c7] active:scale-95 text-white flex items-center justify-center shadow transition-all duration-200 disabled:opacity-50 cursor-pointer shrink-0"
+        title={isPlaying ? "Tạm dừng" : "Nghe thử khoảnh khắc"}
+      >
+        {isLoading ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : isPlaying ? (
+          <Pause className="w-3.5 h-3.5 fill-white text-white" />
+        ) : (
+          <Play className="w-3.5 h-3.5 fill-white text-white translate-x-[1px]" />
+        )}
+      </button>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-center text-[9px] text-slate-500 font-bold mb-0.5">
+          <span className="text-[#0ea5e9] font-mono">{formatTime(currentTime)}</span>
+          <span className="font-mono">{formatTime(duration)}</span>
+        </div>
+        <div 
+          className="w-full bg-slate-200/80 rounded-full h-1 overflow-hidden cursor-pointer relative"
+          onClick={(e) => {
+            if (!audioRef.current) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const pct = clickX / rect.width;
+            const targetTime = start + (pct * duration);
+            audioRef.current.currentTime = targetTime;
+            setProgress(pct * 100);
+            setCurrentTime(pct * duration);
+          }}
+        >
+          <div 
+            className="bg-[#0ea5e9] h-full rounded-full transition-all duration-100"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      {isPlaying && (
+        <div className="flex items-end gap-[1.5px] h-2.5 w-3.5 shrink-0 pr-0.5">
+          <span className="w-[1.5px] bg-[#0ea5e9] rounded-full animate-pulse h-2.5" />
+          <span className="w-[1.5px] bg-[#38bdf8] rounded-full animate-pulse h-1.5" />
+          <span className="w-[1.5px] bg-[#0ea5e9] rounded-full animate-pulse h-3" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
   const queryClient = useQueryClient();
@@ -88,8 +241,35 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
       const res = await getHRInterviewTranscriptApi(application.interview_id);
       return res.data;
     },
-    enabled: !!application?.interview_id,
   });
+
+  const { data: highlightsData, isLoading: isLoadingHighlights } = useQuery({
+    queryKey: ["hr-interview-highlights", application?.interview_id],
+    queryFn: async () => {
+      if (!application?.interview_id) return null;
+      try {
+        const res = await getHRInterviewHighlightsApi(application.interview_id);
+        return res.data;
+      } catch (err) {
+        if (err.response?.status === 404) return null;
+        throw err;
+      }
+    },
+    enabled: !!application?.interview_id && viewMode === "pv",
+  });
+
+  const handleTimestampClick = (timestamp) => {
+    if (!transcriptData?.transcript) return;
+    const questionIndex = Math.min(transcriptData.transcript.length, Math.floor(timestamp / 30) + 1);
+    const element = document.getElementById(`qa-question-${questionIndex}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("bg-sky-100", "ring-2", "ring-[#0ea5e9]", "shadow-md", "animate-pulse");
+      setTimeout(() => {
+        element.classList.remove("bg-sky-100", "ring-2", "ring-[#0ea5e9]", "shadow-md", "animate-pulse");
+      }, 2000);
+    }
+  };
 
   const updateMutation = useMutation({
     mutationFn: (data) => jobApi.updateJobApplication(application.id, data),
@@ -305,7 +485,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                     ) : transcriptData?.transcript?.length > 0 ? (
                       <div className="divide-y divide-gray-100">
                         {transcriptData.transcript.map((qa, i) => (
-                          <div key={i} className="p-5 hover:bg-gray-50/60 transition-colors">
+                          <div key={i} id={`qa-question-${qa.index || (i + 1)}`} className="p-5 hover:bg-gray-50/60 transition-colors rounded-xl">
                             <div className="flex items-start gap-3 mb-3">
                               <span className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-xs font-black ${
                                 qa.score >= 70 ? "bg-emerald-100 text-emerald-700"
@@ -621,6 +801,127 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                               </div>
                             ))}
                           </div>
+                        </div>
+                      ) : null}
+
+                      {/* --- AI HIGHLIGHTS COMPONENT (STORY 3.3) --- */}
+                      {isLoadingHighlights ? (
+                        <div className="flex items-center gap-2 text-xs text-gray-400 py-4 bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#0ea5e9]" /> Đang tải highlights AI...
+                        </div>
+                      ) : highlightsData ? (
+                        <div className="space-y-4">
+                          {/* Banner Cảnh Báo Gian Lận */}
+                          {(highlightsData.isFlagged || application.status === "SUSPENDED") && (
+                            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 shadow-sm shadow-red-100 animate-pulse">
+                              <div className="flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <h4 className="text-sm font-black text-red-800 uppercase tracking-wide">⚠️ Cảnh Báo Gian Lận (AI Audit)</h4>
+                                  <p className="text-xs text-red-700 mt-1 font-semibold leading-relaxed">
+                                    Ứng viên vi phạm quy chế phỏng vấn quá giới hạn hoặc cuộc phỏng vấn đã bị đình chỉ. HR vui lòng kiểm tra kỹ transcript và mốc thời gian vi phạm dưới đây.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Card Tóm tắt 1 phút (Glassmorphism Ocean Blue) */}
+                          <div className="bg-sky-50/50 border border-sky-100/70 rounded-xl p-4 shadow-sm backdrop-blur-md relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-sky-200/10 rounded-full blur-xl pointer-events-none" />
+                            <h4 className="text-xs font-black text-sky-800 uppercase flex items-center gap-2 mb-2 tracking-wider">
+                              <Sparkles className="w-4 h-4 text-[#0ea5e9]" /> Tóm tắt nổi bật (1 phút)
+                            </h4>
+                            <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                              {highlightsData.highlightSummary}
+                            </p>
+                          </div>
+
+                          {/* Timeline mốc thời gian nổi bật */}
+                          {highlightsData.timestampsData?.length > 0 && (
+                            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                              <h4 className="text-xs font-black text-gray-800 uppercase mb-3 tracking-wider flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-sky-500" /> Mốc thời gian nổi bật
+                              </h4>
+                              <div className="relative border-l border-gray-200 ml-3 pl-6 space-y-4">
+                                {highlightsData.timestampsData.map((item, idx) => {
+                                  const ts = item.timestamp || 0;
+                                  let typeColor = "text-sky-600 bg-sky-50 border-sky-100";
+                                  let typeLabel = "Điểm sáng";
+                                  let IconComponent = Clock;
+                                  
+                                  if (item.type === "STRENGTH") {
+                                    typeColor = "text-emerald-700 bg-emerald-50 border-emerald-100";
+                                    typeLabel = "Điểm mạnh";
+                                    IconComponent = TrendingUp;
+                                  } else if (item.type === "WEAKNESS") {
+                                    typeColor = "text-orange-700 bg-orange-50 border-orange-100";
+                                    typeLabel = "Điểm yếu";
+                                    IconComponent = AlertTriangle;
+                                  } else if (item.type === "HESITATION") {
+                                    typeColor = "text-amber-700 bg-amber-50 border-amber-100";
+                                    typeLabel = "Ngập ngừng";
+                                    IconComponent = Clock;
+                                  } else if (item.type === "VIOLATION") {
+                                    typeColor = "text-red-700 bg-red-50 border-red-100";
+                                    typeLabel = "Vi phạm";
+                                    IconComponent = XCircle;
+                                  }
+
+                                  const questionIndex = Math.min(transcriptData?.transcript?.length || 0, Math.floor(ts / 30) + 1);
+                                  const targetQA = questionIndex > 0 ? transcriptData?.transcript?.[questionIndex - 1] : null;
+                                  const audioUrl = targetQA?.audioUrl;
+
+                                  return (
+                                    <div key={idx} className="relative group transition-all duration-300 hover:scale-[1.02] hover:translate-x-1">
+                                      {/* Timeline icon node */}
+                                      <div className={`absolute -left-[34px] top-0.5 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center shadow-sm ${
+                                        item.type === "VIOLATION" ? "bg-red-100 text-red-600 animate-pulse"
+                                        : item.type === "STRENGTH" ? "bg-emerald-100 text-emerald-600"
+                                        : item.type === "WEAKNESS" ? "bg-orange-100 text-orange-600"
+                                        : "bg-amber-100 text-amber-600"
+                                      }`}>
+                                        <IconComponent className="w-3 h-3" />
+                                      </div>
+
+                                      <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            onClick={() => handleTimestampClick(ts)}
+                                            className="px-2 py-0.5 rounded bg-sky-100 hover:bg-[#0ea5e9] text-[#0ea5e9] hover:text-white font-black text-[10px] tracking-wide border border-sky-200 transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                                            title="Click để cuộn tới câu hỏi"
+                                          >
+                                            <Mic className="w-2.5 h-2.5" /> {Math.floor(ts / 60)}:{(ts % 60).toString().padStart(2, '0')}
+                                          </button>
+                                          <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full border ${typeColor}`}>
+                                            {typeLabel}
+                                          </span>
+                                        </div>
+                                        <p className="text-xs font-semibold text-slate-700 group-hover:text-[#0ea5e9] transition-colors leading-normal">
+                                          {item.label}
+                                        </p>
+                                        {isLoadingTranscript ? (
+                                          <div className="text-[10px] text-slate-400 font-semibold italic mt-1 flex items-center gap-1.5 select-none">
+                                            <Loader2 className="w-3 h-3 animate-spin text-[#0ea5e9]" /> Đang kiểm tra ghi âm...
+                                          </div>
+                                        ) : audioUrl ? (
+                                          <MiniAudioPlayer 
+                                            audioUrl={audioUrl} 
+                                            start={ts % 30} 
+                                            duration={item.duration || 30} 
+                                          />
+                                        ) : (
+                                          <div className="text-[10px] text-slate-400 font-semibold italic mt-1 flex items-center gap-1 select-none">
+                                            <AlertTriangle className="w-3.5 h-3.5 text-slate-300" /> Không có ghi âm cho mốc này
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : null}
 

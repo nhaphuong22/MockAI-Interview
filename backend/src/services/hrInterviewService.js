@@ -2,6 +2,7 @@ import db from '../db/knex.js';
 import { generateQuestionsFromGroq, evaluateCandidateAnswer, generateOverallAssessmentFromGroq, evaluateAllAndGenerateHRReport } from './groqService.js';
 import { updateSkillTreeOnInterviewComplete } from './skillTreeService.js';
 import { insertInterview, insertQuestions } from '../models/interviewModel.js';
+import { generateInterviewHighlights } from './highlightService.js';
 
 /**
  * Khởi tạo phiên phỏng vấn HR thật từ application.
@@ -263,6 +264,13 @@ const processAIEvaluationBackground = async ({ interviewId, userId, totalTabViol
       });
     }
 
+    // 5.4. Sinh Highlights buổi phỏng vấn bằng AI và lưu vào DB
+    try {
+      await generateInterviewHighlights(interviewId, totalTabViolations);
+    } catch (hlErr) {
+      console.error('[HighlightService] Lỗi khi sinh highlights sau buổi phỏng vấn:', hlErr.message);
+    }
+
     // 5.5. Cập nhật cây kỹ năng của ứng viên
     try {
       await updateSkillTreeOnInterviewComplete(
@@ -342,7 +350,8 @@ export const getHRInterviewTranscript = async ({ interviewId, hrId }) => {
       candidateAnswer: ans ? ans.answer_text : 'Không trả lời',
       score: ans ? ans.score : 0,
       feedback: ans ? ans.ai_feedback : 'Không có phản hồi',
-      gazeViolations: ans ? ans.gaze_violations : 0
+      gazeViolations: ans ? ans.gaze_violations : 0,
+      audioUrl: ans ? ans.audio_url : null
     };
   });
 

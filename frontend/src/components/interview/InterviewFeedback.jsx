@@ -11,9 +11,9 @@ import {
   Download,
   AlertCircle,
   ArrowLeft,
-  Play,
   Pause,
-  Volume2
+  Volume2,
+  Lightbulb
 } from "lucide-react";
 
 // Mini Audio Player Component
@@ -175,6 +175,33 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  // Parse expected_answer: may be JSON {model_answer, steps} or plain text (old data)
+  const parseExpectedAnswer = (raw) => {
+    if (!raw) return null;
+    // Try JSON parse first (new format with steps)
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.model_answer) {
+        return {
+          modelAnswer: parsed.model_answer,
+          steps: Array.isArray(parsed.steps) ? parsed.steps : [],
+          suggestedTime: parsed.suggested_time || 120
+        };
+      }
+    } catch {
+      // not JSON — fall through
+    }
+    // Legacy plain-text evaluation criteria (fallback questions)
+    if (raw.startsWith('Ứng viên')) {
+      return {
+        modelAnswer: raw,
+        steps: [{ label: 'START', desc: raw }],
+        suggestedTime: 120
+      };
+    }
+    return { modelAnswer: raw, steps: [], suggestedTime: 120 };
   };
 
   return (
@@ -470,6 +497,91 @@ export function InterviewFeedback({ questions, onRetry, assessment, voiceSession
                     <span className="font-bold text-[#0ea5e9]">Đánh giá AI:</span> {qa.feedback}
                   </div>
                 </div>
+
+                {/* Sample Answer block with Step Guide — only for new-format data */}
+                {(() => {
+                  const parsed = parseExpectedAnswer(qa.expected_answer);
+                  if (!parsed) return null;
+                  const { modelAnswer, steps, suggestedTime } = parsed;
+                  return (
+                    <div className="space-y-3">
+                      {/* Step Guide — Vertical List */}
+                      {steps.length > 0 && (
+                        <div className="rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/30 dark:bg-slate-900/10 overflow-hidden p-5 space-y-4">
+                          {/* Header */}
+                          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
+                            <div className="flex items-center gap-2">
+                              <Lightbulb className="w-4.5 h-4.5 text-amber-500 fill-amber-500/10" />
+                              <span className="text-sm font-bold text-gray-800 dark:text-white">
+                                Gợi ý trả lời
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
+                            ANSWER STRUCTURE
+                          </div>
+
+                          {/* Vertical step list */}
+                          <div className="space-y-3.5 pl-1">
+                            {steps.map((step, si) => {
+                              const isStart = step.label === "START";
+                              const isEnd = step.label === "END";
+                              
+                              let badgeStyle = "bg-[#0ea5e9]/10 text-[#0ea5e9] border border-[#0ea5e9]/20";
+                              if (isStart) {
+                                badgeStyle = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20";
+                              } else if (isEnd) {
+                                badgeStyle = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20";
+                              }
+
+                              return (
+                                <div key={si} className="flex items-start gap-4">
+                                  {/* Step badge */}
+                                  <div className={`px-2 py-0.5 rounded text-[9px] font-extrabold shrink-0 mt-0.5 flex items-center justify-center min-w-[42px] ${badgeStyle}`}>
+                                    {step.label}
+                                  </div>
+
+                                  {/* Step content */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                                      {step.desc}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Time Allocation */}
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-500">
+                            <span>⏱</span>
+                            <span>
+                              Phân bổ thời gian hợp lý cho từng phần, đảm bảo bạn có thể trình bày đầy đủ ý trong {suggestedTime} giây.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Model Answer */}
+                      {modelAnswer && (
+                        <div className="p-4 bg-emerald-50/40 dark:bg-emerald-500/5 rounded-2xl border border-emerald-200/50 dark:border-emerald-500/10 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-lg bg-emerald-100 dark:bg-emerald-500/15 flex items-center justify-center shrink-0">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            </div>
+                            <span className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                              💡 Câu Trả Lời Mẫu Tham Khảo
+                            </span>
+                          </div>
+                          <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed pl-7 italic">
+                            &ldquo;{modelAnswer}&rdquo;
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
