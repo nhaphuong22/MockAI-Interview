@@ -30,12 +30,29 @@ function extractNameFromCvText(cvText) {
   
   const ignoreList = [
     'cv', 'curriculum vitae', 'sơ yếu lý lịch', 'hồ sơ xin việc', 
-    'resume', 'profile', 'thông tin cá nhân', 'personal details'
+    'resume', 'profile', 'thông tin cá nhân', 'personal details',
+    'họ và tên', 'họ tên', 'name', 'full name'
   ];
+
+  // Regex nhận dạng định dạng tên tiếng Việt viết hoa chữ cái đầu (2-4 từ)
+  const namePattern = /^[A-ZĐĂÂÊÔƠƯ][a-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]+\s+[A-ZĐĂÂÊÔƠƯ][a-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]+(?:\s+[A-ZĐĂÂÊÔƠƯ][a-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]+){0,2}$/;
 
   for (const line of lines) {
     const lowerLine = line.toLowerCase();
-    if (!ignoreList.includes(lowerLine) && line.length < 50) {
+    
+    // Bỏ qua các dòng trong danh sách loại trừ hoặc chứa thông tin liên lạc, ký tự đặc biệt
+    if (
+      ignoreList.some(ig => lowerLine.includes(ig)) ||
+      lowerLine.includes('@') ||
+      lowerLine.includes('/') ||
+      lowerLine.includes(':') ||
+      /\d/.test(lowerLine)
+    ) {
+      continue;
+    }
+    
+    // Kiểm tra nếu dòng khớp cấu trúc tên tiếng Việt viết hoa chữ đầu
+    if (namePattern.test(line) && line.length < 40) {
       return line;
     }
   }

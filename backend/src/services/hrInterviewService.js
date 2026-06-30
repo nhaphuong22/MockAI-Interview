@@ -213,13 +213,21 @@ const processAIEvaluationBackground = async ({ interviewId, userId, totalTabViol
 
           const evalMatch = batchResult.evaluations.find(e => Number(e.id) === Number(qa.id));
           if (evalMatch) {
-            qa.score = Math.max(0, Number(evalMatch.score) || 0);
-            qa.feedback = evalMatch.feedback || '';
+            const ansRecord = answers.find(a => a.interview_question_id === qa.id);
+            const gazeViolations = ansRecord ? (ansRecord.gaze_violations || 0) : 0;
+            const penalty = Math.min(50, gazeViolations * 10);
+
+            qa.score = Math.max(0, (Number(evalMatch.score) || 0) - penalty);
+
+            let feedback = evalMatch.feedback || '';
+            if (gazeViolations > 0) {
+              feedback += `\n\n[Cảnh báo AI]: Phát hiện ${gazeViolations} lần ứng viên nhìn lệch khỏi khung hình phỏng vấn. Điểm số bị trừ ${penalty} điểm.`;
+            }
+            qa.feedback = feedback;
 
             totalScore += qa.score;
             evaluatedCount++;
 
-            const ansRecord = answers.find(a => a.interview_question_id === qa.id);
             if (ansRecord) {
               await db('candidate_answers').where({ id: ansRecord.id }).update({
                 score: qa.score,
