@@ -9,25 +9,20 @@ import {
 /**
  * Trừ credit của HR (Xử lý theo batch gần hết hạn trước)
  */
-const consumeCredit = async (trx, hrId, companyId, creditType, amount = 1) => {
-  let wallet;
-  if (companyId) {
-    wallet = await trx('hr_wallets').where({ company_id: companyId }).first();
-  }
-  if (!wallet) {
-    wallet = await trx('hr_wallets').where({ user_id: hrId }).first();
-  }
-  
-  if (!wallet) throw new Error('Không tìm thấy ví tín dụng HR. Vui lòng liên hệ Admin.');
+const consumeFromWallet = async (trx, wallet, creditType, amount) => {
+  if (!wallet) return false;
 
   const totalCredits = creditType === 'JOB_POST' ? wallet.total_job_credits : wallet.total_ai_credits;
-  if (totalCredits < amount) throw new Error(`Không đủ ${creditType} credit. Vui lòng nạp thêm để tiếp tục.`);
+  if (totalCredits < amount) return false;
 
   const batches = await trx('credit_batches')
     .where({ wallet_id: wallet.id, credit_type: creditType })
     .where('amount_remaining', '>', 0)
     .where('expires_at', '>', new Date())
     .orderBy('expires_at', 'asc');
+
+  const totalInBatches = batches.reduce((sum, b) => sum + b.amount_remaining, 0);
+  if (totalInBatches < amount) return false;
 
   let remainingToDeduct = amount;
   for (const batch of batches) {
@@ -42,10 +37,6 @@ const consumeCredit = async (trx, hrId, companyId, creditType, amount = 1) => {
     });
   }
 
-  if (remainingToDeduct > 0) {
-     throw new Error(`Tài khoản có credit nhưng đã hết hạn. Vui lòng nạp thêm ${creditType} credit.`);
-  }
-
   if (creditType === 'JOB_POST') {
     await trx('hr_wallets').where({ id: wallet.id }).update({
       total_job_credits: wallet.total_job_credits - amount,
@@ -56,6 +47,32 @@ const consumeCredit = async (trx, hrId, companyId, creditType, amount = 1) => {
       total_ai_credits: wallet.total_ai_credits - amount,
       updated_at: new Date()
     });
+  }
+  
+  return true;
+};
+
+/**
+ * Trừ credit của HR (Xử lý theo batch gần hết hạn trước)
+ * Nếu công ty không đủ credit, fallback sang ví cá nhân.
+ */
+const consumeCredit = async (trx, hrId, companyId, creditType, amount = 1) => {
+  let success = false;
+
+  // Ưu tiên dùng ví công ty trước
+  if (companyId) {
+    const companyWallet = await trx('hr_wallets').where({ company_id: companyId }).first();
+    success = await consumeFromWallet(trx, companyWallet, creditType, amount);
+  }
+
+  // Nếu công ty hết credit (hoặc không có), dùng ví cá nhân
+  if (!success) {
+    const personalWallet = await trx('hr_wallets').where({ user_id: hrId }).first();
+    success = await consumeFromWallet(trx, personalWallet, creditType, amount);
+  }
+
+  if (!success) {
+    throw new Error(`Không đủ ${creditType} credit ở cả ví Công ty và Cá nhân. Vui lòng nạp thêm để tiếp tục.`);
   }
 };
 

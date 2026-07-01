@@ -105,8 +105,9 @@ export const scanIdCardController = async (req, res) => {
     const { id } = req.params; // companyId
     const company = await db('companies')
       .leftJoin('users', 'companies.creator_id', 'users.id')
+      .leftJoin('hr_profiles', 'users.id', 'hr_profiles.user_id')
       .where({ 'companies.id': id })
-      .select('users.id_front_url')
+      .select('hr_profiles.id_front_url')
       .first();
       
     if (!company) {

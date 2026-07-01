@@ -107,7 +107,6 @@ export const fetchUserDetail = async (id) => {
       'candidate_profiles.phone as phone',
       'candidate_profiles.bio as bio',
       'candidate_profiles.address as address',
-      'candidate_profiles.date_of_birth as date_of_birth',
       db.raw('(SELECT COALESCE(MAX(ats_score), 0) FROM cvs WHERE cvs.user_id = users.id) as cv_score'),
       db.raw('(SELECT COUNT(*) FROM interviews WHERE interviews.user_id = users.id) as interview_count'),
       db.raw("(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE transactions.user_id = users.id AND transactions.status = 'COMPLETED') as total_paid")
@@ -160,13 +159,20 @@ export const createNewUser = async ({ email, password, full_name, role, phone, a
       email,
       password_hash,
       full_name,
-      phone,
-      address,
       is_active: true,
       email_verified: true,
       created_at: new Date(),
       updated_at: new Date()
     }, trx);
+
+    // Tạo candidate profile cho user mới
+    await trx('candidate_profiles').insert({
+      user_id: insertedUser.id,
+      phone: phone || null,
+      address: address || null,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
 
     // 2. Lấy role ID từ bảng roles
     const roleRecord = await trx('roles').where({ name: dbRoleName }).first();
@@ -208,12 +214,24 @@ export const updateUserDetail = async (id, { name, phone, bio, address, dateOfBi
       updated_at: new Date()
     };
     if (name !== undefined) updateData.full_name = name;
-    if (phone !== undefined) updateData.phone = phone;
-    if (bio !== undefined) updateData.bio = bio;
-    if (address !== undefined) updateData.address = address;
-    if (dateOfBirth !== undefined) updateData.date_of_birth = dateOfBirth ? new Date(dateOfBirth) : null;
 
     await updateUser(id, updateData, trx);
+
+    // 2. Cập nhật candidate profile
+    const candidateProfileData = { updated_at: new Date() };
+    if (phone !== undefined) candidateProfileData.phone = phone;
+    if (bio !== undefined) candidateProfileData.bio = bio;
+    if (address !== undefined) candidateProfileData.address = address;
+    if (dateOfBirth !== undefined) candidateProfileData.date_of_birth = dateOfBirth ? new Date(dateOfBirth) : null;
+    
+    const candidateProfile = await trx('candidate_profiles').where({ user_id: id }).first();
+    if (candidateProfile) {
+        await trx('candidate_profiles').where({ user_id: id }).update(candidateProfileData);
+    } else {
+        candidateProfileData.user_id = id;
+        candidateProfileData.created_at = new Date();
+        await trx('candidate_profiles').insert(candidateProfileData);
+    }
 
     // 2. Nếu có đổi vai trò, thực hiện đổi trong bảng user_roles
     if (dbRoleName) {

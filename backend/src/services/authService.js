@@ -461,6 +461,10 @@ export const getUserProfile = async (userId) => {
   if (roleName === 'HR' || roleName === 'ADMIN') {
     const hrProfile = await db('hr_profiles').where({ user_id: userId }).first() || {};
     const wallet = await db('hr_wallets').where({ user_id: userId }).first() || {};
+    if (hrProfile.user_id) delete hrProfile.user_id;
+    if (wallet.id) delete wallet.id;
+    if (wallet.user_id) delete wallet.user_id;
+    if (wallet.company_id) delete wallet.company_id;
     user = { ...user, ...hrProfile, ...wallet };
   } else {
     const candidateProfile = await db('candidate_profiles').where({ user_id: userId }).first() || {};
@@ -469,6 +473,9 @@ export const getUserProfile = async (userId) => {
         .where({ 'user_subscriptions.user_id': userId })
         .select('user_subscriptions.*', 'packages.name as package_name')
         .first() || {};
+    if (candidateProfile.user_id) delete candidateProfile.user_id;
+    if (sub.id) delete sub.id;
+    if (sub.user_id) delete sub.user_id;
     user = { ...user, ...candidateProfile, ...sub };
   }
 

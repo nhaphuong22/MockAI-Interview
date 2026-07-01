@@ -73,17 +73,30 @@ export const createCompany = async (req, res) => {
 
     const newCompanyId = newCompany.id || newCompany;
 
-    // Cập nhật thông tin user: liên kết với công ty này và set join status là APPROVED (vì là chủ/creator), cập nhật giấy tờ và mã hóa thông tin nhạy cảm
+    // Cập nhật thông tin user: liên kết với công ty này
     await db('users').where({ id: userId }).update({
       company_id: newCompanyId,
+      updated_at: new Date()
+    });
+
+    // Cập nhật thông tin hr_profiles: set join status là APPROVED và cập nhật giấy tờ
+    await db('hr_profiles').where({ user_id: userId }).update({
       company_join_status: 'APPROVED',
-      id_card_number: encrypt(idCardNumber) || null, // Mã hóa AES-256
       id_front_url: urls?.idFrontUrl || null,
       id_front_public_id: urls?.idFrontPublicId || null,
       id_back_url: urls?.idBackUrl || null,
       id_back_public_id: urls?.idBackPublicId || null,
       auth_letter_url: urls?.authFileUrl || null,
       auth_letter_public_id: urls?.authFilePublicId || null,
+      updated_at: new Date()
+    });
+
+    // Tạo ví (wallet) riêng cho Công ty
+    await db('hr_wallets').insert({
+      company_id: newCompanyId,
+      total_job_credits: 0,
+      total_ai_credits: 0,
+      created_at: new Date(),
       updated_at: new Date()
     });
 
@@ -109,8 +122,16 @@ export const getCompanyMembers = async (req, res) => {
     }
 
     const members = await db('users')
-      .where({ company_id: me.company_id, company_join_status: 'APPROVED', is_active: true })
-      .select('id', 'email', 'full_name', 'phone', 'gender', 'created_at');
+      .join('hr_profiles', 'users.id', 'hr_profiles.user_id')
+      .where({ 'users.company_id': me.company_id, 'hr_profiles.company_join_status': 'APPROVED', 'users.is_active': true })
+      .select(
+        'users.id',
+        'users.email',
+        'users.full_name',
+        'users.created_at'
+      );
+    // Lưu ý: phone và gender đã bị loại bỏ khỏi bảng users.
+    // Client có thể xử lý undefined đối với những trường này.
 
     return sendResponse(res, 200, members);
   } catch (error) {
@@ -303,10 +324,25 @@ export const acceptCompanyInvitation = async (req, res) => {
         // Cập nhật thông tin liên kết công ty
         await trx('users').where({ id: targetUser.id }).update({
           company_id: invitation.company_id,
-          company_join_status: 'APPROVED',
           is_active: true,
           updated_at: new Date()
         });
+
+        // Đảm bảo có hr_profile và cập nhật
+        const hrProfileExists = await trx('hr_profiles').where({ user_id: targetUser.id }).first();
+        if (hrProfileExists) {
+          await trx('hr_profiles').where({ user_id: targetUser.id }).update({
+            company_join_status: 'APPROVED',
+            updated_at: new Date()
+          });
+        } else {
+          await trx('hr_profiles').insert({
+            user_id: targetUser.id,
+            company_join_status: 'APPROVED',
+            created_at: new Date(),
+            updated_at: new Date()
+          });
+        }
 
         // Cập nhật trạng thái lời mời
         await trx('company_invitations').where({ id: invitation.id }).update({
@@ -332,16 +368,30 @@ export const acceptCompanyInvitation = async (req, res) => {
             email: invitation.email,
             password_hash: passwordHash,
             full_name: fullName,
-            gender: gender || 'OTHER',
-            phone: phone || null,
             company_id: invitation.company_id,
-            company_join_status: 'APPROVED',
             email_verified: true,
             is_active: true,
             created_at: new Date(),
             updated_at: new Date()
           })
           .returning('*');
+
+        // Tạo candidate profile để lưu gender/phone (mặc dù là HR nhưng có thể user đóng vai trò candidate)
+        await trx('candidate_profiles').insert({
+            user_id: newUser.id,
+            gender: gender || 'OTHER',
+            phone: phone || null,
+            created_at: new Date(),
+            updated_at: new Date()
+        });
+
+        // Tạo hr_profile
+        await trx('hr_profiles').insert({
+            user_id: newUser.id,
+            company_join_status: 'APPROVED',
+            created_at: new Date(),
+            updated_at: new Date()
+        });
 
         // Gán quyền HR
         const hrRole = await trx('roles').where({ name: 'HR' }).first();
@@ -401,6 +451,10 @@ export const removeCompanyMember = async (req, res) => {
     // Hủy liên kết (gỡ company_id và reset status, giữ nguyên is_active = true)
     await db('users').where({ id: userId }).update({
       company_id: null,
+      updated_at: new Date()
+    });
+
+    await db('hr_profiles').where({ user_id: userId }).update({
       company_join_status: null,
       updated_at: new Date()
     });
@@ -434,7 +488,12 @@ export const joinCompany = async (req, res) => {
     }
 
     // Kiểm tra xem user hiện tại đã có công ty APPROVED hay chưa
-    const user = await db('users').where({ id: userId }).first();
+    const user = await db('users')
+      .leftJoin('hr_profiles', 'users.id', 'hr_profiles.user_id')
+      .select('users.*', 'hr_profiles.company_join_status', 'hr_profiles.company_rejected_id', 'hr_profiles.company_rejected_at')
+      .where('users.id', userId)
+      .first();
+
     if (user.company_id && user.company_join_status === 'APPROVED') {
       return sendError(res, 400, 'Bạn đã liên kết với một công ty khác. Vui lòng rời công ty cũ trước.');
     }
@@ -451,8 +510,11 @@ export const joinCompany = async (req, res) => {
     // Cập nhật yêu cầu gia nhập, cập nhật trạng thái PENDING cho HR Gốc duyệt, cập nhật giấy tờ
     await db('users').where({ id: userId }).update({
       company_id: companyId,
+      updated_at: new Date()
+    });
+
+    await db('hr_profiles').where({ user_id: userId }).update({
       company_join_status: 'PENDING',
-      id_card_number: encrypt(idCardNumber) || null, // Mã hóa AES-256
       id_front_url: urls?.idFrontUrl || null,
       id_front_public_id: urls?.idFrontPublicId || null,
       id_back_url: urls?.idBackUrl || null,
@@ -485,8 +547,12 @@ export const getJoinRequests = async (req, res) => {
     }
 
     const requests = await db('users')
-      .where({ company_id: myCompany.id, company_join_status: 'PENDING' })
-      .select('id', 'email', 'full_name', 'phone', 'created_at', 'id_front_url', 'id_back_url', 'auth_letter_url');
+      .join('hr_profiles', 'users.id', 'hr_profiles.user_id')
+      .where({ 'users.company_id': myCompany.id, 'hr_profiles.company_join_status': 'PENDING' })
+      .select(
+        'users.id', 'users.email', 'users.full_name', 'users.created_at',
+        'hr_profiles.id_front_url', 'hr_profiles.id_back_url', 'hr_profiles.auth_letter_url'
+      );
 
     return sendResponse(res, 200, requests);
   } catch (error) {
@@ -511,7 +577,8 @@ export const approveJoinRequest = async (req, res) => {
 
     // Kiểm tra xem user phụ đó có đúng là đang xin gia nhập công ty này hay không
     const userToApprove = await db('users')
-      .where({ id: userId, company_id: myCompany.id, company_join_status: 'PENDING' })
+      .join('hr_profiles', 'users.id', 'hr_profiles.user_id')
+      .where({ 'users.id': userId, 'users.company_id': myCompany.id, 'hr_profiles.company_join_status': 'PENDING' })
       .first();
 
     if (!userToApprove) {
@@ -520,8 +587,12 @@ export const approveJoinRequest = async (req, res) => {
 
     // Phê duyệt và lên lịch xóa tài liệu nhạy cảm sau 30 ngày (Audit Trail)
     await db('users').where({ id: userId }).update({
-      company_join_status: 'APPROVED',
       scheduled_delete_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      updated_at: new Date()
+    });
+
+    await db('hr_profiles').where({ user_id: userId }).update({
+      company_join_status: 'APPROVED',
       updated_at: new Date()
     });
 
@@ -548,7 +619,8 @@ export const rejectJoinRequest = async (req, res) => {
 
     // Kiểm tra xem user phụ đó có đúng là đang xin gia nhập công ty này hay không
     const userToReject = await db('users')
-      .where({ id: userId, company_id: myCompany.id, company_join_status: 'PENDING' })
+      .join('hr_profiles', 'users.id', 'hr_profiles.user_id')
+      .where({ 'users.id': userId, 'users.company_id': myCompany.id, 'hr_profiles.company_join_status': 'PENDING' })
       .first();
 
     if (!userToReject) {
@@ -558,10 +630,14 @@ export const rejectJoinRequest = async (req, res) => {
     // Từ chối (xét join status thành REJECTED, reset company_id = null, ghi nhận thông tin chống spam và lên lịch xóa tài liệu sau 30 ngày)
     await db('users').where({ id: userId }).update({
       company_id: null,
+      scheduled_delete_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      updated_at: new Date()
+    });
+
+    await db('hr_profiles').where({ user_id: userId }).update({
       company_join_status: 'REJECTED',
       company_rejected_id: myCompany.id,
       company_rejected_at: new Date(),
-      scheduled_delete_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       updated_at: new Date()
     });
 
@@ -772,6 +848,10 @@ export const leaveCompany = async (req, res) => {
     // Tiến hành rời công ty (reset company_id và company_join_status)
     await db('users').where({ id: userId }).update({
       company_id: null,
+      updated_at: new Date()
+    });
+
+    await db('hr_profiles').where({ user_id: userId }).update({
       company_join_status: null,
       updated_at: new Date()
     });
@@ -798,11 +878,20 @@ export const deleteCompany = async (req, res) => {
 
     await db.transaction(async (trx) => {
       // 1. Cập nhật reset company liên kết của toàn bộ HR thành viên thuộc công ty này về null
+      const usersToReset = await trx('users').where({ company_id: company.id }).select('id');
+      const userIdsToReset = usersToReset.map(u => u.id);
+
       await trx('users').where({ company_id: company.id }).update({
         company_id: null,
-        company_join_status: null,
         updated_at: new Date()
       });
+
+      if (userIdsToReset.length > 0) {
+        await trx('hr_profiles').whereIn('user_id', userIdsToReset).update({
+          company_join_status: null,
+          updated_at: new Date()
+        });
+      }
 
       // 2. Xóa các tin tuyển dụng liên quan
       await trx('jobs').where({ company_id: company.id }).delete();
@@ -839,8 +928,10 @@ export const cleanupExpiredInvitations = async () => {
 
     // 2. Dọn dẹp tài liệu nhạy cảm của nhân sự (scheduled_delete_at < NOW)
     const usersToClean = await db('users')
-      .whereNotNull('scheduled_delete_at')
-      .andWhere('scheduled_delete_at', '<', new Date());
+      .join('hr_profiles', 'users.id', 'hr_profiles.user_id')
+      .whereNotNull('users.scheduled_delete_at')
+      .andWhere('users.scheduled_delete_at', '<', new Date())
+      .select('users.id', 'hr_profiles.id_front_public_id', 'hr_profiles.id_back_public_id', 'hr_profiles.auth_letter_public_id');
 
     if (usersToClean.length > 0) {
       console.log(`[Privacy Cleanup] Tìm thấy ${usersToClean.length} tài khoản đến hạn xóa tài liệu xác minh nhạy cảm.`);
@@ -861,14 +952,22 @@ export const cleanupExpiredInvitations = async () => {
             }
 
             // Cập nhật reset DB về null
-            await db('users').where({ id: userToClean.id }).update({
+            await db('candidate_profiles').where({ user_id: userToClean.id }).update({
               id_card_number: null,
+              updated_at: new Date()
+            });
+
+            await db('hr_profiles').where({ user_id: userToClean.id }).update({
               id_front_url: null,
               id_front_public_id: null,
               id_back_url: null,
               id_back_public_id: null,
               auth_letter_url: null,
               auth_letter_public_id: null,
+              updated_at: new Date()
+            });
+
+            await db('users').where({ id: userToClean.id }).update({
               scheduled_delete_at: null,
               updated_at: new Date()
             });
