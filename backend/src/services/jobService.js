@@ -5,18 +5,25 @@ import {
   insertJob, 
   insertJobRequirements 
 } from '../models/jobModel.js';
+/**
+ * Credit cost constants for HR actions
+ */
+export const CREDIT_COSTS = {
+  JOB_POST: 10,         // Đăng 1 tin thường (hiển thị 14 ngày)
+  AI_SCREENING: 30,     // Bật lọc AI cho tin đó (add-on)
+  AI_INTERVIEW: 10,     // Phỏng vấn AI 1 ứng viên
+};
 
 /**
- * Trừ credit của HR (Xử lý theo batch gần hết hạn trước)
+ * Trừ credit từ 1 ví cụ thể (unified credits, FIFO theo batch hết hạn sớm nhất)
  */
-const consumeFromWallet = async (trx, wallet, creditType, amount) => {
+const consumeFromWallet = async (trx, wallet, amount) => {
   if (!wallet) return false;
 
-  const totalCredits = creditType === 'JOB_POST' ? wallet.total_job_credits : wallet.total_ai_credits;
-  if (totalCredits < amount) return false;
+  if (wallet.total_credits < amount) return false;
 
   const batches = await trx('credit_batches')
-    .where({ wallet_id: wallet.id, credit_type: creditType })
+    .where({ wallet_id: wallet.id })
     .where('amount_remaining', '>', 0)
     .where('expires_at', '>', new Date())
     .orderBy('expires_at', 'asc');
@@ -37,42 +44,34 @@ const consumeFromWallet = async (trx, wallet, creditType, amount) => {
     });
   }
 
-  if (creditType === 'JOB_POST') {
-    await trx('hr_wallets').where({ id: wallet.id }).update({
-      total_job_credits: wallet.total_job_credits - amount,
-      updated_at: new Date()
-    });
-  } else {
-    await trx('hr_wallets').where({ id: wallet.id }).update({
-      total_ai_credits: wallet.total_ai_credits - amount,
-      updated_at: new Date()
-    });
-  }
+  await trx('hr_wallets').where({ id: wallet.id }).update({
+    total_credits: wallet.total_credits - amount,
+    updated_at: new Date()
+  });
   
   return true;
 };
 
 /**
- * Trừ credit của HR (Xử lý theo batch gần hết hạn trước)
- * Nếu công ty không đủ credit, fallback sang ví cá nhân.
+ * Trừ credit của HR (ưu tiên ví công ty, fallback sang ví cá nhân)
  */
-const consumeCredit = async (trx, hrId, companyId, creditType, amount = 1) => {
+const consumeCredit = async (trx, hrId, companyId, amount) => {
   let success = false;
 
   // Ưu tiên dùng ví công ty trước
   if (companyId) {
     const companyWallet = await trx('hr_wallets').where({ company_id: companyId }).first();
-    success = await consumeFromWallet(trx, companyWallet, creditType, amount);
+    success = await consumeFromWallet(trx, companyWallet, amount);
   }
 
   // Nếu công ty hết credit (hoặc không có), dùng ví cá nhân
   if (!success) {
     const personalWallet = await trx('hr_wallets').where({ user_id: hrId }).first();
-    success = await consumeFromWallet(trx, personalWallet, creditType, amount);
+    success = await consumeFromWallet(trx, personalWallet, amount);
   }
 
   if (!success) {
-    throw new Error(`Không đủ ${creditType} credit ở cả ví Công ty và Cá nhân. Vui lòng nạp thêm để tiếp tục.`);
+    throw new Error(`Không đủ credit (cần ${amount}). Vui lòng nạp thêm credit để tiếp tục.`);
   }
 };
 
@@ -91,15 +90,30 @@ export const createJob = async ({
   isSalaryVisible = true,
   vacancyCount = 1,
   deadline = null,
+  enableAiScreening = false,
   detailedRequirements = []
 }) => {
   const hrUser = await db('users').where({ id: hrId }).first();
   const companyId = hrUser ? hrUser.company_id : null;
 
   const result = await db.transaction(async (trx) => {
-    // Trừ 1 JOB_POST credit nếu tạo mới thẳng sang OPEN
+    // Calculate credit cost: 10 (base) + 30 (if AI screening enabled)
     if (status === 'OPEN') {
-      await consumeCredit(trx, hrId, companyId, 'JOB_POST', 1);
+      let creditCost = CREDIT_COSTS.JOB_POST;
+      if (enableAiScreening) {
+        creditCost += CREDIT_COSTS.AI_SCREENING;
+      }
+      await consumeCredit(trx, hrId, companyId, creditCost);
+    }
+
+    // Calculate deadline (max 14 days if OPEN)
+    let finalDeadline = deadline ? new Date(deadline) : null;
+    if (status === 'OPEN') {
+      const maxDeadline = new Date();
+      maxDeadline.setDate(maxDeadline.getDate() + 14);
+      if (!finalDeadline || finalDeadline > maxDeadline) {
+        finalDeadline = maxDeadline;
+      }
     }
 
     const [newJob] = await insertJob({
@@ -114,7 +128,7 @@ export const createJob = async ({
       salary_currency: salaryCurrency || 'VND',
       is_salary_visible: isSalaryVisible,
       vacancy_count: vacancyCount,
-      deadline: deadline || null,
+      deadline: finalDeadline,
       created_at: new Date(),
       updated_at: new Date()
     }, trx);
@@ -273,7 +287,10 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
     // Lưu ý: Từ PAUSED -> OPEN thì không mất credit.
     const isRenewing = updateData.status === 'OPEN' && ['CLOSED', 'DRAFT'].includes(oldJob.status);
     if (isRenewing) {
-       await consumeCredit(trx, oldJob.hr_id, oldJob.company_id, 'JOB_POST', 1);
+       const creditCost = updateData.enableAiScreening
+         ? CREDIT_COSTS.JOB_POST + CREDIT_COSTS.AI_SCREENING
+         : CREDIT_COSTS.JOB_POST;
+       await consumeCredit(trx, oldJob.hr_id, oldJob.company_id, creditCost);
     }
 
     // 1. Cập nhật bảng 'jobs'

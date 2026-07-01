@@ -28,9 +28,6 @@ export async function seed(knex) {
       ai_cover_letter_limit: 1,
       ai_practice_limit: 1,
       radar_chart_level: 'BASIC',
-      job_post_limit: 0,
-      cv_view_limit: 0,
-      featured_post_limit: 0,
       cv_build_limit: 0
     },
     // Tier 2: PRO
@@ -48,9 +45,6 @@ export async function seed(knex) {
       ai_cover_letter_limit: 10,
       ai_practice_limit: 10,
       radar_chart_level: 'DETAILED',
-      job_post_limit: 0,
-      cv_view_limit: 0,
-      featured_post_limit: 0,
       cv_build_limit: 0
     },
     {
@@ -67,9 +61,6 @@ export async function seed(knex) {
       ai_cover_letter_limit: 10,
       ai_practice_limit: 10,
       radar_chart_level: 'DETAILED',
-      job_post_limit: 0,
-      cv_view_limit: 0,
-      featured_post_limit: 0,
       cv_build_limit: 0
     },
     // Tier 3: VIP
@@ -87,9 +78,6 @@ export async function seed(knex) {
       ai_cover_letter_limit: null,
       ai_practice_limit: null,
       radar_chart_level: 'ADVANCED',
-      job_post_limit: 0,
-      cv_view_limit: 0,
-      featured_post_limit: 0,
       cv_build_limit: 0
     },
     {
@@ -106,106 +94,85 @@ export async function seed(knex) {
       ai_cover_letter_limit: null,
       ai_practice_limit: null,
       radar_chart_level: 'ADVANCED',
-      job_post_limit: 0,
-      cv_view_limit: 0,
-      featured_post_limit: 0,
       cv_build_limit: 0
     },
 
     // ==========================================
-    // CÁC GÓI DÀNH CHO NHÀ TUYỂN DỤNG (HR)
+    // CÁC GÓI NẠP CREDIT DÀNH CHO HR (Unified Credit)
     // ==========================================
-    // Tier 1: STARTER
+    // Starter: Trial miễn phí
     {
       id: 6,
       name: 'STARTER',
-      description: 'Gói dùng thử miễn phí dành cho nhà tuyển dụng mới.',
+      description: 'Gói dùng thử miễn phí cho nhà tuyển dụng mới. 50 credit để trải nghiệm.',
       price: 0,
       currency: 'VND',
-      duration_days: 30,
+      duration_days: 0, // Không phải subscription
       is_active: true,
       sort_order: 6,
       target_role: 'HR',
-      job_post_limit: 3,
-      ai_screening_enabled: false,
-      ai_interview_enabled: false,
-      bulk_email_automation: false,
-      cv_view_limit: null,
-      featured_post_limit: 0,
+      total_credits: 50,
+      credit_expiry_days: 30,
       ats_scan_limit: 0
     },
-    // Tier 2: PROFESSIONAL
+    // Basic
     {
       id: 7,
-      name: 'PROFESSIONAL',
-      description: 'Tuyển dụng chuyên nghiệp với sự hỗ trợ của AI.',
-      price: 499000,
+      name: 'BASIC',
+      description: 'Gói nạp 200 credit cho nhà tuyển dụng.',
+      price: 199000,
       currency: 'VND',
-      duration_days: 30,
+      duration_days: 0,
       is_active: true,
       sort_order: 7,
       target_role: 'HR',
-      job_post_limit: 30,
-      ai_screening_enabled: true,
-      ai_interview_enabled: false,
-      bulk_email_automation: true,
-      cv_view_limit: null,
-      featured_post_limit: 0,
+      total_credits: 200,
+      credit_expiry_days: 365,
       ats_scan_limit: 0
     },
+    // Pro
     {
       id: 8,
-      name: 'PROFESSIONAL',
-      description: 'Tuyển dụng chuyên nghiệp với sự hỗ trợ của AI.',
-      price: 4990000,
+      name: 'PRO',
+      description: 'Gói nạp 1.000 credit — tiết kiệm 20% cho tuyển dụng chuyên nghiệp.',
+      price: 799000,
       currency: 'VND',
-      duration_days: 365,
+      duration_days: 0,
       is_active: true,
       sort_order: 8,
       target_role: 'HR',
-      job_post_limit: 30,
-      ai_screening_enabled: true,
-      ai_interview_enabled: false,
-      bulk_email_automation: true,
-      cv_view_limit: null,
-      featured_post_limit: 0,
+      total_credits: 1000,
+      credit_expiry_days: 365,
       ats_scan_limit: 0
     },
-    // Tier 3: ENTERPRISE
+    // Business
     {
       id: 9,
-      name: 'ENTERPRISE',
-      description: 'Giải pháp tuyển dụng toàn diện không giới hạn.',
-      price: 999000,
+      name: 'BUSINESS',
+      description: 'Gói nạp 5.000 credit — tiết kiệm 50% cho doanh nghiệp.',
+      price: 2499000,
       currency: 'VND',
-      duration_days: 30,
+      duration_days: 0,
       is_active: true,
       sort_order: 9,
       target_role: 'HR',
-      job_post_limit: null,
-      ai_screening_enabled: true,
-      ai_interview_enabled: true,
-      bulk_email_automation: true,
-      cv_view_limit: null,
-      featured_post_limit: 0,
+      total_credits: 5000,
+      credit_expiry_days: 365,
       ats_scan_limit: 0
     },
+    // Enterprise: Liên hệ thương lượng
     {
       id: 10,
       name: 'ENTERPRISE',
-      description: 'Giải pháp tuyển dụng toàn diện không giới hạn.',
-      price: 9990000,
+      description: 'Gói doanh nghiệp — Credit chia sẻ cho toàn bộ nhân viên HR trong công ty. Liên hệ để thương lượng.',
+      price: -1, // -1 = Liên hệ thương lượng (Frontend sẽ hiển thị "Liên hệ")
       currency: 'VND',
-      duration_days: 365,
+      duration_days: 0,
       is_active: true,
       sort_order: 10,
       target_role: 'HR',
-      job_post_limit: null,
-      ai_screening_enabled: true,
-      ai_interview_enabled: true,
-      bulk_email_automation: true,
-      cv_view_limit: null,
-      featured_post_limit: 0,
+      total_credits: 10000,
+      credit_expiry_days: 365,
       ats_scan_limit: 0
     }
   ]);
