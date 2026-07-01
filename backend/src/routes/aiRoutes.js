@@ -1,5 +1,5 @@
 import express from 'express';
-import { aiChat } from '../controllers/aiController.js';
+import { aiChat, triggerDailyQuestions } from '../controllers/aiController.js';
 
 const router = express.Router();
 
@@ -50,5 +50,6 @@ const router = express.Router();
  *         description: Lỗi kết nối tới AI provider (Groq API).
  */
 router.post('/chat', aiChat);
+router.post('/trigger-daily-questions', triggerDailyQuestions);
 
 export default router;

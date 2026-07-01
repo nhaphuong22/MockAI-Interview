@@ -1,4 +1,5 @@
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
+import { runDailyQuestionGeneration } from '../services/dailySchedulerService.js';
 
 const getSystemPrompt = (isAuthenticated) => `Bạn là MockAI Assistant — trợ lý AI thông minh của nền tảng MockAI Interview.
 
@@ -60,7 +61,20 @@ export const aiChat = async (req, res) => {
     
     // Check if user is authenticated via Authorization header
     const authHeader = req.headers.authorization;
-    const isAuthenticated = authHeader && authHeader.startsWith('Bearer ') && authHeader.length > 20;
+    let isAuthenticated = false;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        // Verify the token using the application's JWT secret
+        const jwt = await import('jsonwebtoken');
+        const secret = process.env.JWT_SECRET || 'supersecretmockai2026';
+        jwt.default.verify(token, secret);
+        isAuthenticated = true; // Token is valid
+      } catch (err) {
+        isAuthenticated = false; // Token is invalid or expired
+      }
+    }
 
     const messages = [
       { role: 'system', content: getSystemPrompt(isAuthenticated) },
@@ -105,5 +119,19 @@ export const aiChat = async (req, res) => {
   } catch (error) {
     console.error('[AI Chat] Unexpected error:', error);
     return sendError(res, 500, 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại.');
+  }
+};
+
+/**
+ * POST /api/ai/trigger-daily-questions
+ * Manually trigger daily question generation for all tracks (for testing)
+ */
+export const triggerDailyQuestions = async (req, res) => {
+  try {
+    await runDailyQuestionGeneration();
+    return sendResponse(res, 200, { message: 'Đã trigger thành công sinh câu hỏi hàng ngày cho các track.' });
+  } catch (error) {
+    console.error('[AI Trigger Daily] Error:', error);
+    return sendError(res, 500, `Lỗi khi sinh câu hỏi: ${error.message}`);
   }
 };

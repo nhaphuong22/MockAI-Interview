@@ -382,7 +382,7 @@ export const loginGoogleUser = async (idToken) => {
  * @param {object} data
  */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, gender, isLookingForJob, contactPhone, contactPublic } = data;
+  const { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactPhone, contactPublic, taxCode, isTaxCodePublic, linkedinUrl, githubUrl, portfolioUrl } = data;
 
   const updateData = {};
   if (fullName !== undefined) updateData.full_name = fullName;
@@ -391,9 +391,13 @@ export const updateUserProfile = async (userId, data) => {
   if (bio !== undefined) updateData.bio = bio;
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
   if (gender !== undefined) updateData.gender = gender;
+  if (coverUrl !== undefined) updateData.cover_url = coverUrl;
   if (isLookingForJob !== undefined) updateData.is_looking_for_job = isLookingForJob;
   if (contactPhone !== undefined) updateData.contact_phone = contactPhone;
   if (contactPublic !== undefined) updateData.contact_public = contactPublic;
+  if (linkedinUrl !== undefined) updateData.linkedin_url = linkedinUrl;
+  if (githubUrl !== undefined) updateData.github_url = githubUrl;
+  if (portfolioUrl !== undefined) updateData.portfolio_url = portfolioUrl;
 
   updateData.updated_at = db.fn.now();
 

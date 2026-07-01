@@ -60,7 +60,26 @@ export const evaluateCV = async (cvText, jobTitle, jobDescription) => {
       "Cần nhấn mạnh thêm các dự án thực tế liên quan trực tiếp đến JD",
       "Bổ sung thêm một số từ khóa kỹ năng mềm",
       "Cải thiện mô tả kinh nghiệm cho sát với yêu cầu JD hơn"
-    ]
+    ],
+    skillTree: {
+      track: jobTitle || "Chuyên viên",
+      nodes: [
+        { id: "fundamental_1", label: "Kiến thức nền tảng", level: 1, category: "Nền tảng", status: "unlocked", score: 0 },
+        { id: "fundamental_2", label: "Tư duy nghiệp vụ", level: 1, category: "Nền tảng", status: "unlocked", score: 0 },
+        { id: "core_1", label: "Kỹ năng chuyên môn cốt lõi", level: 2, category: "Chuyên môn", status: "locked", score: 0 },
+        { id: "core_2", label: "Công cụ chuyên ngành", level: 2, category: "Công cụ", status: "locked", score: 0 },
+        { id: "core_3", label: "Giải quyết vấn đề", level: 2, category: "Kỹ năng", status: "locked", score: 0 },
+        { id: "advanced_1", label: "Quản lý & Tối ưu", level: 3, category: "Nâng cao", status: "locked", score: 0 },
+        { id: "advanced_2", label: "Hoạch định chiến lược", level: 3, category: "Nâng cao", status: "locked", score: 0 }
+      ],
+      links: [
+        { source: "fundamental_1", target: "core_1" },
+        { source: "fundamental_2", target: "core_2" },
+        { source: "core_1", target: "advanced_1" },
+        { source: "core_2", target: "advanced_2" },
+        { source: "core_3", target: "advanced_1" }
+      ]
+    }
   };
 
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
@@ -68,19 +87,30 @@ export const evaluateCV = async (cvText, jobTitle, jobDescription) => {
     return fallbackData;
   }
 
-  const systemPrompt = `Bạn là một chuyên gia đánh giá CV và chấm điểm ATS (Applicant Tracking System) cao cấp. 
+  const systemPrompt = `Bạn là một chuyên gia đánh giá CV, chấm điểm ATS (Applicant Tracking System) cao cấp và là chuyên gia thiết kế Lộ trình Phát triển Năng lực (Learning Path Architect).
 Nhiệm vụ của bạn là so khớp chi tiết CV của ứng viên (dưới dạng văn bản thô) với Mô tả công việc (Job Description - JD) được cung cấp.
-Hãy tính toán điểm số tổng quan (overallScore từ 0 đến 100) dựa trên mức độ phù hợp về kỹ năng, kinh nghiệm và học vấn.
-Sau đó, hãy chấm điểm và nhận xét cho 5 khía cạnh cụ thể:
-1. "Thông tin cá nhân": Đánh giá mức độ rõ ràng, đầy đủ của thông tin liên hệ, tên, địa chỉ.
-2. "Kinh nghiệm làm việc": Đánh giá độ phù hợp của các dự án, công việc cũ với yêu cầu trong JD.
-3. "Kỹ năng": Đánh giá mức độ khớp giữa các kỹ năng chuyên môn (cứng và mềm) được liệt kê trong CV so với JD.
-4. "Học vấn": Đánh giá mức độ đáp ứng về bằng cấp, chuyên ngành.
-5. "Định dạng & ATS": Đánh giá cấu trúc trình bày và mức độ xuất hiện của các từ khóa (keywords) quan trọng trong JD.
 
-Đồng thời, hãy chỉ ra:
-- 3 Điểm mạnh chính của hồ sơ (strengths) bằng Tiếng Việt.
-- 3 Khuyến nghị cải thiện cụ thể (improvements) bằng Tiếng Việt.
+1. Hãy tính toán điểm số tổng quan (overallScore từ 0 đến 100) dựa trên mức độ phù hợp về kỹ năng, kinh nghiệm và học vấn.
+2. Hãy chấm điểm và nhận xét cho 5 khía cạnh cụ thể:
+- "Thông tin cá nhân": Đánh giá mức độ rõ ràng, đầy đủ của thông tin liên hệ.
+- "Kinh nghiệm làm việc": Đánh giá độ phù hợp của các dự án, công việc cũ với yêu cầu trong JD.
+- "Kỹ năng": Đánh giá mức độ khớp giữa các kỹ năng chuyên môn được liệt kê trong CV so với JD.
+- "Học vấn": Đánh giá mức độ đáp ứng về bằng cấp, chuyên ngành.
+- "Định dạng & ATS": Đánh giá cấu trúc trình bày và mức độ xuất hiện của các từ khóa quan trọng.
+3. Chỉ ra 3 Điểm mạnh chính (strengths) và 3 Khuyến nghị cải thiện (improvements) bằng Tiếng Việt.
+4. Sinh ra một Cây Kỹ Năng RPG (RPG Skill Tree) cá nhân hóa (gọi là skillTree), thiết kế dưới dạng đồ thị có hướng không chu trình (Directed Acyclic Graph - DAG) phân cấp thành 3 Level (Tiers) tăng dần:
+   - Level 1: Kỹ năng nền tảng thiết yếu cho vị trí này (2-3 nodes).
+   - Level 2: Kỹ năng chuyên môn cốt lõi bắt buộc phải làm việc được (3-5 nodes).
+   - Level 3: Kỹ năng chuyên sâu, nâng cao hoặc công cụ đặc thù (2-4 nodes).
+   Tổng số node trong cây phải từ 8 đến 12 nodes.
+   Các node phải được liên kết logic với nhau bằng các "links" (source -> target). Ví dụ: Level 1 -> Level 2. Không được có liên kết vòng tròn hoặc node cô lập.
+   Mỗi node có cấu trúc:
+   - id: Chuỗi snake_case viết thường, duy nhất (ví dụ: "corporate_accounting", "advanced_excel").
+   - label: Tên kỹ năng thân thiện hiển thị bằng Tiếng Việt.
+   - level: Cấp độ (1, 2, hoặc 3).
+   - category: Nhóm kỹ năng (ví dụ: "Chuyên môn", "Công cụ", "Kỹ năng mềm").
+   - status: Nếu kỹ năng này đã được đề cập hoặc thể hiện tốt trong CV của ứng viên, hãy đặt trạng thái là "unlocked". Nếu ứng viên chưa có hoặc chưa mạnh kỹ năng này, hãy đặt là "locked".
+   - score: Đặt mặc định là 0 cho tất cả các node.
 
 Bạn PHẢI trả về kết quả dưới định dạng JSON duy nhất, có cấu trúc như sau:
 {
@@ -101,7 +131,17 @@ Bạn PHẢI trả về kết quả dưới định dạng JSON duy nhất, có 
     "Khuyến nghị cải thiện 1...",
     "Khuyến nghị cải thiện 2...",
     "Khuyến nghị cải thiện 3..."
-  ]
+  ],
+  "skillTree": {
+    "track": "Tên vị trí công việc (ví dụ: Financial Analyst, Frontend Developer)",
+    "nodes": [
+      { "id": "accounting_principles", "label": "Nguyên lý kế toán", "level": 1, "category": "Chuyên môn", "status": "unlocked", "score": 0 },
+      ...
+    ],
+    "links": [
+      { "source": "accounting_principles", "target": "financial_modeling" }
+    ]
+  }
 }`;
 
   const userPrompt = `Dưới đây là thông tin chi tiết:
@@ -117,10 +157,10 @@ ${jobDescription || "Không có (Hãy chấm điểm dựa trên vị trí ứng
 ${cvText || "Không có nội dung CV (Hãy chấm điểm dựa trên JD và thông tin chung)"}
 =========================================
 
-Hãy thực hiện đánh giá, tính điểm và trả về JSON chính xác theo cấu trúc yêu cầu.`;
+Hãy thực hiện đánh giá, tính điểm và sinh cây kỹ năng RPG rồi trả về JSON chính xác theo cấu trúc yêu cầu.`;
 
   try {
-    console.log(`[ATS Evaluation] Đang gửi yêu cầu chấm điểm CV lên Groq API sử dụng model ${modelName}...`);
+    console.log(`[ATS Evaluation] Đang gửi yêu cầu chấm điểm CV và sinh cây kỹ năng lên Groq API sử dụng model ${modelName}...`);
     const url = 'https://api.groq.com/openai/v1/chat/completions';
     const response = await fetch(url, {
       method: 'POST',
@@ -158,12 +198,37 @@ Hãy thực hiện đánh giá, tính điểm và trả về JSON chính xác th
     const strengths = Array.isArray(parsedData.strengths) ? parsedData.strengths.map(String) : fallbackData.strengths;
     const improvements = Array.isArray(parsedData.improvements) ? parsedData.improvements.map(String) : fallbackData.improvements;
 
-    console.log(`[ATS Evaluation] Chấm điểm CV hoàn tất thành công! Điểm overall: ${overallScore}`);
+    // Chuẩn hóa skillTree từ AI
+    let skillTree = parsedData.skillTree || fallbackData.skillTree;
+    if (skillTree && Array.isArray(skillTree.nodes)) {
+      skillTree.track = skillTree.track || jobTitle || "Chuyên viên";
+      skillTree.nodes = skillTree.nodes.map(n => ({
+        id: String(n.id),
+        label: String(n.label),
+        level: Number(n.level) || 2,
+        category: String(n.category || "Chuyên môn"),
+        status: String(n.status) === 'unlocked' ? 'unlocked' : 'locked',
+        score: Number(n.score) || 0
+      }));
+      if (!Array.isArray(skillTree.links)) {
+        skillTree.links = [];
+      } else {
+        skillTree.links = skillTree.links.map(l => ({
+          source: String(l.source),
+          target: String(l.target)
+        }));
+      }
+    } else {
+      skillTree = fallbackData.skillTree;
+    }
+
+    console.log(`[ATS Evaluation] Chấm điểm CV và sinh cây kỹ năng hoàn tất thành công! Điểm overall: ${overallScore}`);
     return {
       overallScore,
       sections,
       strengths,
-      improvements
+      improvements,
+      skillTree
     };
   } catch (error) {
     console.error('[ATS Evaluation] Lỗi khi kết nối Groq API để chấm điểm CV, sử dụng fallback:', error);

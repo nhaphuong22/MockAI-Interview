@@ -1,4 +1,6 @@
 import { parseCVBuffer, evaluateCV } from '../services/cvService.js';
+import db from '../db/knex.js';
+import { initializeSkillTreeFromCV } from '../services/skillTreeService.js';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
@@ -67,16 +69,49 @@ export const uploadCV = async (req, res) => {
  */
 export const scoreCV = async (req, res) => {
   try {
-    const { cv_text, job_title, job_description } = req.body;
+    const { cv_text, job_title, job_description, fileUrl } = req.body;
+    const userId = req.user.id;
     
     if (!cv_text) {
       return res.status(400).json({ message: 'Vui lòng cung cấp nội dung CV (cv_text).' });
     }
 
     const evaluationData = await evaluateCV(cv_text, job_title, job_description);
+    const overallScore = evaluationData.overallScore || 60;
+
+    // 1. Lưu hoặc cập nhật thông tin CV trong bảng `cvs`
+    const existingCv = await db('cvs').where({ user_id: userId }).first();
+    if (existingCv) {
+      await db('cvs')
+        .where({ id: existingCv.id })
+        .update({
+          file_url: fileUrl || existingCv.file_url || '',
+          parsed_text: cv_text,
+          ats_score: overallScore,
+          ai_feedback: JSON.stringify(evaluationData),
+          updated_at: new Date()
+        });
+    } else {
+      await db('cvs').insert({
+        user_id: userId,
+        file_url: fileUrl || '',
+        parsed_text: cv_text,
+        ats_score: overallScore,
+        ai_feedback: JSON.stringify(evaluationData),
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    }
+
+    // 2. Khởi tạo Cây kỹ năng RPG dựa trên Cây kỹ năng AI vừa sinh ra
+    try {
+      await initializeSkillTreeFromCV(userId, evaluationData.skillTree);
+    } catch (stErr) {
+      console.error('[SkillTree] Lỗi khi tự động khởi tạo cây từ CV Review:', stErr.message);
+    }
 
     return res.status(200).json({
-      message: 'Đánh giá CV thành công (Mô phỏng).',
+      message: 'Đánh giá CV thành công.',
       data: evaluationData
     });
   } catch (error) {

@@ -29,6 +29,7 @@ if (missingEnv.length > 0) {
 import app from './src/app.js';
 
 import { setupSocket } from './src/socket.js';
+import { initDailyScheduler } from './src/services/dailySchedulerService.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -42,6 +43,9 @@ import { cleanupExpiredInvitations } from './src/controllers/companyController.j
 setInterval(cleanupExpiredInvitations, 24 * 60 * 60 * 1000);
 // Chạy lần đầu sau khi khởi động server 10 giây
 setTimeout(cleanupExpiredInvitations, 10000);
+
+// Khởi tạo Scheduler sinh câu hỏi hàng ngày
+initDailyScheduler();
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

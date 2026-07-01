@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { Play, Mic, MessageCircle, BarChart3, History, Sparkles } from "lucide-react";
+import { Play, Mic, MessageCircle, BarChart3, History, Sparkles, Trophy } from "lucide-react";
+import { DailyStreakWidget } from "./DailyStreakWidget";
+import { Leaderboard } from "./Leaderboard";
+import SkillTreeGraph from "../../pages/candidate/components/SkillTreeGraph";
 
 /**
  * InterviewSelection Component
@@ -8,6 +11,7 @@ import { Play, Mic, MessageCircle, BarChart3, History, Sparkles } from "lucide-r
  */
 export function InterviewSelection({ onStartInterview, previousSessions = [], onViewDetail }) {
   const [activeTab, setActiveTab] = useState("practice"); // tabs: practice, history
+  const [activeSubView, setActiveSubView] = useState("cards"); // subviews: cards, skill-tree
 
   const formatTime = (secs) => {
     if (!secs) return "00:00";
@@ -60,33 +64,114 @@ export function InterviewSelection({ onStartInterview, previousSessions = [], on
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab("leaderboard")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                activeTab === "leaderboard"
+                  ? "bg-white dark:bg-[#0ea5e9] dark:text-white text-gray-900 shadow-md scale-105"
+                  : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              <span>Bảng Xếp Hạng</span>
+            </button>
           </div>
         </div>
 
         {/* Tab 1: New Practice Options */}
         {activeTab === "practice" && (
-          <div className="max-w-2xl mx-auto animate-in fade-in zoom-in-95 duration-300">
-            {/* Voice Practice Option */}
-            <div
-              onClick={() => onStartInterview("voice")}
-              className="dark:bg-[#0f172a] bg-white rounded-3xl p-8 md:p-10 shadow-2xl border-2 border-dashed border-sky-200 dark:border-sky-500/20 hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] hover:shadow-sky-500/10 hover:-translate-y-1 transition-all cursor-pointer group text-center flex flex-col items-center justify-center relative overflow-hidden"
-            >
-              {/* Premium Glow effect */}
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-sky-400/10 dark:bg-sky-500/5 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-sky-400/10 dark:bg-sky-500/5 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-500" />
-              
-              <div className="w-20 h-20 dark:bg-[#1e293b] bg-[#f0f9ff] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-md">
-                <Mic className="w-10 h-10 text-[#0ea5e9]" />
+          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+            {activeSubView === "cards" ? (
+              <>
+                {/* Daily Challenge Streak Widget */}
+                <DailyStreakWidget />
+
+                {/* 2 Cards side-by-side flex */}
+                <div className="flex flex-col md:flex-row gap-6 w-full">
+                  {/* Card 2: Luyện tập với AI */}
+                  <div 
+                    onClick={() => onStartInterview("voice")}
+                    className="flex-1 cursor-pointer group relative overflow-hidden rounded-[2rem] dark:bg-[#0f172a] bg-white border border-slate-200/50 dark:border-slate-800/80 shadow-2xl p-8 transition-all duration-300 hover:shadow-sky-500/5 hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] hover:scale-[1.02] active:scale-95 flex flex-col justify-between"
+                  >
+                    {/* Background Glow */}
+                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+                    
+                    <div className="space-y-4 relative z-10">
+                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-500/10 dark:bg-sky-500/20 text-[#0ea5e9] shadow-inner">
+                        <Sparkles className="w-8 h-8 animate-pulse" />
+                      </div>
+                      <div>
+                        <span className="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-sky-500/10 text-[#0ea5e9] rounded-full border border-sky-500/20">
+                          Phổ biến
+                        </span>
+                        <h2 className="text-xl font-bold dark:text-white text-slate-800 mt-2">
+                          Luyện Tập Với AI
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400 font-semibold text-sm mt-2 leading-relaxed">
+                          Tự do lựa chọn vị trí công việc, kỹ năng mong muốn và tải CV cá nhân của bạn để AI phỏng vấn thử thực tế 8 câu hỏi.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800/50 flex items-center justify-between relative z-10">
+                      <span className="text-xs font-bold text-[#0ea5e9] group-hover:underline">
+                        Cấu hình & bắt đầu ngay
+                      </span>
+                      <span className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-[#0ea5e9] group-hover:text-white transition-all duration-300 font-bold">
+                        ➔
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Cây kỹ năng */}
+                  <div 
+                    onClick={() => setActiveSubView("skill-tree")}
+                    className="flex-1 cursor-pointer group relative overflow-hidden rounded-[2rem] dark:bg-[#0f172a] bg-white border border-slate-200/50 dark:border-slate-800/80 shadow-2xl p-8 transition-all duration-300 hover:shadow-emerald-500/5 hover:border-[#0ea5e9] dark:hover:border-[#0ea5e9] hover:scale-[1.02] active:scale-95 flex flex-col justify-between"
+                  >
+                    {/* Background Glow */}
+                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+                    
+                    <div className="space-y-4 relative z-10">
+                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-500 shadow-inner">
+                        <Trophy className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <span className="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20">
+                          Cá nhân hóa (RPG)
+                        </span>
+                        <h2 className="text-xl font-bold dark:text-white text-slate-800 mt-2">
+                          Cây Kỹ Năng RPG
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400 font-semibold text-sm mt-2 leading-relaxed">
+                          Khám phá sơ đồ học tập RPG được cá nhân hóa dựa trên CV của bạn. Luyện tập riêng từng kỹ năng và mở khóa các mốc kỹ năng tiếp theo.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800/50 flex items-center justify-between relative z-10">
+                      <span className="text-xs font-bold text-emerald-500 group-hover:underline">
+                        Xem cây kỹ năng cá nhân
+                      </span>
+                      <span className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-[#0ea5e9] group-hover:text-white transition-all duration-300 font-bold">
+                        ➔
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="dark:bg-[#0f172a] bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-xl border dark:border-white/5 border-gray-200">
+                <div className="mb-6">
+                  <button
+                    onClick={() => setActiveSubView("cards")}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl dark:bg-slate-800 dark:hover:bg-slate-700 bg-slate-100 hover:bg-slate-200 text-xs font-extrabold dark:text-white text-gray-800 border dark:border-slate-800 border-gray-200 transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
+                  >
+                    ← Quay lại trang Luyện tập
+                  </button>
+                </div>
+                <SkillTreeGraph />
               </div>
-              <h2 className="text-2xl md:text-3xl dark:text-white font-extrabold mb-4">Luyện Phỏng Vấn Bằng Giọng Nói AI</h2>
-              <p className="dark:text-slate-400 text-gray-600 mb-6 leading-relaxed text-sm md:text-base font-medium max-w-lg">
-                Thực hành phản xạ phỏng vấn trực tiếp bằng giọng nói qua Microphone với AI Coach. AI tự động bóc tách giọng nói, phân tích độ sâu kỹ thuật, mức độ tự tin, cấu trúc STAR và xây dựng biểu đồ năng lực thời gian thực.
-              </p>
-              <div className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-2xl font-extrabold hover:shadow-xl hover:shadow-sky-500/15 group-hover:scale-105 active:scale-95 transition-all">
-                <Play className="w-5 h-5 fill-white" />
-                <span>Bắt Đầu Luyện Tập Giọng Nói</span>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -157,6 +242,13 @@ export function InterviewSelection({ onStartInterview, previousSessions = [], on
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab 3: Global Leaderboard */}
+        {activeTab === "leaderboard" && (
+          <div className="animate-in fade-in zoom-in-95 duration-300">
+            <Leaderboard />
           </div>
         )}
       </div>

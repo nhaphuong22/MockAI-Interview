@@ -4,6 +4,7 @@ import {
   Users, ChevronRight, Share2, Building2, Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useUiStore } from "../../../store/useUiStore";
 
 const TABS = [
   { id: "description", label: "Mô tả công việc" },
@@ -16,6 +17,7 @@ const TABS = [
  * JobDetailView - Tab-based detail panel matching reference design
  */
 export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
+  const addToast = useUiStore((state) => state.addToast);
   const [activeTab, setActiveTab] = useState("description");
   const contentRef = useRef(null);
 
@@ -108,7 +110,11 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
               <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
             </button>
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:border-[#0ea5e9]/50 hover:text-[#0ea5e9] dark:border-white/10 dark:text-slate-500"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                addToast("Đã sao chép liên kết việc làm vào khay nhớ tạm!", "success");
+              }}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:border-[#0ea5e9]/50 hover:text-[#0ea5e9] dark:border-white/10 dark:text-slate-500 cursor-pointer"
               title="Chia sẻ"
             >
               <Share2 className="w-4 h-4" />

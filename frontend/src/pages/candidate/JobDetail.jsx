@@ -352,7 +352,13 @@ export function JobDetail() {
                   <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-[#0ea5e9] text-[#0ea5e9]" : ""}`} />
                   <span>{isBookmarked ? "Đã lưu" : "Lưu việc"}</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 border-2 border-gray-200 dark:border-white/10 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] dark:hover:bg-sky-500/10 transition-all text-sm cursor-pointer">
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    addToast("Đã sao chép liên kết việc làm vào khay nhớ tạm!", "success");
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 border-2 border-gray-200 dark:border-white/10 rounded-xl hover:border-[#0ea5e9] hover:bg-[#f0f9ff] dark:hover:bg-sky-500/10 transition-all text-sm cursor-pointer"
+                >
                   <Share2 className="w-5 h-5" />
                   <span>Chia sẻ</span>
                 </button>
@@ -415,12 +421,20 @@ export function JobDetail() {
               <h3 className="font-bold text-gray-900 dark:text-white mb-4">Về Công Ty</h3>
               <div className="flex items-center gap-3 mb-4">
                 {job.company_id ? (
-                  <Link to={`/companies/${job.company_id}`} className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl font-bold text-white hover:opacity-90 transition-opacity">
-                    {companyLogo}
+                  <Link to={`/companies/${job.company_id}`} className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl font-bold text-white hover:opacity-90 transition-opacity overflow-hidden">
+                    {job.company_logo && (job.company_logo.startsWith("http") || job.company_logo.startsWith("/") || job.company_logo.startsWith("data:")) ? (
+                      <img src={job.company_logo} alt={job.company_name} className="w-full h-full object-cover" />
+                    ) : (
+                      companyLogo
+                    )}
                   </Link>
                 ) : (
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl font-bold text-white">
-                    {companyLogo}
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl font-bold text-white overflow-hidden">
+                    {job.company_logo && (job.company_logo.startsWith("http") || job.company_logo.startsWith("/") || job.company_logo.startsWith("data:")) ? (
+                      <img src={job.company_logo} alt={job.company_name} className="w-full h-full object-cover" />
+                    ) : (
+                      companyLogo
+                    )}
                   </div>
                 )}
                 <div>

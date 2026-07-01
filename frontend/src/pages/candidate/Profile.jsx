@@ -5,6 +5,7 @@ import { ProfileHeader } from "./components/ProfileHeader";
 import { AboutSection } from "./components/AboutSection";
 import { ProfileSidebar } from "./components/ProfileSidebar";
 import AtsReportDashboard from "./components/AtsReportDashboard";
+import { getAbsoluteMediaUrl } from "../../utils/mediaUtils";
 
 
 export function Profile() {
@@ -26,17 +27,9 @@ export function Profile() {
 
   const completeness = calculateCompleteness();
   const rawAvatarUrl = user?.avatar_url || user?.avatarUrl || localStorage.getItem("googleAvatar") || "";
-  const getAbsoluteAvatarUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    const backendUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace("/api", "")
-      : "http://localhost:5000";
-    return `${backendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
-  };
   const avatarUrl = rawAvatarUrl.includes("googleusercontent.com")
     ? rawAvatarUrl.replace(/=s\d+(-c)?$/, "=s384-c")
-    : getAbsoluteAvatarUrl(rawAvatarUrl);
+    : getAbsoluteMediaUrl(rawAvatarUrl);
 
   return (
     <div className="dark:bg-[#0a0f1c] bg-gray-50 py-8 transition-colors duration-500">
@@ -64,8 +57,6 @@ export function Profile() {
               <Tabs.Content value="about" className="p-6">
                 <AboutSection user={user} />
               </Tabs.Content>
-
-
 
               <Tabs.Content value="ats-report" className="p-6">
                 <AtsReportDashboard />

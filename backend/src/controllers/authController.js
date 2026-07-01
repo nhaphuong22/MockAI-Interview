@@ -243,9 +243,9 @@ export const changePasswordController = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, phone, address, bio, avatarUrl, gender, isLookingForJob, contactPhone, contactPublic } = req.body;
+    const { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl } = req.body;
 
-    const result = await updateUserProfile(userId, { fullName, phone, address, bio, avatarUrl, gender, isLookingForJob, contactPhone, contactPublic });
+    const result = await updateUserProfile(userId, { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl });
     return sendResponse(res, 200, result);
   } catch (error) {
     if (error.message === 'User not found') {
@@ -334,6 +334,7 @@ export const uploadAvatarController = async (req, res) => {
     });
 
     const avatarUrl = uploadResult.secure_url;
+    await updateUserProfile(req.user.id, { avatarUrl });
     return sendResponse(res, 200, { avatarUrl });
   } catch (error) {
     console.error('Upload avatar controller error:', error);
@@ -345,6 +346,35 @@ export const uploadAvatarController = async (req, res) => {
         await fs.promises.unlink(req.file.path);
       } catch (unlinkError) {
         console.error('Failed to delete temporary local avatar file:', unlinkError);
+      }
+    }
+  }
+};
+
+// ─── Upload Cover ──────────────────────────────────────────────────────────────
+
+export const uploadCoverController = async (req, res) => {
+  try {
+    if (!req.file) {
+      return sendError(res, 400, 'Vui lòng chọn một ảnh bìa để tải lên');
+    }
+
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'covers',
+    });
+
+    const coverUrl = uploadResult.secure_url;
+    await updateUserProfile(req.user.id, { coverUrl });
+    return sendResponse(res, 200, { coverUrl });
+  } catch (error) {
+    console.error('Upload cover controller error:', error);
+    return sendError(res, 500, 'Lỗi hệ thống khi tải ảnh bìa lên');
+  } finally {
+    if (req.file && req.file.path) {
+      try {
+        await fs.promises.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('Failed to delete temporary local cover file:', unlinkError);
       }
     }
   }

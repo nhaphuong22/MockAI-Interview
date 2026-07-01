@@ -65,6 +65,51 @@ export function InterviewPractice() {
     }
   }, [location.state, historySessions, hasProcessedState]);
 
+  useEffect(() => {
+    if (location.state?.autoStartSkill && !hasProcessedState) {
+      const autoStart = async () => {
+        setIsSubmitting(true);
+        try {
+          console.log(`[Practice] Tự động khởi tạo phỏng vấn thử cho kỹ năng: ${location.state.autoStartSkill}`);
+          
+          const formattedQuestions = location.state.skillQuestions?.map(q => ({
+            question_text: q.question_text || q.question || "",
+            expected_answer: q.expected_answer || ""
+          })) || [];
+
+          const response = await initInterviewApi({
+            customPosition: `Luyện tập kỹ năng ${location.state.autoStartSkill}`,
+            customSkills: [location.state.autoStartSkill],
+            experienceLevel: "JUNIOR",
+            cvId: null,
+            cvText: "",
+            type: "PRACTICE",
+            questions: formattedQuestions
+          });
+          const interviewData = response.data;
+          setInterviewId(interviewData.id);
+
+          if (interviewData.questions && interviewData.questions.length > 0) {
+            setQuestions(interviewData.questions);
+          } else {
+            throw new Error("Không nhận được danh sách câu hỏi hợp lệ từ AI.");
+          }
+
+          setMode("setup");
+          setHasProcessedState(true);
+        } catch (error) {
+          console.error("Error auto-initializing interview:", error);
+          alert(`Tự động khởi tạo phỏng vấn thất bại: ${error.message || "Chưa cấu hình API Key Groq"}`);
+          setMode("select");
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      autoStart();
+    }
+  }, [location.state, hasProcessedState]);
+
   const { setHideNavbar } = useUiStore();
 
   useEffect(() => {
@@ -96,6 +141,8 @@ export function InterviewPractice() {
       const response = await initInterviewApi({
         customPosition: info.position,
         customSkills: info.skills,
+        companyName: info.companyName || "",
+        jobDescription: info.jobDescription || "",
         experienceLevel: info.level,
         cvId: info.cvId, // Truyền cvId động nếu có
         cvText: info.cvText, // Truyền trực tiếp CV text bóc tách từ sessionStorage
