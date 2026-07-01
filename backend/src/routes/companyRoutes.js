@@ -1,7 +1,7 @@
 import express from 'express';
-import { 
-  getCompanyDetail, 
-  toggleFollowCompany, 
+import {
+  getCompanyDetail,
+  toggleFollowCompany,
   getCompanyFollowers,
   getCompanies,
   createCompany,
@@ -11,9 +11,14 @@ import {
   rejectJoinRequest,
   uploadVerificationDocsController,
   leaveCompany,
-  deleteCompany
+  deleteCompany,
+  getCompanyMembers,
+  inviteCompanyMember,
+  getCompanyInvitations,
+  cancelCompanyInvitation,
+  removeCompanyMember
 } from '../controllers/companyController.js';
-import { authenticateToken, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
+import { authenticateToken, optionalAuthenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
@@ -27,14 +32,14 @@ const router = express.Router();
  *       - Companies
  */
 router.post(
-  '/upload-verification-docs', 
-  authenticateToken, 
+  '/upload-verification-docs',
+  authenticateToken,
   uploadAvatar.fields([
     { name: 'licenseFile', maxCount: 1 },
     { name: 'authFile', maxCount: 1 },
     { name: 'idFrontFile', maxCount: 1 },
     { name: 'idBackFile', maxCount: 1 }
-  ]), 
+  ]),
   uploadVerificationDocsController
 );
 
@@ -147,5 +152,14 @@ router.post('/:id/follow', authenticateToken, toggleFollowCompany);
  *       - Companies
  */
 router.get('/:id/followers', authenticateToken, getCompanyFollowers);
+
+// ─── Company Member Management (Cách A & Cách B) ─────────────────────────────────
+router.get('/my-company/members', authenticateToken, requireRole(['HR']), getCompanyMembers);
+router.delete('/my-company/members/:userId', authenticateToken, requireRole(['HR']), removeCompanyMember);
+
+// ─── Company Invitation Flow (Cách A) ───────────────────────────────────────────
+router.post('/my-company/invitations', authenticateToken, requireRole(['HR']), inviteCompanyMember);
+router.get('/my-company/invitations', authenticateToken, requireRole(['HR']), getCompanyInvitations);
+router.delete('/my-company/invitations/:invitationId', authenticateToken, requireRole(['HR']), cancelCompanyInvitation);
 
 export default router;

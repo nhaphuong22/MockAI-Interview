@@ -17,7 +17,7 @@ import {
   resendCompanyOtpController,
   acceptPrivacyAgreementController,
 } from '../controllers/authController.js';
-import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { authenticateToken, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
@@ -321,5 +321,11 @@ router.post('/company/resend-otp', authenticateToken, resendCompanyOtpController
  *         description: Tải lên thành công.
  */
 router.post('/upload-avatar', authenticateToken, uploadAvatar.single('avatar'), uploadAvatarController);
+
+// ─── Company Invitation Public Flow (Cách A) ───────────────────────────────────
+import { verifyInvitationToken, acceptCompanyInvitation } from '../controllers/companyController.js';
+
+router.get('/invitations/verify', verifyInvitationToken);
+router.post('/invitations/accept', optionalAuthenticateToken, acceptCompanyInvitation);
 
 export default router;

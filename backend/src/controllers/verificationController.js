@@ -157,6 +157,16 @@ export const reviewVerification = async (req, res) => {
       .where({ id })
       .update(updates);
 
+    // Khi Admin Phê duyệt hoặc Từ chối/Đình chỉ, lên lịch xóa tài liệu định danh nhạy cảm của người đại diện (HR gốc) sau 30 ngày
+    if (company.creator_id) {
+      await db('users')
+        .where({ id: company.creator_id })
+        .update({
+          scheduled_delete_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          updated_at: new Date()
+        });
+    }
+
     if (company.hr_email) {
       if ((status === 'SUSPENDED' || status === 'REJECTED') && reject_reason) {
         await sendCompanyRejectionEmail(company.hr_email, company.name, reject_reason).catch(e => console.error(e));

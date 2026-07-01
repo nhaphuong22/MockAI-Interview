@@ -291,7 +291,7 @@ export function BusinessLicenseTab({ onComplete }) {
       {/* Common Step: Giấy tờ định danh */}
       <div className="border border-slate-200 dark:border-white/10 rounded-2xl bg-white dark:bg-[#0f172a] mb-6 mt-3 p-6 flex flex-row gap-8">
         <div className="flex-1 min-w-0">
-          <label className="block text-sm font-bold text-slate-800 dark:text-white mb-3">Giấy tờ định danh (CCCD/ Hộ chiếu) <span className="text-rose-500">*</span></label>
+          <label className="block text-sm font-bold text-slate-800 dark:text-white mb-3">Giấy tờ định danh hoặc Thẻ nhân sự (CCCD/ Thẻ nhân viên) <span className="text-rose-500">*</span></label>
           <div className="flex gap-4">
             <FileDropzone 
               file={idFrontFile} 
@@ -301,14 +301,14 @@ export function BusinessLicenseTab({ onComplete }) {
             <FileDropzone 
               file={idBackFile} 
               setFile={setIdBackFile}
-              title="Tải lên mặt sau"
+              title="Tải lên mặt sau (nếu có)"
             />
           </div>
           <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-100 dark:border-orange-500/20 text-orange-700 dark:text-orange-400 text-xs leading-relaxed flex items-start gap-2">
             <AlertTriangle size={16} className="shrink-0 mt-0.5" />
             <ul className="list-disc pl-4 space-y-1">
-              <li>Các văn bản đăng tải cần đầy đủ các mặt và không có dấu hiệu chỉnh sửa/ che/ cắt thông tin</li>
-              <li>Vui lòng tải lên cả mặt trước và mặt sau của CCCD/ Hộ chiếu</li>
+              <li>Tài liệu đăng tải cần rõ tên và ảnh chân dung để đối sánh khớp với tài khoản đăng ký.</li>
+              <li><strong>KHUYÊN DÙNG:</strong> Vui lòng che mờ các thông tin nhạy cảm (như số căn cước, ngày sinh, địa chỉ nhà) trước khi tải lên. Hệ thống sẽ tự động xóa vĩnh viễn các tài liệu này sau 30 ngày kể từ khi có kết quả duyệt/từ chối.</li>
             </ul>
           </div>
         </div>
