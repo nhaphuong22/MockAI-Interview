@@ -44,6 +44,7 @@ export const exportApplications = async (req, res) => {
     // Build base query — fetch SHORTLISTED + HIRED + ACCEPTED applications
     let query = db('applications')
       .join('users', 'applications.candidate_id', 'users.id')
+      .leftJoin('candidate_profiles', 'users.id', 'candidate_profiles.user_id')
       .join('jobs', 'applications.job_id', 'jobs.id')
       .leftJoin('companies', 'jobs.company_id', 'companies.id')
       .leftJoin('cvs', 'applications.cv_id', 'cvs.id')
@@ -60,7 +61,7 @@ export const exportApplications = async (req, res) => {
         'applications.created_at',
         db.raw("COALESCE(applications.candidate_name, users.full_name) as candidate_name"),
         db.raw("COALESCE(applications.candidate_email, users.email) as candidate_email"),
-        db.raw("COALESCE(applications.candidate_phone, users.phone) as candidate_phone"),
+        db.raw("COALESCE(applications.candidate_phone, candidate_profiles.phone) as candidate_phone"),
         'jobs.title as job_title',
         'jobs.hr_id as job_hr_id',
         'companies.name as company_name',
