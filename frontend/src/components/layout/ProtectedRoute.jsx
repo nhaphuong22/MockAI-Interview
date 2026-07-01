@@ -29,9 +29,23 @@ export function ProtectedRoute({ children, requiredRole = null }) {
     }
 
     // Check role if required
-    if (requiredRole && user?.role?.toLowerCase() !== requiredRole.toLowerCase()) {
+    const userRole = user?.role?.toLowerCase();
+    if (requiredRole && userRole !== requiredRole.toLowerCase()) {
       addToast('Bạn không có quyền truy cập trang này', 'error');
       navigate('/', { replace: true });
+      return;
+    }
+
+    // HR Company linkage validation
+    if (userRole === 'hr') {
+      const hasCompanyLinked = user?.company_id && user?.company_join_status === 'APPROVED';
+      const isSetupPage = location.pathname.toLowerCase().endsWith('/company-setup');
+
+      if (!hasCompanyLinked && !isSetupPage) {
+        navigate('/hr/dashboard/company-setup', { replace: true });
+      } else if (hasCompanyLinked && isSetupPage) {
+        navigate('/hr/dashboard', { replace: true });
+      }
     }
   }, [isAuthenticated, user, requiredRole, location.pathname, navigate, addToast, wasAuthenticated]);
 
@@ -40,8 +54,18 @@ export function ProtectedRoute({ children, requiredRole = null }) {
     return null;
   }
 
-  if (requiredRole && user?.role?.toLowerCase() !== requiredRole.toLowerCase()) {
+  const userRole = user?.role?.toLowerCase();
+  if (requiredRole && userRole !== requiredRole.toLowerCase()) {
     return null;
+  }
+
+  // HR linkage check to prevent flash of content before redirect
+  if (userRole === 'hr') {
+    const hasCompanyLinked = user?.company_id && user?.company_join_status === 'APPROVED';
+    const isSetupPage = location.pathname.toLowerCase().endsWith('/company-setup');
+    if (!hasCompanyLinked && !isSetupPage) {
+      return null;
+    }
   }
 
   return children;

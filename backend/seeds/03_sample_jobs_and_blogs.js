@@ -9,7 +9,6 @@ export async function seed(knex) {
   await knex('blogs').del();
   await knex('job_requirements').del();
   await knex('jobs').del();
-  await knex('companies').del();
   await knex('job_types').del();
   await knex('locations').del();
   await knex('categories').del();
@@ -39,101 +38,7 @@ export async function seed(knex) {
     { id: 5, name: 'Giáo dục / EdTech', slug: 'giao-duc-edtech', is_active: true, created_at: new Date(), updated_at: new Date() }
   ]);
 
-  // 4. Seed Companies
-  await knex('companies').insert([
-    {
-      id: 1,
-      name: 'TechCorp Vietnam',
-      logo_url: '💻',
-      website: 'techcorp.vn',
-      industry: 'Công nghệ thông tin',
-      company_size: '150-200',
-      description: 'Công ty công nghệ hàng đầu chuyên về phát triển Web và AI.',
-      address: 'Hà Nội',
-      phone: '024123456',
-      email: 'contact@techcorp.vn',
-      tax_code: '0101234567',
-      is_verified: true,
-      verification_status: 'APPROVED',
-      created_at: new Date(),
-      updated_at: new Date()
-    },
-    {
-      id: 2,
-      name: 'VinaGroup',
-      logo_url: '🏢',
-      website: 'vinagroup.com',
-      industry: 'Đa ngành',
-      company_size: '500+',
-      description: 'Tập đoàn kinh tế tư nhân đa ngành hàng đầu Việt Nam.',
-      address: 'TP. Hồ Chí Minh',
-      phone: '028123456',
-      email: 'contact@vinagroup.com',
-      tax_code: '0201234567',
-      is_verified: true,
-      verification_status: 'APPROVED',
-      created_at: new Date(),
-      updated_at: new Date()
-    },
-    {
-      id: 3,
-      name: 'GreenEnergy',
-      logo_url: '🌱',
-      website: 'greenenergy.com',
-      industry: 'Năng lượng sạch',
-      company_size: '51-200',
-      description: 'Cung cấp giải pháp năng lượng mặt trời và năng lượng tái tạo.',
-      address: 'Đà Nẵng',
-      phone: '0236123456',
-      email: 'contact@greenenergy.com',
-      tax_code: '0301234567',
-      is_verified: true,
-      verification_status: 'APPROVED',
-      created_at: new Date(),
-      updated_at: new Date()
-    },
-    {
-      id: 4,
-      name: 'FastFinance',
-      logo_url: '🏦',
-      website: 'fastfinance.com',
-      industry: 'Tài chính / Ngân hàng',
-      company_size: '201-500',
-      description: 'Ứng dụng giải pháp công nghệ số trong lĩnh vực tài chính tiêu dùng.',
-      address: 'TP. Hồ Chí Minh',
-      phone: '028987654',
-      email: 'contact@fastfinance.com',
-      tax_code: '0401234567',
-      is_verified: true,
-      verification_status: 'APPROVED',
-      created_at: new Date(),
-      updated_at: new Date()
-    },
-    {
-      id: 5,
-      name: 'SmartEdu',
-      logo_url: '🎓',
-      website: 'smartedu.vn',
-      industry: 'Giáo dục / EdTech',
-      company_size: '11-50',
-      description: 'Cung cấp nền tảng học trực tuyến chất lượng cao dành cho học sinh.',
-      address: 'Hà Nội',
-      phone: '024987654',
-      email: 'contact@smartedu.vn',
-      tax_code: '0501234567',
-      is_verified: true,
-      verification_status: 'APPROVED',
-      created_at: new Date(),
-      updated_at: new Date()
-    }
-  ]);
 
-  // Map 5 HR accounts to 5 Companies
-  await knex('users').where({ id: 3 }).update({ company_id: 1 });
-  await knex('users').where({ id: 4 }).update({ company_id: 2 });
-  await knex('users').where({ id: 5 }).update({ company_id: 3 });
-  await knex('users').where({ id: 6 }).update({ company_id: 4 });
-  await knex('users').where({ id: 7 }).update({ company_id: 5 });
 
   // 5. Seed Jobs (linked to Companies, Locations, Job Types, Categories)
   // NOTE: 'requirements' column is removed, inserted into job_requirements table instead.

@@ -33,13 +33,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState(null); // "jobseeker" | "recruiter"
-
-  // HR Company Details State (Step 3)
-  const [companyName, setCompanyName] = useState("");
-  const [companySize, setCompanySize] = useState("");
-  const [companyIndustry, setCompanyIndustry] = useState("");
-  const [companyCity, setCompanyCity] = useState("");
-  const [companyAddress, setCompanyAddress] = useState("");
+  const [gender, setGender] = useState("MALE"); // "MALE" | "FEMALE" | "OTHER"
 
   // Forgot Password State
   const [forgotEmail, setForgotEmail] = useState("");
@@ -75,7 +69,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();
-        
+
         // Handle redirect
         if (redirectTo) {
           navigate(redirectTo);
@@ -135,7 +129,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();
-        
+
         // Handle redirect
         if (redirectTo) {
           navigate(redirectTo);
@@ -193,23 +187,14 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
     setLoading(true);
     setErrorMsg("");
     try {
-      const payload = { email: regEmail, password: regPassword, fullName, role };
-      if (role === 'recruiter') {
-        payload.companyDetails = {
-          companyName,
-          companySize,
-          companyIndustry,
-          companyCity,
-          companyAddress
-        };
-      }
+      const payload = { email: regEmail, password: regPassword, fullName, role, gender };
       const res = await registerApi(payload);
       if (res.success) {
         setOtpEmail(regEmail);
         setMode("verify-otp");
         setRegStep(1);
         setFullName(""); setRegEmail(""); setRegPassword(""); setConfirmPassword(""); setRole(null);
-        setCompanyName(""); setCompanySize(""); setCompanyIndustry(""); setCompanyCity(""); setCompanyAddress("");
+        setGender("MALE");
       } else {
         setErrorMsg(res.error || "Đăng ký thất bại.");
       }
@@ -315,7 +300,6 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const newOtpArr = otp.split("");
-    // If user pastes a full string, handle it
     if (value.length > 1) {
       const pasted = value.replace(/\D/g, "").slice(0, 6);
       setOtp(pasted);
@@ -326,12 +310,11 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
       }
       return;
     }
-    
+
     newOtpArr[index] = value;
     const combined = newOtpArr.join("");
     setOtp(combined);
-    
-    // Auto focus next
+
     if (value && index < 5) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -343,7 +326,6 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
       const prevInput = document.getElementById(`otp-${index - 1}`);
       if (prevInput) {
         prevInput.focus();
-        // optionally clear the previous input too
         const newOtpArr = otp.split("");
         newOtpArr[index - 1] = "";
         setOtp(newOtpArr.join(""));
@@ -388,8 +370,8 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
             <p className="text-sm text-gray-500">
               {mode === "login" ? "Đăng nhập để tiếp tục hành trình của bạn"
                 : mode === "register" ? "Bắt đầu hành trình sự nghiệp cùng AI"
-                : mode === "forgot-password" ? "Nhập email để nhận link đặt lại mật khẩu"
-                : "Chúng tôi đã gửi email xác thực đến hộp thư của bạn"}
+                  : mode === "forgot-password" ? "Nhập email để nhận link đặt lại mật khẩu"
+                    : "Chúng tôi đã gửi email xác thực đến hộp thư của bạn"}
             </p>
           </div>
 
@@ -507,15 +489,15 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
             <div>
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-500">Bước {regStep} / {role === "recruiter" ? "3" : "2"}</span>
+                  <span className="text-xs font-medium text-gray-500">Bước {regStep} / 2</span>
                   <span className="text-xs font-bold text-[#0ea5e9]">
-                    {regStep === 1 ? "Thông tin cá nhân" : regStep === 2 ? "Xác nhận vai trò" : "Thông tin công ty"}
+                    {regStep === 1 ? "Thông tin cá nhân" : "Xác nhận vai trò"}
                   </span>
                 </div>
                 <Progress.Root className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <Progress.Indicator
                     className="h-full bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] transition-all duration-500"
-                    style={{ width: `${(regStep / (role === "recruiter" ? 3 : 2)) * 100}%` }}
+                    style={{ width: `${(regStep / 2) * 100}%` }}
                   />
                 </Progress.Root>
               </div>
@@ -527,6 +509,23 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input type="text" placeholder="Nguyễn Văn A" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="off" required className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5 text-gray-700">Giới tính</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="gender" value="MALE" checked={gender === 'MALE'} onChange={(e) => setGender(e.target.value)} className="w-4 h-4 text-[#0ea5e9] focus:ring-[#0ea5e9] border-gray-300" />
+                        <span className="text-sm text-gray-700">Nam</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="gender" value="FEMALE" checked={gender === 'FEMALE'} onChange={(e) => setGender(e.target.value)} className="w-4 h-4 text-[#0ea5e9] focus:ring-[#0ea5e9] border-gray-300" />
+                        <span className="text-sm text-gray-700">Nữ</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="gender" value="OTHER" checked={gender === 'OTHER'} onChange={(e) => setGender(e.target.value)} className="w-4 h-4 text-[#0ea5e9] focus:ring-[#0ea5e9] border-gray-300" />
+                        <span className="text-sm text-gray-700">Khác</span>
+                      </label>
                     </div>
                   </div>
                   <div>
@@ -572,16 +571,9 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                   </div>
                 </form>
               )}
-              
+
               {regStep === 2 && (
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (role === "recruiter") {
-                    setRegStep(3);
-                  } else {
-                    handleRegister(e);
-                  }
-                }} className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-4">
                   <p className="text-center text-[13px] font-medium mb-3 text-gray-700">Chọn vai trò của bạn</p>
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <button type="button" onClick={() => setRole("jobseeker")} className={`p-4 border-2 rounded-xl transition-all ${role === "jobseeker" ? "border-[#0ea5e9] bg-sky-50 shadow-sm" : "border-gray-100 hover:border-sky-200"}`}>
@@ -608,59 +600,11 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
                       Quay lại
                     </button>
                     <button type="submit" disabled={!role || loading} className="w-2/3 py-3 bg-[#0ea5e9] text-white font-bold rounded-xl hover:bg-[#0284c7] hover:shadow-lg transition-all disabled:opacity-50 text-[13px] shadow-md shadow-sky-100">
-                      {role === "recruiter" ? "Tiếp tục" : (loading ? "Đang xử lý..." : "Hoàn Tất")}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {regStep === 3 && role === "recruiter" && (
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5 text-gray-700">Tên công ty <span className="text-red-500">*</span></label>
-                      <input type="text" placeholder="Ví dụ: Công ty TNHH MockAI" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5 text-gray-700">Quy mô</label>
-                        <select value={companySize} onChange={(e) => setCompanySize(e.target.value)} className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm">
-                          <option value="">Chọn quy mô</option>
-                          <option value="1-10">1-10 nhân viên</option>
-                          <option value="11-50">11-50 nhân viên</option>
-                          <option value="51-200">51-200 nhân viên</option>
-                          <option value="201-500">201-500 nhân viên</option>
-                          <option value="500+">500+ nhân viên</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5 text-gray-700">Ngành nghề</label>
-                        <input type="text" placeholder="CNTT, Tài chính..." value={companyIndustry} onChange={(e) => setCompanyIndustry(e.target.value)} className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5 text-gray-700">Thành phố</label>
-                        <input type="text" placeholder="TP.HCM, Hà Nội..." value={companyCity} onChange={(e) => setCompanyCity(e.target.value)} className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5 text-gray-700">Địa chỉ cụ thể</label>
-                        <input type="text" placeholder="Số 1, Đường X..." value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} className="w-full px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#0ea5e9] focus:ring-4 focus:ring-sky-50 outline-none transition-all text-sm" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 mt-4">
-                    <button type="button" onClick={() => setRegStep(2)} className="w-1/3 py-3 border-2 border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-all text-[13px]">
-                      Quay lại
-                    </button>
-                    <button type="submit" disabled={!companyName || loading} className="w-2/3 py-3 bg-[#0ea5e9] text-white font-bold rounded-xl hover:bg-[#0284c7] hover:shadow-lg transition-all disabled:opacity-50 text-[13px] shadow-md shadow-sky-100">
                       {loading ? "Đang xử lý..." : "Hoàn Tất"}
                     </button>
                   </div>
                 </form>
               )}
-
               <div className="text-center mt-6 text-[13px] text-gray-500 font-medium">
                 Đã có tài khoản?{" "}
                 <button type="button" onClick={() => switchMode("login")} className="text-[#0ea5e9] font-bold hover:underline ml-1">

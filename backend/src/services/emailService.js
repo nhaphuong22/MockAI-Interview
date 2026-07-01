@@ -424,3 +424,105 @@ export const sendCompanyEmailOtp = async (toEmail, otp) => {
     `
   });
 };
+
+/**
+ * Send company verification rejection email
+ */
+export const sendCompanyRejectionEmail = async (toEmail, companyName, reason) => {
+  return sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Thông báo từ chối hồ sơ xác thực doanh nghiệp`,
+    text: `Chào bạn,\n\nHồ sơ xác thực cho công ty ${companyName} đã bị từ chối.\n\nLý do:\n${reason}\n\nVui lòng đăng nhập vào hệ thống để cập nhật lại hồ sơ.\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #fff0f2; padding: 32px; border-radius: 16px; border: 1px solid #ffe4e6;">
+        <h1 style="color: #be123c; font-size: 20px; margin-bottom: 20px;">Hồ sơ xác thực bị từ chối</h1>
+        <p style="color: #334155;">Chào bạn,</p>
+        <p style="color: #334155;">Rất tiếc, hồ sơ xác thực cho công ty <strong>${companyName}</strong> chưa đạt yêu cầu.</p>
+        <p style="color: #334155;">Lý do từ chối:</p>
+        <div style="margin: 16px 0; padding: 16px; background: white; border-left: 4px solid #be123c; border-radius: 4px;">
+          <p style="color: #881337; margin: 0;">${reason.replace(/\n/g, '<br>')}</p>
+        </div>
+        <p style="color: #334155;">Vui lòng đăng nhập vào hệ thống và cập nhật lại hồ sơ theo hướng dẫn.</p>
+      </div>
+    `
+  });
+};
+
+/**
+ * Send company verification approval email
+ */
+export const sendCompanyApprovalEmail = async (toEmail, companyName) => {
+  return sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Chúc mừng! Hồ sơ xác thực doanh nghiệp đã được phê duyệt`,
+    text: `Chào bạn,\n\nHồ sơ xác thực cho công ty ${companyName} đã được phê duyệt thành công!\n\nBây giờ bạn có thể đăng tin tuyển dụng và tìm kiếm ứng viên.\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #ecfdf5; padding: 32px; border-radius: 16px; border: 1px solid #d1fae5;">
+        <h1 style="color: #047857; font-size: 20px; margin-bottom: 20px;">Hồ sơ xác thực thành công 🎉</h1>
+        <p style="color: #334155;">Chào bạn,</p>
+        <p style="color: #334155;">Chúc mừng! Hồ sơ xác thực cho công ty <strong>${companyName}</strong> đã được phê duyệt.</p>
+        <p style="color: #334155;">Tài khoản của bạn đã được cấp quyền Nhà tuyển dụng đầy đủ. Bạn có thể bắt đầu đăng tin tuyển dụng và kết nối với các ứng viên tài năng.</p>
+      </div>
+    `
+  });
+};
+
+/**
+ * Send company invitation email to HR member
+ * @param {string} toEmail - Recipient email address
+ * @param {string} companyName - Name of the company
+ * @param {string} token - UUID v4 verification token
+ * @param {boolean} isAlreadyRegistered - Whether the user already has a login account
+ */
+export const sendCompanyInvitationEmail = async (toEmail, companyName, token, isAlreadyRegistered) => {
+  const acceptUrl = `${FRONTEND_URL}/recruiter/accept-invitation?token=${token}`;
+
+  const subject = isAlreadyRegistered 
+    ? `[${APP_NAME}] Lời mời liên kết tài khoản doanh nghiệp từ ${companyName}`
+    : `[${APP_NAME}] Lời mời tham gia doanh nghiệp ${companyName}`;
+
+  const heading = isAlreadyRegistered
+    ? `Lời mời liên kết tài khoản doanh nghiệp`
+    : `Lời mời tham gia công ty con mới`;
+
+  const description = isAlreadyRegistered
+    ? `Doanh nghiệp <strong>${companyName}</strong> muốn mời liên kết tài khoản tuyển dụng hiện tại của bạn vào hệ thống quản lý của họ.`
+    : `Doanh nghiệp <strong>${companyName}</strong> đã tạo lời mời tham gia và kích hoạt tài khoản tuyển dụng con trực thuộc doanh nghiệp của họ.`;
+
+  const buttonText = isAlreadyRegistered
+    ? `Đồng Ý Liên Kết Doanh Nghiệp`
+    : `Kích Hoạt Tài Khoản Mới`;
+
+  await sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject,
+    text: `Chào bạn,\n\nBạn nhận được lời mời từ doanh nghiệp ${companyName}.\n\nVui lòng truy cập đường link sau để chấp nhận lời mời (có hiệu lực trong vòng 24 giờ):\n${acceptUrl}\n\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #f8fafc; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="background: #0ea5e9; display: inline-block; padding: 12px 20px; border-radius: 12px; margin-bottom: 16px;">
+            <span style="color: white; font-size: 20px; font-weight: 800;">${APP_NAME}</span>
+          </div>
+          <h1 style="color: #0f172a; font-size: 22px; margin: 0;">${heading}</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(14,165,233,0.07); text-align: center;">
+          <p style="color: #334155; text-align: left; margin-top: 0;">Xin chào,</p>
+          <p style="color: #64748b; text-align: left; line-height: 1.6;">${description}</p>
+          <p style="color: #64748b; text-align: left; line-height: 1.6;">Vui lòng nhấp vào nút bên dưới để xác nhận và kích hoạt liên kết (lời mời có hiệu lực trong vòng <strong>24 giờ</strong>):</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${acceptUrl}" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; text-decoration: none; padding: 14px 36px; border-radius: 10px; font-weight: 700; font-size: 15px; display: inline-block;">
+              ${buttonText}
+            </a>
+          </div>
+          
+          <p style="color: #94a3b8; font-size: 13px; text-align: left; margin-bottom: 0;">Nếu nút không hoạt động, bạn có thể copy link sau:<br><a href="${acceptUrl}" style="color: #0ea5e9; word-break: break-all;">${acceptUrl}</a></p>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">Nếu bạn không biết về lời mời này, vui lòng bỏ qua email.</p>
+      </div>
+    `
+  });
+};

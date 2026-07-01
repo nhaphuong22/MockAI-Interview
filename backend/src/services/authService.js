@@ -56,7 +56,7 @@ export const loginUser = async (email, password) => {
 /**
  * Register a new user. Sends verification email instead of auto-login.
  */
-export const registerUser = async (email, password, fullName, roleName = 'USER', companyDetails = {}) => {
+export const registerUser = async (email, password, fullName, roleName = 'USER', gender = 'OTHER') => {
   const existingUser = await db('users').where({ email }).first();
   if (existingUser) {
     throw new Error('Email already registered');
@@ -69,29 +69,15 @@ export const registerUser = async (email, password, fullName, roleName = 'USER',
   const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
 
   await db.transaction(async (trx) => {
-    let companyId = null;
-    if (companyDetails.companyName) {
-      const [newCompany] = await trx('companies').insert({
-        name: companyDetails.companyName,
-        company_size: companyDetails.companySize || null,
-        industry: companyDetails.companyIndustry || null,
-        city: companyDetails.companyCity || null,
-        address: companyDetails.companyAddress || null,
-        created_at: trx.fn.now(),
-        updated_at: trx.fn.now()
-      }).returning('id');
-      companyId = newCompany.id || newCompany;
-    }
-
     const [newUser] = await trx('users')
       .insert({
         email,
         password_hash: passwordHash,
         full_name: fullName,
+        gender: gender,
         email_verified: false,
         verification_token: verificationToken,
         verification_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        company_id: companyId,
         created_at: trx.fn.now(),
         updated_at: trx.fn.now(),
       })
@@ -396,7 +382,7 @@ export const loginGoogleUser = async (idToken) => {
  * @param {object} data
  */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, coverUrl, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactPhone, contactPublic, taxCode, isTaxCodePublic, linkedinUrl, githubUrl, portfolioUrl } = data;
+  const { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactPhone, contactPublic, taxCode, isTaxCodePublic, linkedinUrl, githubUrl, portfolioUrl } = data;
 
   const updateData = {};
   if (fullName !== undefined) updateData.full_name = fullName;
@@ -404,6 +390,7 @@ export const updateUserProfile = async (userId, data) => {
   if (address !== undefined) updateData.address = address;
   if (bio !== undefined) updateData.bio = bio;
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
+  if (gender !== undefined) updateData.gender = gender;
   if (coverUrl !== undefined) updateData.cover_url = coverUrl;
   if (isLookingForJob !== undefined) updateData.is_looking_for_job = isLookingForJob;
   if (contactPhone !== undefined) updateData.contact_phone = contactPhone;
@@ -423,46 +410,6 @@ export const updateUserProfile = async (userId, data) => {
     throw new Error('User not found');
   }
 
-  // Handle company updates
-  const companyUpdateData = {};
-  let updateCompany = false;
-  if (companyName !== undefined) { companyUpdateData.name = companyName; updateCompany = true; }
-  if (companyLogo !== undefined) { companyUpdateData.logo_url = companyLogo; updateCompany = true; }
-  if (companyWebsite !== undefined) { companyUpdateData.website = companyWebsite; updateCompany = true; }
-  if (companyDescription !== undefined) { companyUpdateData.description = companyDescription; updateCompany = true; }
-  if (companySize !== undefined) { companyUpdateData.company_size = companySize; updateCompany = true; }
-  if (companyIndustry !== undefined) { companyUpdateData.industry = companyIndustry; updateCompany = true; }
-  if (companyCity !== undefined) { companyUpdateData.city = companyCity; updateCompany = true; }
-  if (companyAddress !== undefined) { companyUpdateData.address = companyAddress; updateCompany = true; }
-  
-  if (taxCode !== undefined) {
-    if (/[a-zA-Z]/.test(taxCode)) {
-      throw new Error('Mã số thuế không được chứa chữ cái');
-    }
-    companyUpdateData.tax_code = taxCode;
-    updateCompany = true;
-  }
-  if (isTaxCodePublic !== undefined) {
-    companyUpdateData.is_tax_code_public = isTaxCodePublic;
-    updateCompany = true;
-  }
-
-  if (updateCompany) {
-    companyUpdateData.updated_at = db.fn.now();
-    if (updatedUser.company_id) {
-      await db('companies').where({ id: updatedUser.company_id }).update(companyUpdateData);
-    } else {
-      companyUpdateData.created_at = db.fn.now();
-      const [newCompany] = await db('companies').insert(companyUpdateData).returning('id');
-      const newId = newCompany.id || newCompany;
-      await db('users').where({ id: userId }).update({ company_id: newId });
-      updatedUser.company_id = newId;
-    }
-    
-    // Invalidate jobs cache since company info like logo/name might have changed
-    await deleteCachePattern('jobs:*');
-  }
-
   const roleName = await getUserRole(updatedUser.id);
   const fullProfile = await getUserProfile(userId);
   return fullProfile;
@@ -476,22 +423,9 @@ export const getUserProfile = async (userId) => {
   const user = await db('users')
     .select(
       'users.*', 
-      'packages.name as package_name',
-      'companies.name as company_name',
-      'companies.logo_url as company_logo',
-      'companies.website as company_website',
-      'companies.description as company_description',
-      'companies.company_size as company_size',
-      'companies.industry as company_industry',
-      'companies.city as company_city',
-      'companies.address as company_address',
-      'companies.verification_status as company_verification_status',
-      'companies.document_url as company_document_url',
-      'companies.tax_code as company_tax_code',
-      'companies.is_tax_code_public as company_is_tax_code_public'
+      'packages.name as package_name'
     )
     .leftJoin('packages', 'users.package_id', 'packages.id')
-    .leftJoin('companies', 'users.company_id', 'companies.id')
     .where({ 'users.id': userId })
     .first();
 
@@ -504,6 +438,24 @@ export const getUserProfile = async (userId) => {
   const { password_hash, verification_token, verification_token_expires_at,
           reset_password_token, reset_password_expires_at, ...userInfo } = user;
   userInfo.role = roleName;
+
+  if (user.company_id) {
+    const company = await db('companies').where({ id: user.company_id }).first();
+    if (company) {
+      userInfo.company_name = company.name;
+      userInfo.company_logo = company.logo_url;
+      userInfo.company_website = company.website;
+      userInfo.company_description = company.description;
+      userInfo.company_size = company.company_size;
+      userInfo.company_industry = company.industry;
+      userInfo.company_city = company.city;
+      userInfo.company_address = company.address;
+      userInfo.company_verification_status = company.verification_status;
+      userInfo.company_document_url = company.document_url;
+      userInfo.company_tax_code = company.tax_code;
+      userInfo.company_is_tax_code_public = company.is_tax_code_public;
+    }
+  }
 
   return userInfo;
 };
@@ -601,7 +553,7 @@ export const verifyCompanyEmailOtp = async (userId, contactEmail, otp) => {
     throw new Error('Email này đã được sử dụng bởi một tài khoản hoặc công ty khác');
   }
 
-  // Call updateUserProfile to actually save the other data
+  // Call updateUserProfile to save user profile changes
   await updateUserProfile(userId, pendingData);
 
   // Update contact email and mark as verified

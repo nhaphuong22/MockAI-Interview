@@ -4,7 +4,6 @@ import { ManageCompanies } from "../pages/admin/ManageCompanies";
 import { ManageJobPosts } from "../pages/admin/ManageJobPosts";
 import { ManageBlog } from "../pages/admin/ManageBlog";
 import { ManagePayments } from "../pages/admin/ManagePayments";
-import { AdminAnalytics } from "../pages/admin/AdminAnalytics";
 import { AISettings } from "../pages/admin/AISettings";
 import { SystemSettings } from "../pages/admin/SystemSettings";
 import { RolePermissions } from "../pages/admin/RolePermissions";
@@ -34,10 +33,6 @@ export const adminRoutes = [
   { 
     path: "payments", 
     element: <ProtectedRoute requiredRole="admin"><ManagePayments /></ProtectedRoute>
-  },
-  { 
-    path: "analytics", 
-    element: <ProtectedRoute requiredRole="admin"><AdminAnalytics /></ProtectedRoute>
   },
   { 
     path: "ai-settings", 

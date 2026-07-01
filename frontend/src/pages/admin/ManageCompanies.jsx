@@ -9,63 +9,87 @@ import {
   FileText,
   Users,
   Briefcase,
-  Loader2
+  Loader2,
+  FileCheck,
+  Globe,
+  XOctagon,
+  Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminSidebar } from "./AdminSidebar";
 import axiosClient from "../../api/axiosClient";
 import { useUiStore } from "../../store/useUiStore";
+import { ReviewCompanyModal } from './components/ReviewCompanyModal';
 
 export function ManageCompanies() {
   const queryClient = useQueryClient();
   const showToast = useUiStore((state) => state.showToast);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("Pending");
   const [selectedCompany, setSelectedCompany] = useState(null);
 
   const { data: companies = [], isLoading } = useQuery({
-    queryKey: ['pendingVerifications'],
+    queryKey: ['allVerifications'],
     queryFn: async () => {
-      const res = await axiosClient.get('/verification/pending');
-      // map backend data to frontend format
-      return res.data.map(u => ({
-        id: u.id,
-        name: u.company_name,
-        industry: "N/A",
-        status: "Pending", // backend only returns PENDING
+      const res = await axiosClient.get('/verification/all');
+      return res.data.map(c => ({
+        id: c.company_id,
+        name: c.company_name,
+        taxCode: c.company_tax_code,
+        industry: c.company_industry || "N/A",
+        status: c.verification_status === "PENDING" ? "Pending" 
+              : c.verification_status === "APPROVED" ? "Active" 
+              : "Suspended",
         logo: "🏢",
+        employees: c.company_size || "N/A",
         jobCount: 0,
         applicationsCount: 0,
-        documentUrl: u.company_document_url,
-        email: u.email
+        documentUrl: c.company_document_url,
+        authLetterUrl: c.auth_letter_url,
+        idFrontUrl: c.id_front_url,
+        idBackUrl: c.id_back_url,
+        businessType: c.company_business_type,
+        idCardNumber: c.hr_id_card_number,
+        email: c.hr_email,
+        phone: c.hr_phone || "N/A",
+        hrName: c.hr_name,
+        website: c.company_website,
+        address: `${c.company_address ? c.company_address + ', ' : ''}${c.company_city || ''}`,
+        createdAt: new Date(c.created_at).toLocaleDateString("vi-VN"),
       }));
     }
   });
 
-  const reviewMutation = useMutation({
-    mutationFn: async ({ id, status }) => {
-      await axiosClient.post(`/verification/${id}/review`, { status });
+  // Handle Approve/Reject API calls
+  const { mutate: handleChangeStatus } = useMutation({
+    mutationFn: async ({ id, newStatus, reason }) => {
+      // Map Active -> APPROVED, Suspended -> SUSPENDED
+      const backendStatus = newStatus === "Active" ? "APPROVED" : "SUSPENDED";
+      await axiosClient.post(`/verification/${id}/review`, { 
+        status: backendStatus, 
+        reject_reason: reason 
+      });
     },
     onSuccess: () => {
-      showToast({ message: 'Đã cập nhật trạng thái hồ sơ', type: 'success' });
-      queryClient.invalidateQueries(['pendingVerifications']);
+      queryClient.invalidateQueries(['allVerifications']);
+      showToast({ message: 'Cập nhật trạng thái công ty thành công!', type: 'success' });
       setSelectedCompany(null);
     },
-    onError: () => showToast({ message: 'Có lỗi xảy ra!', type: 'error' })
+    onError: () => {
+      showToast({ message: 'Đã có lỗi xảy ra. Vui lòng thử lại.', type: 'error' });
+    }
   });
-
-  // Change Company Status
-  const handleChangeStatus = (id, newStatus) => {
-    // newStatus: 'Active' -> 'APPROVED', 'Suspended' -> 'REJECTED'
-    const backendStatus = newStatus === 'Active' ? 'APPROVED' : 'REJECTED';
-    reviewMutation.mutate({ id, status: backendStatus });
-  };
 
   // Filter companies
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    const matchesStatus = statusFilter === "All" || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
+
+  const pendingCount = companies.filter(c => c.status === "Pending").length;
+  const activeCount = companies.filter(c => c.status === "Active").length;
+  const suspendedCount = companies.filter(c => c.status === "Suspended").length;
 
   return (
     <div className="flex bg-slate-50 min-h-[calc(100vh-64px)]">
@@ -78,178 +102,190 @@ export function ManageCompanies() {
           <p className="text-sm text-slate-500 mt-1">Quản lý hồ sơ đối tác doanh nghiệp tuyển dụng, kiểm duyệt tin đăng và theo dõi hiệu suất tuyển dụng.</p>
         </div>
 
-        {/* Toolbar & Filters */}
+        {/* Toolbar & Tab-based Filters */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100/80 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Logical Tabs for Companies */}
+          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200/50">
+            <button 
+              onClick={() => setStatusFilter("Pending")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                statusFilter === "Pending" 
+                  ? "bg-white text-[#0ea5e9] shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <FileCheck className="w-4 h-4" />
+              Chờ Kiểm Duyệt
+              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                statusFilter === "Pending" ? "bg-sky-50 text-[#0ea5e9]" : "bg-slate-200 text-slate-600"
+              }`}>
+                {pendingCount}
+              </span>
+            </button>
+            
+            <button 
+              onClick={() => setStatusFilter("Active")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                statusFilter === "Active" 
+                  ? "bg-white text-emerald-600 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              Đã Phê Duyệt
+              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                statusFilter === "Active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-600"
+              }`}>
+                {activeCount}
+              </span>
+            </button>
+
+            <button 
+              onClick={() => setStatusFilter("Suspended")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                statusFilter === "Suspended" 
+                  ? "bg-white text-rose-600 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <XOctagon className="w-4 h-4" />
+              Đã Từ Chối
+              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                statusFilter === "Suspended" ? "bg-rose-50 text-rose-700" : "bg-slate-200 text-slate-600"
+              }`}>
+                {suspendedCount}
+              </span>
+            </button>
+          </div>
+
           {/* Search */}
-          <div className="relative max-w-sm w-full">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative max-w-xs w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Tìm tên công ty hoặc ngành..." 
+              placeholder="Tìm tin công ty hoặc email..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#0ea5e9] focus:bg-white transition-all text-slate-700 font-medium"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-[#0ea5e9] focus:bg-white transition-all text-slate-700 font-semibold"
             />
           </div>
-
-          {/* Filters */}
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:border-[#0ea5e9]"
-          >
-            <option value="All">Tất Cả Trạng Thế</option>
-            <option value="Active">Đang Hoạt Động</option>
-            <option value="Pending">Chờ Phê Duyệt</option>
-            <option value="Suspended">Đang Tạm Khóa</option>
-          </select>
         </div>
 
-        {/* List Grid */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-[#0ea5e9]" />
+        {/* Companies Table */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="px-6 py-4">Công Ty</th>
+                  <th className="px-6 py-4">Mã Số Thuế</th>
+                  <th className="px-6 py-4">Thông tin liên hệ</th>
+                  <th className="px-6 py-4">Ngày Đăng Ký</th>
+                  <th className="px-6 py-4">Trạng Thái</th>
+                  <th className="px-6 py-4 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700 text-sm">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="6" className="py-20 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-[#0ea5e9] mx-auto" />
+                    </td>
+                  </tr>
+                ) : filteredCompanies.length > 0 ? (
+                  filteredCompanies.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50/40 transition-colors">
+                      {/* Company Name */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-[#f0f9ff] text-xl flex items-center justify-center border border-slate-50 shadow-sm shrink-0">
+                            {c.logo}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                              {c.name}
+                            </h4>
+                            <p className="text-[10px] text-slate-400 font-medium">{c.industry}</p>
+                          </div>
+                        </div>
+                      </td>
+                      {/* Tax Code */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-xs font-semibold text-slate-700">{c.taxCode}</span>
+                      </td>
+                      {/* Contact Info */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-xs text-slate-500 font-medium space-y-0.5">
+                          <div><span className="text-slate-400">Email:</span> {c.email}</div>
+                          <div><span className="text-slate-400">SĐT:</span> {c.phone}</div>
+                        </div>
+                      </td>
+                      {/* Created Date */}
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                        {c.createdAt}
+                      </td>
+                      {/* Status */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          c.status === "Active" ? "bg-emerald-50 text-emerald-700" :
+                          c.status === "Pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"
+                        }`}>
+                          {c.status === "Active" ? "Đã duyệt" : c.status === "Pending" ? "Đang duyệt" : "Đã từ chối"}
+                        </span>
+                      </td>
+                      {/* Actions */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-xs">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button 
+                            onClick={() => setSelectedCompany(c)}
+                            className="text-slate-400 hover:text-[#0ea5e9] font-semibold text-xs px-2.5 py-1.5 rounded-lg hover:bg-sky-50 transition-colors"
+                          >
+                            Chi Tiết
+                          </button>
+                          
+                          {statusFilter === "Pending" && (
+                            <>
+                              <button 
+                                onClick={() => handleChangeStatus({ id: c.id, newStatus: "Suspended" })}
+                                className="text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                                title="Từ chối"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleChangeStatus({ id: c.id, newStatus: "Active" })}
+                                className="text-emerald-500 p-1.5 rounded-lg hover:bg-emerald-50 transition-colors"
+                                title="Phê duyệt"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center py-12 text-slate-400 font-medium text-xs">
+                      Không tìm thấy công ty nào.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCompanies.length > 0 ? (
-              filteredCompanies.map(c => (
-                <motion.div 
-                  key={c.id}
-                  layout
-                  className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100/80 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group"
-                >
-                  <div>
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-[#f0f9ff] text-2xl flex items-center justify-center border border-slate-50 shadow-sm group-hover:scale-105 transition-transform duration-300">
-                        {c.logo}
-                      </div>
-                      
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        c.status === "Active" ? "bg-emerald-50 text-emerald-700" :
-                        c.status === "Pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"
-                      }`}>
-                        {c.status === "Active" ? "Hoạt động" : c.status === "Pending" ? "Chờ duyệt" : "Đang khóa"}
-                      </span>
-                    </div>
-
-                    <h3 className="text-sm font-bold text-slate-800 line-clamp-1">{c.name}</h3>
-                    <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{c.email}</p>
-
-                    <div className="mt-4 bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs font-semibold text-slate-600">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Giấy phép ĐKKD:</span>
-                        <a href={c.documentUrl} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline flex items-center gap-1">
-                          <FileText className="w-3.5 h-3.5" /> Xem file
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-5 border-t border-slate-50 pt-4">
-                    <button 
-                      onClick={() => setSelectedCompany(c)}
-                      className="w-full text-slate-500 hover:text-[#0ea5e9] bg-slate-50 hover:bg-sky-50 font-bold text-xs py-2 rounded-xl transition-colors"
-                    >
-                      Duyệt Hồ Sơ
-                    </button>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-12 text-slate-400 font-medium text-xs">
-                Không có doanh nghiệp nào chờ duyệt!
-              </div>
-            )}
-          </div>
-        )}
+        </div>
 
         {/* Selected Company Details Modal */}
         <AnimatePresence>
           {selectedCompany && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setSelectedCompany(null)}
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
-              />
-
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-white rounded-3xl shadow-xl border border-slate-100 w-full max-w-md overflow-hidden relative z-10 p-6 flex flex-col gap-6"
-              >
-                {/* Close Button */}
-                <button 
-                  onClick={() => setSelectedCompany(null)}
-                  className="absolute right-5 top-5 p-1 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-lg"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                {/* Company Header */}
-                <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
-                  <div className="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center text-3xl border border-slate-100">
-                    {selectedCompany.logo}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      {selectedCompany.name}
-                    </h3>
-                    <p className="text-xs text-slate-400 font-semibold">{selectedCompany.industry}</p>
-                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full inline-block mt-2">
-                      Quy mô: {selectedCompany.employees} nhân sự
-                    </span>
-                  </div>
-                </div>
-
-                {/* Data Overview */}
-                <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-[10px] text-slate-400">Tin Đăng Hoạt Động</p>
-                    <p className="text-slate-800 text-sm mt-0.5">{selectedCompany.jobCount}</p>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-[10px] text-slate-400">Tổng Lượt Ứng Tuyển</p>
-                    <p className="text-slate-800 text-sm mt-0.5">{selectedCompany.applicationsCount}</p>
-                  </div>
-                </div>
-
-                {/* Actions Suite inside Modal */}
-                <div className="flex gap-2 justify-end border-t border-slate-100 pt-5 mt-2">
-                  {selectedCompany.status === "Active" ? (
-                    <button 
-                      onClick={() => handleChangeStatus(selectedCompany.id, "Suspended")}
-                      className="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold px-5 py-2.5 rounded-xl transition-all active:scale-95"
-                    >
-                      Khóa Đối Tác
-                    </button>
-                  ) : (
-                    <>
-                      {selectedCompany.status === "Pending" && (
-                        <button 
-                          onClick={() => handleChangeStatus(selectedCompany.id, "Active")}
-                          className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white shadow-sm text-xs font-bold px-5 py-2.5 rounded-xl transition-all active:scale-95"
-                        >
-                          Phê Duyệt Hoạt Động
-                        </button>
-                      )}
-                      {selectedCompany.status === "Suspended" && (
-                        <button 
-                          onClick={() => handleChangeStatus(selectedCompany.id, "Active")}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm text-xs font-bold px-5 py-2.5 rounded-xl transition-all active:scale-95"
-                        >
-                          Mở Khóa Doanh Nghiệp
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            </div>
+            <ReviewCompanyModal 
+              company={selectedCompany} 
+              onClose={() => setSelectedCompany(null)}
+              onApprove={(id) => handleChangeStatus({ id, newStatus: "Active" })}
+              onReject={(id, reason) => handleChangeStatus({ id, newStatus: "Suspended", reason })}
+            />
           )}
         </AnimatePresence>
       </main>

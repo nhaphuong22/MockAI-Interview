@@ -25,11 +25,6 @@ export function AdminSidebar() {
       icon: LayoutDashboard
     },
     {
-      path: "/admin/dashboard/analytics",
-      label: "Thống Kê Hệ Thống",
-      icon: BarChart3
-    },
-    {
       path: "/admin/dashboard/users",
       label: "Người Dùng",
       icon: Users

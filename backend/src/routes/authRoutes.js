@@ -16,11 +16,28 @@ import {
   requestCompanyOtpController,
   verifyCompanyOtpController,
   resendCompanyOtpController,
+  acceptPrivacyAgreementController,
 } from '../controllers/authController.js';
-import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { authenticateToken, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
+
+// ─── Verification & Privacy ──────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/auth/privacy-agreement:
+ *   post:
+ *     summary: Chấp nhận thoả thuận dữ liệu cá nhân
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Đã chấp nhận thành công
+ */
+router.post('/privacy-agreement', authenticateToken, acceptPrivacyAgreementController);
 
 // ─── Register & Login ──────────────────────────────────────────────────────────
 
@@ -306,5 +323,11 @@ router.post('/company/resend-otp', authenticateToken, resendCompanyOtpController
  */
 router.post('/upload-avatar', authenticateToken, uploadAvatar.single('avatar'), uploadAvatarController);
 router.post('/upload-cover', authenticateToken, uploadAvatar.single('cover'), uploadCoverController);
+
+// ─── Company Invitation Public Flow (Cách A) ───────────────────────────────────
+import { verifyInvitationToken, acceptCompanyInvitation } from '../controllers/companyController.js';
+
+router.get('/invitations/verify', verifyInvitationToken);
+router.post('/invitations/accept', optionalAuthenticateToken, acceptCompanyInvitation);
 
 export default router;

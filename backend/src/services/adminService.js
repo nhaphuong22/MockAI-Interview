@@ -74,7 +74,7 @@ export const approveOrRejectJob = async (jobId, status, adminUserId) => {
 
   // Clear Jobs Cache
   await deleteCachePattern('jobs:list:*');
-  await deleteCache(`jobs:detail:${jobId}`);
+  await deleteCachePattern(`jobs:detail:*jobs/${jobId}*`);
 
   return true;
 };

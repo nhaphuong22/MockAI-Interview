@@ -38,6 +38,12 @@ const server = http.createServer(app);
 // Khởi tạo Socket.io
 setupSocket(server);
 
+import { cleanupExpiredInvitations } from './src/controllers/companyController.js';
+// Chạy dọn dẹp lời mời hết hạn 30 ngày định kỳ mỗi 24 giờ
+setInterval(cleanupExpiredInvitations, 24 * 60 * 60 * 1000);
+// Chạy lần đầu sau khi khởi động server 10 giây
+setTimeout(cleanupExpiredInvitations, 10000);
+
 // Khởi tạo Scheduler sinh câu hỏi hàng ngày
 initDailyScheduler();
 

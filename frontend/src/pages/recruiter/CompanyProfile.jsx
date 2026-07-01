@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Building2, Globe, Briefcase, Users, FileText, Camera, Loader2, Save,
-  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart
+  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart, AlertTriangle, Trash2, LogOut, Clock
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
+import axiosClient from "../../api/axiosClient";
 
 import { updateProfileApi, uploadAvatarApi, requestCompanyEmailOtpApi, verifyCompanyEmailOtpApi, resendCompanyEmailOtpApi } from "../../api/auth";
 
@@ -136,12 +137,161 @@ export function CompanyProfile() {
   const toastTimerRef = useRef(null);
   const [provinces, setProvinces] = useState([]);
 
-  
+
   // OTP States
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpValue, setOtpValue] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState("info"); // "info" | "members" | "requests" | "invitations"
+  const [inviteEmail, setInviteEmail] = useState("");
+
+  const { data: verifyStatus } = useQuery({
+    queryKey: ['companyVerificationStatusDetail'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/verification/status');
+      return res.data;
+    }
+  });
+  const isCreator = verifyStatus?.isCreator === true;
+
+  // Query fetch company members (Cách A & Cách B)
+  const { data: members = [], refetch: refetchMembers } = useQuery({
+    queryKey: ['companyMembers'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/companies/my-company/members');
+      return res.data;
+    },
+    enabled: !!user?.company_id && activeSubTab === 'members'
+  });
+
+  // Query fetch company pending invitations (Cách A)
+  const { data: invitations = [], refetch: refetchInvitations } = useQuery({
+    queryKey: ['companyInvitations'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/companies/my-company/invitations');
+      return res.data;
+    },
+    enabled: isCreator && activeSubTab === 'invitations'
+  });
+
+  // Mutation remove member
+  const removeMemberMutation = useMutation({
+    mutationFn: async (targetUserId) => {
+      return axiosClient.delete(`/companies/my-company/members/${targetUserId}`);
+    },
+    onSuccess: () => {
+      showToast("Đã gỡ thành viên khỏi công ty!", "success");
+      refetchMembers();
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể gỡ thành viên.", "error");
+    }
+  });
+
+  // Mutation invite member (Cách A)
+  const inviteMutation = useMutation({
+    mutationFn: async (email) => {
+      return axiosClient.post('/companies/my-company/invitations', { email });
+    },
+    onSuccess: () => {
+      showToast("Đã gửi lời mời thành công!", "success");
+      setInviteEmail("");
+      refetchInvitations();
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể gửi lời mời.", "error");
+    }
+  });
+
+  // Mutation cancel invitation
+  const cancelInvitationMutation = useMutation({
+    mutationFn: async (invitationId) => {
+      return axiosClient.delete(`/companies/my-company/invitations/${invitationId}`);
+    },
+    onSuccess: () => {
+      showToast("Đã hủy lời mời thành công!", "success");
+      refetchInvitations();
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể hủy lời mời.", "error");
+    }
+  });
+
+
+
+  // Query fetch join requests
+  const { data: joinRequests = [], refetch: refetchJoinRequests } = useQuery({
+    queryKey: ['companyJoinRequests'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/companies/my-company/join-requests');
+      return res.data;
+    },
+    enabled: isCreator && !isEditing && activeSubTab === 'requests'
+  });
+
+  // Mutation approve/reject requests
+  const approveMutation = useMutation({
+    mutationFn: async (targetUserId) => {
+      return axiosClient.post(`/companies/my-company/join-requests/${targetUserId}/approve`);
+    },
+    onSuccess: () => {
+      showToast("Đã phê duyệt thành viên!", "success");
+      refetchJoinRequests();
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể phê duyệt.", "error");
+    }
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (targetUserId) => {
+      return axiosClient.post(`/companies/my-company/join-requests/${targetUserId}/reject`);
+    },
+    onSuccess: () => {
+      showToast("Đã từ chối yêu cầu gia nhập!", "success");
+      refetchJoinRequests();
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể từ chối.", "error");
+    }
+  });
+
+  const leaveCompanyMutation = useMutation({
+    mutationFn: async () => {
+      return axiosClient.post('/companies/my-company/leave');
+    },
+    onSuccess: (res) => {
+      showToast(res.data?.message || "Đã rời khỏi công ty thành công!", "success");
+      const updatedUser = { ...user, company_id: null, company_join_status: null };
+      setAuth(updatedUser, localStorage.getItem('token'));
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể rời khỏi công ty.", "error");
+    }
+  });
+
+  const deleteCompanyMutation = useMutation({
+    mutationFn: async () => {
+      return axiosClient.delete('/companies/my-company');
+    },
+    onSuccess: (res) => {
+      showToast(res.data?.message || "Đã xóa công ty thành công!", "success");
+      const updatedUser = { ...user, company_id: null, company_join_status: null };
+      setAuth(updatedUser, localStorage.getItem('token'));
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    },
+    onError: (err) => {
+      showToast(err.response?.data?.message || "Không thể xóa công ty.", "error");
+    }
+  });
 
   const { data: followers = [], isLoading: isLoadingFollowers } = useQuery({
     queryKey: ["company-followers", user?.company_id],
@@ -283,10 +433,10 @@ export function CompanyProfile() {
       showToast("Vui lòng nhập email liên hệ.", "error");
       return;
     }
-    
+
     const originalEmail = user.contact_email || user.contactEmail || "";
     const isVerified = user.contact_email_verified === true || user.contactEmailVerified === true;
-    
+
     if (formData.contactEmail !== originalEmail || !isVerified) {
       requestOtpMutation.mutate({ contactEmail: formData.contactEmail, companyData: formData });
     } else {
@@ -342,11 +492,10 @@ export function CompanyProfile() {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 50 }}
-            className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-lg border backdrop-blur-md ${
-              toast.type === "success"
+            className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-lg border backdrop-blur-md ${toast.type === "success"
                 ? "bg-emerald-50/90 border-emerald-200 text-emerald-800"
                 : "bg-rose-50/90 border-rose-200 text-rose-800"
-            }`}
+              }`}
           >
             {toast.type === "success" ? (
               <CheckCircle2 className="w-6 h-6 text-emerald-500" />
@@ -378,13 +527,36 @@ export function CompanyProfile() {
           </div>
 
           {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold rounded-xl hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors"
-            >
-              <Edit3 size={18} />
-              <span>Chỉnh sửa hồ sơ</span>
-            </button>
+            <div className="flex items-center gap-3">
+              {isCreator ? (
+                <>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold rounded-xl hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors cursor-pointer"
+                  >
+                    <Edit3 size={18} />
+                    <span>Chỉnh sửa hồ sơ</span>
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold rounded-xl hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={18} />
+                    <span>Xóa doanh nghiệp</span>
+                  </button>
+                </>
+              ) : (
+                user?.company_id && (
+                  <button
+                    onClick={() => setShowLeaveConfirm(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold rounded-xl hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors cursor-pointer"
+                  >
+                    <LogOut size={18} />
+                    <span>Rời khỏi công ty</span>
+                  </button>
+                )
+              )}
+            </div>
           )}
         </motion.div>
 
@@ -397,132 +569,387 @@ export function CompanyProfile() {
         >
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-sky-500/5 blur-3xl pointer-events-none"></div>
 
+          {/* Banner alert for non-creator HR members */}
+          {!isCreator && !isEditing && (
+            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-300 rounded-2xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-xs font-semibold">
+                <p className="font-bold">HR thành viên</p>
+                <p className="mt-0.5 text-amber-700 dark:text-amber-400 font-medium leading-relaxed">
+                  Tài khoản của bạn là thành viên công ty. Chỉ HR quản lý (người tạo hồ sơ doanh nghiệp) mới có quyền chỉnh sửa thông tin doanh nghiệp này.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Toggle for Company Management */}
+          {!isEditing && (
+            <div className="flex border-b border-slate-100 dark:border-white/10 mb-6 gap-6 overflow-x-auto scrollbar-none">
+              <button
+                onClick={() => setActiveSubTab('info')}
+                className={`pb-3 font-bold text-sm transition-all border-b-2 outline-none whitespace-nowrap ${activeSubTab === 'info'
+                    ? 'border-[#0ea5e9] text-[#0ea5e9]'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+              >
+                Hồ sơ công ty
+              </button>
+              <button
+                onClick={() => setActiveSubTab('members')}
+                className={`pb-3 font-bold text-sm transition-all border-b-2 outline-none whitespace-nowrap ${activeSubTab === 'members'
+                    ? 'border-[#0ea5e9] text-[#0ea5e9]'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+              >
+                Thành viên hiện tại
+              </button>
+              {isCreator && (
+                <>
+                  <button
+                    onClick={() => setActiveSubTab('requests')}
+                    className={`pb-3 font-bold text-sm transition-all border-b-2 outline-none whitespace-nowrap flex items-center gap-1.5 ${activeSubTab === 'requests'
+                        ? 'border-[#0ea5e9] text-[#0ea5e9]'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                      }`}
+                  >
+                    <span>Yêu cầu gia nhập</span>
+                    {joinRequests.length > 0 && (
+                      <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        {joinRequests.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveSubTab('invitations')}
+                    className={`pb-3 font-bold text-sm transition-all border-b-2 outline-none whitespace-nowrap ${activeSubTab === 'invitations'
+                        ? 'border-[#0ea5e9] text-[#0ea5e9]'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                      }`}
+                  >
+                    Mời nhân sự
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {!isEditing ? (
-            // ================= VIEW MODE =================
-            <div className="space-y-10 relative z-10">
-              {/* Header Info */}
-              <div className="flex flex-col sm:flex-row gap-8 items-start pb-8 border-b border-slate-100 dark:border-white/10">
-                <div className="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white shrink-0">
-                  {formData.companyLogo ? (
-                    <img src={formData.companyLogo} alt="Company Logo" className="w-full h-full object-cover" />
+            activeSubTab === 'members' ? (
+              // ================= MEMBERS TAB =================
+              <div className="space-y-6 relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <Users className="text-[#0ea5e9]" size={20} />
+                    Danh sách thành viên hiện tại
+                    <span className="bg-[#0ea5e9]/10 text-[#0ea5e9] text-xs py-0.5 px-2.5 rounded-full ml-1.5 font-bold">
+                      {members.length}
+                    </span>
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  {members.length > 0 ? (
+                    members.map((member) => (
+                      <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 gap-4">
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-800 dark:text-white text-[15px] flex items-center gap-2">
+                            {member.full_name}
+                            {member.id === user.id && (
+                              <span className="bg-[#0ea5e9] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Bạn</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">{member.email} • {member.phone || "Không có SĐT"}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">Gia nhập: {new Date(member.created_at).toLocaleDateString('vi-VN')}</p>
+                        </div>
+                        {isCreator && member.id !== user.id && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Bạn có chắc chắn muốn gỡ nhân sự ${member.full_name} khỏi doanh nghiệp?`)) {
+                                removeMemberMutation.mutate(member.id);
+                              }
+                            }}
+                            disabled={removeMemberMutation.isPending}
+                            className="px-4 py-2 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 font-bold text-xs rounded-xl transition-all self-start sm:self-center"
+                          >
+                            Gỡ nhân sự
+                          </button>
+                        )}
+                      </div>
+                    ))
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">
-                      <Building2 size={56} />
+                    <div className="text-center py-12 text-slate-400 dark:text-gray-500 text-xs font-semibold">
+                      Chưa có thành viên nào trong doanh nghiệp!
                     </div>
                   )}
                 </div>
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">
-                      {formData.companyName || "Chưa cập nhật tên công ty"}
-                    </h2>
-                    <div className="mt-3 flex items-center gap-3">
-                      {formData.companyIndustry && (
-                        <span className="inline-flex items-center px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-sm rounded-lg">
-                          {formData.companyIndustry}
-                        </span>
-                      )}
-                      {user?.company_id && (
-                        <button 
-                          onClick={() => setShowFollowersModal(true)}
-                          className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 text-rose-500 font-semibold text-sm rounded-lg transition-colors border border-rose-100 dark:border-rose-900"
+              </div>
+            ) : activeSubTab === 'invitations' && isCreator ? (
+              // ================= INVITATIONS TAB =================
+              <div className="space-y-6 relative z-10">
+                <div className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-2xl p-6 mb-6">
+                  <h3 className="text-[15px] font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                    <Mail className="text-[#0ea5e9]" size={18} />
+                    Mời thành viên mới (Cách A)
+                  </h3>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!inviteEmail) return;
+                      inviteMutation.mutate(inviteEmail);
+                    }}
+                    className="flex flex-col sm:flex-row gap-3"
+                  >
+                    <input
+                      type="email"
+                      required
+                      placeholder="Nhập email của nhân viên cần mời..."
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      className="flex-1 px-4 py-3 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all text-slate-700 dark:text-white font-medium text-sm"
+                    />
+                    <button
+                      type="submit"
+                      disabled={inviteMutation.isPending}
+                      className="px-6 py-3 bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-sky-500/15 shrink-0"
+                    >
+                      {inviteMutation.isPending ? "Đang gửi..." : "Gửi lời mời"}
+                    </button>
+                  </form>
+                  <p className="text-[11.5px] text-slate-400 font-semibold mt-2.5">
+                    * Lời mời kèm token kích hoạt UUID v4 sẽ được gửi tới email của nhân sự và có hiệu lực trong vòng 24 giờ.
+                  </p>
+                </div>
+
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                  <Clock className="text-[#0ea5e9]" size={20} />
+                  Lời mời đang chờ kích hoạt
+                  <span className="bg-[#0ea5e9]/10 text-[#0ea5e9] text-xs py-0.5 px-2.5 rounded-full ml-1.5 font-bold">
+                    {invitations.length}
+                  </span>
+                </h3>
+
+                <div className="space-y-4">
+                  {invitations.length > 0 ? (
+                    invitations.map((inv) => (
+                      <div key={inv.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 gap-4">
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-800 dark:text-white text-sm">{inv.email}</p>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-2">
+                            Trạng thái: 
+                            <span className="bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              Đang chờ kích hoạt
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-semibold">
+                            Hết hạn: {new Date(inv.expires_at).toLocaleString('vi-VN')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Bạn có chắc chắn muốn hủy lời mời tới email ${inv.email}?`)) {
+                              cancelInvitationMutation.mutate(inv.id);
+                            }
+                          }}
+                          disabled={cancelInvitationMutation.isPending}
+                          className="px-4 py-2 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 font-bold text-xs rounded-xl transition-all self-start sm:self-center"
                         >
-                          <Heart size={16} className="fill-rose-500 text-rose-500" />
-                          <span>{isLoadingFollowers ? "..." : followers.length} người theo dõi</span>
+                          Hủy lời mời
                         </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12 text-slate-400 dark:text-gray-500 text-xs font-semibold">
+                      Không có lời mời nào đang chờ kích hoạt!
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : activeSubTab === 'requests' && isCreator ? (
+              // ================= JOIN REQUESTS TAB =================
+              <div className="space-y-6 relative z-10">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                  <Users className="text-[#0ea5e9]" size={20} />
+                  Danh sách yêu cầu gia nhập
+                </h3>
+
+                <div className="space-y-4">
+                  {joinRequests.length > 0 ? (
+                    joinRequests.map((req) => (
+                      <div key={req.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 gap-4">
+                        <div className="space-y-1 flex-1">
+                          <p className="font-bold text-slate-800 dark:text-white text-sm">{req.full_name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">{req.email} • {req.phone || "Không có SĐT"}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mb-2">Ngày yêu cầu: {new Date(req.created_at).toLocaleDateString('vi-VN')}</p>
+
+                          <div className="flex gap-3 text-xs mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded-lg inline-flex flex-wrap">
+                            {req.id_front_url && (
+                              <a href={req.id_front_url} target="_blank" rel="noopener noreferrer" className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold">
+                                <ExternalLink size={12} /> CCCD (Trước)
+                              </a>
+                            )}
+                            {req.id_back_url && (
+                              <a href={req.id_back_url} target="_blank" rel="noopener noreferrer" className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold">
+                                <ExternalLink size={12} /> CCCD (Sau)
+                              </a>
+                            )}
+                            {req.auth_letter_url && (
+                              <a href={req.auth_letter_url} target="_blank" rel="noopener noreferrer" className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold">
+                                <ExternalLink size={12} /> Giấy Uỷ quyền
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => approveMutation.mutate(req.id)}
+                            disabled={approveMutation.isPending}
+                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                          >
+                            Duyệt
+                          </button>
+                          <button
+                            onClick={() => rejectMutation.mutate(req.id)}
+                            disabled={rejectMutation.isPending}
+                            className="px-4 py-2 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 font-bold text-xs rounded-xl transition-all"
+                          >
+                            Từ chối
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12 text-slate-400 dark:text-gray-500 text-xs font-semibold">
+                      Không có yêu cầu gia nhập nào đang chờ duyệt!
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // ================= VIEW MODE =================
+              <div className="space-y-10 relative z-10">
+                {/* Header Info */}
+                <div className="flex flex-col sm:flex-row gap-8 items-start pb-8 border-b border-slate-100 dark:border-white/10">
+                  <div className="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white shrink-0">
+                    {formData.companyLogo ? (
+                      <img src={formData.companyLogo} alt="Company Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">
+                        <Building2 size={56} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">
+                        {formData.companyName || "Chưa cập nhật tên công ty"}
+                      </h2>
+                      <div className="mt-3 flex items-center gap-3">
+                        {formData.companyIndustry && (
+                          <span className="inline-flex items-center px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-sm rounded-lg">
+                            {formData.companyIndustry}
+                          </span>
+                        )}
+                        {user?.company_id && (
+                          <button
+                            onClick={() => setShowFollowersModal(true)}
+                            className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 text-rose-500 font-semibold text-sm rounded-lg transition-colors border border-rose-100 dark:border-rose-900"
+                          >
+                            <Heart size={16} className="fill-rose-500 text-rose-500" />
+                            <span>{isLoadingFollowers ? "..." : followers.length} người theo dõi</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-y-3 gap-x-6 text-sm font-medium text-slate-600 dark:text-gray-300">
+                      {formData.companySize && (
+                        <div className="flex items-center gap-2">
+                          <Users size={18} className="text-slate-400" />
+                          <span>{formData.companySize}</span>
+                        </div>
+                      )}
+                      {formData.companyWebsite && (
+                        <a href={formData.companyWebsite} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-sky-500 transition-colors">
+                          <Globe size={18} className="text-slate-400" />
+                          <span>Website công ty</span>
+                          <ExternalLink size={14} className="opacity-70" />
+                        </a>
+                      )}
+                      {formData.taxCode && (
+                        <div className="flex items-center gap-2">
+                          <FileText size={18} className="text-slate-400" />
+                          <span>Mã số thuế: {formData.taxCode}</span>
+                          {formData.isTaxCodePublic ? (
+                            <span className="text-xs text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded ml-2">Công khai</span>
+                          ) : (
+                            <span className="text-xs text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded ml-2">Đang ẩn</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
-                  
-                  <div className="flex flex-wrap gap-y-3 gap-x-6 text-sm font-medium text-slate-600 dark:text-gray-300">
-                    {formData.companySize && (
-                      <div className="flex items-center gap-2">
-                        <Users size={18} className="text-slate-400" />
-                        <span>{formData.companySize}</span>
-                      </div>
-                    )}
-                    {formData.companyWebsite && (
-                      <a href={formData.companyWebsite} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-sky-500 transition-colors">
-                        <Globe size={18} className="text-slate-400" />
-                        <span>Website công ty</span>
-                        <ExternalLink size={14} className="opacity-70" />
-                      </a>
-                    )}
-                    {formData.taxCode && (
-                      <div className="flex items-center gap-2">
-                        <FileText size={18} className="text-slate-400" />
-                        <span>Mã số thuế: {formData.taxCode}</span>
-                        {formData.isTaxCodePublic ? (
-                          <span className="text-xs text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded ml-2">Công khai</span>
-                        ) : (
-                          <span className="text-xs text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded ml-2">Đang ẩn</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Address & Contact grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Address */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <MapPin className="text-sky-500" size={20} />
-                    Trụ sở chính
-                  </h3>
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-100 dark:border-white/5">
-                    {formData.companyCity ? (
-                      <div className="flex items-start gap-2">
-                        <MapPin className="text-slate-400 shrink-0 mt-0.5" size={18} />
-                        <p className="text-slate-700 dark:text-gray-300 font-medium leading-relaxed">
-                          {formData.companyAddress ? `${formData.companyAddress}, ` : ""}{formData.companyCity}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-slate-400 italic text-sm">Chưa cập nhật địa chỉ</p>
-                    )}
-                  </div>
                 </div>
 
-                {/* Contact */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <Phone className="text-sky-500" size={20} />
-                    Thông tin liên hệ
-                  </h3>
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-100 dark:border-white/5 space-y-3">
-                    {!formData.contactEmail && !formData.contactPhone ? (
-                       <p className="text-slate-400 italic text-sm">Chưa cập nhật thông tin liên hệ</p>
-                    ) : (
-                      <>
-                        {formData.contactEmail && (
-                          <div className="flex items-center gap-3 text-slate-700 dark:text-gray-300">
-                            <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm shrink-0"><Mail size={14} /></div>
-                            <span className="font-medium text-sm break-all leading-tight">{formData.contactEmail}</span>
-                          </div>
-                        )}
-                        {formData.contactPhone && (
-                          <div className="flex items-center gap-3 text-slate-700 dark:text-gray-300">
-                            <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm shrink-0"><Phone size={14} /></div>
-                            <span className="font-medium text-sm leading-tight">{formData.contactPhone}</span>
-                          </div>
-                        )}
-                        <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700">
-                          <p className="text-xs font-semibold flex items-center gap-1.5 text-slate-500">
-                            {formData.contactPublic ? <Eye size={14} className="text-emerald-500"/> : <EyeOff size={14} className="text-rose-400"/>}
-                            {formData.contactPublic ? "Đang hiển thị công khai" : "Đang ẩn với ứng viên"}
+                {/* Address & Contact grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Address */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                      <MapPin className="text-sky-500" size={20} />
+                      Trụ sở chính
+                    </h3>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-100 dark:border-white/5">
+                      {formData.companyCity ? (
+                        <div className="flex items-start gap-2">
+                          <MapPin className="text-slate-400 shrink-0 mt-0.5" size={18} />
+                          <p className="text-slate-700 dark:text-gray-300 font-medium leading-relaxed">
+                            {formData.companyAddress ? `${formData.companyAddress}, ` : ""}{formData.companyCity}
                           </p>
                         </div>
-                      </>
-                    )}
+                      ) : (
+                        <p className="text-slate-400 italic text-sm">Chưa cập nhật địa chỉ</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                      <Phone className="text-sky-500" size={20} />
+                      Thông tin liên hệ
+                    </h3>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-100 dark:border-white/5 space-y-3">
+                      {!formData.contactEmail && !formData.contactPhone ? (
+                        <p className="text-slate-400 italic text-sm">Chưa cập nhật thông tin liên hệ</p>
+                      ) : (
+                        <>
+                          {formData.contactEmail && (
+                            <div className="flex items-center gap-3 text-slate-700 dark:text-gray-300">
+                              <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm shrink-0"><Mail size={14} /></div>
+                              <span className="font-medium text-sm break-all leading-tight">{formData.contactEmail}</span>
+                            </div>
+                          )}
+                          {formData.contactPhone && (
+                            <div className="flex items-center gap-3 text-slate-700 dark:text-gray-300">
+                              <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm shrink-0"><Phone size={14} /></div>
+                              <span className="font-medium text-sm leading-tight">{formData.contactPhone}</span>
+                            </div>
+                          )}
+                          <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700">
+                            <p className="text-xs font-semibold flex items-center gap-1.5 text-slate-500">
+                              {formData.contactPublic ? <Eye size={14} className="text-emerald-500" /> : <EyeOff size={14} className="text-rose-400" />}
+                              {formData.contactPublic ? "Đang hiển thị công khai" : "Đang ẩn với ứng viên"}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Description */}
-              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-white/10">
-                 <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                {/* Description */}
+                <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-white/10">
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                     <FileText className="text-sky-500" size={20} />
                     Giới thiệu về công ty
                   </h3>
@@ -535,22 +962,23 @@ export function CompanyProfile() {
                       <p className="text-slate-400 italic text-center mt-10">Chưa có bài viết giới thiệu công ty.</p>
                     )}
                   </div>
-              </div>
+                </div>
 
-            </div>
+              </div>
+            )
           ) : (
             // ================= EDIT MODE =================
             <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
-              
+
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-6 mb-6">
-                 <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Chỉnh sửa hồ sơ</h2>
-                 <button
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Chỉnh sửa hồ sơ</h2>
+                <button
                   type="button"
                   onClick={() => setIsEditing(false)}
                   className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors font-semibold"
-                 >
-                   <X size={18} /> Hủy bỏ
-                 </button>
+                >
+                  <X size={18} /> Hủy bỏ
+                </button>
               </div>
 
               {/* Logo Upload */}
@@ -560,11 +988,10 @@ export function CompanyProfile() {
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">Logo Doanh nghiệp</h3>
                 </div>
                 <div
-                  className={`flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border-2 border-dashed transition-all ${
-                    isDragging
+                  className={`flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border-2 border-dashed transition-all ${isDragging
                       ? "border-sky-400 bg-sky-50/50 dark:bg-sky-900/10"
                       : "border-slate-200 dark:border-white/10 hover:border-sky-300"
-                  }`}
+                    }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
@@ -613,14 +1040,12 @@ export function CompanyProfile() {
                         <button
                           type="button"
                           onClick={() => setFormData((prev) => ({ ...prev, isTaxCodePublic: !prev.isTaxCodePublic }))}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            formData.isTaxCodePublic ? "bg-sky-500" : "bg-slate-200 dark:bg-gray-700"
-                          }`}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.isTaxCodePublic ? "bg-sky-500" : "bg-slate-200 dark:bg-gray-700"
+                            }`}
                         >
                           <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
-                              formData.isTaxCodePublic ? "translate-x-6" : "translate-x-1"
-                            }`}
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${formData.isTaxCodePublic ? "translate-x-6" : "translate-x-1"
+                              }`}
                           />
                         </button>
                         <span className="text-sm font-medium text-slate-700 dark:text-gray-300 flex items-center gap-1.5">
@@ -659,14 +1084,12 @@ export function CompanyProfile() {
                   <button
                     type="button"
                     onClick={() => setFormData((prev) => ({ ...prev, contactPublic: !prev.contactPublic }))}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      formData.contactPublic ? "bg-sky-500" : "bg-slate-200 dark:bg-gray-700"
-                    }`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.contactPublic ? "bg-sky-500" : "bg-slate-200 dark:bg-gray-700"
+                      }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
-                        formData.contactPublic ? "translate-x-6" : "translate-x-1"
-                      }`}
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${formData.contactPublic ? "translate-x-6" : "translate-x-1"
+                        }`}
                     />
                   </button>
                   <span className="text-sm font-medium text-slate-700 dark:text-gray-300 flex items-center gap-1.5">
@@ -748,21 +1171,21 @@ export function CompanyProfile() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-2xl"
             >
-              <button 
+              <button
                 onClick={() => setShowOtpModal(false)}
                 disabled={verifyOtpMutation.isPending}
                 className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
                 <X size={20} />
               </button>
-              
+
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-sky-100 dark:bg-sky-900/30 text-sky-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Mail size={32} />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Xác Thực Email</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Mã OTP 6 số đã được gửi tới email<br/>
+                  Mã OTP 6 số đã được gửi tới email<br />
                   <strong className="text-slate-700 dark:text-slate-300">{formData.contactEmail}</strong>
                 </p>
               </div>
@@ -825,9 +1248,9 @@ export function CompanyProfile() {
                   {verifyOtpMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
                   {verifyOtpMutation.isPending ? "Đang xác thực..." : "Xác Nhận OTP"}
                 </motion.button>
-                
+
                 <div className="text-center">
-                  <button 
+                  <button
                     onClick={() => resendOtpMutation.mutate({ contactEmail: formData.contactEmail })}
                     disabled={otpCountdown > 0 || resendOtpMutation.isPending}
                     className="text-sm font-medium text-slate-500 hover:text-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -845,12 +1268,12 @@ export function CompanyProfile() {
       <AnimatePresence>
         {showFollowersModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowFollowersModal(false)}
               className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -858,7 +1281,7 @@ export function CompanyProfile() {
             >
               <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900/50">
                 <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-rose-500 fill-rose-500" /> 
+                  <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
                   Danh sách theo dõi
                   <span className="bg-rose-100 text-rose-600 text-xs py-0.5 px-2 rounded-full ml-1">
                     {followers.length}
@@ -868,7 +1291,7 @@ export function CompanyProfile() {
                   <X size={20} />
                 </button>
               </div>
-              
+
               <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
                 {isLoadingFollowers ? (
                   <div className="flex flex-col items-center justify-center py-10">
@@ -911,6 +1334,91 @@ export function CompanyProfile() {
                     ))}
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal xác nhận rời công ty */}
+      <AnimatePresence>
+        {showLeaveConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 max-w-md w-full border border-slate-100 dark:border-white/10 shadow-2xl relative"
+            >
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+                <AlertTriangle className="text-amber-500" size={24} />
+                Xác nhận rời công ty
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed font-medium">
+                Bạn có chắc chắn muốn rời khỏi công ty hiện tại không? Mọi quyền hạn tuyển dụng của bạn tại công ty này sẽ bị hủy bỏ ngay lập tức.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowLeaveConfirm(false)}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl transition-colors cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={() => {
+                    leaveCompanyMutation.mutate();
+                    setShowLeaveConfirm(false);
+                  }}
+                  disabled={leaveCompanyMutation.isPending}
+                  className="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {leaveCompanyMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+                  Xác nhận Rời
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal xác nhận xóa công ty */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 max-w-md w-full border border-slate-100 dark:border-white/10 shadow-2xl relative"
+            >
+              <h3 className="text-xl font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2 mb-3">
+                <AlertTriangle className="text-rose-500 animate-bounce" size={24} />
+                CẢNH BÁO XÓA CÔNG TY
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed font-medium">
+                Hành động này <span className="font-bold text-rose-500">KHÔNG THỂ hoàn tác</span>. Xóa công ty sẽ đồng thời:
+                <br />- Gỡ bỏ hoàn toàn hồ sơ công ty khỏi hệ thống.
+                <br />- Hủy bỏ toàn bộ liên kết của tất cả HR thành viên khác.
+                <br />- Xóa vĩnh viễn toàn bộ các tin tuyển dụng đang đăng của công ty này.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl transition-colors cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={() => {
+                    deleteCompanyMutation.mutate();
+                    setShowDeleteConfirm(false);
+                  }}
+                  disabled={deleteCompanyMutation.isPending}
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {deleteCompanyMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                  Xác nhận Xóa
+                </button>
               </div>
             </motion.div>
           </div>

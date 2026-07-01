@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 import { HRDashboard } from "../pages/recruiter/HRDashboard";
 import { PostJob } from "../pages/recruiter/PostJob";
 import { EditJob } from "../pages/recruiter/EditJob";
@@ -6,9 +7,7 @@ import { ManageApplications } from "../pages/recruiter/ManageApplications";
 import { ShortlistBoard } from "../pages/recruiter/ShortlistBoard";
 import { CandidateProfile } from "../pages/recruiter/CandidateProfile";
 import { CompanyProfile } from "../pages/recruiter/CompanyProfile";
-import { RecruitmentAnalytics } from "../pages/recruiter/RecruitmentAnalytics";
-import { CampaignAnalytics } from "../pages/recruiter/CampaignAnalytics";
-import { CompanySettings } from "../pages/recruiter/CompanySettings";
+import { HRVerificationSettings } from "../pages/recruiter/HRVerificationSettings";
 import { RecruiterNotifications } from "../pages/recruiter/HRNotifications";
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 
@@ -17,9 +16,14 @@ export const recruiterRoutes = [
     index: true, 
     element: <ProtectedRoute requiredRole="hr"><HRDashboard /></ProtectedRoute>
   },
+
   { 
     path: "post-job", 
     element: <ProtectedRoute requiredRole="hr"><PostJob /></ProtectedRoute>
+  },
+  { 
+    path: "company-setup", 
+    element: <ProtectedRoute requiredRole="hr"><HRVerificationSettings /></ProtectedRoute>
   },
   { 
     path: "edit-job/:id", 
@@ -42,16 +46,8 @@ export const recruiterRoutes = [
     element: <ProtectedRoute requiredRole="hr"><CompanyProfile /></ProtectedRoute>
   },
   { 
-    path: "analytics", 
-    element: <ProtectedRoute requiredRole="hr"><RecruitmentAnalytics /></ProtectedRoute>
-  },
-  { 
-    path: "campaign/:jobId", 
-    element: <ProtectedRoute requiredRole="hr"><CampaignAnalytics /></ProtectedRoute>
-  },
-  { 
     path: "settings", 
-    element: <ProtectedRoute requiredRole="hr"><CompanySettings /></ProtectedRoute>
+    element: <ProtectedRoute requiredRole="hr"><HRVerificationSettings /></ProtectedRoute>
   },
   { 
     path: "notifications", 
@@ -61,4 +57,8 @@ export const recruiterRoutes = [
     path: "shortlist", 
     element: <ProtectedRoute requiredRole="hr"><ShortlistBoard /></ProtectedRoute>
   },
+  {
+    path: "*",
+    element: <Navigate to="/hr/dashboard" replace />
+  }
 ];

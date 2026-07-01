@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { jobApi } from "../../api/jobApi";
@@ -8,11 +8,11 @@ import { jobApi } from "../../api/jobApi";
 export function EditJob() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    requirements: "",
     experienceLevel: "JUNIOR",
     salaryMin: "",
     salaryMax: "",
@@ -45,7 +45,6 @@ export function EditJob() {
         setFormData({
           title: job.title || "",
           description: job.description || "",
-          requirements: job.requirements || "",
           experienceLevel: job.experience_level || "JUNIOR",
           salaryMin: job.salary_min || "",
           salaryMax: job.salary_max || "",
@@ -70,7 +69,6 @@ export function EditJob() {
         setFormData({
           title: job.title || "",
           description: job.description || "",
-          requirements: job.requirements || "",
           experienceLevel: job.experience_level || "JUNIOR",
           salaryMin: job.salary_min || "",
           salaryMax: job.salary_max || "",
@@ -121,6 +119,8 @@ export function EditJob() {
   const mutation = useMutation({
     mutationFn: (data) => jobApi.updateJob(id, data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["job", id] });
+      queryClient.invalidateQueries({ queryKey: ["manage-jobs"] });
       showToast("Cập nhật tin tuyển dụng thành công!", "success");
       setTimeout(() => {
         navigate("/hr/dashboard/manage-jobs");
@@ -128,7 +128,7 @@ export function EditJob() {
     },
     onError: (error) => {
       console.error("Lỗi khi cập nhật tin tuyển dụng:", error);
-      const errorMessage = error.response?.data?.message || "Đã xảy ra lỗi khi kết nối hệ thống.";
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || "Đã xảy ra lỗi khi kết nối hệ thống.";
       showToast(errorMessage, "error");
     }
   });
@@ -151,7 +151,6 @@ export function EditJob() {
     const payload = {
       title: formData.title.trim(),
       description: formData.description.trim() || null,
-      requirements: formData.requirements.trim() || null,
       experience_level: formData.experienceLevel,
       salary_min: formData.salaryMin ? parseInt(formData.salaryMin) : null,
       salary_max: formData.salaryMax ? parseInt(formData.salaryMax) : null,
@@ -391,24 +390,6 @@ export function EditJob() {
                   />
                 </div>
 
-                <div className="bg-sky-50/50 p-5 rounded-2xl border border-sky-100/50">
-                  <label className="block text-sm font-bold text-slate-800 mb-2 flex items-center justify-between">
-                    <span>Yêu cầu tổng quan</span>
-                    <span className="text-[10px] uppercase tracking-wider font-bold bg-sky-200 text-sky-700 px-2 py-0.5 rounded-full">AI Context</span>
-                  </label>
-                  <textarea
-                    name="requirements"
-                    value={formData.requirements}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-4 py-3.5 bg-white border border-sky-100 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none resize-none transition-all duration-200 text-slate-700 leading-relaxed placeholder-slate-400 shadow-sm"
-                    placeholder="VD: Thành thạo ReactJS, hiểu biết về CI/CD..."
-                  />
-                  <p className="text-sky-600/80 text-xs mt-2 font-medium flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    AI sẽ dùng thông tin này để thiết kế bộ câu hỏi phỏng vấn phù hợp
-                  </p>
-                </div>
               </div>
             </motion.div>
 

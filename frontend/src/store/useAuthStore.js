@@ -22,6 +22,7 @@ export const useAuthStore = create((set) => ({
       localStorage.removeItem("user");
       localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("token");
+      localStorage.removeItem("hr-verification-storage");
     }
     set({ user, isAuthenticated: !!user });
   },
@@ -29,6 +30,7 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem("user");
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("token");
+    localStorage.removeItem("hr-verification-storage");
     set({ user: null, isAuthenticated: false });
   },
 }));
