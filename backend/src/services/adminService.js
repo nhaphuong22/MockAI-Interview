@@ -414,3 +414,38 @@ export const updateRolePermissionsMatrix = async (roleId, permissionIds) => {
 
   return true;
 };
+
+/**
+ * Lấy toàn bộ danh sách gói dịch vụ (Bao gồm cả gói đã tắt)
+ */
+export const fetchAdminPackages = async () => {
+  return await db('packages').orderBy('sort_order', 'asc');
+};
+
+/**
+ * Cập nhật gói dịch vụ
+ */
+export const updatePackageByAdmin = async (id, updateData) => {
+  const pkg = await db('packages').where({ id }).first();
+  if (!pkg) {
+    throw new Error('Không tìm thấy gói dịch vụ này.');
+  }
+
+  // Lọc chỉ những field được phép update
+  const safeData = {};
+  const allowedFields = [
+    'name', 'description', 'price', 'is_active', 
+    'total_credits', 'credit_expiry_days',
+    'ats_scan_limit', 'ai_cover_letter_limit', 'ai_practice_limit'
+  ];
+
+  for (const field of allowedFields) {
+    if (updateData[field] !== undefined) {
+      safeData[field] = updateData[field];
+    }
+  }
+
+  await db('packages').where({ id }).update(safeData);
+
+  return await db('packages').where({ id }).first();
+};

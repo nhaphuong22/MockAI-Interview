@@ -7,7 +7,9 @@ import {
   deleteBlog,
   getAnalytics,
   getPermissionsMatrix,
-  updatePermissionsMatrix
+  updatePermissionsMatrix,
+  getAdminPackages,
+  updatePackage
 } from '../controllers/adminController.js';
 import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
 
@@ -38,5 +40,11 @@ router.patch('/jobs/:id/approval', updateJobApproval);
 router.get('/blogs', getBlogs);
 router.patch('/blogs/:id/review', reviewBlog);
 router.delete('/blogs/:id', deleteBlog);
+
+/**
+ * Quản lý gói dịch vụ (Packages)
+ */
+router.get('/packages', getAdminPackages);
+router.put('/packages/:id', updatePackage);
 
 export default router;

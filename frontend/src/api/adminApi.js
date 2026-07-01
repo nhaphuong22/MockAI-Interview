@@ -66,3 +66,19 @@ export const getPermissionsMatrix = () => {
 export const updateRolePermissions = (roleId, permissionIds) => {
   return axiosClient.put(`/admin/permissions/${roleId}`, { permissionIds });
 };
+
+/**
+ * Lấy toàn bộ danh sách gói dịch vụ (Bao gồm cả gói đã tắt)
+ */
+export const getAdminPackages = () => {
+  return axiosClient.get("/admin/packages");
+};
+
+/**
+ * Cập nhật cấu hình gói dịch vụ
+ * @param {number} id - ID của package
+ * @param {Object} data - Dữ liệu cần cập nhật
+ */
+export const updateAdminPackage = (id, data) => {
+  return axiosClient.put(`/admin/packages/${id}`, data);
+};

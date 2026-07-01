@@ -16,19 +16,52 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminSidebar } from "./AdminSidebar";
 import { mockTransactions as initialTxns } from "./mockAdminData";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getAdminPackages, updateAdminPackage } from "../../api/adminApi";
+import { useUiStore } from "../../store/useUiStore";
+import { PackageEditModal } from "./components/PackageEditModal";
 
 export function ManagePayments() {
+  const { showToast } = useUiStore();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("transactions");
   const [txns, setTxns] = useState(initialTxns);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Package editing state
+  const [editingPackage, setEditingPackage] = useState(null);
+  
+  // Fetch packages from backend
+  const { data: packagesResponse, isLoading: isLoadingPackages } = useQuery({
+    queryKey: ['adminPackages'],
+    queryFn: getAdminPackages
+  });
+  
+  const packages = packagesResponse?.data || [];
 
-  // Pricing Packages state
-  const [packages, setPackages] = useState([
-    { id: "PKG-1", name: "Premium Member 1 Month", user: "Candidate", price: 199000, duration: "30 ngày", active: true },
-    { id: "PKG-2", name: "Gold Job Post Bundle (10 Posts)", user: "Recruiter", price: 2500000, duration: "Vĩnh viễn", active: true },
-    { id: "PKG-3", name: "Diamond Recruiter Pack (Unlimited)", user: "Recruiter", price: 4900000, duration: "1 năm", active: true }
-  ]);
+  // Mutation to update package
+  const updatePackageMutation = useMutation({
+    mutationFn: ({ id, data }) => updateAdminPackage(id, data),
+    onSuccess: () => {
+      showToast({ message: "Cập nhật gói dịch vụ thành công!", type: "success" });
+      setEditingPackage(null);
+      queryClient.invalidateQueries(['adminPackages']);
+    },
+    onError: (error) => {
+      showToast({ message: error?.response?.data?.message || "Có lỗi xảy ra khi cập nhật gói dịch vụ", type: "error" });
+    }
+  });
 
+  const handleTogglePackage = (pkg) => {
+    updatePackageMutation.mutate({
+      id: pkg.id,
+      data: { is_active: !pkg.is_active }
+    });
+  };
+
+  const handleSavePackage = (id, data) => {
+    updatePackageMutation.mutate({ id, data });
+  };
   // Coupons state
   const [coupons, setCoupons] = useState([
     { code: "MOCKAI50", discount: 50, expiry: "2026-06-30", active: true },
@@ -59,15 +92,6 @@ export function ManagePayments() {
 
   const handleDeleteCoupon = (code) => {
     setCoupons(prev => prev.filter(c => c.code !== code));
-  };
-
-  const handleTogglePackage = (id) => {
-    setPackages(prev => prev.map(p => {
-      if (p.id === id) {
-        return { ...p, active: !p.active };
-      }
-      return p;
-    }));
   };
 
   // Filtered transactions
@@ -220,50 +244,91 @@ export function ManagePayments() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
             >
-              {packages.map(pkg => (
-                <div 
-                  key={pkg.id} 
-                  className={`bg-white rounded-3xl p-6 border shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden group ${
-                    pkg.active ? "border-slate-100" : "border-slate-200 bg-slate-50/50 opacity-75"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                        pkg.user === "Candidate" ? "bg-sky-50 text-[#0ea5e9]" : "bg-amber-50 text-amber-700"
-                      }`}>
-                        Dành cho {pkg.user === "Candidate" ? "Candidate" : "HR/Doanh nghiệp"}
-                      </span>
-                      <span className={`w-2.5 h-2.5 rounded-full ${pkg.active ? "bg-emerald-500" : "bg-slate-400"}`}></span>
-                    </div>
-
-                    <h3 className="text-sm font-bold text-slate-800 leading-snug mb-1">{pkg.name}</h3>
-                    <p className="text-[10px] text-slate-400 font-semibold mb-6">Mã gói: {pkg.id} • Thời hạn: {pkg.duration}</p>
-
-                    <div className="text-2xl font-extrabold text-slate-950 mb-2">
-                      {pkg.price.toLocaleString('vi-VN')}đ
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-6 border-t border-slate-50 pt-4">
-                    <button className="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1">
-                      <Edit2 className="w-3.5 h-3.5" />
-                      Sửa Giá
-                    </button>
-                    
-                    <button 
-                      onClick={() => handleTogglePackage(pkg.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                        pkg.active ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                      }`}
-                    >
-                      {pkg.active ? "Tắt gói" : "Bật gói"}
-                    </button>
-                  </div>
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <th className="px-6 py-4">Tên gói / ID</th>
+                        <th className="px-6 py-4">Đối tượng</th>
+                        <th className="px-6 py-4">Giá tiền</th>
+                        <th className="px-6 py-4">Thời hạn</th>
+                        <th className="px-6 py-4">Trạng thái</th>
+                        <th className="px-6 py-4 text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-sm">
+                      {isLoadingPackages ? (
+                        <tr>
+                          <td colSpan="6" className="text-center py-12 text-slate-400 font-medium text-xs">
+                            Đang tải danh sách gói dịch vụ...
+                          </td>
+                        </tr>
+                      ) : (
+                        packages
+                          .filter(pkg => Number(pkg.price) > 0 || pkg.price === -1) // Hide default 0đ packages
+                          .map(pkg => (
+                          <tr key={pkg.id} className={`hover:bg-slate-50/50 transition-colors ${!pkg.is_active ? 'opacity-60 bg-slate-50/30' : ''}`}>
+                            <td className="px-6 py-4">
+                              <p className="font-bold text-slate-800">{pkg.name}</p>
+                              <p className="text-xs text-slate-400 mt-0.5">ID: {pkg.id}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                                pkg.target_role === "CANDIDATE" ? "bg-sky-50 text-[#0ea5e9]" : "bg-amber-50 text-amber-700"
+                              }`}>
+                                {pkg.target_role === "CANDIDATE" ? "Candidate" : "HR/Doanh nghiệp"}
+                              </span>
+                              {pkg.target_role === 'HR' && (
+                                <p className="text-[11px] text-[#0ea5e9] font-bold mt-1.5 flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3" />
+                                  Credit: {pkg.total_credits}
+                                </p>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="font-extrabold text-slate-900">
+                                {pkg.price === -1 ? 'Liên Hệ' : `${Number(pkg.price).toLocaleString('vi-VN')}đ`}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-medium text-slate-600">
+                              {pkg.duration_days > 0 ? `${pkg.duration_days} ngày` : 'Vĩnh viễn'}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
+                                pkg.is_active ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${pkg.is_active ? "bg-emerald-500" : "bg-slate-400"}`}></span>
+                                {pkg.is_active ? "Đang bật" : "Đã tắt"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right space-x-2">
+                              <button 
+                                onClick={() => setEditingPackage(pkg)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                Sửa
+                              </button>
+                              <button 
+                                onClick={() => handleTogglePackage(pkg)}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                                  pkg.is_active 
+                                    ? "bg-rose-50 text-rose-600 hover:bg-rose-100" 
+                                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                }`}
+                              >
+                                {pkg.is_active ? "Tắt gói" : "Bật gói"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
+              </div>
             </motion.div>
           )}
 
@@ -365,6 +430,14 @@ export function ManagePayments() {
           )}
         </AnimatePresence>
       </main>
+
+      <PackageEditModal 
+        isOpen={!!editingPackage}
+        onClose={() => setEditingPackage(null)}
+        packageData={editingPackage}
+        onSave={handleSavePackage}
+        isLoading={updatePackageMutation.isPending}
+      />
     </div>
   );
 }

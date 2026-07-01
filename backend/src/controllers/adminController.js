@@ -6,7 +6,9 @@ import {
   removeBlogByAdmin, 
   generateDashboardAnalytics,
   fetchPermissionsMatrix,
-  updateRolePermissionsMatrix
+  updateRolePermissionsMatrix,
+  fetchAdminPackages,
+  updatePackageByAdmin
 } from '../services/adminService.js';
 
 /**
@@ -169,5 +171,45 @@ export const updatePermissionsMatrix = async (req, res) => {
     }
     console.error('Lỗi khi cập nhật quyền hạn vai trò:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi cập nhật quyền hạn.' });
+  }
+};
+
+/**
+ * Lấy danh sách toàn bộ các gói dịch vụ
+ */
+export const getAdminPackages = async (req, res) => {
+  try {
+    const packages = await fetchAdminPackages();
+    return res.status(200).json({
+      success: true,
+      data: packages
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách gói dịch vụ:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi lấy danh sách gói dịch vụ.' });
+  }
+};
+
+/**
+ * Cập nhật gói dịch vụ
+ */
+export const updatePackage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const updatedPkg = await updatePackageByAdmin(id, updateData);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cập nhật gói dịch vụ thành công.',
+      data: updatedPkg
+    });
+  } catch (error) {
+    if (error.message === 'Không tìm thấy gói dịch vụ này.') {
+      return res.status(404).json({ message: error.message });
+    }
+    console.error('Lỗi khi cập nhật gói dịch vụ:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi cập nhật gói dịch vụ.' });
   }
 };
