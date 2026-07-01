@@ -102,8 +102,7 @@ export const registerUser = async (email, password, fullName, roleName = 'USER',
       });
       await trx('hr_wallets').insert({
         user_id: newUser.id, // Ví mặc định của HR freelance (chưa liên kết cty)
-        total_job_credits: 0,
-        total_ai_credits: 0,
+        total_credits: 0,
         created_at: trx.fn.now(),
         updated_at: trx.fn.now(),
       });
@@ -516,8 +515,7 @@ export const getUserProfile = async (userId) => {
     if (roleName === 'HR') {
       const companyWallet = await db('hr_wallets').where({ company_id: user.company_id }).first();
       if (companyWallet) {
-         userInfo.total_job_credits = companyWallet.total_job_credits;
-         userInfo.total_ai_credits = companyWallet.total_ai_credits;
+         userInfo.total_credits = companyWallet.total_credits;
       }
     }
   }

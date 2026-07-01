@@ -94,8 +94,7 @@ export const createCompany = async (req, res) => {
     // Tạo ví (wallet) riêng cho Công ty
     await db('hr_wallets').insert({
       company_id: newCompanyId,
-      total_job_credits: 0,
-      total_ai_credits: 0,
+      total_credits: 0,
       created_at: new Date(),
       updated_at: new Date()
     });

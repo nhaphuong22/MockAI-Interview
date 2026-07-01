@@ -190,43 +190,32 @@ export const paymentService = {
             const now = new Date();
             const expiryDate = new Date(now.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
             
+            // Tính ngày hết hạn cho Credit (nếu có giới hạn ngày)
+            let creditExpiryDate = null;
+            if (pack.credit_expiry_days) {
+              creditExpiryDate = new Date(now.getTime() + pack.credit_expiry_days * 24 * 60 * 60 * 1000);
+            }
+            
             const user = await trx('users').where({ id: transaction.user_id }).first();
             
             if (user.role === 'HR') {
-              // HR: Nạp credit
+              // HR: Nạp unified credit
               let wallet = await trx('hr_wallets').where({ user_id: user.id }).first();
               if (user.company_id) {
                 wallet = await trx('hr_wallets').where({ company_id: user.company_id }).first();
               }
               
-              if (wallet) {
-                if (pack.job_post_credits > 0) {
-                  await trx('credit_batches').insert({
-                    wallet_id: wallet.id,
-                    package_id: pack.id,
-                    credit_type: 'JOB_POST',
-                    amount_granted: pack.job_post_credits,
-                    amount_remaining: pack.job_post_credits,
-                    expires_at: expiryDate,
-                    created_at: now,
-                    updated_at: now
-                  });
-                  await trx('hr_wallets').where({ id: wallet.id }).increment('total_job_credits', pack.job_post_credits);
-                }
-                
-                if (pack.ai_interview_credits > 0) {
-                  await trx('credit_batches').insert({
-                    wallet_id: wallet.id,
-                    package_id: pack.id,
-                    credit_type: 'AI_INTERVIEW',
-                    amount_granted: pack.ai_interview_credits,
-                    amount_remaining: pack.ai_interview_credits,
-                    expires_at: expiryDate,
-                    created_at: now,
-                    updated_at: now
-                  });
-                  await trx('hr_wallets').where({ id: wallet.id }).increment('total_ai_credits', pack.ai_interview_credits);
-                }
+              if (wallet && pack.total_credits > 0) {
+                await trx('credit_batches').insert({
+                  wallet_id: wallet.id,
+                  package_id: pack.id,
+                  amount_granted: pack.total_credits,
+                  amount_remaining: pack.total_credits,
+                  expires_at: creditExpiryDate,
+                  created_at: now,
+                  updated_at: now
+                });
+                await trx('hr_wallets').where({ id: wallet.id }).increment('total_credits', pack.total_credits);
               }
             } else {
               // Ứng viên: Cập nhật subscription
