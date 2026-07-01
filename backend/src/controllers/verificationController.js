@@ -6,6 +6,7 @@ export const getVerificationStatus = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await db('users').where({ id: userId }).first();
+    const hrProfile = await db('hr_profiles').where({ user_id: userId }).first() || {};
 
     if (!user) {
       return sendError(res, 404, 'User not found');
@@ -46,13 +47,13 @@ export const getVerificationStatus = async (req, res) => {
         companySize: company.company_size,
         description: company.description
       },
-      joinStatus: user.company_join_status,
+      joinStatus: hrProfile.company_join_status,
       isCreator: company.creator_id === userId,
       verificationStatus: company.verification_status,
       rejectReason: company.reject_reason,
       taxCode: company.tax_code,
       documentUrl: company.document_url,
-      hasUploadedDocs: !!user.id_front_url // Check if user has uploaded docs
+      hasUploadedDocs: !!hrProfile.id_front_url // Check if user has uploaded docs
     });
   } catch (error) {
     console.error('getVerificationStatus error:', error);
@@ -67,6 +68,7 @@ export const getAllVerifications = async (req, res) => {
   try {
     const allCompanies = await db('companies')
       .leftJoin('users', 'companies.creator_id', 'users.id')
+      .leftJoin('hr_profiles', 'users.id', 'hr_profiles.user_id')
       .select(
         'companies.id as company_id',
         'companies.name as company_name',
@@ -79,14 +81,13 @@ export const getAllVerifications = async (req, res) => {
         'companies.company_size as company_size',
         'companies.verification_status',
         'companies.created_at',
-        'users.auth_letter_url',
-        'users.id_front_url',
-        'users.id_back_url',
+        'hr_profiles.auth_letter_url',
+        'hr_profiles.id_front_url',
+        'hr_profiles.id_back_url',
         'companies.business_type as company_business_type',
         'users.id as hr_id',
         'users.email as hr_email',
-        'users.full_name as hr_name',
-        'users.id_card_number as hr_id_card_number'
+        'users.full_name as hr_name'
       );
 
     return sendResponse(res, 200, allCompanies);

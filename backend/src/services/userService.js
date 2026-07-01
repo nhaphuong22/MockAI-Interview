@@ -28,7 +28,6 @@ export const fetchUsersList = async ({ page = 1, limit = 10, search, role, statu
       'users.id',
       'users.email',
       'users.full_name',
-      'users.phone',
       'users.avatar_url',
       'users.is_active',
       'users.created_at',
@@ -101,9 +100,14 @@ export const fetchUserDetail = async (id) => {
   const user = await getBaseQuery()
     .leftJoin('user_roles', 'users.id', 'user_roles.user_id')
     .leftJoin('roles', 'user_roles.role_id', 'roles.id')
+    .leftJoin('candidate_profiles', 'users.id', 'candidate_profiles.user_id')
     .select([
       'users.*',
       'roles.name as db_role',
+      'candidate_profiles.phone as phone',
+      'candidate_profiles.bio as bio',
+      'candidate_profiles.address as address',
+      'candidate_profiles.date_of_birth as date_of_birth',
       db.raw('(SELECT COALESCE(MAX(ats_score), 0) FROM cvs WHERE cvs.user_id = users.id) as cv_score'),
       db.raw('(SELECT COUNT(*) FROM interviews WHERE interviews.user_id = users.id) as interview_count'),
       db.raw("(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE transactions.user_id = users.id AND transactions.status = 'COMPLETED') as total_paid")

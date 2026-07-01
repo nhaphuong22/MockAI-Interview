@@ -684,28 +684,51 @@ export const uploadVerificationDocsController = async (req, res) => {
 
     const urls = {};
 
+    // XÓA ẢNH CŨ TRÊN CLOUDINARY NẾU CÓ ĐỂ TRÁNH DỮ LIỆU RÁC VÀ BẢO MẬT
+    const hrProfile = await db('hr_profiles').where({ user_id: req.user.id }).first();
+    const companyUser = await db('users').where({ id: req.user.id }).first();
+    let companyProfile = null;
+    if (companyUser && companyUser.company_id) {
+        companyProfile = await db('companies').where({ id: companyUser.company_id }).first();
+    }
+
     if (files?.authFile) {
+      if (hrProfile && hrProfile.auth_letter_public_id) {
+        await cloudinary.uploader.destroy(hrProfile.auth_letter_public_id).catch(e => console.error('Lỗi xoá ảnh cũ:', e));
+      }
       const uploadRes = await uploadToCloudinary(files.authFile, 'company_docs/auth_letters');
       if (uploadRes) {
         urls.authFileUrl = uploadRes.url;
         urls.authFilePublicId = uploadRes.publicId;
       }
     }
+    
     if (files?.idFrontFile) {
+      if (hrProfile && hrProfile.id_front_public_id) {
+        await cloudinary.uploader.destroy(hrProfile.id_front_public_id).catch(e => console.error('Lỗi xoá ảnh cũ:', e));
+      }
       const uploadRes = await uploadToCloudinary(files.idFrontFile, 'company_docs/id_cards');
       if (uploadRes) {
         urls.idFrontUrl = uploadRes.url;
         urls.idFrontPublicId = uploadRes.publicId;
       }
     }
+    
     if (files?.idBackFile) {
+      if (hrProfile && hrProfile.id_back_public_id) {
+        await cloudinary.uploader.destroy(hrProfile.id_back_public_id).catch(e => console.error('Lỗi xoá ảnh cũ:', e));
+      }
       const uploadRes = await uploadToCloudinary(files.idBackFile, 'company_docs/id_cards');
       if (uploadRes) {
         urls.idBackUrl = uploadRes.url;
         urls.idBackPublicId = uploadRes.publicId;
       }
     }
+    
     if (files?.licenseFile) {
+      if (companyProfile && companyProfile.license_public_id) {
+        await cloudinary.uploader.destroy(companyProfile.license_public_id).catch(e => console.error('Lỗi xoá ảnh cũ:', e));
+      }
       const uploadRes = await uploadToCloudinary(files.licenseFile, 'company_docs/licenses');
       if (uploadRes) {
         urls.licenseFileUrl = uploadRes.url;

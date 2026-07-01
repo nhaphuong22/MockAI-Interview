@@ -188,15 +188,68 @@ export const paymentService = {
           const pack = await trx('packages').where({ id: transaction.package_id }).first();
           if (pack) {
             const now = new Date();
-            const vipExpiry = new Date(now.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
-
-            await trx('users')
-              .where({ id: transaction.user_id })
-              .update({
-                package_id: transaction.package_id,
-                vip_expiry: vipExpiry,
-                updated_at: new Date()
-              });
+            const expiryDate = new Date(now.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
+            
+            const user = await trx('users').where({ id: transaction.user_id }).first();
+            
+            if (user.role === 'HR') {
+              // HR: Nạp credit
+              let wallet = await trx('hr_wallets').where({ user_id: user.id }).first();
+              if (user.company_id) {
+                wallet = await trx('hr_wallets').where({ company_id: user.company_id }).first();
+              }
+              
+              if (wallet) {
+                if (pack.job_post_credits > 0) {
+                  await trx('credit_batches').insert({
+                    wallet_id: wallet.id,
+                    package_id: pack.id,
+                    credit_type: 'JOB_POST',
+                    amount_granted: pack.job_post_credits,
+                    amount_remaining: pack.job_post_credits,
+                    expires_at: expiryDate,
+                    created_at: now,
+                    updated_at: now
+                  });
+                  await trx('hr_wallets').where({ id: wallet.id }).increment('total_job_credits', pack.job_post_credits);
+                }
+                
+                if (pack.ai_interview_credits > 0) {
+                  await trx('credit_batches').insert({
+                    wallet_id: wallet.id,
+                    package_id: pack.id,
+                    credit_type: 'AI_INTERVIEW',
+                    amount_granted: pack.ai_interview_credits,
+                    amount_remaining: pack.ai_interview_credits,
+                    expires_at: expiryDate,
+                    created_at: now,
+                    updated_at: now
+                  });
+                  await trx('hr_wallets').where({ id: wallet.id }).increment('total_ai_credits', pack.ai_interview_credits);
+                }
+              }
+            } else {
+              // Ứng viên: Cập nhật subscription
+              const existingSub = await trx('user_subscriptions').where({ user_id: user.id }).first();
+              if (existingSub) {
+                 const currentExpiry = existingSub.end_date && new Date(existingSub.end_date) > now ? new Date(existingSub.end_date) : now;
+                 const newExpiry = new Date(currentExpiry.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
+                 await trx('user_subscriptions').where({ id: existingSub.id }).update({
+                    package_id: pack.id,
+                    end_date: newExpiry,
+                    updated_at: now
+                 });
+              } else {
+                 await trx('user_subscriptions').insert({
+                    user_id: user.id,
+                    package_id: pack.id,
+                    start_date: now,
+                    end_date: expiryDate,
+                    created_at: now,
+                    updated_at: now
+                 });
+              }
+            }
           }
         }
       });
