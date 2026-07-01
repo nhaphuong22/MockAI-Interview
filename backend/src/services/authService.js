@@ -74,7 +74,6 @@ export const registerUser = async (email, password, fullName, roleName = 'USER',
         email,
         password_hash: passwordHash,
         full_name: fullName,
-        gender: gender,
         email_verified: false,
         verification_token: verificationToken,
         verification_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -94,6 +93,28 @@ export const registerUser = async (email, password, fullName, roleName = 'USER',
       created_at: trx.fn.now(),
       updated_at: trx.fn.now(),
     });
+
+    if (roleName === 'HR') {
+      await trx('hr_profiles').insert({
+        user_id: newUser.id,
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now(),
+      });
+      await trx('hr_wallets').insert({
+        user_id: newUser.id, // Ví mặc định của HR freelance (chưa liên kết cty)
+        total_job_credits: 0,
+        total_ai_credits: 0,
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now(),
+      });
+    } else {
+      await trx('candidate_profiles').insert({
+        user_id: newUser.id,
+        gender: gender,
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now(),
+      });
+    }
 
     return newUser;
   });
@@ -336,6 +357,14 @@ export const loginGoogleUser = async (idToken) => {
         updated_at: trx.fn.now()
       });
 
+      // Google user is initially Candidate
+      await trx('candidate_profiles').insert({
+        user_id: newUser.id,
+        gender: 'OTHER',
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now(),
+      });
+
       return newUser;
     });
 
@@ -376,68 +405,95 @@ export const loginGoogleUser = async (idToken) => {
   };
 };
 
-/**
- * Update user profile information in the database.
- * @param {number} userId
- * @param {object} data
- */
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactPhone, contactPublic, taxCode, isTaxCodePublic, linkedinUrl, githubUrl, portfolioUrl } = data;
+  const { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl } = data;
 
-  const updateData = {};
-  if (fullName !== undefined) updateData.full_name = fullName;
-  if (phone !== undefined) updateData.phone = phone;
-  if (address !== undefined) updateData.address = address;
-  if (bio !== undefined) updateData.bio = bio;
-  if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl;
-  if (gender !== undefined) updateData.gender = gender;
-  if (coverUrl !== undefined) updateData.cover_url = coverUrl;
-  if (isLookingForJob !== undefined) updateData.is_looking_for_job = isLookingForJob;
-  if (contactPhone !== undefined) updateData.contact_phone = contactPhone;
-  if (contactPublic !== undefined) updateData.contact_public = contactPublic;
-  if (linkedinUrl !== undefined) updateData.linkedin_url = linkedinUrl;
-  if (githubUrl !== undefined) updateData.github_url = githubUrl;
-  if (portfolioUrl !== undefined) updateData.portfolio_url = portfolioUrl;
+  const roleName = await getUserRole(userId);
 
-  updateData.updated_at = db.fn.now();
-
-  const [updatedUser] = await db('users')
-    .where({ id: userId })
-    .update(updateData)
-    .returning('*');
-
-  if (!updatedUser) {
-    throw new Error('User not found');
+  // Update Core Users fields
+  const userUpdate = {};
+  if (fullName !== undefined) userUpdate.full_name = fullName;
+  if (avatarUrl !== undefined) userUpdate.avatar_url = avatarUrl;
+  
+  if (Object.keys(userUpdate).length > 0) {
+    userUpdate.updated_at = db.fn.now();
+    await db('users').where({ id: userId }).update(userUpdate);
   }
 
-  const roleName = await getUserRole(updatedUser.id);
+  // Update Specific Profile fields
+  if (roleName === 'HR') {
+    const hrUpdate = {};
+    if (Object.keys(hrUpdate).length > 0) {
+      hrUpdate.updated_at = db.fn.now();
+      await db('hr_profiles').where({ user_id: userId }).update(hrUpdate);
+    }
+  } else { // CANDIDATE
+    const candidateUpdate = {};
+    if (phone !== undefined) candidateUpdate.phone = phone;
+    if (address !== undefined) candidateUpdate.address = address;
+    if (bio !== undefined) candidateUpdate.bio = bio;
+    if (gender !== undefined) candidateUpdate.gender = gender;
+    if (coverUrl !== undefined) candidateUpdate.cover_url = coverUrl;
+    if (isLookingForJob !== undefined) candidateUpdate.is_looking_for_job = isLookingForJob;
+    if (linkedinUrl !== undefined) candidateUpdate.linkedin_url = linkedinUrl;
+    if (githubUrl !== undefined) candidateUpdate.github_url = githubUrl;
+    if (portfolioUrl !== undefined) candidateUpdate.portfolio_url = portfolioUrl;
+    
+    if (Object.keys(candidateUpdate).length > 0) {
+      candidateUpdate.updated_at = db.fn.now();
+      await db('candidate_profiles').where({ user_id: userId }).update(candidateUpdate);
+    }
+  }
+
   const fullProfile = await getUserProfile(userId);
   return fullProfile;
 };
 
-/**
- * Fetch user profile information including package name.
- * @param {number} userId
- */
 export const getUserProfile = async (userId) => {
-  const user = await db('users')
-    .select(
-      'users.*', 
-      'packages.name as package_name'
-    )
-    .leftJoin('packages', 'users.package_id', 'packages.id')
-    .where({ 'users.id': userId })
-    .first();
+  const roleName = await getUserRole(userId);
+  let user = await db('users').where({ id: userId }).first();
 
   if (!user) {
     throw new Error('User not found');
   }
 
-  const roleName = await getUserRole(user.id);
+  // Join extra profile data based on role
+  if (roleName === 'HR' || roleName === 'ADMIN') {
+    const hrProfile = await db('hr_profiles').where({ user_id: userId }).first() || {};
+    const wallet = await db('hr_wallets').where({ user_id: userId }).first() || {};
+    if (hrProfile.user_id) delete hrProfile.user_id;
+    if (wallet.id) delete wallet.id;
+    if (wallet.user_id) delete wallet.user_id;
+    if (wallet.company_id) delete wallet.company_id;
+    user = { ...user, ...hrProfile, ...wallet };
+  } else {
+    const candidateProfile = await db('candidate_profiles').where({ user_id: userId }).first() || {};
+    const sub = await db('user_subscriptions')
+        .leftJoin('packages', 'user_subscriptions.package_id', 'packages.id')
+        .where({ 'user_subscriptions.user_id': userId })
+        .select('user_subscriptions.*', 'packages.name as package_name')
+        .first() || {};
+    if (candidateProfile.user_id) delete candidateProfile.user_id;
+    if (sub.id) delete sub.id;
+    if (sub.user_id) delete sub.user_id;
+    user = { ...user, ...candidateProfile, ...sub };
+  }
 
   const { password_hash, verification_token, verification_token_expires_at,
           reset_password_token, reset_password_expires_at, ...userInfo } = user;
   userInfo.role = roleName;
+
+  // Mask PII Security (ẩn URL ảnh CCCD và che số CCCD)
+  if (roleName === 'HR' || roleName === 'ADMIN') {
+    if (userInfo.id_front_url) userInfo.id_front_url = '[PROTECTED_PRIVATE_DATA]';
+    if (userInfo.id_back_url) userInfo.id_back_url = '[PROTECTED_PRIVATE_DATA]';
+    if (userInfo.auth_letter_url) userInfo.auth_letter_url = '[PROTECTED_PRIVATE_DATA]';
+  } else {
+    if (userInfo.id_card_number) {
+      const id = userInfo.id_card_number;
+      userInfo.id_card_number = '*'.repeat(Math.max(0, id.length - 4)) + id.slice(-4);
+    }
+  }
 
   if (user.company_id) {
     const company = await db('companies').where({ id: user.company_id }).first();
@@ -454,6 +510,15 @@ export const getUserProfile = async (userId) => {
       userInfo.company_document_url = company.document_url;
       userInfo.company_tax_code = company.tax_code;
       userInfo.company_is_tax_code_public = company.is_tax_code_public;
+    }
+
+    // HR belong to a company use company wallet
+    if (roleName === 'HR') {
+      const companyWallet = await db('hr_wallets').where({ company_id: user.company_id }).first();
+      if (companyWallet) {
+         userInfo.total_job_credits = companyWallet.total_job_credits;
+         userInfo.total_ai_credits = companyWallet.total_ai_credits;
+      }
     }
   }
 

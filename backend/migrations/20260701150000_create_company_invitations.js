@@ -3,15 +3,18 @@
  * @returns { Promise<void> }
  */
 export async function up(knex) {
-  await knex.schema.createTable('company_invitations', (table) => {
-    table.increments('id').primary();
-    table.integer('company_id').unsigned().references('id').inTable('companies').onDelete('CASCADE');
-    table.string('email').notNullable();
-    table.string('token').unique().notNullable();
-    table.string('status').defaultTo('PENDING'); // PENDING | ACCEPTED | CANCELLED
-    table.timestamp('expires_at').notNullable();
-    table.timestamps(true, true);
-  });
+  const exists = await knex.schema.hasTable('company_invitations');
+  if (!exists) {
+    await knex.schema.createTable('company_invitations', (table) => {
+      table.increments('id').primary();
+      table.integer('company_id').unsigned().references('id').inTable('companies').onDelete('CASCADE');
+      table.string('email').notNullable();
+      table.string('token').notNullable().unique();
+      table.string('status').defaultTo('PENDING'); // PENDING, ACCEPTED, REJECTED, EXPIRED
+      table.timestamp('expires_at').notNullable();
+      table.timestamps(true, true);
+    });
+  }
 }
 
 /**

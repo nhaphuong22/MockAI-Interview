@@ -110,109 +110,91 @@ export async function seed(knex) {
     }
   ]);
 
-  // Insert users with company_join_status = APPROVED and mock identity documents
+  // Insert base users
   await knex('users').insert([
     {
-      id: 1,
-      email: 'admin@mockai.com',
-      password_hash: password_hash,
-      full_name: 'Quản trị viên Hệ thống',
-      gender: 'MALE',
-      email_verified: true,
-      created_at: new Date(),
-      updated_at: new Date()
+      id: 1, email: 'admin@mockai.com', password_hash: password_hash,
+      full_name: 'Quản trị viên Hệ thống', email_verified: true,
+      created_at: new Date(), updated_at: new Date()
     },
     {
-      id: 2,
-      email: 'user@mockai.com',
-      password_hash: password_hash,
-      full_name: 'Ứng viên Thử nghiệm',
-      gender: 'MALE',
-      email_verified: true,
-      created_at: new Date(),
-      updated_at: new Date()
+      id: 2, email: 'user@mockai.com', password_hash: password_hash,
+      full_name: 'Ứng viên Thử nghiệm', email_verified: true,
+      created_at: new Date(), updated_at: new Date()
     },
     {
-      id: 3,
-      email: 'recruiter1@mockai.com',
-      password_hash: password_hash,
-      full_name: 'HR TechCorp',
-      gender: 'FEMALE',
-      company_id: 1,
-      company_join_status: 'APPROVED',
-      id_card_number: '123456789012',
-      id_front_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Front',
-      id_back_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Back',
-      auth_letter_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+Auth+Letter',
-      email_verified: true,
-      created_at: new Date(),
-      updated_at: new Date()
+      id: 3, email: 'recruiter1@mockai.com', password_hash: password_hash,
+      full_name: 'HR TechCorp', email_verified: true, company_id: 1,
+      created_at: new Date(), updated_at: new Date()
     },
     {
-      id: 4,
-      email: 'recruiter2@mockai.com',
-      password_hash: password_hash,
-      full_name: 'HR VinaGroup',
-      gender: 'MALE',
-      company_id: 2,
-      company_join_status: 'APPROVED',
-      id_card_number: '123456789012',
-      id_front_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Front',
-      id_back_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Back',
-      auth_letter_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+Auth+Letter',
-      email_verified: true,
-      created_at: new Date(),
-      updated_at: new Date()
+      id: 4, email: 'recruiter2@mockai.com', password_hash: password_hash,
+      full_name: 'HR VinaGroup', email_verified: true, company_id: 2,
+      created_at: new Date(), updated_at: new Date()
     },
     {
-      id: 5,
-      email: 'recruiter3@mockai.com',
-      password_hash: password_hash,
-      full_name: 'HR GreenEnergy',
-      gender: 'FEMALE',
-      company_id: 3,
-      company_join_status: 'APPROVED',
-      id_card_number: '123456789012',
-      id_front_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Front',
-      id_back_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Back',
-      auth_letter_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+Auth+Letter',
-      email_verified: true,
-      created_at: new Date(),
-      updated_at: new Date()
+      id: 5, email: 'recruiter3@mockai.com', password_hash: password_hash,
+      full_name: 'HR GreenEnergy', email_verified: true, company_id: 3,
+      created_at: new Date(), updated_at: new Date()
     },
     {
-      id: 6,
-      email: 'recruiter4@mockai.com',
-      password_hash: password_hash,
-      full_name: 'HR FastFinance',
-      gender: 'MALE',
-      company_id: 4,
-      company_join_status: 'APPROVED',
-      id_card_number: '123456789012',
-      id_front_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Front',
-      id_back_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Back',
-      auth_letter_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+Auth+Letter',
-      email_verified: true,
-      created_at: new Date(),
-      updated_at: new Date()
+      id: 6, email: 'recruiter4@mockai.com', password_hash: password_hash,
+      full_name: 'HR FastFinance', email_verified: true, company_id: 4,
+      created_at: new Date(), updated_at: new Date()
     },
     {
-      id: 7,
-      email: 'recruiter5@mockai.com',
-      password_hash: password_hash,
-      full_name: 'HR SmartEdu',
-      gender: 'FEMALE',
-      company_id: 5,
-      company_join_status: 'APPROVED',
-      id_card_number: '123456789012',
-      id_front_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Front',
-      id_back_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Back',
-      auth_letter_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+Auth+Letter',
-      email_verified: true,
-      created_at: new Date(),
-      updated_at: new Date()
+      id: 7, email: 'recruiter5@mockai.com', password_hash: password_hash,
+      full_name: 'HR SmartEdu', email_verified: true, company_id: 5,
+      created_at: new Date(), updated_at: new Date()
     }
   ]);
+
+  // Insert Candidate Profiles
+  await knex('candidate_profiles').insert([
+    { user_id: 1, gender: 'MALE', created_at: new Date(), updated_at: new Date() },
+    { user_id: 2, gender: 'MALE', created_at: new Date(), updated_at: new Date() }
+  ]);
+
+  // Insert HR Profiles
+  const hrProfileData = {
+    company_join_status: 'APPROVED',
+    id_front_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Front',
+    id_back_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+ID+Back',
+    auth_letter_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Mock+Auth+Letter',
+    created_at: new Date(),
+    updated_at: new Date()
+  };
+
+  await knex('hr_profiles').insert([
+    { user_id: 3, ...hrProfileData },
+    { user_id: 4, ...hrProfileData },
+    { user_id: 5, ...hrProfileData },
+    { user_id: 6, ...hrProfileData },
+    { user_id: 7, ...hrProfileData }
+  ]);
+
+  // Insert HR Wallets cho các công ty
+  await knex('hr_wallets').insert([
+    { company_id: 1, user_id: 3, total_job_credits: 50, total_ai_credits: 100, created_at: new Date(), updated_at: new Date() },
+    { company_id: 2, user_id: 4, total_job_credits: 50, total_ai_credits: 100, created_at: new Date(), updated_at: new Date() },
+    { company_id: 3, user_id: 5, total_job_credits: 50, total_ai_credits: 100, created_at: new Date(), updated_at: new Date() },
+    { company_id: 4, user_id: 6, total_job_credits: 50, total_ai_credits: 100, created_at: new Date(), updated_at: new Date() },
+    { company_id: 5, user_id: 7, total_job_credits: 50, total_ai_credits: 100, created_at: new Date(), updated_at: new Date() }
+  ]);
+
+  // Insert Credit Batches tương ứng cho các ví trên để tránh bất đồng bộ khi trừ tiền
+  const creditBatchesData = [];
+  for (let i = 1; i <= 5; i++) {
+    creditBatchesData.push({ wallet_id: i, package_id: null, credit_type: 'JOB_POST', amount_granted: 50, amount_remaining: 50, expires_at: '2099-12-31 23:59:59', created_at: new Date(), updated_at: new Date() });
+    creditBatchesData.push({ wallet_id: i, package_id: null, credit_type: 'AI_INTERVIEW', amount_granted: 100, amount_remaining: 100, expires_at: '2099-12-31 23:59:59', created_at: new Date(), updated_at: new Date() });
+  }
+  await knex('credit_batches').insert(creditBatchesData);
+
+  // Cấp gói VIP thử nghiệm vĩnh viễn cho Ứng viên (user_id = 2)
+  await knex('user_subscriptions').insert([
+    { user_id: 2, package_id: null, start_date: new Date(), end_date: '2099-12-31 23:59:59', created_at: new Date(), updated_at: new Date() }
+  ]);
+
 
   // Update creator_id for companies to link back to their respective HRs
   await knex('companies').where({ id: 1 }).update({ creator_id: 3 });

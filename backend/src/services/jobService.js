@@ -7,6 +7,76 @@ import {
 } from '../models/jobModel.js';
 
 /**
+ * Trừ credit của HR (Xử lý theo batch gần hết hạn trước)
+ */
+const consumeFromWallet = async (trx, wallet, creditType, amount) => {
+  if (!wallet) return false;
+
+  const totalCredits = creditType === 'JOB_POST' ? wallet.total_job_credits : wallet.total_ai_credits;
+  if (totalCredits < amount) return false;
+
+  const batches = await trx('credit_batches')
+    .where({ wallet_id: wallet.id, credit_type: creditType })
+    .where('amount_remaining', '>', 0)
+    .where('expires_at', '>', new Date())
+    .orderBy('expires_at', 'asc');
+
+  const totalInBatches = batches.reduce((sum, b) => sum + b.amount_remaining, 0);
+  if (totalInBatches < amount) return false;
+
+  let remainingToDeduct = amount;
+  for (const batch of batches) {
+    if (remainingToDeduct <= 0) break;
+    
+    const deduct = Math.min(batch.amount_remaining, remainingToDeduct);
+    remainingToDeduct -= deduct;
+    
+    await trx('credit_batches').where({ id: batch.id }).update({
+      amount_remaining: batch.amount_remaining - deduct,
+      updated_at: new Date()
+    });
+  }
+
+  if (creditType === 'JOB_POST') {
+    await trx('hr_wallets').where({ id: wallet.id }).update({
+      total_job_credits: wallet.total_job_credits - amount,
+      updated_at: new Date()
+    });
+  } else {
+    await trx('hr_wallets').where({ id: wallet.id }).update({
+      total_ai_credits: wallet.total_ai_credits - amount,
+      updated_at: new Date()
+    });
+  }
+  
+  return true;
+};
+
+/**
+ * Trừ credit của HR (Xử lý theo batch gần hết hạn trước)
+ * Nếu công ty không đủ credit, fallback sang ví cá nhân.
+ */
+const consumeCredit = async (trx, hrId, companyId, creditType, amount = 1) => {
+  let success = false;
+
+  // Ưu tiên dùng ví công ty trước
+  if (companyId) {
+    const companyWallet = await trx('hr_wallets').where({ company_id: companyId }).first();
+    success = await consumeFromWallet(trx, companyWallet, creditType, amount);
+  }
+
+  // Nếu công ty hết credit (hoặc không có), dùng ví cá nhân
+  if (!success) {
+    const personalWallet = await trx('hr_wallets').where({ user_id: hrId }).first();
+    success = await consumeFromWallet(trx, personalWallet, creditType, amount);
+  }
+
+  if (!success) {
+    throw new Error(`Không đủ ${creditType} credit ở cả ví Công ty và Cá nhân. Vui lòng nạp thêm để tiếp tục.`);
+  }
+};
+
+/**
  * Tạo mới tin tuyển dụng và lưu các yêu cầu chi tiết đi kèm trong một transaction
  */
 export const createJob = async ({
@@ -23,15 +93,18 @@ export const createJob = async ({
   deadline = null,
   detailedRequirements = []
 }) => {
-  // Lấy company_id của HR tuyển dụng từ bảng users để liên kết công ty
   const hrUser = await db('users').where({ id: hrId }).first();
   const companyId = hrUser ? hrUser.company_id : null;
 
   const result = await db.transaction(async (trx) => {
-    // 1. Tạo bản ghi tin tuyển dụng trong bảng 'jobs' qua jobModel
+    // Trừ 1 JOB_POST credit nếu tạo mới thẳng sang OPEN
+    if (status === 'OPEN') {
+      await consumeCredit(trx, hrId, companyId, 'JOB_POST', 1);
+    }
+
     const [newJob] = await insertJob({
       hr_id: hrId,
-      company_id: companyId, // Lưu thông tin công ty của HR
+      company_id: companyId,
       title,
       description: description || null,
       status: status || 'OPEN',
@@ -47,8 +120,6 @@ export const createJob = async ({
     }, trx);
 
     let insertedRequirements = [];
-
-    // 2. Tạo bản ghi yêu cầu chi tiết trong bảng 'job_requirements' qua jobModel nếu có
     if (detailedRequirements && detailedRequirements.length > 0) {
       const requirementsToInsert = detailedRequirements.map((req) => ({
         job_id: newJob.id,
@@ -57,18 +128,12 @@ export const createJob = async ({
         created_at: new Date(),
         updated_at: new Date()
       }));
-
       insertedRequirements = await insertJobRequirements(requirementsToInsert, trx);
     }
 
-    return {
-      newJob,
-      insertedRequirements
-    };
+    return { newJob, insertedRequirements };
   });
 
-  // Clear Jobs list cache SAU KHI TRANSACTION ĐÃ COMMIT THÀNH CÔNG
-  // Tránh Race Condition: client khác truy vấn DB cũ và ghi đè cache cũ vào Redis
   await deleteCachePattern('jobs:list:*');
 
   return {
@@ -196,6 +261,21 @@ export const getJobDetailById = async (id) => {
  */
 export const updateJobById = async (id, updateData, detailedRequirements = []) => {
   return await db.transaction(async (trx) => {
+    const oldJob = await trx('jobs').where({ id }).first();
+    if (!oldJob) throw new Error('Không tìm thấy công việc này');
+
+    // Nghiệp vụ: Cấm đổi Title nếu tin đã từng xuất bản (khác DRAFT)
+    if (oldJob.status !== 'DRAFT' && updateData.title && updateData.title !== oldJob.title) {
+       throw new Error('Không thể thay đổi chức danh khi tin đã từng xuất bản. Vui lòng đóng tin và tạo tin mới (tốn credit).');
+    }
+
+    // Nghiệp vụ: Trừ Credit nếu renew (từ CLOSED hoặc DRAFT sang OPEN)
+    // Lưu ý: Từ PAUSED -> OPEN thì không mất credit.
+    const isRenewing = updateData.status === 'OPEN' && ['CLOSED', 'DRAFT'].includes(oldJob.status);
+    if (isRenewing) {
+       await consumeCredit(trx, oldJob.hr_id, oldJob.company_id, 'JOB_POST', 1);
+    }
+
     // 1. Cập nhật bảng 'jobs'
     const [updatedJob] = await trx('jobs')
       .where({ id })
@@ -268,7 +348,7 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
       'applications.*',
       db.raw('COALESCE(applications.candidate_name, users.full_name) as candidate_name'),
       db.raw('COALESCE(applications.candidate_email, users.email) as candidate_email'),
-      db.raw('COALESCE(applications.candidate_phone, users.phone) as candidate_phone'),
+      db.raw('COALESCE(applications.candidate_phone, candidate_profiles.phone) as candidate_phone'),
       'users.avatar_url as candidate_avatar',
       'jobs.title as job_title',
       'cvs.file_url as cv_file_url',
@@ -276,6 +356,7 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
       'cvs.parsed_text as cv_text'
     )
     .join('users', 'applications.candidate_id', 'users.id')
+    .leftJoin('candidate_profiles', 'users.id', 'candidate_profiles.user_id')
     .join('jobs', 'applications.job_id', 'jobs.id')
     .leftJoin('cvs', 'applications.cv_id', 'cvs.id')
     .where('jobs.hr_id', hrId);

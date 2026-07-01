@@ -42,7 +42,12 @@ export const createNewJob = async (req, res) => {
     const hrId = req.user.id;
 
     // Kiểm tra xem HR đã liên kết công ty và được phê duyệt chưa
-    const hrUser = await db('users').where({ id: hrId }).first();
+    const hrUser = await db('users')
+      .leftJoin('hr_profiles', 'users.id', 'hr_profiles.user_id')
+      .select('users.*', 'hr_profiles.company_join_status')
+      .where('users.id', hrId)
+      .first();
+      
     if (!hrUser || !hrUser.company_id || hrUser.company_join_status !== 'APPROVED') {
       return sendError(res, 403, 'Tài khoản của bạn chưa liên kết doanh nghiệp hoặc đang chờ phê duyệt. Không thể đăng tuyển dụng.');
     }

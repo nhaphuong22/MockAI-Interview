@@ -323,6 +323,7 @@ export const getApplications = async (req, res) => {
 
     let query = db('applications')
       .join('users', 'applications.candidate_id', 'users.id')
+      .leftJoin('candidate_profiles', 'users.id', 'candidate_profiles.user_id')
       .join('jobs', 'applications.job_id', 'jobs.id')
       .leftJoin('companies', 'jobs.company_id', 'companies.id')
       .leftJoin('cvs', 'applications.cv_id', 'cvs.id') // Join bảng cvs để lấy cv file url
@@ -330,7 +331,7 @@ export const getApplications = async (req, res) => {
         'applications.*',
         db.raw('COALESCE(applications.candidate_name, users.full_name) as candidate_name'),
         db.raw('COALESCE(applications.candidate_email, users.email) as candidate_email'),
-        'users.phone as user_phone',
+        'candidate_profiles.phone as user_phone',
         'users.avatar_url as candidate_avatar',
         'jobs.title as job_title',
         'jobs.hr_id as job_hr_id',

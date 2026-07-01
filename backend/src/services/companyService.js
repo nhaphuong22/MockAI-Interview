@@ -106,14 +106,15 @@ export const getCompanyFollowerIds = async (companyId) => {
 export const getCompanyFollowersProfiles = async (companyId) => {
   const followers = await db('company_followers')
     .join('users', 'company_followers.user_id', 'users.id')
+    .leftJoin('candidate_profiles', 'users.id', 'candidate_profiles.user_id')
     .where('company_followers.company_id', companyId)
     .select(
       'users.id',
       'users.email',
       'users.full_name',
       'users.avatar_url',
-      'users.bio as title', // map bio to title for frontend
-      'users.address as city', // map address to city for frontend
+      'candidate_profiles.bio as title', // map bio to title for frontend
+      'candidate_profiles.address as city', // map address to city for frontend
       'company_followers.created_at as followed_at'
     )
     .orderBy('company_followers.created_at', 'desc');
