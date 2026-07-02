@@ -193,8 +193,8 @@ export const applyJob = async (req, res) => {
 
     // 6. Gửi thông báo & email cho HR (nếu có thông tin HR)
     if (job.hr_id) {
-      // Clear HR's applications cache so they can see the new application in the "All" tab
-      await deleteCachePattern(`applications:hr:${job.hr_id}:*`);
+      // Clear applications cache so both HR and Admin see the new application
+      await deleteCachePattern('applications:hr:*');
 
       const hrUser = await db('users').where({ id: job.hr_id }).first();
 

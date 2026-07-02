@@ -278,12 +278,9 @@ const processAIEvaluationBackground = async ({ interviewId, userId, totalTabViol
       console.error('[HighlightService] Lỗi khi sinh highlights sau buổi phỏng vấn:', hlErr.message);
     }
 
-    // 6. Clear Redis Cache for HR Applications
-    const jobInfo = await db('jobs').where({ id: interview.job_id }).first();
-    if (jobInfo) {
-      const { deleteCachePattern } = await import('../config/redis.js');
-      await deleteCachePattern(`applications:hr:${jobInfo.hr_id}:*`);
-    }
+    // 6. Clear Redis Cache for HR Applications (for both HR and Admin)
+    const { deleteCachePattern } = await import('../config/redis.js');
+    await deleteCachePattern('applications:hr:*');
 
     console.log(`[Background] Hoàn thành chấm điểm cho Interview ID: ${interviewId}. Điểm: ${overallScore}`);
 

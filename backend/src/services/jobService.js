@@ -435,8 +435,8 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
       }
     }
 
-    // Clear HR applications list cache
-    await deleteCachePattern(`applications:hr:${application.job_hr_id}:*`);
+    // Clear applications list cache for both HR and Admin
+    await deleteCachePattern('applications:hr:*');
   }
 
   return updatedApplication;

@@ -274,7 +274,9 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
   const updateMutation = useMutation({
     mutationFn: (data) => jobApi.updateJobApplication(application.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(["manage-applications"]);
+      queryClient.invalidateQueries({ queryKey: ["manage-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["all-hr-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["shortlist-all"] });
       showToast({ message: "Cập nhật hồ sơ thành công!", type: "success" });
     },
     onError: () => {
@@ -285,7 +287,8 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
   const inviteMutation = useMutation({
     mutationFn: () => inviteAIInterviewApi(application.id),
     onSuccess: () => {
-      queryClient.invalidateQueries(["manage-applications"]);
+      queryClient.invalidateQueries({ queryKey: ["manage-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["all-hr-applications"] });
       showToast({ message: "Đã gửi lời mời phỏng vấn AI đến ứng viên!", type: "success" });
     },
     onError: () => {
@@ -972,7 +975,7 @@ export function ApplicationDetailModal({ isOpen, onOpenChange, application }) {
                   <div className="flex gap-2 mb-3">
                     <button
                       onClick={() => handleAction("HIRED")}
-                      disabled={updateMutation.isPending || application.status === "HIRED" || application.status === "REJECTED"}
+                      disabled={updateMutation.isPending || application.status === "HIRED"}
                       className="flex justify-center items-center gap-1.5 flex-1 bg-green-500 text-white px-3 py-2.5 rounded-xl font-bold text-sm hover:bg-green-600 hover:shadow-lg shadow-green-500/30 transition-all active:scale-[0.98] disabled:opacity-40"
                     >
                       <Award className="w-4 h-4" /> Trúng Tuyển
