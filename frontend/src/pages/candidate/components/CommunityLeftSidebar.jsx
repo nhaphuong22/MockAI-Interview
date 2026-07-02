@@ -4,7 +4,7 @@ export function CommunityLeftSidebar({
   categories, 
   selectedCategory, 
   setSelectedCategory, 
-  topContributors 
+  topContributors = []
 }) {
   return (
     <div className="dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-6 shadow-xl shadow-gray-200/20 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-100 sticky top-24">
@@ -29,9 +29,13 @@ export function CommunityLeftSidebar({
         <h3 className="text-lg font-bold dark:text-white text-gray-900 mb-6">Thành viên tích cực</h3>
         <div className="space-y-4">
           {topContributors.map((contributor, index) => (
-            <div key={index} className="flex items-center gap-4 group cursor-pointer">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-xl shadow-sm group-hover:scale-105 transition-transform">
-                {contributor.avatar}
+            <div key={contributor.id || index} className="flex items-center gap-4 group cursor-pointer">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-xl shadow-sm group-hover:scale-105 transition-transform overflow-hidden text-white font-bold">
+                {contributor.avatar && (contributor.avatar.startsWith('http') || contributor.avatar.startsWith('/')) ? (
+                  <img src={contributor.avatar} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  contributor.avatar || contributor.name?.charAt(0) || (index % 2 === 0 ? "👩‍💼" : "👨‍💻")
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-bold dark:text-slate-200 text-gray-900 truncate group-hover:text-[#0ea5e9] transition-colors">

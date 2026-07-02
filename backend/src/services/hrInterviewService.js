@@ -1,6 +1,5 @@
 import db from '../db/knex.js';
 import { generateQuestionsFromGroq, evaluateCandidateAnswer, generateOverallAssessmentFromGroq, evaluateAllAndGenerateHRReport } from './groqService.js';
-import { updateSkillTreeOnInterviewComplete } from './skillTreeService.js';
 import { insertInterview, insertQuestions } from '../models/interviewModel.js';
 import { generateInterviewHighlights } from './highlightService.js';
 
@@ -277,17 +276,6 @@ const processAIEvaluationBackground = async ({ interviewId, userId, totalTabViol
       await generateInterviewHighlights(interviewId, totalTabViolations);
     } catch (hlErr) {
       console.error('[HighlightService] Lỗi khi sinh highlights sau buổi phỏng vấn:', hlErr.message);
-    }
-
-    // 5.5. Cập nhật cây kỹ năng của ứng viên
-    try {
-      await updateSkillTreeOnInterviewComplete(
-        interview.user_id,
-        interview.custom_skills,
-        overallScore
-      );
-    } catch (stErr) {
-      console.error('[SkillTree] Lỗi khi cập nhật cây kỹ năng sau buổi phỏng vấn HR:', stErr.message);
     }
 
     // 6. Clear Redis Cache for HR Applications

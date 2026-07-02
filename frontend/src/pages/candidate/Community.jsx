@@ -15,20 +15,27 @@ const categories = [
   { id: "career", name: "Lời Khuyên Sự Nghiệp", active: false },
   { id: "tech", name: "Xu Hướng Công Nghệ", active: false },
   { id: "salary", name: "Thông Tin Mức Lương", active: false },
+  { id: "qa", name: "Hỏi Đáp / Q&A", active: false },
 ];
-
-const topContributors = [
-  { name: "Nguyễn Minh Anh", posts: 45, avatar: "👩‍💼" },
-  { name: "Trần Văn B", posts: 38, avatar: "👨‍💻" },
-  { name: "Lê Thị C", posts: 32, avatar: "👩‍🔬" },
-];
-
-const trendingTags = ["#RemoteWork", "#AI", "#Startup", "#CareerGrowth", "#Networking", "#Interview"];
 
 export function Community() {
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuthStore();
   const showToast = useUiStore((state) => state.showToast);
+
+  // Fetch dynamic sidebar metadata
+  const { data: sidebarRes } = useQuery({
+    queryKey: ["blogSidebar"],
+    queryFn: async () => {
+      const res = await blogApi.getBlogSidebar();
+      return res.data;
+    }
+  });
+
+  const sidebarData = sidebarRes || {};
+  const topContributors = sidebarData.topContributors || [];
+  const trendingTags = sidebarData.trendingTags || ["#RemoteWork", "#AI", "#Startup", "#CareerGrowth", "#Networking", "#Interview"];
+  const weeklyFocus = sidebarData.weeklyFocus || [];
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTag, setSelectedTag] = useState(null);
@@ -98,14 +105,15 @@ export function Community() {
 
       // Map id category sang dạng category string lưu trong DB
       const categoryMapping = {
-        cv: "Career Tips",
-        interview: "Interview Guide",
-        career: "Industry News",
-        tech: "Industry News",
-        salary: "Career Tips"
+        cv: "Cẩm nang CV",
+        interview: "Kinh nghiệm phỏng vấn",
+        career: "Lộ trình sự nghiệp",
+        tech: "Thị trường lao động",
+        salary: "Thông tin mức lương",
+        qa: "Hỏi Đáp"
       };
       
-      const categoryName = categoryMapping[postCategory] || "Career Tips";
+      const categoryName = categoryMapping[postCategory] || "Cẩm nang CV";
 
       const draftRes = await blogApi.createDraft({
         title: postTitle,
@@ -248,21 +256,23 @@ export function Community() {
       matchesCategory = true;
     } else {
       const categoryMapping = {
-        cv: "Career Tips",
-        interview: "Interview Guide",
-        career: "Industry News",
-        tech: "Industry News",
-        salary: "Career Tips"
+        cv: "Cẩm nang CV",
+        interview: "Kinh nghiệm phỏng vấn",
+        career: "Lộ trình sự nghiệp",
+        tech: "Thị trường lao động",
+        salary: "Thông tin mức lương",
+        qa: "Hỏi Đáp"
       };
       const expectedDbCategory = categoryMapping[selectedCategory];
       
       matchesCategory = (post.category && post.category === expectedDbCategory) || 
         postTags.some(tag => tag.toLowerCase() === selectedCategory || 
-                              (selectedCategory === "cv" && tag.toLowerCase().includes("cv")) ||
+                              (selectedCategory === "cv" && (tag.toLowerCase().includes("cv") || tag.toLowerCase().includes("hồ sơ"))) ||
                               (selectedCategory === "interview" && tag.toLowerCase().includes("phỏng vấn")) ||
-                              (selectedCategory === "career" && tag.toLowerCase().includes("sự nghiệp")) ||
-                              (selectedCategory === "tech" && tag.toLowerCase().includes("tech")) ||
-                              (selectedCategory === "salary" && tag.toLowerCase().includes("lương"))
+                              (selectedCategory === "career" && (tag.toLowerCase().includes("sự nghiệp") || tag.toLowerCase().includes("career"))) ||
+                              (selectedCategory === "tech" && (tag.toLowerCase().includes("tech") || tag.toLowerCase().includes("công nghệ"))) ||
+                              (selectedCategory === "salary" && (tag.toLowerCase().includes("lương") || tag.toLowerCase().includes("thu nhập"))) ||
+                              (selectedCategory === "qa" && (tag.toLowerCase().includes("hỏi đáp") || tag.toLowerCase().includes("qa") || tag.toLowerCase().includes("hỏi")))
         );
     }
 
@@ -383,6 +393,7 @@ export function Community() {
               trendingTags={trendingTags}
               selectedTag={selectedTag}
               setSelectedTag={setSelectedTag}
+              weeklyFocus={weeklyFocus}
             />
           </aside>
         </div>
@@ -485,6 +496,7 @@ export function Community() {
                     <option value="career">Lời Khuyên Sự Nghiệp</option>
                     <option value="tech">Xu Hướng Công Nghệ</option>
                     <option value="salary">Thông Tin Mức Lương</option>
+                    <option value="qa">Hỏi Đáp / Q&A</option>
                   </select>
                 </div>
 

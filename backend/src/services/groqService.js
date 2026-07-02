@@ -1275,6 +1275,10 @@ export const moderateBlogContentWithGroq = async ({
       title.toLowerCase().includes('su nghiep') ||
       title.toLowerCase().includes('sự nghiệp') ||
       title.toLowerCase().includes('lương') ||
+      title.toLowerCase().includes('hỏi') ||
+      title.toLowerCase().includes('đáp') ||
+      title.toLowerCase().includes('qa') ||
+      title.toLowerCase().includes('q&a') ||
       title.toLowerCase().includes('career');
     return {
       relevant: isRelevant,

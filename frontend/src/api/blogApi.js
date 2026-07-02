@@ -19,6 +19,9 @@ export const blogApi = {
   getPublishedBlogs: () => {
     return axiosClient.get('/blogs/published');
   },
+  getBlogSidebar: () => {
+    return axiosClient.get('/blogs/sidebar');
+  },
   getBlogById: (id) => {
     return axiosClient.get(`/blogs/${id}`);
   },

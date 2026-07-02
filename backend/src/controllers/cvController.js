@@ -1,6 +1,5 @@
 import { parseCVBuffer, evaluateCV } from '../services/cvService.js';
 import db from '../db/knex.js';
-import { initializeSkillTreeFromCV } from '../services/skillTreeService.js';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
@@ -101,13 +100,6 @@ export const scoreCV = async (req, res) => {
         created_at: new Date(),
         updated_at: new Date()
       });
-    }
-
-    // 2. Khởi tạo Cây kỹ năng RPG dựa trên Cây kỹ năng AI vừa sinh ra
-    try {
-      await initializeSkillTreeFromCV(userId, evaluationData.skillTree);
-    } catch (stErr) {
-      console.error('[SkillTree] Lỗi khi tự động khởi tạo cây từ CV Review:', stErr.message);
     }
 
     return res.status(200).json({
