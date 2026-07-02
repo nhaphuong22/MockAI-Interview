@@ -328,3 +328,66 @@ export const deleteBlogComment = async (commentId, userId, userRole) => {
 
   return { message: 'Xóa bình luận thành công.' };
 };
+
+/**
+ * Lấy dữ liệu meta cho sidebar cộng đồng (Thành viên tích cực, Trending Tags, Tiêu điểm tuần)
+ */
+export const getBlogSidebarData = async () => {
+  // 1. Top Contributors (Active Members)
+  const topContributors = await db('blogs')
+    .join('users', 'blogs.author_id', '=', 'users.id')
+    .where('blogs.status', 'PUBLISHED')
+    .select('users.id', 'users.full_name as name', 'users.avatar_url as avatar')
+    .count('blogs.id as posts')
+    .groupBy('users.id', 'users.full_name', 'users.avatar_url')
+    .orderBy('posts', 'desc')
+    .limit(5);
+
+  const formattedContributors = topContributors.map(c => ({
+    ...c,
+    posts: Number(c.posts) || 0
+  }));
+
+  // 2. Trending Tags
+  let trendingTags = [];
+  try {
+    const tagStats = await db.raw(`
+      SELECT unnest(tags) as tag, count(*) as count
+      FROM blogs
+      WHERE status = 'PUBLISHED' AND tags IS NOT NULL
+      GROUP BY tag
+      ORDER BY count DESC
+      LIMIT 10
+    `);
+    trendingTags = tagStats.rows
+      .map(row => row.tag)
+      .filter(Boolean)
+      .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
+  } catch (err) {
+    console.error('[BlogService] Lỗi khi unnest tags, dùng fallback:', err.message);
+  }
+
+  if (trendingTags.length === 0) {
+    trendingTags = ["#RemoteWork", "#AI", "#Startup", "#CareerGrowth", "#Networking", "#Interview"];
+  }
+
+  // 3. Tiêu điểm tuần (Weekly Focus)
+  const weeklyFocus = await db('blogs')
+    .join('users', 'blogs.author_id', '=', 'users.id')
+    .where('blogs.status', 'PUBLISHED')
+    .select(
+      'blogs.id',
+      'blogs.title',
+      'blogs.slug',
+      'blogs.view_count',
+      'users.full_name as author_name'
+    )
+    .orderBy('blogs.view_count', 'desc')
+    .limit(3);
+
+  return {
+    topContributors: formattedContributors,
+    trendingTags,
+    weeklyFocus
+  };
+};

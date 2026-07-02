@@ -20,17 +20,31 @@ Dự án xây dựng hệ sinh thái hỗ trợ việc làm hiện đại, sử 
 - Sau khi hoàn tất buổi phỏng vấn với AI thì AI sẽ dựa vào câu trả lời của ứng viên để đánh giá sau đó gửi về cho HR và xếp hạng danh sách ứng viên và update trên giao diện của HR.
 
 ### 2. Phương - Module luyện tập Phỏng vấn Giọng nói & Tương tác AI (AI Voice Engine & Interaction)
-- Module sẽ bao gồm các kỹ năng phỏng vấn như là xin chào, small talk, giao tiếp cơ bản trước khi đi vào phỏng vấn chuyên sâu về kỹ năng, điểm mạnh điểm yếu, câu hỏi chuyên môn, và kết thúc buổi phỏng vấn. Tương tác giữa user và AI sẽ là voice/video (có thể tắt camera).
-- User sẽ đưa CV vào và lựa chọn vị trí muốn ứng tuyển sau đó hệ thống AI sẽ đưa ra danh sách để cho phép user luyện tập phỏng vấn thông qua giọng nói (user và AI sẽ trò chuyện với nhau).
-- Sau khi hoàn tất buổi phỏng vấn với AI thì AI sẽ dựa vào câu trả lời của ứng viên để đánh giá sau đó đưa ra lộ trình luyện tập phỏng vấn và hướng dẫn cách trả lời các câu hỏi phỏng vấn cho ứng viên để có thể trả lời phỏng vấn tốt hơn.
-- [x] Cài đặt thư viện: `socket.io` ở backend và `socket.io-client` ở frontend.
-- [x] Cấu hình HTTP Server và Socket.io ở backend.
-- [x] Viết module `socket.js` quản lý kết nối socket và đẩy thông báo real-time.
-- [x] Thêm email template và hàm gửi email ứng tuyển trong `emailService.js`.
-- [x] Viết Controller và Route cho `applications` (Đơn ứng tuyển).
-- [x] Viết Controller và Route cho `notifications` (Thông báo).
-- [x] Đăng ký các route mới vào backend index.js.
-- [ ] Cài đặt Socket.io-client và tạo `SocketContext.jsx` ở frontend.
+- [x] Tạo migration mới `20260703010000_drop_user_skill_trees_table.js` để drop bảng `user_skill_trees`
+- [x] Xóa file seed `backend/seeds/07_sample_user_skill_trees.js`
+- [x] Chạy migrate cơ sở dữ liệu `npm run migrate` từ thư mục gốc
+
+## 2. Backend Dọn dẹp
+- [x] Xóa file service `backend/src/services/skillTreeService.js`
+- [x] Xóa file controller `backend/src/controllers/skillTreeController.js`
+- [x] Xóa file route `backend/src/routes/skillTreeRoutes.js`
+- [x] Gỡ bỏ route `/api/skill-tree` trong `backend/src/routes/index.js`
+- [x] Gỡ bỏ socket event `skill_tree_update` trong `backend/src/socket.js`
+- [x] Gỡ bỏ logic tạo `skillTree` từ AI trong `backend/src/services/cvService.js`
+- [x] Gỡ bỏ logic cập nhật `skillTree` trong `backend/src/services/hrInterviewService.js`
+- [x] Gỡ bỏ logic khởi tạo `skillTree` trong `backend/src/controllers/applicationController.js`
+- [x] Gỡ bỏ import `skillTreeService` không sử dụng trong `backend/src/services/voiceSessionService.js`
+
+## 3. Frontend Dọn dẹp
+- [x] Xóa file component `frontend/src/pages/candidate/components/SkillTreeGraph.jsx`
+- [x] Xóa file component `frontend/src/pages/candidate/components/SkillTreeSidePanel.jsx`
+- [x] Xóa file API `frontend/src/api/skillTreeApi.js`
+- [x] Gỡ bỏ tab và view Cây kỹ năng trong `frontend/src/components/interview/InterviewSelection.jsx`
+- [x] Gỡ bỏ socket listener `skill_tree_update` trong `frontend/src/context/SocketContext.jsx`
+
+## 4. Kiểm tra & Xác minh
+- [x] Đảm bảo các dịch vụ backend chạy tốt, không bị crash
+- [x] Chạy kiểm thử ESLint cho frontend: `pnpm -C frontend run lint`
 
 ### 3. Triều - Module giao diện và chức năng cho HR đăng bài ứng tuyển
 - HR sẽ đăng bài ứng tuyển lên hệ thống.

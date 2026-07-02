@@ -12,7 +12,8 @@ import {
   createComment,
   getComments,
   updateComment,
-  deleteComment
+  deleteComment,
+  getBlogSidebar
 } from '../controllers/blogController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
@@ -142,6 +143,7 @@ router.put('/:id/submit', authenticateToken, submitForReview);
  *         description: Trả về danh sách bài viết.
  */
 router.get('/published', optionalAuthenticateToken, cacheMiddleware('blogs:published', 1800), getPublishedBlogs);
+router.get('/sidebar', cacheMiddleware('blogs:sidebar', 600), getBlogSidebar);
 
 /**
  * @swagger

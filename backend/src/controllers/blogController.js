@@ -8,7 +8,8 @@ import {
   addBlogComment,
   getBlogComments,
   updateBlogComment,
-  deleteBlogComment
+  deleteBlogComment,
+  getBlogSidebarData as fetchBlogSidebarData
 } from '../services/blogService.js';
 import { containsBadWords } from '../helper/badWordsHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -281,5 +282,21 @@ export const deleteComment = async (req, res) => {
     }
     console.error('Lỗi khi xóa bình luận:', error);
     return res.status(500).json({ message: 'Lỗi hệ thống khi xóa bình luận.' });
+  }
+};
+
+/**
+ * Lấy dữ liệu meta cho sidebar cộng đồng
+ */
+export const getBlogSidebar = async (req, res) => {
+  try {
+    const data = await fetchBlogSidebarData();
+    return res.status(200).json({
+      message: 'Lấy dữ liệu sidebar thành công.',
+      data
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy dữ liệu sidebar:', error);
+    return res.status(500).json({ message: 'Lỗi hệ thống khi lấy dữ liệu sidebar.' });
   }
 };

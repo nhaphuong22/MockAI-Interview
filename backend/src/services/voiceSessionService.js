@@ -1,6 +1,5 @@
 import db from '../db/knex.js';
 import { generateOverallAssessmentFromGroq } from './groqService.js';
-import { updateSkillTreeOnInterviewComplete } from './skillTreeService.js';
 import { 
   findSessionById, 
   insertSession, 

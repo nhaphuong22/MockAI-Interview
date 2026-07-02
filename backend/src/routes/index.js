@@ -16,7 +16,6 @@ import applicationRoutes from './applicationRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
 import aiRoutes from './aiRoutes.js';
 import dailyChallengeRoutes from './dailyChallengeRoutes.js';
-import skillTreeRoutes from './skillTreeRoutes.js';
 
 
 const router = express.Router();
@@ -37,7 +36,6 @@ router.use('/applications', applicationRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/ai', aiRoutes);
 router.use('/daily-challenge', dailyChallengeRoutes);
-router.use('/skill-tree', skillTreeRoutes);
 router.use('/', systemRoutes);
 
 export default router;

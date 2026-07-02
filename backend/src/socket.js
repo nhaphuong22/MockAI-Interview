@@ -91,13 +91,3 @@ export const broadcastNewApplication = (application) => {
   io.to('hr_room').emit('new_application', application);
 };
 
-/**
- * Gửi cập nhật cây kỹ năng real-time tới một người dùng cụ thể
- * @param {number} userId - ID của người nhận
- * @param {object} skillTree - Cây kỹ năng đã cập nhật
- */
-export const emitSkillTreeUpdate = (userId, skillTree) => {
-  if (!io) return;
-  console.log(`[Socket] Gửi cập nhật skill tree real-time tới user_${userId}`);
-  io.to(`user_${userId}`).emit('skill_tree_update', skillTree);
-};

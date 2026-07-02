@@ -2,7 +2,6 @@ import db from '../db/knex.js';
 import { evaluateCV, generatePDFReportBuffer } from '../services/cvService.js';
 import { runHrScreeningPipeline } from '../services/hrScreeningService.js';
 import { sendJobApplicationEmail, sendApplicationReportEmail, sendApplicationStatusUpdateEmail } from '../services/emailService.js';
-import { initializeSkillTreeFromCV } from '../services/skillTreeService.js';
 import { sendRealtimeNotification, broadcastNewApplication } from '../socket.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -190,18 +189,6 @@ export const applyJob = async (req, res) => {
         })
         .returning('*');
       application = newApp;
-    }
-
-    // 5.5. Khởi tạo Skill Tree cho ứng viên nếu chưa có
-    try {
-      await initializeSkillTreeFromCV(
-        candidateId,
-        evaluation.matched_skills || [],
-        job.title || '',
-        evaluation.semantic_score || 60
-      );
-    } catch (stErr) {
-      console.error('[SkillTree] Lỗi khi tự động khởi tạo skill tree từ CV:', stErr);
     }
 
     // 6. Gửi thông báo & email cho HR (nếu có thông tin HR)
