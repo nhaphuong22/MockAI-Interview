@@ -211,6 +211,7 @@ export function HRDashboard() {
                       tickLine={false} 
                       tick={{ fill: '#64748b', fontSize: 12 }} 
                       dx={-10}
+                      allowDecimals={false}
                     />
                     <RechartsTooltip 
                       cursor={{ fill: '#f8fafc' }}
@@ -252,6 +253,7 @@ export function HRDashboard() {
                       tickLine={false} 
                       tick={{ fill: '#64748b', fontSize: 12 }} 
                       dx={-10}
+                      allowDecimals={false}
                     />
                     <RechartsTooltip 
                       cursor={{ stroke: '#e2e8f0', strokeWidth: 2, strokeDasharray: '3 3' }}
