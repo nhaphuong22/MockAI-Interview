@@ -19,6 +19,8 @@ import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 import HRInterviewPrep from "../pages/candidate/HRInterviewPrep";
 import HRInterviewRoom from "../pages/candidate/HRInterviewRoom";
 import HRInterviewResult from "../pages/candidate/HRInterviewResult";
+import { Tools } from "../pages/candidate/Tools";
+
 export const candidateRoutes = [
   { index: true, Component: Home }, // Public: Landing Page
   { 
@@ -28,6 +30,10 @@ export const candidateRoutes = [
   { 
     path: "jobs/:id", 
     element: <JobDetail />
+  },
+  {
+    path: "tools",
+    element: <Tools />
   },
   { 
     path: "companies/:id", 

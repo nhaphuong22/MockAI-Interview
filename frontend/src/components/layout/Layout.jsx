@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon, Crown, Bookmark } from "lucide-react";
+import { Bell, User, LogOut, Settings, Briefcase, Building, Shield, FileText, PieChart, Sun, Moon, Crown, Bookmark, ChevronDown, Calculator, Sparkles } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AIChatWidget } from "../ai/AIChatWidget";
 import { AuthModal } from "../auth/AuthModal";
@@ -186,6 +186,39 @@ export function Layout() {
                       <ProtectedLink to="/community" className={`text-sm font-medium transition-colors ${isActive('/community') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                         Cộng Đồng
                       </ProtectedLink>
+                      <div className="relative group py-2">
+                        <Link 
+                          to="/tools" 
+                          className={`text-sm font-medium transition-colors flex items-center gap-1 ${
+                            isActive('/tools') 
+                              ? 'text-[#0ea5e9]' 
+                              : theme === 'dark' 
+                                ? 'text-slate-300 hover:text-[#0ea5e9]' 
+                                : 'text-gray-600 hover:text-[#0ea5e9]'
+                          }`}
+                        >
+                          Công cụ
+                          <ChevronDown size={14} className="transition-transform group-hover:rotate-180" />
+                        </Link>
+                        
+                        {/* Dropdown Menu */}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-52 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/5 rounded-xl shadow-2xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                          <Link 
+                            to="/tools?tab=salary" 
+                            className="flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-gray-700 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-sky-950/20 hover:text-[#0ea5e9] dark:hover:text-sky-400 rounded-lg transition-colors"
+                          >
+                            <Calculator size={14} />
+                            Tính Lương Gross - Net
+                          </Link>
+                          <Link 
+                            to="/tools?tab=questions" 
+                            className="flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-gray-700 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-sky-950/20 hover:text-[#0ea5e9] dark:hover:text-sky-400 rounded-lg transition-colors"
+                          >
+                            <Sparkles size={14} />
+                            Bộ Câu Hỏi Phỏng Vấn AI
+                          </Link>
+                        </div>
+                      </div>
                       <ProtectedLink to="/cv-review" className={`text-sm font-medium transition-colors ${isActive('/cv-review') ? 'text-[#0ea5e9]' : theme === 'dark' ? 'text-slate-300 hover:text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                         AI CV
                       </ProtectedLink>
