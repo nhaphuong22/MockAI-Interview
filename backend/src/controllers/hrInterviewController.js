@@ -241,7 +241,7 @@ export const getAudioSliceHandler = async (req, res) => {
                         hostname === '127.0.0.1' || 
                         hostname.startsWith('10.') || 
                         hostname.startsWith('192.168.') || 
-                        hostname.startsWith('172.16.');
+                        hostname.startsWith('172.16.'); 
       if (isInternal) {
         return sendError(res, 400, 'Yêu cầu URL an toàn bên ngoài');
       }
