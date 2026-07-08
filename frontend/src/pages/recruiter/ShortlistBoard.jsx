@@ -8,7 +8,7 @@ import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useUiStore } from "../../store/useUiStore";
 import { Link } from "react-router-dom";
-import { ApplicationDetailModal } from "./components/ApplicationDetailModal";
+import { ApplicationDetailModal } from "./components/ApplicationDetailModal/index.jsx";
 
 // Status label + color for qualified candidates
 const STATUS_BADGES = {

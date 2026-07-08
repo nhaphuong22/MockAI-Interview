@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
-import { ApplicationDetailModal } from "./components/ApplicationDetailModal";
+import { ApplicationDetailModal } from "./components/ApplicationDetailModal/index.jsx";
 
 const STATUS_BADGES = {
   SUBMITTED:            { label: "Đã nộp",         color: "text-blue-600 bg-blue-50 border-blue-100" },
