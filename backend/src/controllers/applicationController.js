@@ -148,6 +148,8 @@ export const applyJob = async (req, res) => {
           candidate_phone: candidate_phone || null,
           portfolio_url: portfolio_url || null,
           ai_summary: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3).join(', ') : 'Chưa cập nhật kỹ năng',
+          reviewed_by: null,
+          reviewed_at: null,
           updated_at: new Date(),
           created_at: new Date() // Đẩy lên đầu danh sách HR
         })
@@ -244,48 +246,10 @@ export const applyJob = async (req, res) => {
 
     // Đã vô hiệu hóa gửi mail xác nhận cho ứng viên khi nộp đơn theo yêu cầu của user
 
-    // Tuy nhiên, nếu AI tự động đánh rớt (Knock-out REJECTED), thì tự động gửi mail báo Từ chối cho ứng viên luôn
+    // Disabled auto-emailing and notifying candidates when AI automatically rejects (knock-out) the application.
+    // The candidate will only receive notifications/emails when HR explicitly acts on the application.
     if (initialStatus === 'REJECTED') {
-      const emailToUse = candidate_email || req.user.email;
-      const candidateNameToUse = candidate_name || req.user.full_name || req.user.email;
-      if (emailToUse) {
-        console.log(`[Application] AI Knock-out REJECTED - Tự động gửi mail báo rớt tới Candidate: ${emailToUse}`);
-        sendApplicationStatusUpdateEmail(
-          emailToUse,
-          candidateNameToUse,
-          job.title,
-          'REJECTED'
-        ).catch(err => console.error('Lỗi khi gửi email báo rớt AI Knock-out:', err));
-      }
-
-      // Tạo thông báo in-app cho ứng viên
-      try {
-        const [candidateNotification] = await db('notifications')
-          .insert({
-            user_id: candidateId,
-            type: 'APPLICATION_UPDATE',
-            title: 'Cập nhật trạng thái đơn tuyển',
-            content: `Đơn ứng tuyển vị trí "${job.title}" của bạn đã được cập nhật thành: Từ chối`,
-            link: '/applications',
-            reference_id: application.id,
-            reference_type: 'application',
-            is_read: false,
-            created_at: new Date(),
-            updated_at: new Date()
-          })
-          .returning('*');
-
-        sendRealtimeNotification(candidateId, {
-          id: candidateNotification.id,
-          type: 'application',
-          title: candidateNotification.title,
-          content: candidateNotification.content,
-          time: 'Vừa xong',
-          isRead: false
-        });
-      } catch (notiError) {
-        console.error('Lỗi khi tạo in-app notification cho Candidate bị AI từ chối:', notiError);
-      }
+      console.log(`[Application] AI Knock-out REJECTED for Candidate ${candidateId} - Skipped auto-notification as requested by business logic.`);
     }
 
     return sendResponse(res, 201, {
@@ -377,7 +341,9 @@ export const getApplications = async (req, res) => {
       cvText: item.cv_text || null,
       pdfReportUrl: item.pdf_report_url,
       aiFeedback: item.ai_feedback ? JSON.parse(item.ai_feedback) : null,
-      status: item.status.toLowerCase(), // frontend match: 'new', 'reviewed', 'interviewed', 'accepted', 'rejected'
+      status: (role === 'USER' && item.status?.toUpperCase() === 'REJECTED' && !item.reviewed_by) 
+        ? 'submitted' 
+        : item.status.toLowerCase(), // frontend match: 'new', 'reviewed', 'interviewed', 'accepted', 'rejected'
       aiScore: item.cv_score || 0,
       appliedDate: item.created_at,
       coverLetter: item.cover_letter,

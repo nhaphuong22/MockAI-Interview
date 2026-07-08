@@ -77,10 +77,15 @@ export const inviteForAIInterview = async (req, res) => {
       return sendError(res, 403, 'Không có quyền thực hiện thao tác này');
     }
 
-    // Cập nhật status
+    // Cập nhật status và ghi nhận người duyệt
     await db('applications')
       .where({ 'applications.id': appId })
-      .update({ status: 'AI_INTERVIEW_INVITED', updated_at: new Date() });
+      .update({ 
+        status: 'AI_INTERVIEW_INVITED', 
+        reviewed_by: hrId,
+        reviewed_at: new Date(),
+        updated_at: new Date() 
+      });
 
     // Xóa cache của applications (for both HR and Admin)
     const { deleteCachePattern } = await import('../config/redis.js');
