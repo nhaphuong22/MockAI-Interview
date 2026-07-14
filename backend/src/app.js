@@ -29,7 +29,7 @@ app.use(cors({
     const isAllowed = 
       process.env.NODE_ENV !== 'production' || 
       allowedOrigins.includes(normalizedOrigin) ||
-      (normalizedOrigin.endsWith('.vercel.app') && normalizedOrigin.includes('mockai'));
+      (normalizedOrigin.endsWith('.vercel.app') && (normalizedOrigin.includes('mockai') || normalizedOrigin.includes('mock-ai')));
 
     if (isAllowed) {
       callback(null, true);
