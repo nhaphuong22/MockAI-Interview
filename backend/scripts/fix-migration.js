@@ -36,6 +36,28 @@ async function run() {
     } else {
       console.log('[Fix Migration] Legacy migration record not found or already fixed.');
     }
+
+    const missingRecord = await db('knex_migrations')
+      .where('name', '20260715100000_create_curated_questions.js')
+      .first();
+
+    if (missingRecord) {
+      console.log('[Fix Migration] Found missing migration record 20260715100000_create_curated_questions.js.');
+      
+      await db('knex_migrations')
+        .where('name', '20260715100000_create_curated_questions.js')
+        .delete();
+      
+      console.log('[Fix Migration] Successfully deleted missing migration record.');
+
+      const hasCuratedQuestionsTable = await db.schema.hasTable('curated_questions');
+      if (hasCuratedQuestionsTable) {
+        await db.schema.dropTable('curated_questions');
+        console.log('[Fix Migration] Successfully dropped table curated_questions.');
+      }
+    } else {
+      console.log('[Fix Migration] Missing migration record 20260715100000_create_curated_questions.js not found in DB.');
+    }
   } catch (error) {
     console.error('[Fix Migration] Error running fix-migration script:', error);
   } finally {
