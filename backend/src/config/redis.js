@@ -9,9 +9,28 @@ let redisClient = null;
 let isRedisConnected = false;
 
 if (process.env.NODE_ENV !== 'test') {
-  let redisUrl = process.env.REDIS_URL || (redisPassword 
-    ? `redis://:${redisPassword}@${redisHost}:${redisPort}`
-    : `redis://${redisHost}:${redisPort}`);
+  let redisUrl = process.env.REDIS_URL;
+
+  // If REDIS_URL points to 'redis', 'localhost' or '127.0.0.1' in production, but a specific REDIS_HOST is provided,
+  // we prioritize the specific REDIS_HOST from the dashboard to prevent connecting to a non-existent or outdated instance.
+  if (process.env.NODE_ENV === 'production' && redisUrl) {
+    try {
+      const u = new URL(redisUrl);
+      if ((u.hostname === 'redis' || u.hostname === 'localhost' || u.hostname === '127.0.0.1') && 
+          process.env.REDIS_HOST && process.env.REDIS_HOST !== 'redis' && process.env.REDIS_HOST !== 'localhost' && process.env.REDIS_HOST !== '127.0.0.1') {
+        console.log(`📡 [Redis]: Detected outdated or default REDIS_URL (${u.hostname}). Switching to specific REDIS_HOST (${process.env.REDIS_HOST}) configuration.`);
+        redisUrl = null;
+      }
+    } catch (e) {
+      // Ignore parse errors and keep REDIS_URL
+    }
+  }
+
+  if (!redisUrl) {
+    redisUrl = redisPassword 
+      ? `redis://:${redisPassword}@${redisHost}:${redisPort}`
+      : `redis://${redisHost}:${redisPort}`;
+  }
 
   // Auto-convert to secure protocol (rediss://) if connecting to Upstash via separate env variables
   if (redisUrl.includes('upstash.io') && redisUrl.startsWith('redis://')) {
