@@ -19,44 +19,67 @@ if (process.env.NODE_ENV !== 'test') {
   }
 
   let logTarget = `${redisHost}:${redisPort}`;
+  const clientOptions = {};
+
   try {
     const parsedUrl = new URL(redisUrl);
     logTarget = parsedUrl.host;
+
+    // Extract database index if present in pathname (e.g. /0)
+    let dbIndex = null;
+    if (parsedUrl.pathname && parsedUrl.pathname !== '/') {
+      const match = parsedUrl.pathname.match(/^\/(\d+)$/);
+      if (match) {
+        dbIndex = parseInt(match[1], 10);
+      }
+      // Remove invalid pathname to avoid node-redis v6 crash
+      parsedUrl.pathname = '';
+    }
+
+    clientOptions.url = parsedUrl.toString();
+    if (dbIndex !== null) {
+      clientOptions.database = dbIndex;
+    }
   } catch (e) {
-    // Keep fallback
+    console.warn('⚠️ [Redis URL Parse Warning]: Failed to parse REDIS_URL, using raw value:', e.message);
+    clientOptions.url = redisUrl;
   }
 
-  const clientOptions = { url: redisUrl };
-
   // Enable TLS and bypass self-signed certificate validation for secure connections
-  if (redisUrl.startsWith('rediss://') || redisUrl.includes('upstash.io')) {
+  if (clientOptions.url.startsWith('rediss://') || clientOptions.url.includes('upstash.io')) {
     clientOptions.socket = {
       tls: true,
       rejectUnauthorized: false
     };
   }
 
-  redisClient = createClient(clientOptions);
+  try {
+    redisClient = createClient(clientOptions);
 
-  redisClient.on('error', (err) => {
-    console.warn('⚠️ [Redis Error]: Kết nối Redis thất bại hoặc bị ngắt quãng. Hệ thống tự động chuyển sang fallback dùng Database chính.', err.message);
+    redisClient.on('error', (err) => {
+      console.warn('⚠️ [Redis Error]: Kết nối Redis thất bại hoặc bị ngắt quãng. Hệ thống tự động chuyển sang fallback dùng Database chính.', err.message);
+      isRedisConnected = false;
+    });
+
+    redisClient.on('connect', () => {
+      console.log('📡 [Redis]: Đang kết nối tới Redis...');
+    });
+
+    redisClient.on('ready', () => {
+      console.log(`🚀 [Redis]: Kết nối thành công tới Redis server tại ${logTarget}`);
+      isRedisConnected = true;
+    });
+
+    // Tự động kết nối và bắt lỗi để tránh crash ứng dụng khi Redis chưa chạy
+    redisClient.connect().catch((err) => {
+      console.warn('⚠️ [Redis Connection Failed]: Không thể kết nối tới Redis. Hệ thống chạy ở chế độ fallback trực tiếp Database.', err.message);
+      isRedisConnected = false;
+    });
+  } catch (error) {
+    console.error('⚠️ [Redis Initialization Failed]: Không thể khởi tạo Redis client (lỗi URL hoặc cấu hình). Hệ thống chạy ở chế độ fallback trực tiếp Database.', error.message);
+    redisClient = null;
     isRedisConnected = false;
-  });
-
-  redisClient.on('connect', () => {
-    console.log('📡 [Redis]: Đang kết nối tới Redis...');
-  });
-
-  redisClient.on('ready', () => {
-    console.log(`🚀 [Redis]: Kết nối thành công tới Redis server tại ${logTarget}`);
-    isRedisConnected = true;
-  });
-
-  // Tự động kết nối và bắt lỗi để tránh crash ứng dụng khi Redis chưa chạy
-  redisClient.connect().catch((err) => {
-    console.warn('⚠️ [Redis Connection Failed]: Không thể kết nối tới Redis. Hệ thống chạy ở chế độ fallback trực tiếp Database.', err.message);
-    isRedisConnected = false;
-  });
+  }
 }
 
 /**
