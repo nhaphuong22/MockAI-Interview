@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-15T23:02:00.000Z",
+  "title": "Design System: MockAI-Interview",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Ocean Blue",
+        "canonical": "oklch(0.68 0.17 236)",
+        "tonalRamp": [
+          "oklch(0.3 0.1 236)",
+          "oklch(0.4 0.12 236)",
+          "oklch(0.5 0.14 236)",
+          "oklch(0.6 0.16 236)",
+          "oklch(0.68 0.17 236)",
+          "oklch(0.75 0.15 236)",
+          "oklch(0.85 0.1 236)",
+          "oklch(0.95 0.04 236)"
+        ]
+      },
+      "secondary": {
+        "role": "secondary",
+        "displayName": "Ocean Sky",
+        "canonical": "oklch(0.77 0.14 233)",
+        "tonalRamp": [
+          "oklch(0.4 0.1 233)",
+          "oklch(0.5 0.12 233)",
+          "oklch(0.6 0.13 233)",
+          "oklch(0.7 0.14 233)",
+          "oklch(0.77 0.14 233)",
+          "oklch(0.84 0.11 233)",
+          "oklch(0.9 0.08 233)",
+          "oklch(0.96 0.03 233)"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Canvas White",
+        "canonical": "oklch(1.0 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.3 0 0)",
+          "oklch(0.5 0 0)",
+          "oklch(0.7 0 0)",
+          "oklch(0.85 0 0)",
+          "oklch(0.92 0 0)",
+          "oklch(0.97 0 0)",
+          "oklch(1.0 0 0)"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Deep Slate Ink",
+        "canonical": "oklch(0.12 0.02 240)",
+        "tonalRamp": [
+          "oklch(0.08 0.02 240)",
+          "oklch(0.12 0.02 240)",
+          "oklch(0.2 0.02 240)",
+          "oklch(0.35 0.02 240)",
+          "oklch(0.5 0.02 240)",
+          "oklch(0.7 0.02 240)",
+          "oklch(0.85 0.01 240)",
+          "oklch(0.95 0.005 240)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display Heading",
+        "purpose": "Hero headlines and main titles on onboarding or landing."
+      },
+      "body": {
+        "displayName": "Body Text",
+        "purpose": "Core text, paragraphs, descriptions and readable contents."
+      }
+    },
+    "shadows": [
+      {
+        "name": "interactive",
+        "value": "0 4px 12px rgba(2, 8, 23, 0.05)",
+        "purpose": "Feedback hover glow on buttons, inputs or clickable cards."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-standard",
+        "value": "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default duration and easing for hover, active and focus state updates."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Standard call-to-action button for principal tasks.",
+      "html": "<button class=\"ds-btn-primary\">Bắt Đầu Luyện Tập</button>",
+      "css": ".ds-btn-primary { background-color: #0ea5e9; color: #ffffff; padding: 8px 16px; border-radius: 8px; border: none; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1); outline: none; } .ds-btn-primary:hover { background-color: #38bdf8; box-shadow: 0 4px 12px rgba(2, 8, 23, 0.05); } .ds-btn-primary:focus-visible { outline: 3px solid rgba(14, 165, 233, 0.5); }"
+    },
+    {
+      "name": "Standard Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Base container for grouping related page elements.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\"><h4 class=\"ds-card-title\">Luyện Tập Với AI 3D</h4><p class=\"ds-card-desc\">Mô phỏng phỏng vấn thực tế với avatar 3D và phản hồi giọng nói.</p></div><div class=\"ds-card-body\">Nội dung phỏng vấn thử nghiệm được thiết kế trực quan...</div></div>",
+      "css": ".ds-card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; display: flex; flex-direction: column; gap: 24px; padding: 24px; font-family: 'Inter', sans-serif; } .ds-card-header { display: flex; flex-direction: column; gap: 6px; } .ds-card-title { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 600; color: #020817; margin: 0; } .ds-card-desc { font-size: 14px; color: #64748b; margin: 0; } .ds-card-body { font-size: 15px; color: #020817; line-height: 1.5; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Professional Launchpad",
+    "overview": "Hệ thống thiết kế visual của MockAI-Interview tập trung truyền tải sự chuyên nghiệp, tin cậy tuyệt đối và đổi mới công nghệ. Lấy tông màu Ocean Blue làm chủ đạo, giao diện mang lại cảm giác thông minh, sang trọng và thúc đẩy sự nghiệp cho ứng viên cũng như nhà tuyển dụng.",
+    "keyCharacteristics": [
+      "Sắc nét & Khoáng đạt: Layout thoáng rộng với hệ thống phân cấp rõ ràng theo lưới 8-point.",
+      "Tương tác có chủ đích: Motion chỉ được dùng để phản hồi hành động hoặc dẫn dắt sự tập trung.",
+      "Độ tin cậy kỹ thuật: Độ tương phản chữ đạt tiêu chuẩn WCAG AA và bảo mật auth gate thể hiện qua trạng thái giao diện chắc chắn."
+    ],
+    "rules": [
+      {
+        "name": "The Ten Percent Rule",
+        "body": "Màu nhấn primary chỉ chiếm tối đa 10% bề mặt của bất kỳ màn hình nào. Sự hiếm hoi của màu sắc chính là yếu tố tạo ra điểm nhấn điều hướng.",
+        "section": "colors"
+      },
+      {
+        "name": "The Hierarchy Guard Rule",
+        "body": "Không sử dụng quá 3 kích thước font chữ trên cùng một khối nội dung hẹp để tránh làm loãng phân cấp thông tin.",
+        "section": "typography"
+      },
+      {
+        "name": "The Border-First Rule",
+        "body": "Độ sâu của giao diện được biểu diễn trước tiên bằng đường viền mảnh (1px) màu #e2e8f0 kết hợp màu nền khác biệt nhẹ giữa canvas và container, không dùng shadow làm mặc định.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Tuân thủ tuyệt đối lưới khoảng cách 8-point cho padding, margin và layout.",
+      "Đảm bảo mọi văn bản đọc được có tỷ lệ tương phản tối thiểu là 4.5:1 đối với màu nền tương ứng.",
+      "Sử dụng cơ chế transition trơn tru (duration-200, ease-out) cho mọi tương tác hover và focus.",
+      "Luôn bọc các trang nội bộ của ứng dụng bằng Auth Gate và hiển thị Toast thông báo nếu người dùng chưa đăng nhập cố truy cập."
+    ],
+    "donts": [
+      "Không sử dụng bất kỳ tông màu tím (purple/violet) nào làm màu chủ đạo của ứng dụng (Luôn sử dụng Ocean Blue).",
+      "Không lạm dụng hiệu ứng Glassmorphism quá mức cho các thành phần hiển thị văn bản dài gây cản trở trải nghiệm đọc.",
+      "Không sử dụng viền kẻ sọc dày (border-left > 1px) làm điểm nhấn trang trí cho các thẻ hoặc hộp thông báo.",
+      "Không tạo các thẻ card có kích thước giống hệt nhau lặp đi lặp lại một cách nhàm chán mà không có biến thể phân cấp trực quan.",
+      "Không bao giờ thu phóng (scale) hoặc dịch chuyển xoay các phần tử hình ảnh (<img>) trực tiếp khi hover chuột (anti-pattern AI slop)."
+    ]
+  }
+}
