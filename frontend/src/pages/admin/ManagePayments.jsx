@@ -20,7 +20,8 @@ import {
   Filter,
   Pencil,
   Check,
-  X
+  X,
+  Power
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,12 +29,7 @@ import { AdminSidebar } from "./AdminSidebar";
 import paymentApi from "../../api/paymentApi";
 import { useUiStore } from "../../store/useUiStore";
 
-// ─── Coupon state (local only, no API yet) ─────────────────────────────────
-const INITIAL_COUPONS = [
-  { code: "MOCKAI50", discount: 50, expiry: "2026-06-30", active: true },
-  { code: "HELLOSUMMER", discount: 20, expiry: "2026-08-31", active: true },
-  { code: "WELCOMENEW", discount: 15, expiry: "2026-12-31", active: true }
-];
+// ─── Coupon state (Removed INITIAL_COUPONS as we use API now) ──────────────
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const formatVnd = (amount) =>
@@ -474,26 +470,77 @@ function PackagesTab() {
 
 // ─── Coupons Tab ──────────────────────────────────────────────────────────
 function CouponsTab() {
-  const [coupons, setCoupons] = useState(INITIAL_COUPONS);
+  const queryClient = useQueryClient();
+  const { showToast } = useUiStore();
   const [newCouponCode, setNewCouponCode] = useState("");
   const [newCouponDiscount, setNewCouponDiscount] = useState("");
-  const [newCouponExpiry, setNewCouponExpiry] = useState("2026-12-31");
+  const [newCouponExpiry, setNewCouponExpiry] = useState("");
+  const [maxDiscountAmount, setMaxDiscountAmount] = useState("");
+  const [usageLimit, setUsageLimit] = useState("");
+  const [applicableTo, setApplicableTo] = useState("ALL");
+
+  const { data: couponsResponse, isLoading } = useQuery({
+    queryKey: ['adminCoupons'],
+    queryFn: () => paymentApi.getCouponsAdmin()
+  });
+
+  const coupons = couponsResponse?.data?.data || [];
+
+  const createMutation = useMutation({
+    mutationFn: paymentApi.createCouponAdmin,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminCoupons'] });
+      setNewCouponCode("");
+      setNewCouponDiscount("");
+      setNewCouponExpiry("");
+      setMaxDiscountAmount("");
+      setUsageLimit("");
+      setApplicableTo("ALL");
+      showToast("Tạo mã giảm giá thành công", "success");
+    },
+    onError: (error) => {
+      showToast(error.response?.data?.message || "Lỗi khi tạo mã giảm giá", "error");
+    }
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: paymentApi.toggleCouponStatusAdmin,
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['adminCoupons'] });
+      showToast(res.data?.message || "Đã cập nhật trạng thái", "success");
+    },
+    onError: (error) => showToast(error.response?.data?.message || "Lỗi cập nhật trạng thái", "error")
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: paymentApi.deleteCouponAdmin,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminCoupons'] });
+      showToast("Đã xóa mã giảm giá thành công", "success");
+    },
+    onError: (error) => showToast("Lỗi khi xóa mã giảm giá", "error")
+  });
 
   const handleAddCoupon = (e) => {
     e.preventDefault();
-    if (!newCouponCode || !newCouponDiscount) return;
-    setCoupons((prev) => [...prev, {
-      code: newCouponCode.toUpperCase(),
-      discount: parseInt(newCouponDiscount),
-      expiry: newCouponExpiry,
-      active: true
-    }]);
-    setNewCouponCode("");
-    setNewCouponDiscount("");
+    if (!newCouponCode || !newCouponDiscount) {
+      showToast("Vui lòng nhập mã và % giảm giá", "error");
+      return;
+    }
+    
+    createMutation.mutate({
+      code: newCouponCode,
+      discount_percent: newCouponDiscount,
+      max_discount_amount: maxDiscountAmount || undefined,
+      usage_limit: usageLimit || undefined,
+      applicable_to: applicableTo,
+      expires_at: newCouponExpiry || undefined
+    });
   };
 
   return (
-    <motion.div key="coupons" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <motion.div key="coupons" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      {/* Cột trái: Form tạo */}
       <div className="bg-white rounded-3xl p-6 border border-slate-100/90 shadow-sm h-fit">
         <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-1">
           <Plus className="w-4 h-4 text-[#0ea5e9]" />
@@ -501,54 +548,123 @@ function CouponsTab() {
         </h3>
         <form onSubmit={handleAddCoupon} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase">Mã Coupon</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase">Mã Coupon *</label>
             <input type="text" placeholder="VD: MOCKAI50" value={newCouponCode}
               onChange={(e) => setNewCouponCode(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-[#0ea5e9] text-slate-700" />
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-[#0ea5e9] text-slate-700 uppercase placeholder:normal-case" />
           </div>
+          
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Giảm (%)</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Giảm (%) *</label>
               <input type="number" min="1" max="100" placeholder="VD: 50" value={newCouponDiscount}
                 onChange={(e) => setNewCouponDiscount(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-[#0ea5e9] text-slate-700" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Ngày hết hạn</label>
-              <input type="date" value={newCouponExpiry}
-                onChange={(e) => setNewCouponExpiry(e.target.value)}
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-[#0ea5e9] text-slate-700" />
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Giảm tối đa (VNĐ)</label>
+              <input type="number" min="0" placeholder="VD: 100000" value={maxDiscountAmount}
+                onChange={(e) => setMaxDiscountAmount(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-[#0ea5e9] text-slate-700" />
             </div>
           </div>
-          <button type="submit"
-            className="w-full bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-bold py-2.5 rounded-xl shadow-sm shadow-sky-100 flex items-center justify-center gap-1.5 active:scale-98 transition-all mt-4 outline-none">
-            <Plus className="w-4 h-4" />
-            Thêm Mã Giảm Giá
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Lượt dùng tối đa</label>
+              <input type="number" min="1" placeholder="Không giới hạn" value={usageLimit}
+                onChange={(e) => setUsageLimit(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-[#0ea5e9] text-slate-700" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Đối tượng</label>
+              <select value={applicableTo} onChange={(e) => setApplicableTo(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-[#0ea5e9] text-slate-700"
+              >
+                <option value="ALL">Tất cả</option>
+                <option value="CANDIDATE">Ứng viên</option>
+                <option value="HR">Nhà tuyển dụng</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase">Ngày hết hạn (Tuỳ chọn)</label>
+            <input type="date" value={newCouponExpiry}
+              onChange={(e) => setNewCouponExpiry(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-[#0ea5e9] text-slate-700" />
+          </div>
+
+          <button type="submit" disabled={createMutation.isPending}
+            className="w-full bg-[#0ea5e9] hover:bg-[#0284c7] disabled:bg-slate-300 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm shadow-sky-100 flex items-center justify-center gap-1.5 active:scale-98 transition-all mt-4 outline-none">
+            {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {createMutation.isPending ? "Đang tạo..." : "Thêm Mã Giảm Giá"}
           </button>
         </form>
       </div>
 
-      <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence mode="popLayout">
-          {coupons.map((coupon) => (
-            <motion.div key={coupon.code} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between group">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-sky-50 text-[#0ea5e9] rounded-xl">
-                  <Percent className="w-5 h-5" />
+      {/* Cột phải: Danh sách */}
+      <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 h-fit">
+        {isLoading ? (
+          <div className="md:col-span-2 py-10 flex flex-col items-center text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin mb-2" />
+            <p className="text-sm">Đang tải mã giảm giá...</p>
+          </div>
+        ) : coupons.length === 0 ? (
+          <div className="md:col-span-2 py-12 flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+            <Percent className="w-8 h-8 text-slate-300 mb-2" />
+            <p className="text-sm font-medium text-slate-500">Chưa có mã giảm giá nào</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {coupons.map((coupon) => (
+              <motion.div key={coupon.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                className={`bg-white rounded-2xl p-5 border shadow-sm flex items-start justify-between group transition-colors ${coupon.is_active ? 'border-slate-100' : 'border-slate-200 bg-slate-50'}`}>
+                
+                <div className="flex items-start gap-3">
+                  <div className={`p-3 rounded-xl ${coupon.is_active ? 'bg-sky-50 text-[#0ea5e9]' : 'bg-slate-100 text-slate-400'}`}>
+                    <Percent className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className={`text-sm font-bold tracking-wider font-mono ${coupon.is_active ? 'text-slate-800' : 'text-slate-500 line-through'}`}>
+                        {coupon.code}
+                      </h4>
+                      {!coupon.is_active && (
+                         <span className="text-[9px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded">TẮT</span>
+                      )}
+                    </div>
+                    
+                    <p className="text-[11px] font-medium text-slate-500 mt-1">Giảm {coupon.discount_percent}% 
+                      {coupon.max_discount_amount && ` (Tối đa ${coupon.max_discount_amount.toLocaleString('vi-VN')}đ)`}
+                    </p>
+
+                    <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-400">
+                       <span className="bg-slate-100 px-1.5 py-0.5 rounded">{coupon.applicable_to}</span>
+                       <span>·</span>
+                       <span>Dùng: {coupon.used_count}{coupon.usage_limit ? `/${coupon.usage_limit}` : ''}</span>
+                    </div>
+
+                    {coupon.expires_at && (
+                       <p className="text-[10px] text-amber-500 font-medium mt-1">HSD: {new Date(coupon.expires_at).toLocaleDateString('vi-VN')}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 tracking-wider font-mono">{coupon.code}</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Giảm {coupon.discount}% · HSD: {coupon.expiry}</p>
+                
+                <div className="flex flex-col gap-1">
+                   <button onClick={() => toggleMutation.mutate(coupon.id)} disabled={toggleMutation.isPending}
+                     className="p-1.5 text-slate-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-lg transition-colors" title={coupon.is_active ? "Tắt mã" : "Bật mã"}>
+                     <Power className="w-4 h-4" />
+                   </button>
+                   <button onClick={() => { if(window.confirm('Xóa mã giảm giá này khỏi hệ thống?')) deleteMutation.mutate(coupon.id); }} disabled={deleteMutation.isPending}
+                     className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Xóa mã">
+                     <Trash2 className="w-4 h-4" />
+                   </button>
                 </div>
-              </div>
-              <button onClick={() => setCoupons((prev) => prev.filter((c) => c.code !== coupon.code))}
-                className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg active:scale-90 transition-colors" title="Xóa mã">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
       </div>
     </motion.div>
   );

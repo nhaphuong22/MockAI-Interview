@@ -28,6 +28,12 @@ const paymentApi = {
     axiosClient.get('/payments/admin/transactions', {
       params: { page, limit, user_type: user_type || undefined, status: status || undefined, search: search || undefined }
     }),
+
+  // ─── Coupons Admin APIs ───
+  getCouponsAdmin: () => axiosClient.get('/payments/admin/coupons'),
+  createCouponAdmin: (data) => axiosClient.post('/payments/admin/coupons', data),
+  toggleCouponStatusAdmin: (id) => axiosClient.patch(`/payments/admin/coupons/${id}/toggle-status`),
+  deleteCouponAdmin: (id) => axiosClient.delete(`/payments/admin/coupons/${id}`),
 };
 
 export default paymentApi;
