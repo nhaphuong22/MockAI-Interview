@@ -168,76 +168,117 @@ export const paymentService = {
         return { RspCode: '02', Message: 'Order already confirmed' };
       }
 
-      // 5. Cập nhật trạng thái giao dịch và kích hoạt gói cho User
+      // 5. Kiểm tra gói có còn active không (Admin có thể đã tắt gói trong lúc user thanh toán)
+      const activePackage = await db('packages').where({ id: transaction.package_id, is_active: true }).first();
+      if (!activePackage) {
+        // Gói đã bị tắt — abort giao dịch, không kích hoạt, ghi log để xử lý hoàn tiền thủ công
+        await db('transactions').where({ id: transaction.id }).update({
+          status: 'FAILED',
+          notes: 'Gói dịch vụ đã bị tắt bởi Admin trong lúc thanh toán đang diễn ra.',
+          updated_at: new Date()
+        });
+        return { RspCode: '01', Message: 'Package inactive or not found' };
+      }
+
       const responseCode = vnpParams['vnp_ResponseCode'];
       const isSuccess = responseCode === '00';
       const newStatus = isSuccess ? 'COMPLETED' : 'FAILED';
 
       await db.transaction(async (trx) => {
-        // Cập nhật trạng thái transaction
+        // Build snapshot tại thời điểm mua — bảo toàn lịch sử khi giá/tên gói thay đổi sau này
+        const snapshotBase = {
+          package_id: activePackage.id,
+          name: activePackage.name,
+          price_at_purchase: Number(activePackage.price)
+        };
+        const snapshotPackage = activePackage.target_role === 'HR'
+          ? {
+              ...snapshotBase,
+              package_type: 'CREDIT_BUNDLE',
+              total_credits: activePackage.total_credits,
+              credit_expiry_days: activePackage.credit_expiry_days,
+              price_per_credit_at_purchase: activePackage.total_credits > 0
+                ? Math.round(Number(activePackage.price) / activePackage.total_credits)
+                : 0
+            }
+          : {
+              ...snapshotBase,
+              package_type: 'SUBSCRIPTION',
+              duration_days: activePackage.duration_days,
+              ats_scan_limit: activePackage.ats_scan_limit,
+              ai_practice_limit: activePackage.ai_practice_limit,
+              ai_cover_letter_limit: activePackage.ai_cover_letter_limit,
+              radar_chart_level: activePackage.radar_chart_level
+            };
+        // Defensive JSON validate before insert
+        const snapshotJson = JSON.stringify(snapshotPackage);
+        JSON.parse(snapshotJson);
+
+        // Update transaction status + snapshot
         await trx('transactions')
           .where({ id: transaction.id })
           .update({
             status: newStatus,
+            snapshot_package: isSuccess ? snapshotJson : null,
             paid_at: isSuccess ? new Date() : null,
             updated_at: new Date()
           });
 
-        // Nếu thanh toán thành công, kích hoạt VIP cho User
+        // Nếu thanh toán thành công, kích hoạt gói cho User
         if (isSuccess) {
-          const pack = await trx('packages').where({ id: transaction.package_id }).first();
-          if (pack) {
-            const now = new Date();
-            const expiryDate = new Date(now.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
-            
-            // Tính ngày hết hạn cho Credit (nếu có giới hạn ngày)
-            let creditExpiryDate = null;
-            if (pack.credit_expiry_days) {
-              creditExpiryDate = new Date(now.getTime() + pack.credit_expiry_days * 24 * 60 * 60 * 1000);
+          const pack = activePackage; // Already fetched and validated above
+          const now = new Date();
+          const expiryDate = new Date(now.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
+
+          // Tính ngày hết hạn cho Credit (nếu có giới hạn ngày)
+          let creditExpiryDate = null;
+          if (pack.credit_expiry_days) {
+            creditExpiryDate = new Date(now.getTime() + pack.credit_expiry_days * 24 * 60 * 60 * 1000);
+          }
+
+          const user = await trx('users').where({ id: transaction.user_id }).first();
+
+          if (user.role === 'HR') {
+            // HR: Nạp unified credit
+            let wallet = await trx('hr_wallets').where({ user_id: user.id }).first();
+            if (user.company_id) {
+              wallet = await trx('hr_wallets').where({ company_id: user.company_id }).first();
             }
-            
-            const user = await trx('users').where({ id: transaction.user_id }).first();
-            
-            if (user.role === 'HR') {
-              // HR: Nạp unified credit
-              let wallet = await trx('hr_wallets').where({ user_id: user.id }).first();
-              if (user.company_id) {
-                wallet = await trx('hr_wallets').where({ company_id: user.company_id }).first();
-              }
-              
-              if (wallet && pack.total_credits > 0) {
-                await trx('credit_batches').insert({
-                  wallet_id: wallet.id,
-                  package_id: pack.id,
-                  amount_granted: pack.total_credits,
-                  amount_remaining: pack.total_credits,
-                  expires_at: creditExpiryDate,
-                  created_at: now,
-                  updated_at: now
-                });
-                await trx('hr_wallets').where({ id: wallet.id }).increment('total_credits', pack.total_credits);
-              }
+
+            if (wallet && pack.total_credits > 0) {
+              await trx('credit_batches').insert({
+                wallet_id: wallet.id,
+                package_id: pack.id,
+                amount_granted: pack.total_credits,
+                amount_remaining: pack.total_credits,
+                expires_at: creditExpiryDate,
+                created_at: now,
+                updated_at: now
+              });
+              await trx('hr_wallets').where({ id: wallet.id }).increment('total_credits', pack.total_credits);
+            }
+          } else {
+            // Ứng viên: Cập nhật subscription
+            const existingSub = await trx('user_subscriptions').where({ user_id: user.id }).first();
+            if (existingSub) {
+              const currentExpiry = existingSub.end_date && new Date(existingSub.end_date) > now
+                ? new Date(existingSub.end_date)
+                : now;
+              const newExpiry = new Date(currentExpiry.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
+              await trx('user_subscriptions').where({ id: existingSub.id }).update({
+                package_id: pack.id,
+                end_date: newExpiry,
+                updated_at: now
+              });
             } else {
-              // Ứng viên: Cập nhật subscription
-              const existingSub = await trx('user_subscriptions').where({ user_id: user.id }).first();
-              if (existingSub) {
-                 const currentExpiry = existingSub.end_date && new Date(existingSub.end_date) > now ? new Date(existingSub.end_date) : now;
-                 const newExpiry = new Date(currentExpiry.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
-                 await trx('user_subscriptions').where({ id: existingSub.id }).update({
-                    package_id: pack.id,
-                    end_date: newExpiry,
-                    updated_at: now
-                 });
-              } else {
-                 await trx('user_subscriptions').insert({
-                    user_id: user.id,
-                    package_id: pack.id,
-                    start_date: now,
-                    end_date: expiryDate,
-                    created_at: now,
-                    updated_at: now
-                 });
-              }
+              await trx('user_subscriptions').insert({
+                user_id: user.id,
+                package_id: pack.id,
+                start_date: now,
+                end_date: expiryDate,
+                created_at: now,
+                updated_at: now
+              });
             }
           }
         }
