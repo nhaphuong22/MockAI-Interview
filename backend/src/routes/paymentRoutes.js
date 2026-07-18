@@ -1,5 +1,9 @@
 import express from 'express';
-import { createPaymentUrl, handleVnpayIpn, getPackages, getAllPackagesForAdmin, togglePackageStatus, getTransactionsForAdmin, updatePackagePrice } from '../controllers/paymentController.js';
+import { 
+  createPaymentUrl, handleVnpayIpn, getPackages, 
+  getAllPackagesForAdmin, togglePackageStatus, getTransactionsForAdmin, updatePackagePrice,
+  getCouponsForAdmin, createCoupon, toggleCouponStatus, deleteCoupon 
+} from '../controllers/paymentController.js';
 import { authenticateToken, requireAuth, requireAdmin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -7,10 +11,17 @@ const router = express.Router();
 // ─────────────────────────────────────────────────────────────
 // ADMIN-ONLY ROUTES (requireAuth + requireAdmin = 403 for non-admin)
 // ─────────────────────────────────────────────────────────────
+// Packages
 router.get('/admin/packages', requireAuth, requireAdmin, getAllPackagesForAdmin);
 router.patch('/admin/packages/:id/toggle-status', requireAuth, requireAdmin, togglePackageStatus);
 router.patch('/admin/packages/:id/price', requireAuth, requireAdmin, updatePackagePrice);
+// Transactions
 router.get('/admin/transactions', requireAuth, requireAdmin, getTransactionsForAdmin);
+// Coupons
+router.get('/admin/coupons', requireAuth, requireAdmin, getCouponsForAdmin);
+router.post('/admin/coupons', requireAuth, requireAdmin, createCoupon);
+router.patch('/admin/coupons/:id/toggle-status', requireAuth, requireAdmin, toggleCouponStatus);
+router.delete('/admin/coupons/:id', requireAuth, requireAdmin, deleteCoupon);
 
 
 /**
