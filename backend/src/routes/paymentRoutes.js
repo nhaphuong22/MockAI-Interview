@@ -1,8 +1,17 @@
 import express from 'express';
-import { createPaymentUrl, handleVnpayIpn, getPackages } from '../controllers/paymentController.js';
-import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { createPaymentUrl, handleVnpayIpn, getPackages, getAllPackagesForAdmin, togglePackageStatus, getTransactionsForAdmin, updatePackagePrice } from '../controllers/paymentController.js';
+import { authenticateToken, requireAuth, requireAdmin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN-ONLY ROUTES (requireAuth + requireAdmin = 403 for non-admin)
+// ─────────────────────────────────────────────────────────────
+router.get('/admin/packages', requireAuth, requireAdmin, getAllPackagesForAdmin);
+router.patch('/admin/packages/:id/toggle-status', requireAuth, requireAdmin, togglePackageStatus);
+router.patch('/admin/packages/:id/price', requireAuth, requireAdmin, updatePackagePrice);
+router.get('/admin/transactions', requireAuth, requireAdmin, getTransactionsForAdmin);
+
 
 /**
  * @swagger
