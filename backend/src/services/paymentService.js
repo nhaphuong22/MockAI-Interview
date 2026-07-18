@@ -251,7 +251,7 @@ export const paymentService = {
                 package_id: pack.id,
                 amount_granted: pack.total_credits,
                 amount_remaining: pack.total_credits,
-                expires_at: creditExpiryDate,
+                expires_at: null, // Không giới hạn thời gian sử dụng
                 created_at: now,
                 updated_at: now
               });

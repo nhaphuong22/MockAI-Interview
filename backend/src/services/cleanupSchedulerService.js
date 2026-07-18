@@ -14,30 +14,12 @@ export const runCleanupProcess = async () => {
       .del();
     console.log(`[Cleanup Scheduler] Đã xoá ${deletedSubs} gói thành viên hết hạn của Ứng viên.`);
 
-    // Thu hồi credit từ các batch hết hạn (Unified Credits)
-    const expiredBatches = await trx('credit_batches')
-      .where('expires_at', '<', db.fn.now())
-      .andWhere('amount_remaining', '>', 0);
-
-    let reclaimedCredits = 0;
-
-    for (const batch of expiredBatches) {
-      await trx('hr_wallets')
-        .where({ id: batch.wallet_id })
-        .decrement('total_credits', batch.amount_remaining);
-        
-      reclaimedCredits += batch.amount_remaining;
-    }
-
+    // Thu hồi credit từ các batch hết hạn (Unified Credits) đã bị loại bỏ vì Credit không còn thời hạn
     const deletedBatches = await trx('credit_batches')
-      .where('expires_at', '<', db.fn.now())
-      .orWhere('amount_remaining', '<=', 0)
+      .where('amount_remaining', '<=', 0)
       .del();
 
-    console.log(`[Cleanup Scheduler] Đã dọn dẹp ${deletedBatches} lô tín dụng HR cũ/hết hạn.`);
-    if (reclaimedCredits > 0) {
-      console.log(`[Cleanup Scheduler] Thu hồi từ ví ảo: ${reclaimedCredits} Credits.`);
-    }
+    console.log(`[Cleanup Scheduler] Đã dọn dẹp ${deletedBatches} lô tín dụng HR đã sử dụng hết.`);
 
     await trx.commit();
     console.log('[Cleanup Scheduler] Hoàn tất quá trình dọn dẹp.');

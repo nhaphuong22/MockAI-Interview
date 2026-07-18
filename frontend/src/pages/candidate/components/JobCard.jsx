@@ -5,21 +5,20 @@ import { Link } from "react-router-dom";
  * JobCard Component
  * Displays summary card for a single job listing
  */
-export function JobCard({ 
-  job, 
-  isSelected, 
-  isBookmarked, 
-  onSelect, 
-  onToggleBookmark 
+export function JobCard({
+  job,
+  isSelected,
+  isBookmarked,
+  onSelect,
+  onToggleBookmark
 }) {
   return (
     <div
       onClick={onSelect}
-      className={`relative bg-white/70 dark:bg-[#0a0f1c]/60 backdrop-blur-md rounded-2xl p-6 border cursor-pointer transition-all duration-300 hover:-translate-y-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(14,165,233,0.08)] dark:hover:shadow-[0_20px_40px_rgba(14,165,233,0.18)] ${
-        isSelected
+      className={`relative bg-white/70 dark:bg-[#0a0f1c]/60 backdrop-blur-md rounded-2xl p-6 border cursor-pointer transition-all duration-300 hover:-translate-y-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(14,165,233,0.08)] dark:hover:shadow-[0_20px_40px_rgba(14,165,233,0.18)] ${isSelected
           ? "border-[#0ea5e9] ring-2 ring-sky-100 dark:ring-sky-950/50"
           : "border-gray-100 dark:border-white/5 hover:border-[#0ea5e9]/50 dark:hover:border-[#0ea5e9]/30"
-      }`}
+        }`}
     >
       <div className="flex gap-4">
         {/* Company Logo Icon */}
@@ -74,11 +73,10 @@ export function JobCard({
                 className="p-1.5 hover:bg-sky-50 dark:hover:bg-sky-950/30 rounded-lg transition-colors group shrink-0"
               >
                 <Bookmark
-                  className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                    isBookmarked
+                  className={`w-4 h-4 transition-transform group-hover:scale-110 ${isBookmarked
                       ? "fill-[#0ea5e9] text-[#0ea5e9]"
                       : "dark:text-slate-500 text-gray-400"
-                  }`}
+                    }`}
                 />
               </button>
             </div>

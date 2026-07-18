@@ -335,12 +335,6 @@ export function Payment() {
                     </p>
                   )}
                   
-                  {/* HR: HSD */}
-                  {isHr && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                      HSD: {plan.credit_expiry_days || 365} ngày
-                    </p>
-                  )}
                 </div>
 
                 {/* Candidate: Feature list */}
