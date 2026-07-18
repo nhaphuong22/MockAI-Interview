@@ -25,8 +25,7 @@ const consumeFromWallet = async (trx, wallet, amount) => {
   const batches = await trx('credit_batches')
     .where({ wallet_id: wallet.id })
     .where('amount_remaining', '>', 0)
-    .where('expires_at', '>', new Date())
-    .orderBy('expires_at', 'asc');
+    .orderBy('created_at', 'asc');
 
   const totalInBatches = batches.reduce((sum, b) => sum + b.amount_remaining, 0);
   if (totalInBatches < amount) return false;
