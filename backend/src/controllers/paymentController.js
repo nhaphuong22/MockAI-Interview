@@ -284,6 +284,138 @@ export const updatePackagePrice = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// ADMIN COUPON CONTROLLERS
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * [Admin] Lấy danh sách mã giảm giá (chưa bị xóa mềm)
+ */
+export const getCouponsForAdmin = async (req, res) => {
+  try {
+    const coupons = await db('coupons')
+      .where({ is_deleted: false })
+      .orderBy('created_at', 'desc');
+    return res.status(200).json({ success: true, data: coupons });
+  } catch (error) {
+    console.error('[Admin] Lỗi khi lấy danh sách coupons:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi hệ thống khi tải mã giảm giá.' });
+  }
+};
+
+/**
+ * [Admin] Tạo mã giảm giá mới
+ */
+export const createCoupon = async (req, res) => {
+  try {
+    const { code, discount_percent, max_discount_amount, usage_limit, applicable_to, expires_at } = req.body;
+    
+    if (!code || !discount_percent) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập mã và phần trăm giảm giá' });
+    }
+
+    const formattedCode = code.trim().toUpperCase();
+    const discount = parseInt(discount_percent);
+    
+    // Validate percent
+    if (isNaN(discount) || discount < 1 || discount > 100) {
+      return res.status(400).json({ success: false, message: 'Phần trăm giảm giá phải từ 1 đến 100' });
+    }
+
+    // Kiểm tra trùng mã (trên các mã chưa bị xóa mềm)
+    const existing = await db('coupons')
+      .where({ code: formattedCode, is_deleted: false })
+      .first();
+      
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Mã giảm giá này đã tồn tại trên hệ thống' });
+    }
+
+    // Validate date
+    let expDate = null;
+    if (expires_at) {
+      expDate = new Date(expires_at);
+      if (expDate <= new Date()) {
+        return res.status(400).json({ success: false, message: 'Ngày hết hạn phải lớn hơn ngày hiện tại' });
+      }
+    }
+
+    const [newId] = await db('coupons').insert({
+      code: formattedCode,
+      discount_percent: discount,
+      max_discount_amount: max_discount_amount ? parseInt(max_discount_amount) : null,
+      usage_limit: usage_limit ? parseInt(usage_limit) : null,
+      applicable_to: applicable_to || 'ALL',
+      expires_at: expDate
+    }).returning('id');
+
+    return res.status(201).json({ success: true, id: newId?.id || newId });
+  } catch (error) {
+    console.error('[Admin] Lỗi khi tạo coupon:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi hệ thống khi tạo mã giảm giá.' });
+  }
+};
+
+/**
+ * [Admin] Bật/Tắt trạng thái coupon
+ */
+export const toggleCouponStatus = async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const updatedData = await db.transaction(async (trx) => {
+      const coupon = await trx('coupons').where({ id, is_deleted: false }).forUpdate().first();
+      if (!coupon) return null;
+
+      const nextState = !coupon.is_active;
+      await trx('coupons').where({ id }).update({
+        is_active: nextState,
+        updated_at: new Date()
+      });
+
+      return { id, is_active: nextState, code: coupon.code };
+    });
+
+    if (!updatedData) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy mã giảm giá' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Mã "${updatedData.code}" đã được ${updatedData.is_active ? 'bật' : 'tắt'} thành công.`,
+      data: updatedData
+    });
+  } catch (error) {
+    console.error('[Admin] Lỗi khi toggle trạng thái coupon:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi hệ thống khi cập nhật trạng thái.' });
+  }
+};
+
+/**
+ * [Admin] Soft delete coupon
+ */
+export const deleteCoupon = async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const coupon = await db('coupons').where({ id, is_deleted: false }).first();
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy mã giảm giá' });
+    }
+
+    await db('coupons').where({ id }).update({ 
+      is_deleted: true, 
+      is_active: false,
+      updated_at: new Date()
+    });
+
+    return res.json({ success: true, message: 'Xóa mã giảm giá thành công (Soft Delete)' });
+  } catch (error) {
+    console.error('[Admin] Lỗi khi xóa coupon:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi hệ thống khi xóa mã giảm giá.' });
+  }
+};
+
 /**
  * Xử lý callback IPN từ VNPAY (API Public gọi ngầm từ VNPAY)
  */
