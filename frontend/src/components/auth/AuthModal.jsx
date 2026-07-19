@@ -4,7 +4,7 @@ import * as Checkbox from "@radix-ui/react-checkbox";
 import * as Progress from "@radix-ui/react-progress";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginApi, registerApi, loginGoogleApi, forgotPasswordApi, resendVerificationApi, verifyEmailApi } from "../../api/auth";
+import { loginApi, registerApi, loginGoogleApi, forgotPasswordApi, resendVerificationApi, verifyEmailApi, switchRoleApi } from "../../api/auth";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useUiStore } from "../../store/useUiStore";
 
@@ -34,6 +34,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState(null); // "jobseeker" | "recruiter"
   const [gender, setGender] = useState("MALE"); // "MALE" | "FEMALE" | "OTHER"
+  const [loginRole, setLoginRole] = useState("jobseeker"); // "jobseeker" | "recruiter"
 
   // Forgot Password State
   const [forgotEmail, setForgotEmail] = useState("");
@@ -124,8 +125,29 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
     try {
       const res = await loginApi(loginEmail, loginPassword);
       if (res.success && res.data) {
-        const { token, user } = res.data;
+        let { token, user } = res.data;
+        
+        // Sync role if selected role differs from DB role
+        const selectedRole = loginRole === "recruiter" ? "HR" : "USER";
+        const dbRole = user.role ? user.role.toUpperCase() : "USER";
+        
+        if (dbRole !== selectedRole && dbRole !== "ADMIN") {
+          try {
+            localStorage.setItem("token", token); // temp set for axios
+            const switchRes = await switchRoleApi();
+            if (switchRes.data) {
+              user = switchRes.data.user;
+              token = switchRes.data.token;
+            }
+          } catch (e) {
+            console.error("Failed to switch role after login", e);
+          }
+        }
+
         localStorage.setItem("token", token);
+        if (user.avatar_url && user.avatar_url.includes("googleusercontent.com")) {
+          localStorage.setItem("googleAvatar", user.avatar_url);
+        }
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();
@@ -400,6 +422,17 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
           {/* ── LOGIN ── */}
           {mode === "login" && (
             <form onSubmit={handleLogin} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                <button type="button" onClick={() => setLoginRole("jobseeker")} className={`p-3 border-2 rounded-xl transition-all flex flex-col items-center justify-center ${loginRole === "jobseeker" ? "border-[#0ea5e9] bg-sky-50 shadow-sm" : "border-gray-100 hover:border-sky-200"}`}>
+                  <User className={`w-6 h-6 mb-1 ${loginRole === "jobseeker" ? "text-[#0ea5e9]" : "text-gray-300"}`} />
+                  <div className={`text-xs font-bold ${loginRole === "jobseeker" ? "text-sky-900" : "text-gray-700"}`}>Ứng viên</div>
+                </button>
+                <button type="button" onClick={() => setLoginRole("recruiter")} className={`p-3 border-2 rounded-xl transition-all flex flex-col items-center justify-center ${loginRole === "recruiter" ? "border-[#0ea5e9] bg-sky-50 shadow-sm" : "border-gray-100 hover:border-sky-200"}`}>
+                  <Building className={`w-6 h-6 mb-1 ${loginRole === "recruiter" ? "text-[#0ea5e9]" : "text-gray-300"}`} />
+                  <div className={`text-xs font-bold ${loginRole === "recruiter" ? "text-sky-900" : "text-gray-700"}`}>Nhà Tuyển Dụng</div>
+                </button>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-gray-700">Email</label>
                 <div className="relative">
