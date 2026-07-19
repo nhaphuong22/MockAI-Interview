@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2, Loader2, Clock, AlertCircle } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ChevronRight, FileText, CheckCircle2, Loader2, Clock, AlertCircle, Sparkles, Zap, CreditCard } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { jobApi } from "../../api/jobApi";
 import axiosClient from "../../api/axiosClient";
 
+const CREDIT_COSTS = { JOB_POST: 10, AI_SCREENING: 30 };
+
 
 export function PostJob() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
 
   // 1. Quản lý State cho các trường thông tin cơ bản
@@ -42,6 +45,8 @@ export function PostJob() {
     vacancyCount: 1,
     deadline: ""
   });
+  const [enableAiScreening, setEnableAiScreening] = useState(false);
+  const totalCreditCost = CREDIT_COSTS.JOB_POST + (enableAiScreening ? CREDIT_COSTS.AI_SCREENING : 0);
 
 
   // 2. Quản lý State cho danh sách yêu cầu chi tiết (động)
@@ -112,6 +117,7 @@ export function PostJob() {
   const mutation = useMutation({
     mutationFn: (data) => jobApi.createJob(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] }); // Ép cập nhật lại số dư trên Navbar ngay lập tức
       showToast("Đăng tin tuyển dụng thành công!", "success");
       setTimeout(() => {
         navigate("/hr/dashboard/manage-jobs");
@@ -150,6 +156,7 @@ export function PostJob() {
       vacancy_count: parseInt(formData.vacancyCount) || 1,
       deadline: formData.deadline || null,
       detailed_requirements: cleanedDetailedReqs,
+      enable_ai_screening: enableAiScreening,
       payment_wallet_type: localStorage.getItem("active_wallet_type") || "PERSONAL"
     };
 
@@ -266,7 +273,7 @@ export function PostJob() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex items-center gap-4 mb-10"
+          className="flex items-center gap-4 mb-6"
         >
           <div className="p-4 bg-sky-100/80 rounded-2xl text-sky-500 shadow-sm border border-sky-100">
             <Briefcase className="w-8 h-8" />
@@ -274,6 +281,36 @@ export function PostJob() {
           <div>
             <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Đăng Tin Tuyển Dụng</h1>
             <p className="text-slate-500 mt-1 text-sm font-medium">Tạo cơ hội nghề nghiệp mới và thiết lập tiêu chí đánh giá AI</p>
+          </div>
+        </motion.div>
+
+        {/* Credit Cost Preview Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-4 rounded-2xl border bg-gradient-to-r from-sky-50 to-indigo-50 border-sky-200 flex flex-wrap items-center gap-4"
+        >
+          <div className="flex items-center gap-2 text-sky-700">
+            <CreditCard className="w-5 h-5" />
+            <span className="text-sm font-bold">Chi phí đăng tin:</span>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-sky-100 text-sky-700 rounded-lg text-sm font-semibold">
+              <Zap className="w-3.5 h-3.5" /> {CREDIT_COSTS.JOB_POST} credit (đăng cơ bản)
+            </span>
+            {enableAiScreening && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1 bg-violet-100 text-violet-700 rounded-lg text-sm font-semibold"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> +{CREDIT_COSTS.AI_SCREENING} credit (lọc AI)
+              </motion.span>
+            )}
+            <span className="text-slate-500 text-sm">→</span>
+            <span className="px-3 py-1 bg-sky-600 text-white rounded-lg text-sm font-black">
+              Tổng: {totalCreditCost} credit
+            </span>
           </div>
         </motion.div>
 
@@ -524,6 +561,73 @@ export function PostJob() {
 
 
 
+
+            {/* AI Screening Toggle - Nổi bật */}
+            <motion.div variants={itemVariants}>
+              <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-violet-300 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 p-6">
+                {/* Glow effect */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-violet-400/10 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-indigo-400/10 blur-2xl pointer-events-none" />
+                
+                <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-xl shadow-lg transition-all duration-300 ${
+                      enableAiScreening
+                        ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-violet-300"
+                        : "bg-white text-violet-400 border border-violet-200"
+                    }`}>
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-black text-slate-800">Lọc CV thông minh với AI</h3>
+                        <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-full">Premium</span>
+                      </div>
+                      <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+                        AI tự động phân tích CV ứng viên, chấm điểm theo tiêu chí bạn thiết lập và xếp hạng ưu tiên. 
+                        Tiết kiệm <strong>80%</strong> thời gian sàng lọc.
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="text-xs font-bold text-amber-600">Tốn thêm {CREDIT_COSTS.AI_SCREENING} credit khi bật</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <label className="flex-shrink-0 flex items-center gap-3 cursor-pointer select-none">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={enableAiScreening}
+                        onChange={(e) => setEnableAiScreening(e.target.checked)}
+                        className="peer sr-only"
+                      />
+                      <div className={`w-14 h-7 rounded-full transition-all duration-300 ${
+                        enableAiScreening
+                          ? "bg-gradient-to-r from-violet-500 to-purple-600 shadow-lg shadow-violet-300"
+                          : "bg-slate-200"
+                      } peer-focus:outline-none`}></div>
+                      <div className="absolute top-[3px] left-[3px] w-[22px] h-[22px] bg-white rounded-full shadow-md transition-all duration-300 peer-checked:translate-x-7"></div>
+                    </div>
+                    <span className={`text-sm font-bold transition-colors ${
+                      enableAiScreening ? "text-violet-700" : "text-slate-500"
+                    }`}>
+                      {enableAiScreening ? "Đã bật" : "Bật lên"}
+                    </span>
+                  </label>
+                </div>
+
+                {/* Active state glow border */}
+                {enableAiScreening && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-0 rounded-2xl border-2 border-violet-400 pointer-events-none"
+                  />
+                )}
+              </div>
+            </motion.div>
 
             {/* Submit Action */}
             <motion.div variants={itemVariants} className="pt-8 mt-8 border-t border-slate-100">

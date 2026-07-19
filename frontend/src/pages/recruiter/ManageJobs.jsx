@@ -49,7 +49,11 @@ export function ManageJobs() {
     mutationFn: ({ id, currentStatus }) => {
       const newStatus = currentStatus === "OPEN" ? "PAUSED" : "OPEN";
       const job = jobsList.find(j => j.id === id);
-      return jobApi.updateJob(id, { ...job, status: newStatus });
+      return jobApi.updateJob(id, {
+        ...job,
+        status: newStatus,
+        payment_wallet_type: localStorage.getItem("active_wallet_type") || "PERSONAL"
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["manage-jobs"]);
@@ -57,12 +61,12 @@ export function ManageJobs() {
     },
     onError: (error, variables) => {
       const errCode = error.response?.data?.code;
-      const errMsg = error.response?.data?.error || error.response?.data?.message || "";
+      const errMsg = error.response?.data?.error || error.response?.data?.message || "Không thể cập nhật trạng thái.";
+
       if (error.response?.status === 402 || errCode === "CREDIT_REQUIRED_TO_RENEW") {
-        // Hết hạn credit => hiện modal cảnh báo
         setRenewModal({ show: true, job: variables });
       } else {
-        showToast(errMsg || "Không thể thay đổi trạng thái.", "error");
+        showToast(errMsg, "error");
       }
     }
   });
@@ -102,6 +106,9 @@ export function ManageJobs() {
   const formatSalary = (min, max, currency, visible) => {
     if (!visible) return "Thương lượng (Ẩn)";
     if (!min && !max) return "Thương lượng";
+    const curSymbol = currency === "USD" ? "$" : "đ";
+
+
     const formatNumber = (num) => {
       if (!num) return "";
       if (num >= 1000000) return `${(num / 1000000).toFixed(0)}M`;
@@ -115,17 +122,15 @@ export function ManageJobs() {
 
   return (
     <div className="bg-gray-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8 relative">
-      
+
       {/* Toast Notification */}
       {toast.show && (
         <div
-          className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-lg border backdrop-blur-md transition-all duration-500 transform ${
-            toast.show ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
-          } ${
-            toast.type === "success" 
-              ? "bg-emerald-50/90 border-emerald-200 text-emerald-800" 
+          className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-lg border backdrop-blur-md transition-all duration-500 transform ${toast.show ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
+            } ${toast.type === "success"
+              ? "bg-emerald-50/90 border-emerald-200 text-emerald-800"
               : "bg-rose-50/90 border-rose-200 text-rose-800"
-          }`}
+            }`}
         >
           {toast.type === "success" ? (
             <CheckCircle2 className="w-6 h-6 text-emerald-500" />
@@ -145,7 +150,7 @@ export function ManageJobs() {
             <h1 className="text-3xl font-bold text-gray-900">Quản Lý Tin Tuyển Dụng</h1>
             <p className="text-gray-500 text-sm">Xem danh sách, cập nhật trạng thái và quản lý tin tuyển dụng đã đăng</p>
           </div>
-          
+
           <Link
             to="/hr/dashboard/post-job"
             className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white font-bold rounded-2xl hover:shadow-lg hover:shadow-sky-100 transition-all hover:brightness-105"
