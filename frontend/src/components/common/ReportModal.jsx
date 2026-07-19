@@ -26,7 +26,7 @@ export default function ReportModal({ isOpen, onClose, targetType, targetId, onS
     onSuccess: (res) => {
       onSuccess?.();
       // Hiển thị thông báo thành công (Dự kiến: Toast)
-      alert(res.data?.message || 'Gửi báo cáo thành công. Cảm ơn bạn đã đóng góp!');
+      alert(res?.message || 'Gửi báo cáo thành công. Cảm ơn bạn đã đóng góp!');
       onClose();
     },
     onError: (error) => {

@@ -11,7 +11,7 @@ import { useUiStore } from "../../store/useUiStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { getProfileApi } from "../../api/auth";
 import * as Dialog from "@radix-ui/react-dialog";
-import ReportModal from "./components/common/ReportModal";
+import ReportModal from "../../components/common/ReportModal";
 
 export function JobDetail() {
   const { id } = useParams();

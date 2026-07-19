@@ -10,7 +10,7 @@ import { motion, useScroll } from "framer-motion";
 import { useUiStore } from "../../store/useUiStore";
 import ReactionButton from "./components/ReactionButton";
 import ReactionSummary from "./components/ReactionSummary";
-import ReportModal from "./components/common/ReportModal";
+import ReportModal from "../../components/common/ReportModal";
 
 export function BlogDetail() {
   const { id } = useParams();

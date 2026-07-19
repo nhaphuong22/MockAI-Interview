@@ -10,7 +10,8 @@ import {
   Settings,
   ShieldCheck,
   ShieldAlert,
-  BarChart3
+  BarChart3,
+  Flag
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -43,6 +44,11 @@ export function AdminSidebar() {
       path: "/admin/dashboard/blog",
       label: "Kiểm Duyệt Blog",
       icon: FileText
+    },
+    {
+      path: "/admin/dashboard/reports",
+      label: "Báo Cáo Vi Phạm",
+      icon: Flag
     },
     {
       path: "/admin/dashboard/payments",

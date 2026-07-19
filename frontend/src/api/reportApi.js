@@ -2,9 +2,19 @@ import axiosClient from './axiosClient';
 
 const submitReport = async (reportData) => {
   const url = '/reports';
-  return axiosClient.post(url, reportData);
+  const response = await axiosClient.post(url, reportData);
+  return response;
 };
 
 export const reportApi = {
-  submitReport
+  submitReport,
+  getAdminReports: async (params) => {
+    const response = await axiosClient.get("/reports", { params });
+    return response;
+  },
+
+  updateReportStatus: async (id, status) => {
+    const response = await axiosClient.patch(`/reports/${id}/status`, { status });
+    return response;
+  }
 };

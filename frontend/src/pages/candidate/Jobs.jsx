@@ -11,7 +11,7 @@ import { AiTeaserSidebar } from "./components/AiTeaserSidebar";
 import { jobApi } from "../../api/jobApi";
 import { useUiStore } from "../../store/useUiStore";
 import { useAuthStore } from "../../store/useAuthStore";
-import ReportModal from "./components/common/ReportModal";
+import ReportModal from "../../components/common/ReportModal";
 
 const cleanLocationName = (str) => {
   if (!str) return "";

@@ -7,7 +7,7 @@ import { useUiStore } from "../../store/useUiStore";
 import { CommunityLeftSidebar } from "./components/CommunityLeftSidebar";
 import { CommunityRightSidebar } from "./components/CommunityRightSidebar";
 import { PostCard } from "./components/PostCard";
-import ReportModal from "./components/common/ReportModal";
+import ReportModal from "../../components/common/ReportModal";
 
 const categories = [
   { id: "all", name: "Tất Cả Bài Viết", active: true },

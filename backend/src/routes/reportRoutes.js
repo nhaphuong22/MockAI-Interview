@@ -1,6 +1,6 @@
 import express from 'express';
-import { submitReport } from '../controllers/reportController.js';
-import authMiddleware from '../middlewares/authMiddleware.js';
+import { submitReport, getReports, updateReportStatus } from '../controllers/reportController.js';
+import { authenticateToken, requireAdmin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -42,6 +42,8 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.post('/', authMiddleware, submitReport);
+router.post('/', authenticateToken, submitReport);
+router.get('/', authenticateToken, requireAdmin, getReports);
+router.patch('/:id/status', authenticateToken, requireAdmin, updateReportStatus);
 
 export default router;
