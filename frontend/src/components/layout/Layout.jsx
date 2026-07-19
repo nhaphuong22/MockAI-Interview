@@ -93,7 +93,9 @@ export function Layout() {
     mutationFn: switchRoleApi,
     onSuccess: (response) => {
       const { user, token } = response.data;
-      useAuthStore.getState().setAuth(user, token);
+      localStorage.setItem("token", token);
+      useAuthStore.getState().setAuth(user);
+      queryClient.clear(); // Clear all cached queries so new role data is fetched
       if (user.role === 'HR') {
         navigate('/hr/dashboard');
       } else {
