@@ -149,7 +149,8 @@ export function PostJob() {
       is_salary_visible: !!formData.isSalaryVisible,
       vacancy_count: parseInt(formData.vacancyCount) || 1,
       deadline: formData.deadline || null,
-      detailed_requirements: cleanedDetailedReqs
+      detailed_requirements: cleanedDetailedReqs,
+      payment_wallet_type: localStorage.getItem("active_wallet_type") || "PERSONAL"
     };
 
     mutation.mutate(payload);

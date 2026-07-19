@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2, Globe, Briefcase, Users, FileText, Camera, Loader2, Save,
-  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart, AlertTriangle, Trash2, LogOut, Clock
+  MapPin, Mail, Phone, Eye, EyeOff, CheckCircle2, Upload, ChevronRight, Edit3, ExternalLink, X, Heart, AlertTriangle, Trash2, LogOut, Clock,
+  Crown, Sparkles, Palette, Lock
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import axiosClient from "../../api/axiosClient";
 
-import { updateProfileApi, uploadAvatarApi, requestCompanyEmailOtpApi, verifyCompanyEmailOtpApi, resendCompanyEmailOtpApi } from "../../api/auth";
+import { updateProfileApi, uploadAvatarApi, uploadCoverApi, uploadCompanyImagesApi, requestCompanyEmailOtpApi, verifyCompanyEmailOtpApi, resendCompanyEmailOtpApi } from "../../api/auth";
 
 import { companyApi } from "../../api/companyApi";
 import MDEditor from "@uiw/react-md-editor";
@@ -113,6 +115,8 @@ const InputField = ({ label, name, icon: Icon, placeholder, type = "text", value
 
 export function CompanyProfile() {
   const { user, setAuth } = useAuthStore();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -129,9 +133,16 @@ export function CompanyProfile() {
     contactPublic: true,
     taxCode: "",
     isTaxCodePublic: false,
+    vipThemeColor: "#0ea5e9",
+    vipBorderStyle: "gradient-glow",
+    bannerUrl: "",
+    images: [],
   });
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [showVipPreview, setShowVipPreview] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const toastTimerRef = useRef(null);
@@ -366,6 +377,10 @@ export function CompanyProfile() {
         contactPublic: user.contact_public !== undefined ? user.contact_public : (user.contactPublic !== undefined ? user.contactPublic : true),
         taxCode: user.company_tax_code || "",
         isTaxCodePublic: user.company_is_tax_code_public || false,
+        vipThemeColor: user.company_vip_theme_color || "#0ea5e9",
+        vipBorderStyle: user.company_vip_border_style || "gradient-glow",
+        bannerUrl: user.company_banner_url || "",
+        images: typeof user.company_images === 'string' ? JSON.parse(user.company_images) : (user.company_images || []),
       });
     }
   }, [user]);
@@ -379,6 +394,11 @@ export function CompanyProfile() {
     mutationFn: (data) => updateProfileApi(data),
     onSuccess: (response) => {
       setAuth(response.data);
+      queryClient.invalidateQueries({ queryKey: ["company-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["company-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["candidate-jobs-list"] }); // invalidate JobCard data
+      queryClient.invalidateQueries({ queryKey: ["job-detail"] }); // invalidate single job page
       showToast("Cập nhật hồ sơ công ty thành công!", "success");
       setIsEditing(false); // Lưu thành công thì chuyển về chế độ View
     },
@@ -429,8 +449,10 @@ export function CompanyProfile() {
       showToast("Vui lòng nhập tên công ty.", "error");
       return;
     }
-    if (!formData.contactEmail.trim()) {
-      showToast("Vui lòng nhập email liên hệ.", "error");
+
+    // Nếu email liên hệ trống, cho phép cập nhật trực tiếp (xóa email liên hệ của công ty)
+    if (!formData.contactEmail || !formData.contactEmail.trim()) {
+      updateProfileMutation.mutate(formData);
       return;
     }
 
@@ -453,7 +475,7 @@ export function CompanyProfile() {
     }
     setIsUploadingLogo(true);
     try {
-      const response = await uploadAvatarApi(file);
+      const response = await uploadAvatarApi(file, true);
       if (response?.data?.avatarUrl) {
         setFormData((prev) => ({ ...prev, companyLogo: response.data.avatarUrl }));
         showToast("Tải logo lên thành công!", "success");
@@ -467,6 +489,72 @@ export function CompanyProfile() {
   }, [showToast]);
 
   const handleFileUpload = async (e) => processFileUpload(e.target.files[0]);
+
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showToast("Kích thước ảnh banner vượt quá 5MB. Vui lòng chọn ảnh khác.", "error");
+      return;
+    }
+    setIsUploadingBanner(true);
+    try {
+      const response = await uploadCoverApi(file, true);
+      if (response?.data?.coverUrl) {
+        setFormData((prev) => ({ ...prev, bannerUrl: response.data.coverUrl }));
+        showToast("Tải ảnh banner lên thành công!", "success");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Không thể tải ảnh banner. Vui lòng thử lại.", "error");
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files || files.length === 0) return;
+    
+    // Validate số lượng ảnh (tối đa 5)
+    if (formData.images.length + files.length > 5) {
+      showToast("Chỉ có thể tải lên tối đa 5 ảnh trong thư viện.", "error");
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    const validFiles = files.filter(f => f.size <= maxSize);
+    if (validFiles.length < files.length) {
+      showToast("Một số ảnh vượt quá kích thước 5MB đã bị bỏ qua.", "error");
+    }
+    
+    if (validFiles.length === 0) return;
+
+    setIsUploadingGallery(true);
+    try {
+      const response = await uploadCompanyImagesApi(validFiles, true);
+      if (response?.data?.images) {
+        setFormData((prev) => ({ 
+          ...prev, 
+          images: [...prev.images, ...response.data.images] 
+        }));
+        showToast("Tải ảnh lên thư viện thành công!", "success");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast(error.response?.data?.error || error.response?.data?.message || "Không thể tải ảnh lên.", "error");
+    } finally {
+      setIsUploadingGallery(false);
+    }
+  };
+
+  const removeGalleryImage = (indexToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, idx) => idx !== indexToRemove)
+    }));
+  };
 
   // Drag & Drop handlers
   const handleDragOver = useCallback((e) => { e.preventDefault(); setIsDragging(true); }, []);
@@ -627,6 +715,16 @@ export function CompanyProfile() {
                       }`}
                   >
                     Mời nhân sự
+                  </button>
+                  <button
+                    onClick={() => setActiveSubTab('vip')}
+                    className={`pb-3 font-bold text-sm transition-all border-b-2 outline-none whitespace-nowrap flex items-center gap-1.5 ${activeSubTab === 'vip'
+                        ? 'border-[#0ea5e9] text-[#0ea5e9]'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                      }`}
+                  >
+                    <span>Thiết kế VIP</span>
+                    {!user?.company_is_vip && <Lock size={12} className="text-slate-400" />}
                   </button>
                 </>
               )}
@@ -823,6 +921,111 @@ export function CompanyProfile() {
                     </div>
                   )}
                 </div>
+              </div>
+            ) : activeSubTab === 'vip' ? (
+              // ================= VIP TAB =================
+              <div className="space-y-8 relative z-10 font-inter">
+                {!user?.company_is_vip ? (
+                  /* LOCK SCREEN FOR NON-VIP */
+                  <div className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-3xl p-8 text-center max-w-2xl mx-auto shadow-sm my-8">
+                    <div className="w-20 h-20 bg-sky-50 dark:bg-sky-500/10 text-[#0ea5e9] rounded-2xl flex items-center justify-center mx-auto mb-6 border border-sky-100 dark:border-sky-500/20 shadow-sm animate-pulse">
+                      <Lock size={36} />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3">
+                      Đặc quyền Thiết kế VIP Doanh nghiệp bị khóa
+                    </h3>
+                    <p className="text-slate-500 dark:text-gray-400 text-sm leading-relaxed mb-8 max-w-md mx-auto">
+                      Hãy nâng cấp tài khoản công ty của bạn lên gói <strong>BUSINESS</strong> để sở hữu các tính năng xây dựng thương hiệu độc quyền: Tự chọn màu sắc chủ đạo, viền logo lấp lánh có huy hiệu vương miện, và banner tùy biến nổi bật thu hút hàng ngàn ứng viên.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/packages')}
+                      className="px-8 py-3.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] hover:from-[#0284c7] hover:to-[#0ea5e9] text-white font-bold rounded-xl transition-all shadow-lg shadow-sky-500/20 flex items-center gap-2 mx-auto cursor-pointer"
+                    >
+                      <Crown size={18} />
+                      <span>Nâng cấp gói BUSINESS ngay</span>
+                    </button>
+                  </div>
+                ) : (
+                  /* VIP CONFIGURATION FORM */
+                  <div className="space-y-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-white/10 pb-6">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                          <Crown className="text-amber-500 animate-bounce" size={22} />
+                          Thiết kế giao diện VIP Doanh nghiệp
+                        </h3>
+                        <p className="text-xs text-slate-400 dark:text-gray-400 mt-1">Cấu hình nhận diện thương hiệu độc quyền trên bảng tin tuyển dụng.</p>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowVipPreview(true)}
+                          className="px-5 py-2.5 bg-sky-50 dark:bg-sky-500/10 text-[#0ea5e9] font-bold text-xs rounded-xl hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-all flex items-center gap-1.5 cursor-pointer border border-sky-100 dark:border-sky-500/20"
+                        >
+                          <Eye size={16} />
+                          <span>Xem trước (Live Preview)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSubmit}
+                          disabled={updateProfileMutation.isPending}
+                          className="px-5 py-2.5 bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-sky-500/15 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {updateProfileMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                          <span>Lưu cấu hình VIP</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Brand Color & Logo Border Style */}
+                      <div className="space-y-6 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-3xl p-6">
+                        <h4 className="text-sm font-extrabold text-slate-700 dark:text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Palette size={16} className="text-[#0ea5e9]" />
+                          Màu sắc & Phong cách Logo
+                        </h4>
+
+                        {/* Theme Color Picker */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Màu chủ đạo thương hiệu (Brand Color)</label>
+                          <div className="flex gap-3">
+                            <input
+                              type="color"
+                              value={formData.vipThemeColor}
+                              onChange={(e) => setFormData(prev => ({ ...prev, vipThemeColor: e.target.value }))}
+                              className="w-12 h-12 rounded-xl border border-slate-200 dark:border-white/10 cursor-pointer overflow-hidden bg-transparent"
+                            />
+                            <input
+                              type="text"
+                              value={formData.vipThemeColor}
+                              onChange={(e) => setFormData(prev => ({ ...prev, vipThemeColor: e.target.value }))}
+                              placeholder="#0ea5e9"
+                              className="flex-1 px-4 py-3 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all text-slate-700 dark:text-white font-medium text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Border Style Selector */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Kiểu viền Logo hiển thị</label>
+                          <select
+                            name="vipBorderStyle"
+                            value={formData.vipBorderStyle}
+                            onChange={(e) => setFormData(prev => ({ ...prev, vipBorderStyle: e.target.value }))}
+                            className="w-full px-4 py-3 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all text-slate-700 dark:text-white font-medium text-sm appearance-none"
+                          >
+                            <option value="gradient-glow">Hào quang tỏa sáng lấp lánh (Glow)</option>
+                            <option value="crown-badge">Đính kèm Vương miện VIP (Crown)</option>
+                            <option value="sparkle-stars">Hiệu ứng ngôi sao rực rỡ (Stars)</option>
+                            <option value="solid-classic">Đường viền màu cổ điển (Solid)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               // ================= VIEW MODE =================
@@ -1117,6 +1320,69 @@ export function CompanyProfile() {
                   />
                 </div>
                 <p className="text-xs text-slate-400 dark:text-gray-500 font-medium">Hỗ trợ Markdown: **in đậm**, *in nghiêng*, [link](url), danh sách, tiêu đề.</p>
+              </div>
+
+              {/* Cover & Gallery Uploads */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-sky-500 text-white p-1.5 rounded-lg shadow-sm"><Camera className="w-4 h-4" /></div>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-white">Hình ảnh công ty</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Banner Upload */}
+                  <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-5 border border-slate-100 dark:border-white/5 space-y-4">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block">Ảnh bìa (Banner)</label>
+                    {formData.bannerUrl && (
+                      <div className="relative w-full h-32 rounded-lg overflow-hidden">
+                        <img src={formData.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, bannerUrl: "" }))} className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <input type="text" value={formData.bannerUrl} onChange={(e) => setFormData(prev => ({ ...prev, bannerUrl: e.target.value }))} placeholder="URL ảnh bìa..." className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg text-sm" />
+                      <div className="relative">
+                        <input type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" id="banner-upload" disabled={isUploadingBanner} />
+                        <label htmlFor="banner-upload" className="px-4 py-2 bg-sky-500 text-white rounded-lg text-sm font-bold cursor-pointer flex items-center hover:bg-sky-600 disabled:opacity-50">
+                          {isUploadingBanner ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gallery Upload */}
+                  <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-5 border border-slate-100 dark:border-white/5 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block">Thư viện ảnh ({formData.images?.length || 0}/5)</label>
+                      <div className="relative">
+                        <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" id="gallery-upload" disabled={isUploadingGallery || formData.images?.length >= 5} />
+                        <label htmlFor="gallery-upload" className={`px-4 py-2 text-white rounded-lg text-sm font-bold cursor-pointer flex items-center gap-1.5 ${(formData.images?.length || 0) >= 5 ? 'bg-slate-400' : 'bg-sky-500 hover:bg-sky-600'}`}>
+                          {isUploadingGallery ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {formData.images && formData.images.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {formData.images.map((imgUrl, index) => (
+                          <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 dark:border-white/10">
+                            <img src={imgUrl} alt="Gallery" className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => removeGalleryImage(index)} className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full hover:bg-red-500 backdrop-blur-md">
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400">
+                        <Camera size={24} className="mb-2 opacity-50" />
+                        <span className="text-xs">Chưa có ảnh nào</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Submit */}
@@ -1418,6 +1684,127 @@ export function CompanyProfile() {
                 >
                   {deleteCompanyMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                   Xác nhận Xóa
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Live Preview VIP */}
+      <AnimatePresence>
+        {showVipPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-[#0a0f1c] rounded-[2rem] p-8 max-w-lg w-full border border-slate-100 dark:border-white/10 shadow-2xl relative animate-fade-in"
+            >
+              <button
+                onClick={() => setShowVipPreview(false)}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
+                <Crown className="text-amber-500 animate-pulse" size={22} />
+                Xem trước giao diện VIP (Live Preview)
+              </h3>
+
+              <div className="space-y-6">
+                <p className="text-xs text-slate-500 dark:text-gray-400 font-semibold leading-relaxed">
+                  Đây là cách tin tuyển dụng của công ty bạn hiển thị trên bảng tin việc làm đối với các ứng viên:
+                </p>
+
+                {/* Mock JobCard VIP */}
+                <div
+                  className="relative bg-white dark:bg-slate-900/80 rounded-2xl p-6 border transition-all duration-300"
+                  style={{
+                    borderColor: formData.vipThemeColor || "#0ea5e9",
+                    boxShadow: formData.vipBorderStyle === 'gradient-glow' 
+                      ? `0 0 20px ${formData.vipThemeColor || "#0ea5e9"}33` 
+                      : 'none',
+                    background: formData.vipBorderStyle === 'gradient-glow'
+                      ? `linear-gradient(to bottom, ${(formData.vipThemeColor || "#0ea5e9")}0a, transparent)`
+                      : 'none'
+                  }}
+                >
+                  <div className="flex gap-4">
+                    {/* Logo container */}
+                    <div
+                      className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md relative overflow-visible"
+                      style={{
+                        boxShadow: formData.vipBorderStyle === 'gradient-glow'
+                          ? `0 0 15px ${formData.vipThemeColor || "#0ea5e9"}80`
+                          : 'none'
+                      }}
+                    >
+                      {formData.companyLogo ? (
+                        <img src={formData.companyLogo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
+                      ) : (
+                        formData.companyName?.substring(0, 1).toUpperCase() || "J"
+                      )}
+
+                      {/* VIP Badge Style: Crown */}
+                      {formData.vipBorderStyle === 'crown-badge' && (
+                        <div className="absolute -top-2 -right-2 bg-amber-500 text-white p-1 rounded-full border border-white dark:border-slate-900 shadow-sm flex items-center justify-center">
+                          <Crown size={10} className="fill-white text-white" />
+                        </div>
+                      )}
+
+                      {/* VIP Badge Style: Sparkles */}
+                      {formData.vipBorderStyle === 'sparkle-stars' && (
+                        <div className="absolute -top-1.5 -right-1.5 bg-cyan-500 text-white p-0.5 rounded-full border border-white dark:border-slate-900 shadow-sm flex items-center justify-center">
+                          <Sparkles size={10} className="text-white" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-bold dark:text-white text-gray-900 truncate">
+                            Kỹ sư Phát triển Phần mềm (Full-Stack)
+                          </h3>
+                          
+                          <div className="flex items-center gap-2 mt-1">
+                            <span
+                              className="text-sm font-bold bg-gradient-to-r bg-clip-text text-transparent drop-shadow-sm"
+                              style={{
+                                backgroundImage: `linear-gradient(to right, ${formData.vipThemeColor || "#0ea5e9"}, #10b981)`
+                              }}
+                            >
+                              {formData.companyName || "TechCorp Vietnam"}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-sm shadow-cyan-500/20">
+                              VIP
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-y-2 gap-x-4 text-xs font-semibold text-slate-500 dark:text-slate-400 mt-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                          <span>Hồ Chí Minh</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                          <span className="text-emerald-500 dark:text-emerald-400">15 - 35 triệu VND</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowVipPreview(false)}
+                  className="w-full py-3 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-gray-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-sm cursor-pointer"
+                >
+                  Đóng xem trước
                 </button>
               </div>
             </motion.div>
