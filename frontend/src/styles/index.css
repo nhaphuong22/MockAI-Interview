@@ -34,3 +34,25 @@
   border: 2px solid transparent;
   background-clip: padding-box;
 }
+
+/* Markdown Editor Styles for WriteBlog */
+.markdown-editor-wrapper .w-md-editor {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+.markdown-editor-wrapper .w-md-editor-toolbar {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 10px 0 !important;
+  margin-bottom: 10px !important;
+}
+.dark .markdown-editor-wrapper {
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+.markdown-editor-wrapper {
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+.markdown-editor-wrapper .w-md-editor-content {
+  background-color: transparent !important;
+}

@@ -154,30 +154,6 @@ export function WriteBlog() {
 
   return (
     <div className="min-h-screen dark:bg-[#0a0f1c] bg-gray-50 py-8">
-      <style>
-        {`
-          .markdown-editor-wrapper .w-md-editor {
-            background-color: transparent !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-          }
-          .markdown-editor-wrapper .w-md-editor-toolbar {
-            background-color: transparent !important;
-            border-bottom: 1px solid var(--border-color) !important;
-            padding: 10px 0 !important;
-            margin-bottom: 10px !important;
-          }
-          .dark .markdown-editor-wrapper {
-            --border-color: rgba(255, 255, 255, 0.1);
-          }
-          .markdown-editor-wrapper {
-            --border-color: rgba(0, 0, 0, 0.1);
-          }
-          .markdown-editor-wrapper .w-md-editor-content {
-            background-color: transparent !important;
-          }
-        `}
-      </style>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header Options */}

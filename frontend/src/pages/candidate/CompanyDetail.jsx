@@ -1,4 +1,6 @@
 import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Building, 
@@ -32,6 +34,8 @@ export function CompanyDetail() {
   const user = useAuthStore((state) => state.user);
   const showToast = useUiStore((state) => state.showToast);
   const queryClient = useQueryClient();
+
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   // 1. Lấy thông tin chi tiết công ty (bao gồm is_following và follower_count)
   const { data: companyResponse, isLoading: isCompanyLoading, isError: isCompanyError } = useQuery({
@@ -129,20 +133,19 @@ export function CompanyDetail() {
   const bannerUrl = company.banner_url || (isVip ? company.vip_banner_url : null);
 
   return (
-    <div className="min-h-screen dark:bg-[#0a0f1c] bg-gray-50 pb-16">
+    <div className="min-h-screen dark:bg-[#030712] bg-[#f8fafc] pb-20 font-inter">
       {/* Banner Cover */}
       <div 
-        className="w-full h-48 relative border-b dark:border-white/5 border-gray-200 bg-cover bg-center"
+        className="w-full h-72 md:h-96 relative bg-cover bg-center"
         style={{
           backgroundImage: bannerUrl ? `url(${bannerUrl})` : undefined,
           backgroundColor: bannerUrl ? undefined : `${vipThemeColor}15`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
         }}
       >
-        {bannerUrl && <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[0.5px]"></div>}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-end relative pb-6 z-10">
-          <Link to="/jobs" className="absolute top-6 left-4 sm:left-6 lg:left-8 flex items-center gap-2 text-gray-600 dark:text-slate-400 hover:text-[#0ea5e9] dark:hover:text-[#0ea5e9] transition-colors bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#0a0f1c]/90 dark:to-[#0a0f1c]"></div>
+        
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-start pt-6 relative z-10">
+          <Link to="/jobs" className="flex items-center gap-2 text-white/90 hover:text-white transition-all bg-black/20 hover:bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold border border-white/10 hover:border-white/30 hover:scale-105 duration-300">
             <ArrowLeft className="w-4 h-4" />
             <span>Quay lại Việc làm</span>
           </Link>
@@ -150,59 +153,65 @@ export function CompanyDetail() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10">
-        <div className="grid lg:grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 md:-mt-32 relative z-20">
+        <div className="grid lg:grid-cols-12 gap-6 md:gap-8">
+          
           {/* Cột trái - Sidebar Profile */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Thẻ thông tin nhanh */}
-            <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 flex flex-col items-center text-center">
-              <div className="relative mb-4">
+          <div className="lg:col-span-4 space-y-6">
+            {/* Profile Card */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center relative"
+            >
+              <div className="relative mb-6 group -mt-16 md:-mt-20">
                 {isImageUrl(company.logo_url) ? (
                   <img 
                     src={company.logo_url} 
                     alt={company.name} 
-                    className="w-24 h-24 rounded-2xl border-4 object-cover shadow-md bg-white relative z-10 animate-fade-in"
+                    className="w-32 h-32 md:w-40 md:h-40 rounded-3xl border-4 object-cover bg-white relative z-10 transition-transform duration-500 group-hover:scale-105"
                     style={{
                       borderColor: isVip ? vipThemeColor : '#ffffff',
-                      boxShadow: (isVip && vipBorderStyle === 'gradient-glow') ? `0 0 15px ${vipThemeColor}80` : undefined
+                      boxShadow: (isVip && vipBorderStyle === 'gradient-glow') ? `0 10px 30px -10px ${vipThemeColor}` : '0 10px 30px -10px rgba(0,0,0,0.15)'
                     }}
                   />
                 ) : (
                   <div 
-                    className="w-24 h-24 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-5xl font-bold text-white shadow-md relative z-10"
+                    className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-3xl flex items-center justify-center text-6xl font-black text-white relative z-10 shadow-xl transition-transform duration-500 group-hover:scale-105"
                     style={{
-                      boxShadow: (isVip && vipBorderStyle === 'gradient-glow') ? `0 0 15px ${vipThemeColor}80` : undefined
+                      boxShadow: (isVip && vipBorderStyle === 'gradient-glow') ? `0 10px 30px -10px ${vipThemeColor}` : undefined
                     }}
                   >
                     {companyLogo}
                   </div>
                 )}
                 
-                {/* VIP badge crown rendering */}
+                {/* VIP badge */}
                 {isVip && vipBorderStyle === 'crown-badge' && (
-                  <div className="absolute -top-2.5 -right-2.5 bg-amber-500 text-white p-1 rounded-full border border-white dark:border-slate-900 shadow-md z-20 flex items-center justify-center">
-                    <Crown size={14} className="fill-white text-white" />
+                  <div className="absolute -top-3 -right-3 bg-gradient-to-br from-amber-400 to-amber-600 text-white p-2 rounded-xl shadow-lg z-20 flex items-center justify-center rotate-12 group-hover:rotate-0 transition-transform duration-300">
+                    <Crown size={20} className="fill-white text-white drop-shadow-md" />
                   </div>
                 )}
 
-                {/* VIP badge sparkles rendering */}
                 {isVip && vipBorderStyle === 'sparkle-stars' && (
-                  <div className="absolute -top-2 -right-2 bg-cyan-500 text-white p-1 rounded-full border border-white dark:border-slate-900 shadow-md z-20 flex items-center justify-center">
-                    <Sparkles size={14} className="text-white" />
+                  <div className="absolute -top-2 -right-2 bg-gradient-to-br from-cyan-400 to-blue-500 text-white p-1.5 rounded-full shadow-lg z-20 flex items-center justify-center animate-pulse">
+                    <Sparkles size={16} className="text-white drop-shadow-md" />
                   </div>
                 )}
               </div>
 
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mb-3 line-clamp-2 tracking-tight">
                 {company.name}
               </h1>
 
               {company.industry && (
                 <span 
-                  className="inline-block px-3 py-1 text-xs font-semibold rounded-full mb-3"
+                  className="inline-block px-4 py-1.5 text-xs font-bold rounded-xl mb-4 backdrop-blur-md"
                   style={{
-                    backgroundColor: `${vipThemeColor}1a`,
-                    color: vipThemeColor
+                    backgroundColor: `${vipThemeColor}15`,
+                    color: vipThemeColor,
+                    border: `1px solid ${vipThemeColor}30`
                   }}
                 >
                   {company.industry}
@@ -210,38 +219,36 @@ export function CompanyDetail() {
               )}
 
               {/* Số người theo dõi */}
-              <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-slate-400 mb-4">
-                <Heart className="w-4 h-4 text-rose-400" />
-                <span><strong className="text-gray-800 dark:text-white">{followerCount.toLocaleString()}</strong> người theo dõi</span>
+              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
+                <Heart className="w-5 h-5 text-rose-500 fill-rose-100 dark:fill-rose-950" />
+                <span><strong className="text-slate-800 dark:text-white text-base">{followerCount.toLocaleString()}</strong> người theo dõi</span>
               </div>
 
-              {/* Nút Follow / Unfollow */}
+              {/* Nút Follow */}
               {isCandidate && (
                 <button
                   onClick={() => followMutation.mutate()}
                   disabled={followMutation.isPending}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-sm transition-all duration-200 mb-4 border ${
+                  className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-bold text-sm transition-all duration-300 mb-6 border ${
                     isFollowing
-                      ? "bg-sky-50 dark:bg-[#0a0f1c] hover:bg-rose-50 hover:text-rose-500 hover:border-red-200 dark:hover:bg-red-950/20"
-                      : "text-white hover:opacity-90 shadow-md"
+                      ? "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-900/20 dark:hover:border-rose-800"
+                      : "text-white shadow-sm hover:shadow-md hover:-translate-y-0.5"
                   }`}
                   style={{
                     backgroundColor: !isFollowing ? vipThemeColor : undefined,
-                    borderColor: isFollowing ? `${vipThemeColor}30` : undefined,
-                    color: isFollowing ? vipThemeColor : undefined
+                    borderColor: !isFollowing ? vipThemeColor : undefined,
                   }}
-                  id={`follow-btn-company-${id}`}
                 >
                   {followMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : isFollowing ? (
                     <>
-                      <BellOff className="w-4 h-4" />
+                      <BellOff className="w-5 h-5" />
                       <span>Đang theo dõi</span>
                     </>
                   ) : (
                     <>
-                      <Bell className="w-4 h-4" />
+                      <Bell className="w-5 h-5" />
                       <span>Theo dõi công ty</span>
                     </>
                   )}
@@ -249,22 +256,26 @@ export function CompanyDetail() {
               )}
 
               {!isAuthenticated && (
-                <p className="text-xs text-gray-400 dark:text-slate-500 italic mb-4">
-                  <Link to="/login" className="text-[#0ea5e9] hover:underline font-semibold">Đăng nhập</Link> để theo dõi công ty này.
+                <p className="text-xs text-slate-400 dark:text-slate-500 mb-6">
+                  <Link to="/login" className="text-[#0ea5e9] hover:underline font-bold">Đăng nhập</Link> để theo dõi công ty.
                 </p>
               )}
 
-              <div className="w-full border-t border-gray-100 dark:border-white/5 pt-4 space-y-3 text-left">
+              <div className="w-full border-t border-slate-100 dark:border-white/10 pt-6 space-y-4 text-left">
                 {company.company_size && (
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
-                    <Users className="w-4 h-4 text-gray-400" />
-                    <span>Quy mô: {company.company_size} nhân sự</span>
+                  <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-medium">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <span>{company.company_size} nhân sự</span>
                   </div>
                 )}
 
                 {company.website && (
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
-                    <Globe className="w-4 h-4 text-gray-400" />
+                  <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-medium">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400">
+                      <Globe className="w-5 h-5" />
+                    </div>
                     <a 
                       href={company.website.startsWith("http") ? company.website : `https://${company.website}`} 
                       target="_blank" 
@@ -277,162 +288,223 @@ export function CompanyDetail() {
                 )}
 
                 {company.address && (
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
-                    <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-medium">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400">
+                      <MapPin className="w-5 h-5" />
+                    </div>
                     <span className="line-clamp-2">{company.address}</span>
                   </div>
                 )}
-
+                
                 {company.is_tax_code_public && company.tax_code && (
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
-                    <Briefcase className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-medium">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400">
+                      <Briefcase className="w-5 h-5" />
+                    </div>
                     <span className="line-clamp-1">MST: {company.tax_code}</span>
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
 
-            {/* Thẻ Thông tin liên hệ */}
-            <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-sm uppercase tracking-wider">Thông tin liên hệ</h3>
+            {/* Thông tin liên hệ */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200/80 dark:border-slate-800 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: vipThemeColor }}></div>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-5 text-sm uppercase tracking-widest flex items-center gap-2">
+                Thông tin liên hệ
+              </h3>
               
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {company.contact_public ? (
                   <>
                     {company.email && (
-                      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
-                        <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-medium group">
+                        <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center shrink-0 text-sky-500 group-hover:scale-110 transition-transform">
+                          <Mail className="w-5 h-5" />
+                        </div>
                         <a href={`mailto:${company.email}`} className="hover:text-[#0ea5e9] transition-colors break-all">
                           {company.email}
                         </a>
                       </div>
                     )}
                     {company.phone && (
-                      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
-                        <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-medium group">
+                        <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center shrink-0 text-sky-500 group-hover:scale-110 transition-transform">
+                          <Phone className="w-5 h-5" />
+                        </div>
                         <a href={`tel:${company.phone}`} className="hover:text-[#0ea5e9] transition-colors">
                           {company.phone}
                         </a>
                       </div>
                     )}
                     {!company.email && !company.phone && (
-                      <p className="text-xs text-gray-400 dark:text-slate-500 italic">Chưa cập nhật thông tin liên lạc.</p>
+                      <p className="text-sm text-slate-400 dark:text-slate-500 italic">Chưa cập nhật thông tin liên lạc.</p>
                     )}
                   </>
                 ) : (
-                  <div className="text-center p-3 bg-gray-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-gray-200 dark:border-white/5">
-                    <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Thông tin liên hệ được đặt ở chế độ riêng tư.</p>
-                    <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">Liên hệ với nhà tuyển dụng qua hệ thống nộp đơn hoặc tin nhắn.</p>
+                  <div className="text-center p-6 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-white/5">
+                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                      <BellOff className="w-5 h-5" />
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 font-bold mb-1">Riêng tư</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">Nhà tuyển dụng đã ẩn thông tin liên hệ. Bạn có thể nhắn tin qua nền tảng sau khi nộp đơn.</p>
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Cột phải - Nội dung giới thiệu & Việc làm đang tuyển */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-8 space-y-6">
             {/* Giới thiệu công ty */}
-            <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-white/5">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Building className="w-5 h-5" style={{ color: vipThemeColor }} />
-                <span>Giới thiệu công ty</span>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200/80 dark:border-slate-800"
+            >
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                <div className="p-2.5 bg-slate-100 dark:bg-slate-800/50 rounded-xl">
+                  <Building className="w-5 h-5" style={{ color: vipThemeColor }} />
+                </div>
+                <span>Về chúng tôi</span>
               </h2>
 
               {company.description ? (
-                <div 
-                  data-color-mode={theme} 
-                  className="prose dark:prose-invert prose-sky max-w-none text-gray-700 dark:text-slate-300"
-                >
-                  <MDEditor.Markdown source={company.description} style={{ backgroundColor: 'transparent', padding: 0 }} />
+                <div className="relative">
+                  <div 
+                    data-color-mode={theme} 
+                    className={`prose dark:prose-invert prose-slate max-w-none text-slate-700 dark:text-slate-300 leading-relaxed overflow-hidden transition-all duration-500 ${!isDescExpanded ? 'max-h-64' : ''}`}
+                  >
+                    <MDEditor.Markdown source={company.description} style={{ backgroundColor: 'transparent', padding: 0 }} />
+                  </div>
+                  
+                  {/* Lớp phủ mờ (Fade Out) khi chưa mở rộng */}
+                  {!isDescExpanded && (
+                    <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-white dark:from-[#0f172a] to-transparent pointer-events-none"></div>
+                  )}
+                  
+                  {/* Nút Hiển thị thêm / Thu gọn */}
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      onClick={() => setIsDescExpanded(!isDescExpanded)}
+                      className="px-6 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      {isDescExpanded ? "Thu gọn bớt" : "Hiển thị thêm"}
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <p className="text-gray-500 dark:text-slate-400 italic text-sm">Chưa có thông tin giới thiệu chi tiết.</p>
+                <div className="py-8 text-center">
+                  <p className="text-slate-400 dark:text-slate-500 italic text-sm">Chưa có thông tin giới thiệu chi tiết.</p>
+                </div>
               )}
-            </div>
+            </motion.div>
 
             {/* Gallery ảnh công ty */}
             {company.images && (() => {
               const imgs = typeof company.images === 'string' ? JSON.parse(company.images) : company.images;
               return imgs && imgs.length > 0 ? (
-                <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-white/5">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" style={{ color: vipThemeColor }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <span>Hình ảnh công ty</span>
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.3 }}
+                  className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200/80 dark:border-slate-800"
+                >
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                    <div className="p-2.5 bg-slate-100 dark:bg-slate-800/50 rounded-xl">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" style={{ color: vipThemeColor }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </div>
+                    <span>Môi trường làm việc</span>
                   </h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {imgs.map((imgUrl, idx) => (
-                      <div key={idx} className="aspect-video rounded-xl overflow-hidden border border-gray-100 dark:border-white/10 hover:scale-[1.02] transition-transform cursor-pointer">
-                        <img src={imgUrl} alt={`Ảnh công ty ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                      <div key={idx} className="aspect-square sm:aspect-video rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer relative border border-slate-100 dark:border-white/5">
+                        <img src={imgUrl} alt={`Ảnh công ty ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
                       </div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               ) : null;
             })()}
 
             {/* Việc làm đang tuyển dụng */}
-            <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-white/5">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-[#0ea5e9]" />
-                <span>Vị trí đang tuyển dụng ({jobs.length})</span>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200/80 dark:border-slate-800"
+            >
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                <div className="p-2.5 bg-sky-50 dark:bg-sky-900/20 rounded-xl">
+                  <Briefcase className="w-5 h-5 text-[#0ea5e9]" />
+                </div>
+                <span>Vị trí đang mở ({jobs.length})</span>
               </h2>
 
               {isJobsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 text-[#0ea5e9] animate-spin mr-2" />
-                  <span className="text-sm text-gray-500 dark:text-slate-400">Đang tải danh sách công việc...</span>
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-[#0ea5e9] animate-spin mr-3" />
+                  <span className="text-slate-500 font-medium">Đang tải danh sách công việc...</span>
                 </div>
               ) : jobs.length > 0 ? (
                 <div className="space-y-4">
                   {jobs.map((job) => (
                     <div 
                       key={job.id} 
-                      className="group p-4 bg-gray-50/50 dark:bg-slate-800/20 rounded-xl border border-gray-100 dark:border-white/5 hover:border-sky-100 dark:hover:border-sky-950 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                      className="group p-5 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl border border-slate-200/60 dark:border-slate-700/50 hover:border-sky-300 dark:hover:border-sky-700 hover:shadow-sm transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-5"
                     >
                       <div className="flex-1">
                         <Link 
                           to={`/jobs/${job.id}`} 
-                          className="font-semibold text-gray-900 dark:text-white hover:text-[#0ea5e9] dark:hover:text-[#0ea5e9] text-base transition-colors"
+                          className="font-bold text-base text-slate-900 dark:text-white group-hover:text-[#0ea5e9] transition-colors line-clamp-1"
                         >
                           {job.title}
                         </Link>
                         
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-slate-400 mt-2">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
+                        <div className="flex flex-wrap items-center gap-y-2 gap-x-3 text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
+                          <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
                             {job.company_address || "Việt Nam"}
                           </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1 text-[#0ea5e9] dark:text-[#38bdf8] font-medium">
+                          <span className="flex items-center gap-1.5 bg-sky-50 dark:bg-sky-900/10 text-sky-600 dark:text-sky-400 px-2.5 py-1 rounded-md font-semibold border border-sky-100 dark:border-sky-800/30">
                             <DollarSign className="w-3.5 h-3.5" />
                             {formatSalary(job.salary_min, job.salary_max, job.salary_currency, job.is_salary_visible)}
                           </span>
                           {job.experience_level && (
-                            <>
-                              <span>•</span>
-                              <span>{job.experience_level}</span>
-                            </>
+                            <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50">
+                              {job.experience_level}
+                            </span>
                           )}
                         </div>
                       </div>
 
                       <Link 
                         to={`/jobs/${job.id}`} 
-                        className="flex items-center gap-1 text-xs font-bold text-[#0ea5e9] dark:text-[#38bdf8] hover:text-[#0284c7] group-hover:translate-x-1 transition-all flex-shrink-0"
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-200 flex-shrink-0"
                       >
-                        <span>Chi tiết</span>
+                        <span>Xem chi tiết</span>
                         <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 bg-gray-50/50 dark:bg-slate-800/10 rounded-xl border border-dashed border-gray-200 dark:border-white/5">
-                  <Briefcase className="w-10 h-10 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-                  <p className="text-sm text-gray-500 dark:text-slate-400 italic">Hiện tại công ty chưa đăng tin tuyển dụng nào.</p>
+                <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/20 rounded-3xl border border-dashed border-slate-200 dark:border-white/10">
+                  <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-600">
+                    <Briefcase className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">Chưa có tin tuyển dụng</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Hiện tại công ty chưa mở vị trí nào mới.</p>
                 </div>
               )}
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

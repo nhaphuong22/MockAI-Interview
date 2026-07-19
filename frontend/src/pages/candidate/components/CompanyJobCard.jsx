@@ -1,4 +1,4 @@
-import { MapPin, DollarSign, Bookmark, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, DollarSign, Bookmark, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -41,23 +41,50 @@ export function CompanyJobCard({
       : (companyName || "?").charAt(0).toUpperCase();
 
   return (
-    <div
-      className={`relative rounded-xl border transition-all duration-150 overflow-hidden ${
-        isCardActive
-          ? "border-sky-200 shadow-sm shadow-sky-100/80 ring-1 ring-sky-100 dark:border-[#0ea5e9]/30 dark:ring-[#0ea5e9]/10 dark:shadow-none"
-          : isVip
-            ? ""
-            : "border-transparent shadow-sm shadow-slate-200/60 hover:border-slate-200 dark:hover:border-white/10"
-      } bg-white dark:bg-slate-900/80`}
-      style={{
-        borderColor: isVip && !isCardActive ? vipThemeColor : undefined,
-        boxShadow: isVip && !isCardActive ? `0 0 15px ${vipThemeColor}20` : undefined,
-        background: isVip && !isCardActive && vipBorderStyle === 'gradient-glow' ? `linear-gradient(to bottom, ${vipThemeColor}10, transparent)` : undefined
-      }}
-    >
+    <div className="relative group transition-all duration-500 hover:-translate-y-1.5">
+      {/* Outer Glow Effect cho VIP */}
+      {isVip && !isCardActive && (
+        <div 
+          className="absolute -inset-[1.5px] rounded-2xl opacity-40 group-hover:opacity-100 blur-[2px] transition-all duration-700 pointer-events-none"
+          style={{ background: `linear-gradient(135deg, ${vipThemeColor}90, transparent 40%, transparent 60%, ${vipThemeColor}90)` }}
+        ></div>
+      )}
+
+      {/* Main Card Container */}
+      <div
+        className={`relative h-full rounded-2xl border transition-all duration-300 overflow-hidden ${
+          isCardActive
+            ? "border-sky-200 shadow-sm shadow-sky-100/80 ring-1 ring-sky-100 dark:border-[#0ea5e9]/30 dark:ring-[#0ea5e9]/10 dark:shadow-none"
+            : isVip
+              ? ""
+              : "border-gray-100 shadow-sm shadow-slate-200/60 hover:border-slate-200 dark:border-white/5 dark:hover:border-white/10"
+        } bg-white/90 dark:bg-[#0a0f1c]/90 backdrop-blur-2xl`}
+        style={{
+          borderColor: (isVip && !isCardActive) ? `${vipThemeColor}80` : undefined,
+          boxShadow: (isVip && !isCardActive) ? `0 0 20px ${vipThemeColor}40, inset 0 0 15px ${vipThemeColor}20` : '0 4px 20px rgba(0,0,0,0.02)'
+        }}
+      >
+        {/* Animated Inner Highlight (Top Right) */}
+        {isVip && !isCardActive && (
+          <div 
+            className="absolute -top-24 -right-24 w-48 h-48 opacity-30 group-hover:opacity-50 transition-opacity duration-700 blur-[40px] rounded-full pointer-events-none"
+            style={{ backgroundColor: vipThemeColor }}
+          ></div>
+        )}
+        
+        {/* Animated Inner Highlight (Bottom Left) */}
+        {isVip && !isCardActive && (
+          <div 
+            className="absolute -bottom-24 -left-24 w-48 h-48 opacity-10 group-hover:opacity-30 transition-opacity duration-700 blur-[40px] rounded-full pointer-events-none"
+            style={{ backgroundColor: vipThemeColor }}
+          ></div>
+        )}
+
       {isCardActive && (
         <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-[#0ea5e9]" />
       )}
+      
+      <div className="relative z-10">
       {/* ── Company Header ── */}
       <div className="flex items-center gap-3.5 px-5 pt-5 pb-3.5 border-b border-slate-100 dark:border-white/5">
         {/* Logo */}
@@ -75,21 +102,23 @@ export function CompanyJobCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h3 
-              className={`font-bold text-[14px] leading-snug truncate ${!isVip ? 'text-gray-900 dark:text-white' : ''}`}
+              className={`font-bold text-[14px] leading-snug truncate relative ${!isVip ? 'text-gray-900 dark:text-white' : ''}`}
               style={{
-                color: isVip ? vipThemeColor : undefined
+                color: isVip ? vipThemeColor : undefined,
+                textShadow: isVip ? `0 0 10px ${vipThemeColor}90` : undefined
               }}
             >
               {companyName}
             </h3>
             {isVip && (
               <span 
-                className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm"
+                className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm flex items-center gap-0.5"
                 style={{
                   background: vipThemeColor,
-                  boxShadow: `0 2px 10px ${vipThemeColor}40`
+                  boxShadow: `0 0 12px ${vipThemeColor}`
                 }}
               >
+                <Sparkles className="w-2.5 h-2.5 animate-pulse" />
                 VIP
               </span>
             )}
@@ -217,6 +246,8 @@ export function CompanyJobCard({
           )}
         </button>
       )}
+      </div>
+      </div>
     </div>
   );
 }
