@@ -38,7 +38,8 @@ export const createNewJob = async (req, res) => {
       vacancy_count,
       deadline,
       detailed_requirements,
-      payment_wallet_type
+      payment_wallet_type,
+      enable_ai_screening
     } = req.body;
     const hrId = req.user.id;
 
@@ -122,6 +123,7 @@ export const createNewJob = async (req, res) => {
       isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
       vacancyCount: parsedVacancyCount,
       deadline: deadline || null,
+      enableAiScreening: !!enable_ai_screening,
       detailedRequirements: detailed_requirements || [],
       walletType: payment_wallet_type || 'PERSONAL'
     });
@@ -186,6 +188,16 @@ export const getJobs = async (req, res) => {
       limit: parseInt(limit)
     };
 
+    // BẢO MẬT: Phân quyền hiển thị tin tuyển dụng
+    // Nếu là Admin, hoặc là HR đang xem chính danh sách của mình -> Xem được tất cả trạng thái duyệt
+    if (req.user && (req.user.role === 'ADMIN' || (req.user.role === 'HR' && filters.hrId === req.user.id))) {
+      // Bỏ qua lọc approvalStatus, cho phép xem Pending và Rejected
+    } else {
+      // Ứng viên / Khách vãng lai: CHỈ thấy tin đã duyệt (APPROVED) và đang mở (OPEN)
+      filters.approvalStatus = 'APPROVED';
+      filters.status = 'OPEN';
+    }
+
     const result = await getJobsList(filters);
     return sendResponse(res, 200, result);
   } catch (error) {
@@ -238,7 +250,8 @@ export const updateJob = async (req, res) => {
       vacancy_count,
       deadline,
       detailed_requirements,
-      payment_wallet_type
+      payment_wallet_type,
+      enable_ai_screening
     } = req.body;
 
     // Kiểm tra xem job có tồn tại không
@@ -260,9 +273,9 @@ export const updateJob = async (req, res) => {
       return sendError(res, 400, 'Tiêu đề tin tuyển dụng (title) là bắt buộc.');
     }
 
-    const VALID_STATUSES = ['OPEN', 'CLOSED'];
+    const VALID_STATUSES = ['OPEN', 'CLOSED', 'PAUSED'];
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
-      return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN hoặc CLOSED.');
+      return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN, CLOSED hoặc PAUSED.');
     }
 
     let parsedSalaryMin = null;
@@ -319,6 +332,7 @@ export const updateJob = async (req, res) => {
       isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
       vacancyCount: parsedVacancyCount,
       deadline: deadline || null,
+      enableAiScreening: !!enable_ai_screening,
       walletType: payment_wallet_type || 'PERSONAL'
     }, detailed_requirements || []);
 
