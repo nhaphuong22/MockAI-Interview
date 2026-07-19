@@ -1,6 +1,7 @@
+import { lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "../components/layout/Layout";
-import { DataPrivacyAgreement } from "../pages/recruiter/DataPrivacyAgreement";
+const DataPrivacyAgreement = lazy(() => import("../pages/recruiter/DataPrivacyAgreement").then(m => ({ default: m.DataPrivacyAgreement })));
 import { candidateRoutes } from "./candidate";
 import { recruiterRoutes } from "./recruiter";
 import { adminRoutes } from "./admin";

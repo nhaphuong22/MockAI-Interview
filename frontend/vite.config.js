@@ -21,5 +21,29 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: true,
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('three') || id.includes('@react-three')) {
+                return 'vendor-three';
+              }
+              if (id.includes('framer-motion')) {
+                return 'vendor-framer-motion';
+              }
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'vendor-react';
+              }
+              if (id.includes('@radix-ui')) {
+                return 'vendor-radix';
+              }
+              return 'vendor'; // all other node_modules
+            }
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000,
+    },
   };
 })

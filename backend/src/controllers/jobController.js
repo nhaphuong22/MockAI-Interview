@@ -1,4 +1,4 @@
-import { 
+import {
   createJob,
   getJobsList,
   getJobDetailById,
@@ -26,10 +26,10 @@ import db from '../db/knex.js';
  */
 export const createNewJob = async (req, res) => {
   try {
-    const { 
-      title, 
-      description, 
-      status, 
+    const {
+      title,
+      description,
+      status,
       experience_level,
       salary_min,
       salary_max,
@@ -38,7 +38,8 @@ export const createNewJob = async (req, res) => {
       vacancy_count,
       deadline,
       detailed_requirements,
-      payment_wallet_type
+      payment_wallet_type,
+      enable_ai_screening
     } = req.body;
     const hrId = req.user.id;
 
@@ -48,7 +49,7 @@ export const createNewJob = async (req, res) => {
       .select('users.*', 'hr_profiles.company_join_status')
       .where('users.id', hrId)
       .first();
-      
+
     if (!hrUser || !hrUser.company_id || hrUser.company_join_status !== 'APPROVED') {
       return sendError(res, 403, 'Tài khoản của bạn chưa liên kết doanh nghiệp hoặc đang chờ phê duyệt. Không thể đăng tuyển dụng.');
     }
@@ -122,6 +123,7 @@ export const createNewJob = async (req, res) => {
       isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
       vacancyCount: parsedVacancyCount,
       deadline: deadline || null,
+      enableAiScreening: !!enable_ai_screening,
       detailedRequirements: detailed_requirements || [],
       walletType: payment_wallet_type || 'PERSONAL'
     });
@@ -137,7 +139,7 @@ export const createNewJob = async (req, res) => {
         if (hr?.company_id) {
           const company = await db('companies').where({ id: hr.company_id }).select('name').first();
           const followerIds = await getCompanyFollowerIds(hr.company_id);
-          
+
           for (const followerId of followerIds) {
             // Lưu thông báo vào cơ sở dữ liệu để xem sau
             const [savedNotification] = await db('notifications')
@@ -186,6 +188,16 @@ export const getJobs = async (req, res) => {
       limit: parseInt(limit)
     };
 
+    // BẢO MẬT: Phân quyền hiển thị tin tuyển dụng
+    // Nếu là Admin, hoặc là HR đang xem chính danh sách của mình -> Xem được tất cả trạng thái duyệt
+    if (req.user && (req.user.role === 'ADMIN' || (req.user.role === 'HR' && filters.hrId === req.user.id))) {
+      // Bỏ qua lọc approvalStatus, cho phép xem Pending và Rejected
+    } else {
+      // Ứng viên / Khách vãng lai: CHỈ thấy tin đã duyệt (APPROVED), đang mở (OPEN) và chưa HẾT HẠN
+      filters.approvalStatus = 'APPROVED';
+      filters.status = 'OPEN';
+      filters.isExpired = false;
+    }
     const result = await getJobsList(filters);
     return sendResponse(res, 200, result);
   } catch (error) {
@@ -226,10 +238,10 @@ export const updateJob = async (req, res) => {
       return sendError(res, 400, 'ID công việc không hợp lệ.');
     }
 
-    const { 
-      title, 
-      description, 
-      status, 
+    const {
+      title,
+      description,
+      status,
       experience_level,
       salary_min,
       salary_max,
@@ -238,7 +250,8 @@ export const updateJob = async (req, res) => {
       vacancy_count,
       deadline,
       detailed_requirements,
-      payment_wallet_type
+      payment_wallet_type,
+      enable_ai_screening
     } = req.body;
 
     // Kiểm tra xem job có tồn tại không
@@ -250,7 +263,7 @@ export const updateJob = async (req, res) => {
     // Kiểm quyền sở hữu: Chỉ chủ sở hữu (HR tạo tin) hoặc ADMIN mới được cập nhật
     const userId = req.user.id;
     const userRole = req.user.role?.toUpperCase();
-    
+
     if (job.hr_id !== userId && userRole !== 'ADMIN') {
       return sendError(res, 403, 'Bạn không có quyền chỉnh sửa tin tuyển dụng này.');
     }
@@ -260,9 +273,9 @@ export const updateJob = async (req, res) => {
       return sendError(res, 400, 'Tiêu đề tin tuyển dụng (title) là bắt buộc.');
     }
 
-    const VALID_STATUSES = ['OPEN', 'CLOSED'];
+    const VALID_STATUSES = ['OPEN', 'CLOSED', 'PAUSED'];
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
-      return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN hoặc CLOSED.');
+      return sendError(res, 400, 'Trạng thái (status) không hợp lệ. Chỉ chấp nhận: OPEN, CLOSED hoặc PAUSED.');
     }
 
     let parsedSalaryMin = null;
@@ -319,6 +332,7 @@ export const updateJob = async (req, res) => {
       isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
       vacancyCount: parsedVacancyCount,
       deadline: deadline || null,
+      enableAiScreening: !!enable_ai_screening,
       walletType: payment_wallet_type || 'PERSONAL'
     }, detailed_requirements || []);
 
@@ -430,15 +444,15 @@ export const updateJobApplication = async (req, res) => {
 
     // 3. Validation cho status nếu có
     const VALID_STATUSES = [
-      'SUBMITTED', 
-      'AI_INTERVIEW', 
-      'AI_REVIEWED', 
-      'HR_REVIEWING', 
-      'SHORTLISTED', 
+      'SUBMITTED',
+      'AI_INTERVIEW',
+      'AI_REVIEWED',
+      'HR_REVIEWING',
+      'SHORTLISTED',
       'AI_INTERVIEW_INVITED',
       'INTERVIEWED',
-      'INTERVIEW_SCHEDULED', 
-      'HIRED', 
+      'INTERVIEW_SCHEDULED',
+      'HIRED',
       'ACCEPTED',
       'REJECTED'
     ];
@@ -540,7 +554,7 @@ export const getSavedJobs = async (req, res) => {
   try {
     const userId = req.user.id;
     const { returnIdsOnly } = req.query;
-    
+
     const savedJobs = await getSavedJobsService(userId, returnIdsOnly === 'true');
     return sendResponse(res, 200, savedJobs);
   } catch (error) {
@@ -556,7 +570,7 @@ export const toggleSavedJob = async (req, res) => {
   try {
     const userId = req.user.id;
     const jobId = parseInt(req.params.id);
-    
+
     if (isNaN(jobId)) {
       return sendError(res, 400, 'ID công việc không hợp lệ.');
     }
@@ -581,7 +595,7 @@ export const updateSavedJobNote = async (req, res) => {
     const userId = req.user.id;
     const jobId = parseInt(req.params.id);
     const { note } = req.body;
-    
+
     if (isNaN(jobId)) {
       return sendError(res, 400, 'ID công việc không hợp lệ.');
     }
@@ -609,7 +623,7 @@ export const getJobCampaignReport = async (req, res) => {
 
     const hrId = req.user.id;
     const report = await generateJobCampaignReportService(jobId, hrId);
-    
+
     return sendResponse(res, 200, report, 'Tạo báo cáo chiến dịch AI thành công.');
   } catch (error) {
     console.error('Lỗi trong jobController.getJobCampaignReport:', error);

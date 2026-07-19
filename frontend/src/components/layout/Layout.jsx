@@ -124,7 +124,7 @@ export function Layout() {
   const getPackageName = () => {
     if (!isAuthenticated) return "Nâng cấp gói";
     if (!isUserRecruiter) return currentUser?.package_name || "MIỄN PHÍ";
-    
+
     if (activeWallet === "COMPANY") {
       return currentUser?.company_is_vip ? "BUSINESS" : "STARTER";
     }
@@ -220,10 +220,10 @@ export function Layout() {
                         <Link
                           to="/tools"
                           className={`text-sm font-medium transition-colors flex items-center gap-1 ${isActive('/tools')
-                              ? 'text-[#0ea5e9]'
-                              : theme === 'dark'
-                                ? 'text-slate-300 hover:text-[#0ea5e9]'
-                                : 'text-gray-600 hover:text-[#0ea5e9]'
+                            ? 'text-[#0ea5e9]'
+                            : theme === 'dark'
+                              ? 'text-slate-300 hover:text-[#0ea5e9]'
+                              : 'text-gray-600 hover:text-[#0ea5e9]'
                             }`}
                         >
                           Công cụ
@@ -298,11 +298,10 @@ export function Layout() {
                   <div className="flex items-center gap-2">
                     <ProtectedLink
                       to="/packages"
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 active:scale-95 ${
-                        packageName === 'BUSINESS'
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 active:scale-95 ${packageName === 'BUSINESS'
                           ? 'bg-gradient-to-r from-amber-50 to-white dark:from-amber-900/40 dark:to-amber-800/40 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
                           : 'bg-gradient-to-r from-sky-50 to-white dark:from-slate-900/80 dark:to-slate-800/80 text-sky-700 dark:text-sky-400 border-sky-100 dark:border-sky-950 shadow-[0_2px_8px_rgba(14,165,233,0.08)] hover:shadow-[0_4px_12px_rgba(14,165,233,0.16)]'
-                      }`}
+                        }`}
                     >
                       <Crown className={`w-3.5 h-3.5 ${packageName === 'BUSINESS' ? 'text-amber-500 fill-amber-500 animate-pulse' : 'text-amber-500 fill-amber-500/20'}`} />
                       <span>

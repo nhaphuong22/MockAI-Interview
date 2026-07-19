@@ -1,6 +1,7 @@
-import { VerifyEmail } from "../pages/shared/VerifyEmail";
-import { ResetPassword } from "../pages/shared/ResetPassword";
-import AcceptInvitation from "../pages/recruiter/AcceptInvitation";
+import { lazy } from "react";
+const VerifyEmail = lazy(() => import("../pages/shared/VerifyEmail").then(m => ({ default: m.VerifyEmail })));
+const ResetPassword = lazy(() => import("../pages/shared/ResetPassword").then(m => ({ default: m.ResetPassword })));
+const AcceptInvitation = lazy(() => import("../pages/recruiter/AcceptInvitation"));
 
 export const authRoutes = [
   { path: "/verify-email", Component: VerifyEmail },

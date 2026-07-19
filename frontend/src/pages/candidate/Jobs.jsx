@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { JobSearchBanner } from "./components/JobSearchBanner";
 import { JobCard } from "./components/JobCard";
 import { CompanyJobCard } from "./components/CompanyJobCard";
+import { CompanyJobCardSkeleton } from "./components/CompanyJobCardSkeleton";
 import { AiTeaserSidebar } from "./components/AiTeaserSidebar";
 import { jobApi } from "../../api/jobApi";
 import { useUiStore } from "../../store/useUiStore";
@@ -409,9 +410,10 @@ export function Jobs() {
           {/* Jobs List container */}
           <div className="space-y-4">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center p-12 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-2xl min-h-[300px]">
-                <Loader2 className="w-10 h-10 text-[#0ea5e9] animate-spin mb-4" />
-                <p className="text-gray-500 dark:text-slate-400 text-sm font-semibold">Đang tìm tin tuyển dụng tốt nhất cho bạn...</p>
+              <div className="flex flex-col gap-4">
+                {[1, 2, 3].map(n => (
+                  <CompanyJobCardSkeleton key={n} />
+                ))}
               </div>
             ) : isError ? (
               <div className="flex flex-col items-center justify-center p-12 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-2xl min-h-[300px] text-center">
