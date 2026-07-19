@@ -14,29 +14,17 @@ export const runCleanupProcess = async () => {
       .del();
     console.log(`[Cleanup Scheduler] Đã xoá ${deletedSubs} gói thành viên hết hạn của Ứng viên.`);
 
-    // Thu hồi credit từ các batch hết hạn (Unified Credits)
-    const expiredBatches = await trx('credit_batches')
-      .where('expires_at', '<', db.fn.now())
-      .andWhere('amount_remaining', '>', 0);
-
-    let reclaimedCredits = 0;
-
-    for (const batch of expiredBatches) {
-      await trx('hr_wallets')
-        .where({ id: batch.wallet_id })
-        .decrement('total_credits', batch.amount_remaining);
-        
-      reclaimedCredits += batch.amount_remaining;
-    }
-
-    const deletedBatches = await trx('credit_batches')
-      .where('expires_at', '<', db.fn.now())
-      .orWhere('amount_remaining', '<=', 0)
-      .del();
-
-    console.log(`[Cleanup Scheduler] Đã dọn dẹp ${deletedBatches} lô tín dụng HR cũ/hết hạn.`);
-    if (reclaimedCredits > 0) {
-      console.log(`[Cleanup Scheduler] Thu hồi từ ví ảo: ${reclaimedCredits} Credits.`);
+    // Quét và hạ cấp trạng thái VIP của công ty nếu hết hạn
+    const expiredVipCompanies = await trx('companies')
+      .where('vip_expired_at', '<', db.fn.now())
+      .andWhere('is_vip', true)
+      .update({
+        is_vip: false,
+        vip_expired_at: null,
+        updated_at: new Date()
+      });
+    if (expiredVipCompanies > 0) {
+      console.log(`[Cleanup Scheduler] Đã hạ cấp VIP cho ${expiredVipCompanies} doanh nghiệp hết hạn.`);
     }
 
     await trx.commit();
