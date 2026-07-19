@@ -142,5 +142,22 @@ export const jobApi = {
   saveApplicationNote: ({ applicationId, note }) => {
     return axiosClient.patch(`/applications/${applicationId}/note`, { note });
   },
+
+  /**
+   * Gửi lời mời phỏng vấn AI hàng loạt
+   * @param {number[]} applicationIds - Danh sách ID hồ sơ
+   */
+  bulkInviteAIInterview: (applicationIds) => {
+    return axiosClient.post("/applications/bulk-invite-ai-interview", { applicationIds });
+  },
+
+  /**
+   * Ứng viên từ chối lời mời phỏng vấn AI
+   * @param {number} applicationId - ID hồ sơ
+   * @param {object} data - { decline_reason, decline_note }
+   */
+  declineAIInterview: (applicationId, data) => {
+    return axiosClient.patch(`/applications/${applicationId}/decline-ai-interview`, data);
+  },
 };
 

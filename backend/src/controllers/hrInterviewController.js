@@ -64,7 +64,9 @@ export const inviteForAIInterview = async (req, res) => {
       .join('jobs', 'applications.job_id', 'jobs.id')
       .join('users', 'applications.candidate_id', 'users.id')
       .select(
-        'applications.*',
+        'applications.id',
+        'applications.status',
+        'applications.candidate_id',
         'jobs.hr_id as job_hr_id',
         'jobs.title as job_title',
         'users.full_name as candidate_name'
@@ -76,18 +78,59 @@ export const inviteForAIInterview = async (req, res) => {
     if (app.job_hr_id !== hrId && req.user.role?.toUpperCase() !== 'ADMIN') {
       return sendError(res, 403, 'Không có quyền thực hiện thao tác này');
     }
+    
+    // Chỉ những hồ sơ này mới được mời
+    const validStatuses = ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'];
+    if (!validStatuses.includes(app.status)) {
+      return sendError(res, 400, 'Trạng thái hồ sơ không hợp lệ để gửi lời mời phỏng vấn AI');
+    }
 
-    // Cập nhật status và ghi nhận người duyệt
-    await db('applications')
-      .where({ 'applications.id': appId })
-      .update({ 
-        status: 'AI_INTERVIEW_INVITED', 
-        reviewed_by: hrId,
-        reviewed_at: new Date(),
-        updated_at: new Date() 
+    const walletCondition = req.user.company_id ? { company_id: req.user.company_id } : { user_id: hrId };
+
+    await db.transaction(async (trx) => {
+      // 1. Khóa và kiểm tra ví
+      const wallet = await trx('hr_wallets').where(walletCondition).forUpdate().first();
+      if (!wallet || wallet.total_credits < 10) {
+        throw new Error('INSUFFICIENT_CREDITS');
+      }
+
+      // 2. Trừ credit
+      const updated = await trx('hr_wallets')
+        .where({ id: wallet.id })
+        .andWhere('total_credits', '>=', 10)
+        .decrement('total_credits', 10);
+
+      if (updated === 0) {
+        throw new Error('INSUFFICIENT_CREDITS');
+      }
+
+      // 3. Cập nhật applications
+      await trx('applications')
+        .where({ id: appId })
+        .update({ 
+          status: 'AI_INTERVIEW_INVITED', 
+          reviewed_by: hrId,
+          reviewed_at: new Date(),
+          invited_at: new Date(),
+          credit_deducted: 10,
+          is_refunded: false,
+          updated_at: new Date() 
+        });
+
+      // 4. Ghi log transaction
+      await trx('credit_transactions').insert({
+        wallet_id: wallet.id,
+        user_id: hrId,
+        application_id: appId,
+        amount: -10,
+        transaction_type: 'INVITE_AI_INTERVIEW',
+        description: `Mời phỏng vấn AI cho ứng viên ${app.candidate_name} (Công việc: ${app.job_title})`,
+        created_at: new Date(),
+        updated_at: new Date()
       });
+    });
 
-    // Xóa cache của applications (for both HR and Admin)
+    // Xóa cache của applications
     const { deleteCachePattern } = await import('../config/redis.js');
     await deleteCachePattern('applications:hr:*');
 
@@ -118,8 +161,142 @@ export const inviteForAIInterview = async (req, res) => {
     return sendResponse(res, 200, { applicationId: appId, status: 'AI_INTERVIEW_INVITED' },
       `Đã gửi lời mời phỏng vấn AI đến ${app.candidate_name}`);
   } catch (error) {
+    if (error.message === 'INSUFFICIENT_CREDITS') {
+      return sendError(res, 400, 'Không đủ Credit để thực hiện mời phỏng vấn AI.');
+    }
     console.error('inviteForAIInterview error:', error);
     return sendError(res, 500, 'Lỗi khi gửi lời mời phỏng vấn');
+  }
+};
+
+/**
+ * POST /api/applications/bulk-invite-ai-interview
+ * Gửi lời mời phỏng vấn AI hàng loạt
+ */
+export const bulkInviteForAIInterview = async (req, res) => {
+  try {
+    const hrId = req.user.id;
+    const { applicationIds } = req.body;
+
+    if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+      return sendError(res, 400, 'Danh sách hồ sơ không hợp lệ');
+    }
+
+    // Lấy thông tin ứng viên
+    const apps = await db('applications')
+      .join('jobs', 'applications.job_id', 'jobs.id')
+      .join('users', 'applications.candidate_id', 'users.id')
+      .select(
+        'applications.id',
+        'applications.status',
+        'applications.candidate_id',
+        'jobs.hr_id as job_hr_id',
+        'jobs.title as job_title',
+        'users.full_name as candidate_name'
+      )
+      .whereIn('applications.id', applicationIds);
+
+    // Lọc những hồ sơ thuộc về HR và trạng thái hợp lệ
+    const validStatuses = ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'];
+    const validApps = apps.filter(app => 
+      (app.job_hr_id === hrId || req.user.role?.toUpperCase() === 'ADMIN') &&
+      validStatuses.includes(app.status)
+    );
+
+    if (validApps.length === 0) {
+      return sendError(res, 400, 'Không có hồ sơ nào hợp lệ để gửi lời mời.');
+    }
+
+    const neededCredits = validApps.length * 10;
+    const walletCondition = req.user.company_id ? { company_id: req.user.company_id } : { user_id: hrId };
+
+    await db.transaction(async (trx) => {
+      // 1. Khóa và kiểm tra ví
+      const wallet = await trx('hr_wallets').where(walletCondition).forUpdate().first();
+      if (!wallet || wallet.total_credits < neededCredits) {
+        throw new Error('INSUFFICIENT_CREDITS');
+      }
+
+      // 2. Trừ credit
+      const updated = await trx('hr_wallets')
+        .where({ id: wallet.id })
+        .andWhere('total_credits', '>=', neededCredits)
+        .decrement('total_credits', neededCredits);
+
+      if (updated === 0) {
+        throw new Error('INSUFFICIENT_CREDITS');
+      }
+
+      // 3. Cập nhật applications & ghi log transactions
+      const validAppIds = validApps.map(a => a.id);
+      
+      await trx('applications')
+        .whereIn('id', validAppIds)
+        .update({ 
+          status: 'AI_INTERVIEW_INVITED', 
+          reviewed_by: hrId,
+          reviewed_at: new Date(),
+          invited_at: new Date(),
+          credit_deducted: 10,
+          is_refunded: false,
+          updated_at: new Date() 
+        });
+
+      const transactions = validApps.map(app => ({
+        wallet_id: wallet.id,
+        user_id: hrId,
+        application_id: app.id,
+        amount: -10,
+        transaction_type: 'INVITE_AI_INTERVIEW',
+        description: `Mời phỏng vấn AI cho ứng viên ${app.candidate_name} (Công việc: ${app.job_title})`,
+        created_at: new Date(),
+        updated_at: new Date()
+      }));
+
+      await trx('credit_transactions').insert(transactions);
+    });
+
+    // Xóa cache
+    const { deleteCachePattern } = await import('../config/redis.js');
+    await deleteCachePattern('applications:hr:*');
+
+    // Gửi thông báo cho từng ứng viên
+    const notifications = validApps.map(app => ({
+      user_id: app.candidate_id,
+      type: 'INTERVIEW_INVITE',
+      title: 'Lời mời phỏng vấn AI',
+      content: `Bạn được mời tham gia phỏng vấn AI cho vị trí "${app.job_title}". Hãy vào mục "Theo dõi ứng tuyển" để bắt đầu!`,
+      link: '/applications',
+      reference_id: app.id,
+      reference_type: 'application',
+      is_read: false,
+      created_at: new Date(),
+      updated_at: new Date()
+    }));
+
+    if (notifications.length > 0) {
+      const insertedNotifs = await db('notifications').insert(notifications).returning('*');
+      // Gửi Socket realtime
+      insertedNotifs.forEach(notif => {
+        sendRealtimeNotification(notif.user_id, {
+          id: notif.id,
+          type: 'interview_invite',
+          title: notif.title,
+          content: notif.content,
+          time: 'Vừa xong',
+          isRead: false
+        });
+      });
+    }
+
+    return sendResponse(res, 200, { successCount: validApps.length, totalRequested: applicationIds.length },
+      `Đã gửi thành công ${validApps.length} lời mời phỏng vấn AI.`);
+  } catch (error) {
+    if (error.message === 'INSUFFICIENT_CREDITS') {
+      return sendError(res, 400, 'Không đủ Credit để thực hiện gửi hàng loạt.');
+    }
+    console.error('bulkInviteForAIInterview error:', error);
+    return sendError(res, 500, 'Lỗi khi gửi lời mời phỏng vấn hàng loạt');
   }
 };
 

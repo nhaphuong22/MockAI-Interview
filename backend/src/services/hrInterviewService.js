@@ -84,10 +84,10 @@ export const initHRInterviewSession = async ({ userId, applicationId }) => {
   }));
   const insertedQuestions = await insertQuestions(questionsToInsert);
 
-  // 7. Cập nhật status application → INTERVIEWED
+  // 7. Cập nhật status application → INTERVIEWING
   await db('applications')
     .where({ id: applicationId })
-    .update({ status: 'INTERVIEWED', interview_id: interview.id, updated_at: new Date() });
+    .update({ status: 'INTERVIEWING', interview_id: interview.id, updated_at: new Date() });
 
   return {
     ...interview,
@@ -253,6 +253,7 @@ const processAIEvaluationBackground = async ({ interviewId, userId, totalTabViol
     await db('applications')
       .where({ interview_id: interviewId })
       .update({
+        status: 'INTERVIEWED',
         ai_summary: aiReport.feedback_summary,
         interview_score: overallScore,
         updated_at: new Date()
