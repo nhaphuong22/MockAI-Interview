@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Flag, X, Loader2 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { reportApi } from '../../api/reportApi';
@@ -20,6 +20,13 @@ const REPORT_REASONS = [
 export default function ReportModal({ isOpen, onClose, targetType, targetId, onSuccess }) {
   const [selectedReason, setSelectedReason] = useState('');
   const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedReason('');
+      setDescription('');
+    }
+  }, [isOpen]);
 
   const reportMutation = useMutation({
     mutationFn: (data) => reportApi.submitReport(data),
