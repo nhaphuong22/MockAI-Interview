@@ -1,0 +1,63 @@
+import express from 'express';
+import { 
+  submitReport, 
+  getGroupedReports, 
+  getReportDetails, 
+  warnUser, 
+  deleteContent,
+  unhideContent,
+  rejectReports 
+} from '../controllers/reportController.js';
+import { authenticateToken, requireAdmin } from '../middlewares/authMiddleware.js';
+
+const router = express.Router();
+
+/**
+ * @swagger
+ * /api/reports:
+ *   post:
+ *     summary: Gửi báo cáo bài viết/việc làm
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - target_type
+ *               - target_id
+ *               - reason
+ *             properties:
+ *               target_type:
+ *                 type: string
+ *                 enum: [JOB, COMMUNITY_POST]
+ *               target_id:
+ *                 type: integer
+ *               reason:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Gửi báo cáo thành công
+ *       400:
+ *         description: Lỗi dữ liệu hoặc đã báo cáo rồi
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post('/', authenticateToken, submitReport);
+
+// Admin routes
+router.get('/grouped', authenticateToken, requireAdmin, getGroupedReports);
+router.get('/:targetType/:targetId', authenticateToken, requireAdmin, getReportDetails);
+router.post('/:targetType/:targetId/warn', authenticateToken, requireAdmin, warnUser);
+router.delete('/:targetType/:targetId/content', authenticateToken, requireAdmin, deleteContent);
+router.post('/:targetType/:targetId/unhide', authenticateToken, requireAdmin, unhideContent);
+router.post('/:targetType/:targetId/reject', authenticateToken, requireAdmin, rejectReports);
+
+export default router;

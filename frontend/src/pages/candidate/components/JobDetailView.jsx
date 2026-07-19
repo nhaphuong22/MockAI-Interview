@@ -16,7 +16,7 @@ const TABS = [
 /**
  * JobDetailView - Tab-based detail panel matching reference design
  */
-export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
+export function JobDetailView({ job, onToggleBookmark, isBookmarked, onReport }) {
   const addToast = useUiStore((state) => state.addToast);
   const [activeTab, setActiveTab] = useState("description");
   const contentRef = useRef(null);
@@ -159,6 +159,15 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
             >
               <Share2 className="w-4 h-4" />
             </button>
+            {onReport && (
+              <button
+                onClick={() => onReport(job.id)}
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:border-red-500/50 hover:text-red-500 dark:border-white/10 dark:text-slate-500 cursor-pointer"
+                title="Báo cáo"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>
+              </button>
+            )}
           </div>
         </div>
       </div>

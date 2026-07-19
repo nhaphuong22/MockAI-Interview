@@ -18,10 +18,13 @@ const Packages = lazy(() => import("../pages/shared/Packages").then(m => ({ defa
 const Checkout = lazy(() => import("../pages/shared/Checkout").then(m => ({ default: m.Checkout })));
 const PaymentSuccess = lazy(() => import("../pages/shared/PaymentSuccess").then(m => ({ default: m.PaymentSuccess })));
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
+
 const HRInterviewPrep = lazy(() => import("../pages/candidate/HRInterviewPrep"));
 const HRInterviewRoom = lazy(() => import("../pages/candidate/HRInterviewRoom"));
 const HRInterviewResult = lazy(() => import("../pages/candidate/HRInterviewResult"));
 const Tools = lazy(() => import("../pages/candidate/Tools").then(m => ({ default: m.Tools })));
+const ContentHiddenPage = lazy(() => import("../pages/shared/ContentHiddenPage").then(m => ({ default: m.ContentHiddenPage })));
+
 
 export const candidateRoutes = [
   { index: true, Component: Home }, // Public: Landing Page
@@ -108,5 +111,9 @@ export const candidateRoutes = [
   { 
     path: "hr-interview/result/:interviewId", 
     element: <ProtectedRoute><HRInterviewResult /></ProtectedRoute>
+  },
+  {
+    path: "content-hidden",
+    element: <ProtectedRoute><ContentHiddenPage /></ProtectedRoute>
   },
 ];

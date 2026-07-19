@@ -10,7 +10,8 @@ export function JobCard({
   isSelected,
   isBookmarked,
   onSelect,
-  onToggleBookmark
+  onToggleBookmark,
+  onReport
 }) {
   const isVip = job.company_is_vip === true || job.companyIsVip === true || job.is_vip === true;
   const vipThemeColor = isVip ? (job.company_vip_theme_color || job.companyVipThemeColor || "#0ea5e9") : null;
@@ -186,6 +187,18 @@ export function JobCard({
 
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {onReport && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReport(job.id);
+                  }}
+                  title="Báo cáo công việc này"
+                  className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors group shrink-0"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-gray-400 dark:text-slate-500 group-hover:text-red-500 transition-colors"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
