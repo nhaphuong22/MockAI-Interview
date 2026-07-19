@@ -17,6 +17,7 @@ import notificationRoutes from './notificationRoutes.js';
 import aiRoutes from './aiRoutes.js';
 import dailyChallengeRoutes from './dailyChallengeRoutes.js';
 import toolRoutes from './toolRoutes.js';
+import reportRoutes from './reportRoutes.js';
 
 
 const router = express.Router();
@@ -38,6 +39,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/ai', aiRoutes);
 router.use('/daily-challenge', dailyChallengeRoutes);
 router.use('/tools', toolRoutes);
+router.use('/reports', reportRoutes);
 router.use('/', systemRoutes);
 
 export default router;
