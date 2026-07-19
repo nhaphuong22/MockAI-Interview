@@ -10,6 +10,10 @@ const paymentApi = {
     const url = '/payments/create-vnpay-url';
     return axiosClient.post(url, data);
   },
+  validateCoupon: (data) => {
+    const url = '/payments/validate-coupon';
+    return axiosClient.post(url, data);
+  },
 
   // ─── Admin-only APIs ───
   // Get all packages (Candidate + HR) with total_sold metric

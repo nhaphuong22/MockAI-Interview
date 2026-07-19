@@ -484,7 +484,7 @@ function CouponsTab() {
     queryFn: () => paymentApi.getCouponsAdmin()
   });
 
-  const coupons = couponsResponse?.data?.data || [];
+  const coupons = couponsResponse?.data || [];
 
   const createMutation = useMutation({
     mutationFn: paymentApi.createCouponAdmin,

@@ -13,7 +13,8 @@ import { BlogDetail } from "../pages/candidate/BlogDetail";
 import { SavedCompanies } from "../pages/candidate/SavedCompanies";
 import { Notifications } from "../pages/candidate/Notifications";
 import { Settings } from "../pages/candidate/Settings";
-import { Payment } from "../pages/shared/Payment";
+import { Packages } from "../pages/shared/Packages";
+import { Checkout } from "../pages/shared/Checkout";
 import { PaymentSuccess } from "../pages/shared/PaymentSuccess";
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 import HRInterviewPrep from "../pages/candidate/HRInterviewPrep";
@@ -84,8 +85,12 @@ export const candidateRoutes = [
     element: <ProtectedRoute><Settings /></ProtectedRoute>
   },
   { 
-    path: "payment", 
-    element: <ProtectedRoute><Payment /></ProtectedRoute>
+    path: "packages", 
+    element: <ProtectedRoute><Packages /></ProtectedRoute>
+  },
+  {
+    path: "checkout/:id",
+    element: <ProtectedRoute><Checkout /></ProtectedRoute>
   },
   { 
     path: "payment-success", 
