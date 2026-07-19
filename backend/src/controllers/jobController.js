@@ -18,7 +18,7 @@ import {
 import { sendApplicationResultEmail, sendApplicationStatusUpdateEmail } from '../services/emailService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import { getCompanyFollowerIds } from '../services/companyService.js';
-import { sendRealtimeNotification } from '../socket.js';
+import { sendRealtimeNotification, broadcastNewJob } from '../socket.js';
 import db from '../db/knex.js';
 
 /**
@@ -130,6 +130,27 @@ export const createNewJob = async (req, res) => {
 
     // Trả kết quả ngay cho client
     sendResponse(res, 201, result);
+
+    // Gửi sự kiện realtime cho tất cả ứng viên nếu tin được mở và duyệt ngay lập tức
+    if (result.status === 'OPEN' && result.approval_status === 'APPROVED') {
+      setImmediate(async () => {
+        try {
+          const hr = await db('users').where({ id: hrId }).select('company_id').first();
+          let companyName = 'Một công ty';
+          if (hr?.company_id) {
+            const company = await db('companies').where({ id: hr.company_id }).select('name').first();
+            if (company) companyName = company.name;
+          }
+          broadcastNewJob({
+            id: result.id,
+            title: result.title,
+            company_name: companyName
+          });
+        } catch (e) {
+          console.error('[Socket Broadcast New Job Error]:', e.message);
+        }
+      });
+    }
 
     // Gửi thông báo real-time tới tất cả những ứng viên đang follow công ty này
     // Dùng setImmediate để chạy bất đồng bộ sau khi response được gửi, không làm chậm request

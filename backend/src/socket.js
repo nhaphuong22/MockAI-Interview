@@ -91,3 +91,13 @@ export const broadcastNewApplication = (application) => {
   io.to('hr_room').emit('new_application', application);
 };
 
+/**
+ * Phát tin tuyển dụng mới tới toàn bộ người dùng đang kết nối
+ * @param {object} job - Dữ liệu tin tuyển dụng mới
+ */
+export const broadcastNewJob = (job) => {
+  if (!io) return;
+  console.log(`[Socket] Broadcast tin tuyển dụng mới:`, job.title);
+  io.emit('new_job_posted', job);
+};
+

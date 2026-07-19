@@ -69,6 +69,19 @@ export const SocketProvider = ({ children }) => {
       }
     });
 
+    // Lắng nghe sự kiện có tin tuyển dụng mới
+    socketInstance.on("new_job_posted", (job) => {
+      console.log("[Socket] Nhận sự kiện tin tuyển dụng mới:", job);
+      
+      showToast({
+        message: `💼 ${job.company_name || 'Một công ty'} vừa đăng tuyển vị trí mới: "${job.title}"!`,
+        type: "success"
+      });
+
+      // Tự động làm mới danh sách việc làm của ứng viên
+      queryClient.invalidateQueries({ queryKey: ["candidate-jobs-list"] });
+    });
+
     let disconnectToastShown = false;
 
     socketInstance.on("connect_error", (error) => {

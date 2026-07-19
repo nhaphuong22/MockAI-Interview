@@ -1,5 +1,6 @@
 import db from '../db/knex.js';
 import { deleteCache, deleteCachePattern } from '../config/redis.js';
+import { broadcastNewJob } from '../socket.js';
 import { updateJob } from '../models/jobModel.js';
 import { updateBlog, deleteBlog } from '../models/blogModel.js';
 import { formatSalary } from '../helper/salaryHelper.js';
@@ -75,6 +76,29 @@ export const approveOrRejectJob = async (jobId, status, adminUserId) => {
   // Clear Jobs Cache
   await deleteCachePattern('jobs:list:*');
   await deleteCachePattern(`jobs:detail:*jobs/${jobId}*`);
+
+  // Phát sự kiện realtime cho ứng viên nếu tin được phê duyệt thành APPROVED
+  if (approval_status === 'APPROVED') {
+    setImmediate(async () => {
+      try {
+        const job = await db('jobs')
+          .leftJoin('companies', 'jobs.company_id', 'companies.id')
+          .where('jobs.id', jobId)
+          .select('jobs.id', 'jobs.title', 'jobs.status', 'companies.name as company_name')
+          .first();
+
+        if (job && job.status === 'OPEN') {
+          broadcastNewJob({
+            id: job.id,
+            title: job.title,
+            company_name: job.company_name || 'Một công ty'
+          });
+        }
+      } catch (e) {
+        console.error('[Socket Broadcast Approved Job Error]:', e.message);
+      }
+    });
+  }
 
   return true;
 };
