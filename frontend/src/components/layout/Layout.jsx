@@ -91,6 +91,25 @@ export function Layout() {
 
   const currentUser = userProfile || user;
 
+  const [activeWallet, setActiveWallet] = useState(
+    localStorage.getItem("active_wallet_type") || (currentUser?.company_id ? "COMPANY" : "PERSONAL")
+  );
+
+  useEffect(() => {
+    if (currentUser && !currentUser.company_id && activeWallet === "COMPANY") {
+      setActiveWallet("PERSONAL");
+      localStorage.setItem("active_wallet_type", "PERSONAL");
+    }
+  }, [currentUser, activeWallet]);
+
+  const toggleWallet = () => {
+    if (!currentUser?.company_id) return;
+    const nextWallet = activeWallet === "PERSONAL" ? "COMPANY" : "PERSONAL";
+    setActiveWallet(nextWallet);
+    localStorage.setItem("active_wallet_type", nextWallet);
+    window.dispatchEvent(new Event("wallet_changed"));
+  };
+
   useEffect(() => {
     // Chỉ đồng bộ lại store nếu user đang đăng nhập.
     // Tránh việc logout() làm user=null, nhưng userProfile vẫn còn cache làm setAuth() gọi lại
@@ -101,7 +120,17 @@ export function Layout() {
       }
     }
   }, [userProfile, isAuthenticated]);
-  const packageName = currentUser?.package_name || (isUserRecruiter ? "STARTER" : "MIỄN PHÍ");
+
+  const getPackageName = () => {
+    if (!isAuthenticated) return "Nâng cấp gói";
+    if (!isUserRecruiter) return currentUser?.package_name || "MIỄN PHÍ";
+    
+    if (activeWallet === "COMPANY") {
+      return currentUser?.company_is_vip ? "BUSINESS" : "STARTER";
+    }
+    return "STARTER";
+  };
+  const packageName = getPackageName();
 
   const rawAvatarUrl = currentUser?.avatar_url || currentUser?.avatarUrl || localStorage.getItem("googleAvatar") || "";
   const getAbsoluteAvatarUrl = (url) => {
@@ -124,8 +153,9 @@ export function Layout() {
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
-  const isRecruiter = location.pathname.startsWith('/hr') && !location.pathname.startsWith('/hr-interview');
-  const isAdministrator = location.pathname.startsWith('/admin');
+  const isPackagesRoute = location.pathname.startsWith('/packages') || location.pathname.startsWith('/payment-success');
+  const isRecruiter = (location.pathname.startsWith('/hr') && !location.pathname.startsWith('/hr-interview')) || (isPackagesRoute && isUserRecruiter);
+  const isAdministrator = location.pathname.startsWith('/admin') || (isPackagesRoute && isUserAdmin);
   const isCandidate = !isRecruiter && !isAdministrator;
   const isInterviewPracticePage = location.pathname.toLowerCase().replace(/\/$/, "") === "/interview-practice";
   const isInterviewRoom = location.pathname.startsWith('/hr-interview');
@@ -268,15 +298,36 @@ export function Layout() {
 
               <div className="flex items-center gap-4">
                 {!isUserAdmin && (
-                  <ProtectedLink
-                    to="/payment"
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-sky-50 to-white dark:from-slate-900/80 dark:to-slate-800/80 text-sky-700 dark:text-sky-400 border-sky-100 dark:border-sky-950 shadow-[0_2px_8px_rgba(14,165,233,0.08)] hover:shadow-[0_4px_12px_rgba(14,165,233,0.16)]"
-                  >
-                    <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                    <span>
-                      {!isAuthenticated ? "Nâng cấp gói" : packageName}
-                    </span>
-                  </ProtectedLink>
+                  <div className="flex items-center gap-2">
+                    <ProtectedLink
+                      to="/packages"
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                        packageName === 'BUSINESS'
+                          ? 'bg-gradient-to-r from-amber-50 to-white dark:from-amber-900/40 dark:to-amber-800/40 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                          : 'bg-gradient-to-r from-sky-50 to-white dark:from-slate-900/80 dark:to-slate-800/80 text-sky-700 dark:text-sky-400 border-sky-100 dark:border-sky-950 shadow-[0_2px_8px_rgba(14,165,233,0.08)] hover:shadow-[0_4px_12px_rgba(14,165,233,0.16)]'
+                      }`}
+                    >
+                      <Crown className={`w-3.5 h-3.5 ${packageName === 'BUSINESS' ? 'text-amber-500 fill-amber-500 animate-pulse' : 'text-amber-500 fill-amber-500/20'}`} />
+                      <span>
+                        {!isAuthenticated ? "Nâng cấp gói" : packageName}
+                      </span>
+                    </ProtectedLink>
+                    {isUserRecruiter && isAuthenticated && (
+                      <button
+                        onClick={toggleWallet}
+                        title={currentUser?.company_id ? "Click để chuyển đổi giữa ví cá nhân và ví công ty" : "Ví cá nhân"}
+                        className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-emerald-50 to-white dark:from-slate-900/80 dark:to-slate-800/80 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-950 shadow-[0_2px_8px_rgba(16,185,129,0.08)] cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500/20" />
+                        <span>
+                          {activeWallet === "COMPANY"
+                            ? `${(currentUser?.company_credits || 0).toLocaleString("vi-VN")} Credits (Công ty)`
+                            : `${(currentUser?.personal_credits || 0).toLocaleString("vi-VN")} Credits (Cá nhân)`
+                          }
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 )}
                 {isCandidate && (
                   <button
@@ -445,7 +496,7 @@ export function Layout() {
                               </DropdownMenu.Item>
                               <DropdownMenu.Item asChild>
                                 <Link
-                                  to="/payment"
+                                  to="/packages"
                                   className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 cursor-pointer outline-none transition-colors"
                                 >
                                   <PieChart className="w-4 h-4" />
@@ -496,7 +547,7 @@ export function Layout() {
         </header>
       )}
 
-      <main className={`min-h-[calc(100vh-64px)] ${shouldHideNavbar ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-28')}`}>
+      <main className={`min-h-[calc(100vh-64px)] ${shouldHideNavbar ? 'pt-0' : (location.pathname === '/' ? 'pt-0' : 'pt-24 md:pt-24')}`}>
         <Outlet />
       </main>
 
