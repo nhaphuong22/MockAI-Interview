@@ -12,6 +12,7 @@ import {
   requestCompanyEmailOtp,
   verifyCompanyEmailOtp,
   resendCompanyEmailOtp,
+  switchUserRole,
 } from '../services/authService.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -468,5 +469,25 @@ export const acceptPrivacyAgreementController = async (req, res) => {
     import('fs').then(fs => fs.writeFileSync('privacy_error.log', String(error.stack || error)));
     console.error('Accept privacy agreement error:', error);
     res.status(500).json({ message: 'Lỗi server khi cập nhật thoả thuận dữ liệu.', error: String(error) });
+  }
+};
+
+// ─── Switch Role ───────────────────────────────────────────────────────────────
+
+export const switchRoleController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await switchUserRole(userId);
+    return sendResponse(res, 200, {
+      message: 'Chuyển đổi vai trò thành công',
+      user: result.user,
+      token: result.token
+    });
+  } catch (error) {
+    console.error('Switch role controller error:', error);
+    if (error.message.includes('does not exist')) {
+      return sendError(res, 400, error.message);
+    }
+    return sendError(res, 500, 'Lỗi hệ thống khi chuyển đổi vai trò');
   }
 };
