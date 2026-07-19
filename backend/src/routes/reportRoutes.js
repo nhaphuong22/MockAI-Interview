@@ -1,5 +1,13 @@
 import express from 'express';
-import { submitReport, getReports, updateReportStatus } from '../controllers/reportController.js';
+import { 
+  submitReport, 
+  getGroupedReports, 
+  getReportDetails, 
+  warnUser, 
+  deleteContent,
+  unhideContent,
+  rejectReports 
+} from '../controllers/reportController.js';
 import { authenticateToken, requireAdmin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -43,7 +51,13 @@ const router = express.Router();
  *         description: Server error
  */
 router.post('/', authenticateToken, submitReport);
-router.get('/', authenticateToken, requireAdmin, getReports);
-router.patch('/:id/status', authenticateToken, requireAdmin, updateReportStatus);
+
+// Admin routes
+router.get('/grouped', authenticateToken, requireAdmin, getGroupedReports);
+router.get('/:targetType/:targetId', authenticateToken, requireAdmin, getReportDetails);
+router.post('/:targetType/:targetId/warn', authenticateToken, requireAdmin, warnUser);
+router.delete('/:targetType/:targetId/content', authenticateToken, requireAdmin, deleteContent);
+router.post('/:targetType/:targetId/unhide', authenticateToken, requireAdmin, unhideContent);
+router.post('/:targetType/:targetId/reject', authenticateToken, requireAdmin, rejectReports);
 
 export default router;
