@@ -176,38 +176,4 @@ export async function seed(knex) {
       ats_scan_limit: 0
     }
   ]);
-
-  // ==========================================
-  // MÃ GIẢM GIÁ (COUPONS)
-  // ==========================================
-  await knex('coupons').del();
-
-  const now = new Date();
-  
-  await knex('coupons').insert([
-    {
-      code: 'MOCKAI20',
-      discount_percent: 20,
-      usage_limit: 100,
-      used_count: 0,
-      expires_at: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // Hết hạn sau 30 ngày
-      is_active: true
-    },
-    {
-      code: 'WELCOME50',
-      discount_percent: 50,
-      usage_limit: 50,
-      used_count: 0,
-      expires_at: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // Hết hạn sau 7 ngày
-      is_active: true
-    },
-    {
-      code: 'VIP100',
-      discount_percent: 100,
-      usage_limit: 10,
-      used_count: 0,
-      expires_at: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000), // Hết hạn sau 1 năm
-      is_active: true
-    }
-  ]);
 }
