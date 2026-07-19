@@ -5,12 +5,12 @@ import { Link } from "react-router-dom";
  * JobCard Component
  * Displays summary card for a single job listing
  */
-export function JobCard({ 
-  job, 
-  isSelected, 
-  isBookmarked, 
-  onSelect, 
-  onToggleBookmark 
+export function JobCard({
+  job,
+  isSelected,
+  isBookmarked,
+  onSelect,
+  onToggleBookmark
 }) {
   const isVip = job.company_is_vip === true || job.companyIsVip === true || job.is_vip === true;
   const vipThemeColor = isVip ? (job.company_vip_theme_color || job.companyVipThemeColor || "#0ea5e9") : null;
@@ -167,11 +167,10 @@ export function JobCard({
                 className="p-1.5 hover:bg-sky-50 dark:hover:bg-sky-950/30 rounded-lg transition-colors group shrink-0"
               >
                 <Bookmark
-                  className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                    isBookmarked
+                  className={`w-4 h-4 transition-transform group-hover:scale-110 ${isBookmarked
                       ? "fill-[#0ea5e9] text-[#0ea5e9]"
                       : "dark:text-slate-500 text-gray-400"
-                  }`}
+                    }`}
                 />
               </button>
             </div>

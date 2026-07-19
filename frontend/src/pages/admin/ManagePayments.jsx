@@ -164,7 +164,6 @@ function PackageCard({ pkg, onToggle, isToggling, onUpdatePrice, isUpdatingPrice
           <div className="flex items-center gap-1 mt-1">
             <Coins className="w-3.5 h-3.5 text-amber-500" />
             <span className="text-xs font-bold text-amber-600">{Number(pkg.total_credits).toLocaleString("vi-VN")} Credit</span>
-            <span className="text-[10px] text-slate-400">· HSD {pkg.credit_expiry_days || 365} ngày</span>
           </div>
         )}
         {isCandidate && pkg.duration_days > 0 && (

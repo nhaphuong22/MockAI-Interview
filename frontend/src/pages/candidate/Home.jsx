@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { 
-  Search, MapPin, Briefcase, Users, User, Building, TrendingUp, ArrowRight, 
-  Star, DollarSign, CheckCircle, Clock, ArrowUpRight, Activity, FileText, 
-  Settings, Award, Sparkles, ExternalLink, ChevronRight, Bookmark, 
+import {
+  Search, MapPin, Briefcase, Users, User, Building, TrendingUp, ArrowRight,
+  Star, DollarSign, CheckCircle, Clock, ArrowUpRight, Activity, FileText,
+  Settings, Award, Sparkles, ExternalLink, ChevronRight, Bookmark,
   Crown, Play
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -99,9 +99,9 @@ export function Home() {
 
   // Always render Landing Page, even if authenticated
   return (
-    <RenderLandingPage 
-      theme={theme} 
-      provinces={provinces} 
+    <RenderLandingPage
+      theme={theme}
+      provinces={provinces}
       popularTags={popularTags}
       isAuthenticated={isAuthenticated}
     />
@@ -160,7 +160,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
     logo: job.company_logo || job.company_name?.substring(0, 1).toUpperCase() || "J",
     location: job.company_address || "Việt Nam",
     salary: formatSalary(job.salary_min, job.salary_max, job.salary_currency, job.is_salary_visible),
-    type: job.experience_level || "Không yêu cầu", 
+    type: job.experience_level || "Không yêu cầu",
     remote: job.vacancy_count ? `${job.vacancy_count} chỉ tiêu` : "1 chỉ tiêu",
     experience: job.experience_level || "Không yêu cầu",
     is_vip: job.company_is_vip,
@@ -195,18 +195,18 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
             className="mb-6"
           >
             <h1 className="text-4xl md:text-6xl font-bold mb-2 tracking-tight drop-shadow-sm">
-              <ShinyText 
-                text="Tìm Việc Thông Minh" 
+              <ShinyText
+                text="Tìm Việc Thông Minh"
                 textColor={theme === 'dark' ? '#ffffff' : '#060606'}
-                shineColor="#33B9F5" 
+                shineColor="#33B9F5"
                 speed={3}
                 spread={20}
               />
               <br className="hidden md:block" />
-              <ShinyText 
-                text="Với Sức Mạnh" 
+              <ShinyText
+                text="Với Sức Mạnh"
                 textColor={theme === 'dark' ? '#ffffff' : '#060606'}
-                shineColor="#33B9F5" 
+                shineColor="#33B9F5"
                 speed={2}
                 spread={20}
                 className="mr-3 md:mr-4"
@@ -238,7 +238,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
               </div>
               <div className="flex items-center gap-3 px-4 py-2.5 dark:bg-[#1e293b]/50 bg-slate-50/50 rounded-xl border border-gray-200/50 dark:border-white/5 focus-within:ring-2 focus-within:ring-[#0ea5e9]/20 transition-all md:w-60">
                 <MapPin className="w-4 h-4 text-slate-400" />
-                <select 
+                <select
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
                   className="flex-1 bg-transparent outline-none dark:text-white text-slate-600 text-sm cursor-pointer dark:bg-[#1e293b]"
@@ -283,10 +283,10 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
       {/* Main Grid Content - 2-Column layout */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* LEFT COLUMN (8/12 - MAIN CONTENT) */}
           <div className="lg:col-span-8 space-y-8">
-            
+
             {/* Featured Jobs Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-2">
@@ -294,7 +294,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
                   <Sparkles className="w-4 h-4 text-[#0ea5e9]" />
                   Việc làm tuyển dụng nổi bật
                 </h3>
-                <button 
+                <button
                   onClick={() => navigate("/jobs")}
                   className="text-xs font-bold text-[#0ea5e9] flex items-center gap-1 hover:gap-2 transition-all cursor-pointer bg-transparent border-none"
                 >
@@ -315,7 +315,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
                   <p className="text-sm text-gray-400 font-medium">Hiện tại chưa có việc làm tuyển dụng nào.</p>
                 </div>
               ) : (
-                <motion.div 
+                <motion.div
                   layout
                   className="grid grid-cols-1 md:grid-cols-2 gap-6"
                 >
@@ -344,7 +344,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
             </div>
 
             {/* AI CV Scanner Feature Card */}
-            <motion.div 
+            <motion.div
               whileHover={{ y: -2 }}
               className="p-6 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.02)] flex flex-col md:flex-row gap-6 items-center"
             >
@@ -366,7 +366,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
             </motion.div>
 
             {/* AI 3D Interview Feature Card */}
-            <motion.div 
+            <motion.div
               whileHover={{ y: -2 }}
               className="p-6 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.02)] flex flex-col md:flex-row gap-6 items-center"
             >
@@ -391,17 +391,17 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
 
           {/* RIGHT COLUMN (4/12 - SIDEBAR WIDGETS) */}
           <div className="lg:col-span-4 space-y-6">
-            
+
             {/* Auth Invitation Card (Sidebar Welcome) */}
             {!isAuthenticated && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="p-6 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.02)] space-y-6 relative overflow-hidden"
               >
                 {/* Glow decoration */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#0ea5e9]/10 rounded-full blur-3xl pointer-events-none" />
-                
+
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-md animate-pulse">
                     <User className="w-6 h-6 text-white" />
@@ -415,7 +415,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
                   <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed font-medium">
                     Đăng nhập để cập nhật hồ sơ năng lực, tạo CV chuyên nghiệp chuẩn ATS và tham gia phỏng vấn giọng nói giả lập với AI ảo.
                   </p>
-                  
+
                   <div className="space-y-2 pt-2">
                     <button
                       onClick={() => useUiStore.getState().openAuthModal({ mode: 'login' })}
@@ -423,7 +423,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
                     >
                       <span>Đăng nhập ngay</span>
                     </button>
-                    
+
                     <button
                       onClick={() => useUiStore.getState().openAuthModal({ mode: 'register' })}
                       className="w-full py-2.5 border border-sky-100 dark:border-sky-950 text-xs font-bold text-[#0ea5e9] rounded-xl hover:bg-[#0ea5e9]/10 hover:border-[#0ea5e9]/30 transition-all flex items-center justify-center bg-gradient-to-r from-sky-50 to-white dark:from-slate-900/60 dark:to-slate-800/60 shadow-sm cursor-pointer"
@@ -439,28 +439,28 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
             <div className="p-6 dark:bg-[#0f172a]/60 bg-white/70 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.02)] space-y-4">
               <h4 className="font-bold text-sm dark:text-white text-gray-900 border-b dark:border-white/5 pb-2">Liên kết nhanh</h4>
               <div className="grid grid-cols-2 gap-3">
-                <button 
+                <button
                   onClick={(e) => handleProtectedAction(e, "/interview-practice")}
                   className="p-3 dark:bg-[#1e293b]/30 bg-slate-50/50 rounded-2xl border border-gray-100 dark:border-white/5 flex flex-col items-center justify-center text-center group hover:border-[#0ea5e9]/40 hover:-translate-y-0.5 transition-all cursor-pointer"
                 >
                   <Play className="w-5 h-5 text-[#0ea5e9] mb-1.5 group-hover:scale-105 transition-transform" />
                   <span className="text-[11px] font-bold dark:text-slate-300 text-gray-700">Luyện phỏng vấn</span>
                 </button>
-                <button 
+                <button
                   onClick={(e) => handleProtectedAction(e, "/cv-review")}
                   className="p-3 dark:bg-[#1e293b]/30 bg-slate-50/50 rounded-2xl border border-gray-100 dark:border-white/5 flex flex-col items-center justify-center text-center group hover:border-[#0ea5e9]/40 hover:-translate-y-0.5 transition-all cursor-pointer"
                 >
                   <FileText className="w-5 h-5 text-emerald-500 mb-1.5 group-hover:scale-105 transition-transform" />
                   <span className="text-[11px] font-bold dark:text-slate-300 text-gray-700">Quản lý CV</span>
                 </button>
-                <button 
+                <button
                   onClick={(e) => handleProtectedAction(e, "/saved-jobs")}
                   className="p-3 dark:bg-[#1e293b]/30 bg-slate-50/50 rounded-2xl border border-gray-100 dark:border-white/5 flex flex-col items-center justify-center text-center group hover:border-[#0ea5e9]/40 hover:-translate-y-0.5 transition-all cursor-pointer"
                 >
                   <Bookmark className="w-5 h-5 text-amber-500 mb-1.5 group-hover:scale-105 transition-transform" />
                   <span className="text-[11px] font-bold dark:text-slate-300 text-gray-700">Công việc đã lưu</span>
                 </button>
-                <button 
+                <button
                   onClick={(e) => handleProtectedAction(e, "/settings")}
                   className="p-3 dark:bg-[#1e293b]/30 bg-slate-50/50 rounded-2xl border border-gray-100 dark:border-white/5 flex flex-col items-center justify-center text-center group hover:border-[#0ea5e9]/40 hover:-translate-y-0.5 transition-all cursor-pointer"
                 >
@@ -471,7 +471,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
             </div>
 
             {/* AI 3D Interview Prep Teaser Card */}
-            <motion.div 
+            <motion.div
               whileHover={{ y: -4 }}
               className="p-6 rounded-3xl relative overflow-hidden bg-gradient-to-br from-slate-900 via-[#0a0f1c] to-slate-950 border border-white/5 shadow-xl group text-white cursor-pointer"
               onClick={(e) => handleProtectedAction(e, "/interview-practice")}
@@ -479,7 +479,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
               {/* Fluid gradients background */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#0ea5e9]/25 rounded-full blur-[50px] group-hover:bg-[#0ea5e9]/35 transition-colors" />
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#38bdf8]/10 rounded-full blur-[40px]" />
-              
+
               <div className="relative z-10 space-y-4">
                 <div className="inline-flex p-2 bg-[#0ea5e9]/10 rounded-xl border border-sky-500/20 text-[#0ea5e9]">
                   <Sparkles className="w-5 h-5 text-[#0ea5e9] animate-pulse" />
