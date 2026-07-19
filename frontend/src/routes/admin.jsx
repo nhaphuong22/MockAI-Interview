@@ -1,12 +1,13 @@
-import { AdminDashboard } from "../pages/admin/AdminDashboard";
-import { ManageUsers } from "../pages/admin/ManageUsers";
-import { ManageCompanies } from "../pages/admin/ManageCompanies";
-import { ManageJobPosts } from "../pages/admin/ManageJobPosts";
-import { ManageBlog } from "../pages/admin/ManageBlog";
-import { ManagePayments } from "../pages/admin/ManagePayments";
-import { AISettings } from "../pages/admin/AISettings";
-import { SystemSettings } from "../pages/admin/SystemSettings";
-import { RolePermissions } from "../pages/admin/RolePermissions";
+import { lazy } from "react";
+const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard").then(m => ({ default: m.AdminDashboard })));
+const ManageUsers = lazy(() => import("../pages/admin/ManageUsers").then(m => ({ default: m.ManageUsers })));
+const ManageCompanies = lazy(() => import("../pages/admin/ManageCompanies").then(m => ({ default: m.ManageCompanies })));
+const ManageJobPosts = lazy(() => import("../pages/admin/ManageJobPosts").then(m => ({ default: m.ManageJobPosts })));
+const ManageBlog = lazy(() => import("../pages/admin/ManageBlog").then(m => ({ default: m.ManageBlog })));
+const ManagePayments = lazy(() => import("../pages/admin/ManagePayments").then(m => ({ default: m.ManagePayments })));
+const AISettings = lazy(() => import("../pages/admin/AISettings").then(m => ({ default: m.AISettings })));
+const SystemSettings = lazy(() => import("../pages/admin/SystemSettings").then(m => ({ default: m.SystemSettings })));
+const RolePermissions = lazy(() => import("../pages/admin/RolePermissions").then(m => ({ default: m.RolePermissions })));
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 
 export const adminRoutes = [
