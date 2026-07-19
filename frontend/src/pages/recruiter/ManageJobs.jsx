@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-import { Briefcase, Plus, Trash2, Calendar, DollarSign, Users, Award, ToggleLeft, ToggleRight, Loader2, Eye, Pencil, CheckCircle2, Sparkles } from "lucide-react";
-
+import { Briefcase, Plus, Trash2, Calendar, Users, ToggleLeft, ToggleRight, Loader2, Eye, Pencil, CheckCircle2, EyeOff, CreditCard } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { jobApi } from "../../api/jobApi";
 import { useAuthStore } from "../../store/useAuthStore";
 
@@ -26,6 +25,9 @@ export function ManageJobs() {
     }, 3000);
   };
 
+  // State cho modal xác nhận khi credit hết hạn
+  const [renewModal, setRenewModal] = useState({ show: false, job: null });
+
   // 1. Gọi API lấy danh sách tin tuyển dụng của HR hiện tại
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["manage-jobs", currentHrId, filterStatus],
@@ -33,61 +35,73 @@ export function ManageJobs() {
       const response = await jobApi.getJobs({
         hr_id: currentHrId,
         status: filterStatus || undefined,
-        limit: 100 // Lấy toàn bộ để hiển thị danh sách quản lý
+        limit: 100
       });
-      return response; // Axios interceptor returns response.data directly
+      return response;
     },
     enabled: !!currentHrId
   });
 
   const jobsList = data?.data?.items || [];
 
-  // 2. Mutation để đóng/mở nhanh tin tuyển dụng (Toggle Status)
-  const toggleStatusMutation = useMutation({
+  // 2. Toggle OPEN <-> PAUSED (ẩn/hiện): không tốn credit nếu còn hạn
+  const toggleVisibilityMutation = useMutation({
     mutationFn: ({ id, currentStatus }) => {
-      const newStatus = currentStatus === "OPEN" ? "CLOSED" : "OPEN";
-      return jobApi.updateJob(id, {
-        // Cần truyền các trường bắt buộc, ở đây API PUT /api/jobs/:id yêu cầu body đầy đủ.
-        // Để đơn giản, ta tìm job hiện tại trong cache và cập nhật status
-        ...jobsList.find(j => j.id === id),
-        status: newStatus
-      });
+      const newStatus = currentStatus === "OPEN" ? "PAUSED" : "OPEN";
+      const job = jobsList.find(j => j.id === id);
+      return jobApi.updateJob(id, { ...job, status: newStatus });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["manage-jobs"]);
-      showToast("Cập nhật trạng thái tin đăng thành công!", "success");
+      showToast("Cập nhật trạng thái hiển thị thành công!", "success");
     },
-    onError: (error) => {
-      console.error("Lỗi khi cập nhật trạng thái:", error);
-      showToast("Không thể cập nhật trạng thái tin đăng.", "error");
+    onError: (error, variables) => {
+      const errCode = error.response?.data?.code;
+      const errMsg = error.response?.data?.error || error.response?.data?.message || "";
+      if (error.response?.status === 402 || errCode === "CREDIT_REQUIRED_TO_RENEW") {
+        // Hết hạn credit => hiện modal cảnh báo
+        setRenewModal({ show: true, job: variables });
+      } else {
+        showToast(errMsg || "Không thể thay đổi trạng thái.", "error");
+      }
     }
   });
 
-  // 3. Mutation để xóa tin tuyển dụng
+  // 3. Toggle OPEN <-> CLOSED (đóng/mở): tốn credit khi renew từ CLOSED
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, currentStatus }) => {
+      const newStatus = currentStatus === "CLOSED" ? "OPEN" : "CLOSED";
+      const job = jobsList.find(j => j.id === id);
+      return jobApi.updateJob(id, { ...job, status: newStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["manage-jobs"]);
+      showToast("Đã cập nhật trạng thái tin đăng!", "success");
+    },
+    onError: (error) => {
+      const errMsg = error.response?.data?.error || error.response?.data?.message || "Không thể cập nhật trạng thái.";
+      showToast(errMsg, "error");
+    }
+  });
+
+  // 4. Mutation xóa tin
   const deleteMutation = useMutation({
     mutationFn: (id) => jobApi.deleteJob(id),
     onSuccess: () => {
       queryClient.invalidateQueries(["manage-jobs"]);
       showToast("Xóa tin tuyển dụng thành công!", "success");
     },
-    onError: (error) => {
-      console.error("Lỗi khi xóa tin tuyển dụng:", error);
-      showToast("Xóa tin tuyển dụng thất bại!", "error");
-    }
+    onError: () => showToast("Xóa tin tuyển dụng thất bại!", "error")
   });
 
-  // Handler thực hiện xóa
   const handleDeleteJob = (id, title) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa hoàn toàn tin tuyển dụng "${title}" không? Hành động này không thể hoàn tác.`)) {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa hoàn toàn tin "${title}" không? Hành động này không thể hoàn tác.`))
       deleteMutation.mutate(id);
-    }
   };
 
   const formatSalary = (min, max, currency, visible) => {
     if (!visible) return "Thương lượng (Ẩn)";
     if (!min && !max) return "Thương lượng";
-    const curSymbol = currency === "USD" ? "$" : "đ";
-    
     const formatNumber = (num) => {
       if (!num) return "";
       if (num >= 1000000) return `${(num / 1000000).toFixed(0)}M`;
@@ -143,22 +157,20 @@ export function ManageJobs() {
 
         {/* Filter Controls */}
         <div className="flex items-center gap-2 mb-6 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm w-fit">
-          <button
-            onClick={() => setFilterStatus("")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === "" ? "bg-[#0ea5e9] text-white shadow-md shadow-sky-100" : "text-gray-600 hover:bg-gray-50"}`}
-          >
-            Tất cả ({jobsList.length + (isLoading ? 0 : 0)})
+          <button onClick={() => setFilterStatus("")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === "" ? "bg-[#0ea5e9] text-white shadow-md shadow-sky-100" : "text-gray-600 hover:bg-gray-50"}`}>
+            Tất cả
           </button>
-          <button
-            onClick={() => setFilterStatus("OPEN")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === "OPEN" ? "bg-[#0ea5e9] text-white shadow-md shadow-sky-100" : "text-gray-600 hover:bg-gray-50"}`}
-          >
+          <button onClick={() => setFilterStatus("OPEN")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === "OPEN" ? "bg-[#0ea5e9] text-white shadow-md shadow-sky-100" : "text-gray-600 hover:bg-gray-50"}`}>
             Đang mở
           </button>
-          <button
-            onClick={() => setFilterStatus("CLOSED")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === "CLOSED" ? "bg-[#0ea5e9] text-white shadow-md shadow-sky-100" : "text-gray-600 hover:bg-gray-50"}`}
-          >
+          <button onClick={() => setFilterStatus("PAUSED")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === "PAUSED" ? "bg-amber-500 text-white shadow-md shadow-amber-100" : "text-gray-600 hover:bg-gray-50"}`}>
+            Đang ẩn
+          </button>
+          <button onClick={() => setFilterStatus("CLOSED")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === "CLOSED" ? "bg-[#0ea5e9] text-white shadow-md shadow-sky-100" : "text-gray-600 hover:bg-gray-50"}`}>
             Đã đóng
           </button>
         </div>
@@ -211,8 +223,18 @@ export function ManageJobs() {
                             <Briefcase className="w-5 h-5" />
                           </div>
                           <div>
-                            <div className="font-bold text-gray-900 group-hover:text-[#0ea5e9] transition-colors">
+                            <div className="font-bold text-gray-900 group-hover:text-[#0ea5e9] transition-colors flex items-center gap-2">
                               {job.title}
+                              {job.approval_status === 'REJECTED' && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 border border-red-200" title="Tin bị Admin gỡ / từ chối">
+                                  Bị từ chối
+                                </span>
+                              )}
+                              {job.approval_status === 'PENDING' && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600 border border-amber-200" title="Đang chờ Admin kiểm duyệt">
+                                  Chờ duyệt
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-gray-400 mt-0.5">
                               Đăng ngày: {new Date(job.created_at).toLocaleDateString("vi-VN")}
@@ -240,55 +262,82 @@ export function ManageJobs() {
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <button
-                          onClick={() => toggleStatusMutation.mutate({ id: job.id, currentStatus: job.status })}
-                          disabled={toggleStatusMutation.isPending}
-                          className="flex items-center gap-1 text-gray-500 hover:text-[#0ea5e9] disabled:opacity-50 transition-all cursor-pointer"
-                          title="Click để thay đổi trạng thái"
-                        >
+                        <div className="flex flex-col gap-1">
+                          {/* Trạng thái Open/Paused/Closed */}
                           {job.status === "OPEN" ? (
-                            <>
-                              <ToggleRight className="w-7 h-7 text-[#0ea5e9]" />
-                              <span className="text-xs font-bold text-green-600">Đang mở</span>
-                            </>
+                            <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+                              <ToggleRight className="w-5 h-5" /> Đang mở
+                            </span>
+                          ) : job.status === "PAUSED" ? (
+                            <span className="flex items-center gap-1 text-xs font-bold text-amber-600">
+                              <EyeOff className="w-4 h-4" /> Đang ẩn
+                            </span>
                           ) : (
-                            <>
-                              <ToggleLeft className="w-7 h-7 text-gray-300" />
-                              <span className="text-xs font-bold text-gray-400">Đã đóng</span>
-                            </>
+                            <span className="flex items-center gap-1 text-xs font-bold text-gray-400">
+                              <ToggleLeft className="w-5 h-5" /> Đã đóng
+                            </span>
                           )}
-                        </button>
+                          {/* Hiện deadline nếu còn */}
+                          {job.deadline && (
+                            <span className={`text-[10px] font-semibold ${
+                              new Date(job.deadline) < new Date() ? "text-rose-400" : "text-slate-400"
+                            }`}>
+                              {new Date(job.deadline) < new Date() ? "⚠ Hết hạn" : `Còn hạn đến ${new Date(job.deadline).toLocaleDateString("vi-VN")}`}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Link
-                            to={`/hr/dashboard/applications?jobId=${job.id}`}
+                          <Link to={`/hr/dashboard/applications?jobId=${job.id}`}
                             className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all inline-block"
-                            title="Xem danh sách CV ứng viên"
-                          >
+                            title="Xem CV ứng viên">
                             <Users className="w-4 h-4" />
                           </Link>
-                          <Link
-                            to={`/hr/dashboard/edit-job/${job.id}`}
+                          {/* Nút Ẩn/Hiện (chỉ khi OPEN hoặc PAUSED) */}
+                          {(job.status === "OPEN" || job.status === "PAUSED") && (
+                            <button
+                              onClick={() => toggleVisibilityMutation.mutate({ id: job.id, currentStatus: job.status, title: job.title })}
+                              disabled={toggleVisibilityMutation.isPending}
+                              className={`p-2 rounded-xl transition-all ${
+                                job.status === "PAUSED"
+                                  ? "text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+                                  : "text-gray-400 hover:text-amber-500 hover:bg-amber-50"
+                              }`}
+                              title={job.status === "PAUSED" ? "Mở lại bài đăng" : "Ẩn bài đăng"}
+                            >
+                              {job.status === "PAUSED" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                            </button>
+                          )}
+                          {/* Nút Đóng/Mở chính thức (chỉ khi OPEN hoặc CLOSED) */}
+                          {job.status !== "PAUSED" && (
+                            <button
+                              onClick={() => toggleStatusMutation.mutate({ id: job.id, currentStatus: job.status })}
+                              disabled={toggleStatusMutation.isPending}
+                              className={`p-2 rounded-xl transition-all ${
+                                job.status === "OPEN"
+                                  ? "text-gray-400 hover:text-rose-500 hover:bg-rose-50"
+                                  : "text-gray-400 hover:text-emerald-500 hover:bg-emerald-50"
+                              }`}
+                              title={job.status === "OPEN" ? "Đóng tin" : "Mở lại (tốn credit)"}
+                            >
+                              {job.status === "OPEN" ? <ToggleRight className="w-5 h-5 text-emerald-500" /> : <ToggleLeft className="w-5 h-5" />}
+                            </button>
+                          )}
+                          <Link to={`/hr/dashboard/edit-job/${job.id}`}
                             className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all inline-block"
-                            title="Chỉnh sửa tin đăng"
-                          >
+                            title="Chỉnh sửa">
                             <Pencil className="w-4 h-4" />
                           </Link>
-                          <Link
-
-                            to={`/jobs/${job.id}`}
+                          <Link to={`/jobs/${job.id}`}
                             className="p-2 text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-xl transition-all inline-block"
-                            title="Xem chi tiết tin đăng"
-                          >
+                            title="Xem chi tiết">
                             <Eye className="w-4 h-4" />
                           </Link>
-                          <button
-                            onClick={() => handleDeleteJob(job.id, job.title)}
+                          <button onClick={() => handleDeleteJob(job.id, job.title)}
                             disabled={deleteMutation.isPending}
                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                            title="Xóa tin đăng"
-                          >
+                            title="Xóa tin">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -301,6 +350,51 @@ export function ManageJobs() {
           </div>
         )}
       </div>
+
+      {/* Modal: Cảnh báo khi credit hết hạn và cần tạo tin mới */}
+      <AnimatePresence>
+        {renewModal.show && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-amber-100 rounded-2xl">
+                  <CreditCard className="w-6 h-6 text-amber-600" />
+                </div>
+                <h3 className="text-xl font-black text-slate-800">Thời hạn đã kết thúc</h3>
+              </div>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                Tin tuyển dụng <strong>&ldquo;{renewModal.job?.title}&rdquo;</strong> đã hết thời hạn hiển thị.
+                Để tiếp tục, bạn cần <strong>đăng tin mới</strong> (tốn <strong>10 credit</strong>).
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setRenewModal({ show: false, job: null })}
+                  className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
+                >
+                  Đóng
+                </button>
+                <Link
+                  to="/hr/dashboard/post-job"
+                  className="flex-1 py-3 bg-sky-500 text-white font-bold rounded-xl hover:bg-sky-400 transition-all text-center"
+                  onClick={() => setRenewModal({ show: false, job: null })}
+                >
+                  Đăng tin mới
+                </Link>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

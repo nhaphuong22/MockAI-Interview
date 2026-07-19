@@ -126,6 +126,7 @@ export const createJob = async ({
       is_salary_visible: isSalaryVisible,
       vacancy_count: vacancyCount,
       deadline: finalDeadline,
+      enable_ai_screening: !!enableAiScreening,
       created_at: new Date(),
       updated_at: new Date()
     }, trx);
@@ -171,7 +172,8 @@ export const getJobsList = async ({
   companyId,
   search,
   page = 1,
-  limit = 10
+  limit = 10,
+  approvalStatus
 }) => {
   const query = db('jobs')
     .select(
@@ -188,6 +190,9 @@ export const getJobsList = async ({
 
   if (status) {
     query.where('jobs.status', status);
+  }
+  if (approvalStatus) {
+    query.where('jobs.approval_status', approvalStatus);
   }
   if (experienceLevel) {
     query.where('jobs.experience_level', experienceLevel);
@@ -210,6 +215,7 @@ export const getJobsList = async ({
   // Tạo query đếm tổng số bản ghi (luôn join companies để có thể lọc theo tên công ty)
   const countQuery = db('jobs').leftJoin('companies', 'jobs.company_id', 'companies.id');
   if (status) countQuery.where('jobs.status', status);
+  if (approvalStatus) countQuery.where('jobs.approval_status', approvalStatus);
   if (experienceLevel) countQuery.where('jobs.experience_level', experienceLevel);
   if (hrId) countQuery.where('jobs.hr_id', hrId);
   if (companyId) countQuery.where('jobs.company_id', companyId);
@@ -283,19 +289,64 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
     const oldJob = await trx('jobs').where({ id }).first();
     if (!oldJob) throw new Error('Không tìm thấy công việc này');
 
-    // Nghiệp vụ: Cấm đổi Title nếu tin đã từng xuất bản (khác DRAFT)
+    // Nghệp vụ: Cấm đổi Title nếu tin đã từng xuất bản (khác DRAFT)
     if (oldJob.status !== 'DRAFT' && updateData.title && updateData.title !== oldJob.title) {
        throw new Error('Không thể thay đổi chức danh khi tin đã từng xuất bản. Vui lòng đóng tin và tạo tin mới (tốn credit).');
     }
 
-    // Nghiệp vụ: Trừ Credit nếu renew (từ CLOSED hoặc DRAFT sang OPEN)
-    // Lưu ý: Từ PAUSED -> OPEN thì không mất credit.
-    const isRenewing = updateData.status === 'OPEN' && ['CLOSED', 'DRAFT'].includes(oldJob.status);
+    // Nghệp vụ Credit:
+    // - PAUSED: Ẩn tạm thời, KHAIÙNG tốn credit (chỉ cho phép nếu deadline chưa hết)
+    // - OPEN từ PAUSED: Mở lại, KHAIÙNG tốn credit (nếu deadline vẫn còn hợp lệ)
+    // - OPEN từ CLOSED/DRAFT: Renew, TốN credit bình thường
+    const newStatus = updateData.status || oldJob.status;
+    const oldStatus = oldJob.status;
+
+    // Kiểm tra khi chấp nhận Ẩn bài (PAUSED)
+    if (newStatus === 'PAUSED' && oldStatus === 'OPEN') {
+      // Kiểm tra deadline còn hợp lệ không
+      if (oldJob.deadline && new Date(oldJob.deadline) < new Date()) {
+        const err = new Error('Ẩn bài đã hết thời hạn. Vui lòng đóng và tạo tin mới.');
+        err.statusCode = 400;
+        throw err;
+      }
+      // Không tốn credit - chỉ cầp nhật status
+    }
+
+    // Kiểm tra khi mở lại từ PAUSED
+    if (newStatus === 'OPEN' && oldStatus === 'PAUSED') {
+      // Kiểm tra deadline còn hợp lệ hay không
+      if (oldJob.deadline && new Date(oldJob.deadline) > new Date()) {
+        // Deadline vẫn còn => mở lại miễn phí
+      } else {
+        // Deadline đã hết => báo lỗi, yêu cầu tạo tin mới (tốn credit)
+        const err = new Error(`Thời hạn credit đã hết hạn (${oldJob.deadline ? new Date(oldJob.deadline).toLocaleDateString('vi-VN') : 'không rõ'}). Bạn cần tạo tin mới (tốn ${CREDIT_COSTS.JOB_POST} credit) hoặc liên hệ hỗ trợ.`);
+        err.statusCode = 402;
+        err.code = 'CREDIT_REQUIRED_TO_RENEW';
+        throw err;
+      }
+    }
+
+    // Renew từ CLOSED hoặc DRAFT sang OPEN thì tốn credit
+    const isRenewing = newStatus === 'OPEN' && ['CLOSED', 'DRAFT'].includes(oldStatus);
     if (isRenewing) {
        const creditCost = updateData.enableAiScreening
          ? CREDIT_COSTS.JOB_POST + CREDIT_COSTS.AI_SCREENING
          : CREDIT_COSTS.JOB_POST;
        await consumeCredit(trx, oldJob.hr_id, oldJob.company_id, creditCost, updateData.walletType || 'PERSONAL');
+    }
+
+    // Tính lại deadline khi renew
+    let finalDeadline = updateData.deadline || oldJob.deadline;
+    if (isRenewing) {
+      const newDeadline = new Date();
+      newDeadline.setDate(newDeadline.getDate() + 14);
+      finalDeadline = newDeadline;
+    }
+
+    // Logic: Nếu tin bị Admin từ chối (REJECTED), khi HR sửa lại tin -> Tự động chuyển về PENDING chờ duyệt lại
+    let finalApprovalStatus = oldJob.approval_status;
+    if (oldJob.approval_status === 'REJECTED') {
+      finalApprovalStatus = 'PENDING';
     }
 
     // 1. Cập nhật bảng 'jobs'
@@ -304,14 +355,16 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
       .update({
         title: updateData.title,
         description: updateData.description || null,
-        status: updateData.status || 'OPEN',
+        status: newStatus,
+        approval_status: finalApprovalStatus,
         experience_level: updateData.experienceLevel || null,
         salary_min: updateData.salaryMin || null,
         salary_max: updateData.salaryMax || null,
         salary_currency: updateData.salaryCurrency || 'VND',
         is_salary_visible: updateData.isSalaryVisible !== undefined ? updateData.isSalaryVisible : true,
         vacancy_count: updateData.vacancyCount !== undefined ? updateData.vacancyCount : 1,
-        deadline: updateData.deadline || null,
+        deadline: finalDeadline || null,
+        enable_ai_screening: updateData.enableAiScreening !== undefined ? !!updateData.enableAiScreening : oldJob.enable_ai_screening,
         updated_at: new Date()
       })
       .returning('*');
