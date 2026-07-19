@@ -2,7 +2,7 @@ import express from 'express';
 import { 
   createPaymentUrl, handleVnpayIpn, getPackages, 
   getAllPackagesForAdmin, togglePackageStatus, getTransactionsForAdmin, updatePackagePrice,
-  getCouponsForAdmin, createCoupon, toggleCouponStatus, deleteCoupon 
+  getCouponsForAdmin, createCoupon, toggleCouponStatus, deleteCoupon, validateCoupon
 } from '../controllers/paymentController.js';
 import { authenticateToken, requireAuth, requireAdmin } from '../middlewares/authMiddleware.js';
 
@@ -63,6 +63,34 @@ router.get('/packages', authenticateToken, getPackages);
  *         description: Trả về URL thanh toán VNPAY thành công
  */
 router.post('/create-vnpay-url', authenticateToken, createPaymentUrl);
+
+/**
+ * @swagger
+ * /api/payments/validate-coupon:
+ *   post:
+ *     summary: Kiểm tra mã giảm giá
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - packageId
+ *               - code
+ *             properties:
+ *               packageId:
+ *                 type: integer
+ *               code:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Trả về thông tin số tiền được giảm
+ */
+router.post('/validate-coupon', authenticateToken, validateCoupon);
 
 /**
  * @swagger

@@ -52,19 +52,199 @@ export const paymentService = {
    * @param {string} params.ipAddr - Địa chỉ IP của client
    * @returns {Promise<string>} URL thanh toán VNPAY
    */
-  createVnpayUrl: async ({ userId, packageId, ipAddr }) => {
+  createVnpayUrl: async ({ userId, packageId, couponCode, ipAddr, role }) => {
     // 1. Kiểm tra gói cước tồn tại
     const targetPackage = await db('packages').where({ id: packageId, is_active: true }).first();
     if (!targetPackage) {
       throw new Error('Gói cước không tồn tại hoặc đã bị ẩn.');
     }
 
-    const amount = parseFloat(targetPackage.price);
-    if (amount <= 0) {
+    // Xác thực vai trò người mua
+    const userRoleRecord = await db('user_roles')
+      .join('roles', 'user_roles.role_id', 'roles.id')
+      .where('user_roles.user_id', userId)
+      .select('roles.name')
+      .first();
+    const userRole = userRoleRecord ? userRoleRecord.name : 'USER';
+
+    if (targetPackage.target_role === 'HR' && userRole !== 'HR') {
+      throw new Error('Gói cước này chỉ dành cho Nhà tuyển dụng (HR).');
+    }
+    if (targetPackage.target_role === 'CANDIDATE' && userRole !== 'USER' && userRole !== 'CANDIDATE') {
+      throw new Error('Gói cước này chỉ dành cho Ứng viên (Candidate).');
+    }
+
+    // Edge case: Mua gói BUSINESS mà chưa có công ty
+    if (targetPackage.name === 'BUSINESS' && targetPackage.target_role === 'HR') {
+      const user = await db('users').where({ id: userId }).first();
+      if (!user || !user.company_id) {
+        throw new Error('Bạn phải tạo hoặc gia nhập một doanh nghiệp trước khi mua gói BUSINESS.');
+      }
+    }
+
+    let amount = parseFloat(targetPackage.price);
+    let appliedCoupon = null;
+    let discountAmount = 0;
+
+    // 2. Kiểm tra Coupon (nếu có)
+    if (couponCode) {
+      const formattedCode = couponCode.trim().toUpperCase();
+      const coupon = await db('coupons')
+        .where({ code: formattedCode, is_active: true, is_deleted: false })
+        .first();
+
+      if (!coupon) {
+        throw new Error('Mã giảm giá không hợp lệ hoặc đã bị vô hiệu hóa.');
+      }
+
+      if (coupon.applicable_to !== 'ALL' && coupon.applicable_to !== role) {
+        throw new Error('Mã giảm giá không áp dụng cho loại tài khoản của bạn.');
+      }
+
+      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        throw new Error('Mã giảm giá đã hết hạn.');
+      }
+
+      if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+        throw new Error('Mã giảm giá đã đạt giới hạn sử dụng.');
+      }
+
+      appliedCoupon = coupon;
+      discountAmount = (amount * coupon.discount_percent) / 100;
+      
+      if (coupon.max_discount_amount && discountAmount > coupon.max_discount_amount) {
+        discountAmount = coupon.max_discount_amount;
+      }
+      
+      amount = Math.max(0, amount - discountAmount);
+    }
+
+    if (parseFloat(targetPackage.price) === 0) {
       throw new Error('Gói cước miễn phí không cần thanh toán qua cổng VNPAY.');
     }
 
-    // 2. Tạo giao dịch PENDING trong database
+    // Nếu giá sau giảm là 0đ, kích hoạt luôn, không gọi VNPAY
+    if (amount === 0) {
+      const transactionCode = `FREE${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
+      
+      await db.transaction(async (trx) => {
+        // Tăng usage count của coupon an toàn
+        if (appliedCoupon) {
+          await trx('coupons')
+            .where({ id: appliedCoupon.id })
+            .increment('used_count', 1);
+        }
+
+        const snapshotBase = {
+          package_id: targetPackage.id,
+          name: targetPackage.name,
+          price_at_purchase: Number(targetPackage.price)
+        };
+        const snapshotPackage = targetPackage.target_role === 'HR'
+          ? {
+              ...snapshotBase,
+              package_type: 'CREDIT_BUNDLE',
+              total_credits: targetPackage.total_credits,
+              credit_expiry_days: targetPackage.credit_expiry_days,
+              price_per_credit_at_purchase: targetPackage.total_credits > 0
+                ? Math.round(Number(targetPackage.price) / targetPackage.total_credits)
+                : 0
+            }
+          : {
+              ...snapshotBase,
+              package_type: 'SUBSCRIPTION',
+              duration_days: targetPackage.duration_days,
+              ats_scan_limit: targetPackage.ats_scan_limit,
+              ai_practice_limit: targetPackage.ai_practice_limit,
+              ai_cover_letter_limit: targetPackage.ai_cover_letter_limit,
+              radar_chart_level: targetPackage.radar_chart_level
+            };
+
+        // Ghi nhận transaction COMPLETED luôn
+        await trx('transactions').insert({
+          user_id: userId,
+          package_id: packageId,
+          amount: 0,
+          currency: 'VND',
+          payment_method: 'FREE_COUPON',
+          transaction_code: transactionCode,
+          status: 'COMPLETED',
+          coupon_code: appliedCoupon?.code || null,
+          discount_amount: discountAmount,
+          notes: 'Kích hoạt miễn phí qua mã giảm giá 100%',
+          snapshot_package: JSON.stringify(snapshotPackage),
+          paid_at: new Date()
+        });
+
+        // Kích hoạt quyền lợi (logic kích hoạt tương tự IPN)
+        const user = await trx('users').where({ id: userId }).first();
+        const now = new Date();
+        const expiryDate = new Date(now.getTime() + targetPackage.duration_days * 24 * 60 * 60 * 1000);
+        let creditExpiryDate = null;
+        if (targetPackage.credit_expiry_days) {
+          creditExpiryDate = new Date(now.getTime() + targetPackage.credit_expiry_days * 24 * 60 * 60 * 1000);
+        }
+
+        if (targetPackage.target_role === 'HR') {
+          let wallet;
+          if (targetPackage.name === 'BUSINESS' && user.company_id) {
+            wallet = await trx('hr_wallets').where({ company_id: user.company_id }).first();
+            const expiryDays = targetPackage.credit_expiry_days || 365;
+            const vipExpiryDate = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
+            await trx('companies').where({ id: user.company_id }).update({
+              is_vip: true,
+              vip_expired_at: vipExpiryDate,
+              updated_at: now
+            });
+          } else {
+            wallet = await trx('hr_wallets').where({ user_id: user.id }).first();
+          }
+
+          // Khởi tạo ví tự động nếu chưa tồn tại trong DB (Defensive logic)
+          if (!wallet) {
+            const walletInsert = targetPackage.name === 'BUSINESS' && user.company_id
+              ? { company_id: user.company_id, total_credits: 0, created_at: now, updated_at: now }
+              : { user_id: user.id, total_credits: 0, created_at: now, updated_at: now };
+            
+            const [newWallet] = await trx('hr_wallets').insert(walletInsert).returning('*');
+            wallet = newWallet || { id: newWallet };
+          }
+
+          if (wallet && targetPackage.total_credits > 0) {
+            const walletId = wallet.id || wallet;
+            await trx('hr_wallets')
+              .where({ id: walletId })
+              .increment('total_credits', targetPackage.total_credits);
+          }
+        } else {
+          const existingSub = await trx('user_subscriptions').where({ user_id: user.id }).first();
+          if (existingSub) {
+            const currentExpiry = existingSub.end_date && new Date(existingSub.end_date) > now
+              ? new Date(existingSub.end_date)
+              : now;
+            const newExpiry = new Date(currentExpiry.getTime() + targetPackage.duration_days * 24 * 60 * 60 * 1000);
+            await trx('user_subscriptions').where({ user_id: existingSub.user_id }).update({
+              package_id: targetPackage.id,
+              end_date: newExpiry,
+              updated_at: now
+            });
+          } else {
+            await trx('user_subscriptions').insert({
+              user_id: user.id,
+              package_id: targetPackage.id,
+              start_date: now,
+              end_date: expiryDate,
+              created_at: now,
+              updated_at: now
+            });
+          }
+        }
+      });
+
+      return { isFreeActivation: true };
+    }
+
+    // 3. Tạo giao dịch PENDING trong database cho VNPAY
     const transactionCode = `MAI${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
     
     await db('transactions').insert({
@@ -75,6 +255,8 @@ export const paymentService = {
       payment_method: 'VNPAY',
       transaction_code: transactionCode,
       status: 'PENDING',
+      coupon_code: appliedCoupon ? appliedCoupon.code : null,
+      discount_amount: discountAmount,
       notes: 'Nang cap goi cuoc MockAI Pro',
     });
 
@@ -117,7 +299,7 @@ export const paymentService = {
     
     // Tạo URL hoàn chỉnh
     const finalPaymentUrl = `${paymentUrl}?${signData}&vnp_SecureHash=${signed}`;
-    return finalPaymentUrl;
+    return { paymentUrl: finalPaymentUrl };
   },
 
   /**
@@ -180,11 +362,50 @@ export const paymentService = {
         return { RspCode: '01', Message: 'Package inactive or not found' };
       }
 
+      // Xác thực lại vai trò người dùng tại thời điểm IPN Webhook
+      const userRoleRecord = await db('user_roles')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .where('user_roles.user_id', transaction.user_id)
+        .select('roles.name')
+        .first();
+      const currentRole = userRoleRecord ? userRoleRecord.name : 'USER';
+
+      if (activePackage.target_role === 'HR' && currentRole !== 'HR') {
+        await db('transactions').where({ id: transaction.id }).update({
+          status: 'FAILED',
+          notes: 'Thanh toán thất bại do vai trò người dùng không còn là HR tại thời điểm xác nhận giao dịch.',
+          updated_at: new Date()
+        });
+        return { RspCode: '01', Message: 'User role mismatch' };
+      }
+
+      if (activePackage.target_role === 'CANDIDATE' && currentRole !== 'USER' && currentRole !== 'CANDIDATE') {
+        await db('transactions').where({ id: transaction.id }).update({
+          status: 'FAILED',
+          notes: 'Thanh toán thất bại do vai trò người dùng không còn là CANDIDATE tại thời điểm xác nhận giao dịch.',
+          updated_at: new Date()
+        });
+        return { RspCode: '01', Message: 'User role mismatch' };
+      }
+
       const responseCode = vnpParams['vnp_ResponseCode'];
       const isSuccess = responseCode === '00';
       const newStatus = isSuccess ? 'COMPLETED' : 'FAILED';
 
       await db.transaction(async (trx) => {
+        // Tăng used_count của coupon nếu có
+        if (isSuccess && transaction.coupon_code) {
+          const couponToUpdate = await trx('coupons').where({ code: transaction.coupon_code }).forUpdate().first();
+          if (couponToUpdate && couponToUpdate.usage_limit && couponToUpdate.used_count >= couponToUpdate.usage_limit) {
+            // Trường hợp cực hiếm: Mã vừa hết lượt sử dụng trong lúc thanh toán
+            // Vẫn kích hoạt vì user đã thanh toán tiền, nhưng ghi log cảnh báo
+            console.warn(`[Coupon Overflow] Mã ${couponToUpdate.code} đã đạt giới hạn nhưng VNPAY báo thành công.`);
+          }
+          if (couponToUpdate) {
+            await trx('coupons').where({ code: transaction.coupon_code }).increment('used_count', 1);
+          }
+        }
+
         // Build snapshot tại thời điểm mua — bảo toàn lịch sử khi giá/tên gói thay đổi sau này
         const snapshotBase = {
           package_id: activePackage.id,
@@ -238,24 +459,36 @@ export const paymentService = {
 
           const user = await trx('users').where({ id: transaction.user_id }).first();
 
-          if (user.role === 'HR') {
-            // HR: Nạp unified credit
-            let wallet = await trx('hr_wallets').where({ user_id: user.id }).first();
-            if (user.company_id) {
+          if (pack.target_role === 'HR') {
+            let wallet;
+            if (pack.name === 'BUSINESS' && user.company_id) {
               wallet = await trx('hr_wallets').where({ company_id: user.company_id }).first();
+              const expiryDays = pack.credit_expiry_days || 365;
+              const vipExpiryDate = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
+              await trx('companies').where({ id: user.company_id }).update({
+                is_vip: true,
+                vip_expired_at: vipExpiryDate,
+                updated_at: now
+              });
+            } else {
+              wallet = await trx('hr_wallets').where({ user_id: user.id }).first();
+            }
+
+            // Khởi tạo ví tự động nếu chưa tồn tại trong DB (Defensive logic)
+            if (!wallet) {
+              const walletInsert = pack.name === 'BUSINESS' && user.company_id
+                ? { company_id: user.company_id, total_credits: 0, created_at: now, updated_at: now }
+                : { user_id: user.id, total_credits: 0, created_at: now, updated_at: now };
+              
+              const [newWallet] = await trx('hr_wallets').insert(walletInsert).returning('*');
+              wallet = newWallet || { id: newWallet };
             }
 
             if (wallet && pack.total_credits > 0) {
-              await trx('credit_batches').insert({
-                wallet_id: wallet.id,
-                package_id: pack.id,
-                amount_granted: pack.total_credits,
-                amount_remaining: pack.total_credits,
-                expires_at: creditExpiryDate,
-                created_at: now,
-                updated_at: now
-              });
-              await trx('hr_wallets').where({ id: wallet.id }).increment('total_credits', pack.total_credits);
+              const walletId = wallet.id || wallet;
+              await trx('hr_wallets')
+                .where({ id: walletId })
+                .increment('total_credits', pack.total_credits);
             }
           } else {
             // Ứng viên: Cập nhật subscription
@@ -265,7 +498,7 @@ export const paymentService = {
                 ? new Date(existingSub.end_date)
                 : now;
               const newExpiry = new Date(currentExpiry.getTime() + pack.duration_days * 24 * 60 * 60 * 1000);
-              await trx('user_subscriptions').where({ id: existingSub.id }).update({
+              await trx('user_subscriptions').where({ user_id: existingSub.user_id }).update({
                 package_id: pack.id,
                 end_date: newExpiry,
                 updated_at: now
