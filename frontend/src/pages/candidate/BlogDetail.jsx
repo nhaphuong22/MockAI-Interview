@@ -7,8 +7,10 @@ import { blogApi } from "../../api/blogApi";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { motion, useScroll } from "framer-motion";
+import { useUiStore } from "../../store/useUiStore";
 import ReactionButton from "./components/ReactionButton";
 import ReactionSummary from "./components/ReactionSummary";
+import ReportModal from "./components/common/ReportModal";
 
 export function BlogDetail() {
   const { id } = useParams();
@@ -17,7 +19,9 @@ export function BlogDetail() {
   const { isAuthenticated } = useAuthStore();
   const { scrollYProgress } = useScroll();
   const [isSaved, setIsSaved] = useState(false);
+  const [reportModal, setReportModal] = useState({ isOpen: false, targetId: null });
   const queryClient = useQueryClient();
+  const showToast = useUiStore((state) => state.showToast);
 
   // Fetch blog detail
   const { data: blogResponse, isLoading, error } = useQuery({
@@ -232,6 +236,19 @@ export function BlogDetail() {
                   <MessageCircle className="w-5 h-5" />
                   <span>Bình luận</span>
                 </button>
+                <button 
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      showToast({ message: "Yêu cầu đăng nhập để sử dụng tính năng này.", type: "error" });
+                      return;
+                    }
+                    setReportModal({ isOpen: true, targetId: blog.id });
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-gray-50 text-gray-600 hover:bg-red-50 hover:text-red-500 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-red-900/20 dark:hover:text-red-500 transition-all"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>
+                  <span>Báo cáo</span>
+                </button>
               </div>
               
               <div className="flex -space-x-3">
@@ -286,6 +303,13 @@ export function BlogDetail() {
           
         </div>
       </div>
+
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={() => setReportModal({ isOpen: false, targetId: null })}
+        targetType="COMMUNITY_POST"
+        targetId={reportModal.targetId}
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { useUiStore } from "../../store/useUiStore";
 import { CommunityLeftSidebar } from "./components/CommunityLeftSidebar";
 import { CommunityRightSidebar } from "./components/CommunityRightSidebar";
 import { PostCard } from "./components/PostCard";
+import ReportModal from "./components/common/ReportModal";
 
 const categories = [
   { id: "all", name: "Tất Cả Bài Viết", active: true },
@@ -41,6 +42,7 @@ export function Community() {
   const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [reportModal, setReportModal] = useState({ isOpen: false, targetId: null });
 
   // States cho Form đăng bài nhanh
   const [postTitle, setPostTitle] = useState("");
@@ -376,7 +378,16 @@ export function Community() {
                       </div>
                     )}
 
-                    <PostCard post={post} />
+                    <PostCard 
+                      post={post} 
+                      onReport={(id) => {
+                        if (!isAuthenticated) {
+                          showToast({ message: "Yêu cầu đăng nhập để sử dụng tính năng này.", type: "error" });
+                          return;
+                        }
+                        setReportModal({ isOpen: true, targetId: id });
+                      }}
+                    />
                   </div>
                 ))
               ) : (
@@ -582,6 +593,13 @@ export function Community() {
           </div>
         </div>
       )}
+
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={() => setReportModal({ isOpen: false, targetId: null })}
+        targetType="COMMUNITY_POST"
+        targetId={reportModal.targetId}
+      />
     </div>
   );
 }

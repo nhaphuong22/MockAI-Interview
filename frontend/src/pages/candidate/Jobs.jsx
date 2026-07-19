@@ -11,6 +11,7 @@ import { AiTeaserSidebar } from "./components/AiTeaserSidebar";
 import { jobApi } from "../../api/jobApi";
 import { useUiStore } from "../../store/useUiStore";
 import { useAuthStore } from "../../store/useAuthStore";
+import ReportModal from "./components/common/ReportModal";
 
 const cleanLocationName = (str) => {
   if (!str) return "";
@@ -46,6 +47,8 @@ export function Jobs() {
   
   const [sortBy, setSortBy] = useState("Phù hợp nhất");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [reportModal, setReportModal] = useState({ isOpen: false, targetId: null });
 
   // Sync search state from Dashboard redirect
   useEffect(() => {
@@ -463,6 +466,13 @@ export function Jobs() {
                         bookmarked={savedJobIds}
                         onSelectJob={(id) => navigate(`/jobs/${id}`)}
                         onToggleBookmark={toggleBookmark}
+                        onReport={(id) => {
+                          if (!isAuthenticated) {
+                            showToast({ message: "Yêu cầu đăng nhập để sử dụng tính năng này.", type: "error" });
+                            return;
+                          }
+                          setReportModal({ isOpen: true, targetId: id });
+                        }}
                       />
                     </motion.div>
                   ))}
@@ -511,6 +521,13 @@ export function Jobs() {
           onSelectJob={(id) => navigate(`/jobs/${id}`)}
         />
       </div>
+
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={() => setReportModal({ isOpen: false, targetId: null })}
+        targetType="JOB"
+        targetId={reportModal.targetId}
+      />
     </div>
   );
 }

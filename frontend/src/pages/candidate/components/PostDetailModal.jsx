@@ -7,7 +7,7 @@ import ReactionButton from "./ReactionButton";
 import CommentList from "./CommentList";
 import CommentInput from "./CommentInput";
 
-export default function PostDetailModal({ post, isOpen, onClose, onReact }) {
+export default function PostDetailModal({ post, isOpen, onClose, onReact, onReport }) {
   const queryClient = useQueryClient();
   const showToast = useUiStore((state) => state.showToast);
 
@@ -169,6 +169,16 @@ export default function PostDetailModal({ post, isOpen, onClose, onReact }) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
               <span className="font-semibold text-[15px] pl-0.5">{post.comments || 0}</span>
             </button>
+            {onReport && (
+              <button 
+                onClick={() => onReport(post.id)}
+                title="Báo cáo bài viết này"
+                className="flex items-center gap-1.5 hover:text-red-500 transition-colors ml-auto text-gray-400 dark:text-slate-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>
+                <span className="hidden sm:inline text-sm font-medium">Báo cáo</span>
+              </button>
+            )}
           </div>
 
           {/* Danh sách Comments */}
