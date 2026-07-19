@@ -1,9 +1,9 @@
 import db from '../db/knex.js';
 import { deleteCache, deleteCachePattern } from '../config/redis.js';
 import { generateCampaignReportFromGemini } from './geminiService.js';
-import { 
-  insertJob, 
-  insertJobRequirements 
+import {
+  insertJob,
+  insertJobRequirements
 } from '../models/jobModel.js';
 /**
  * Credit cost constants for HR actions
@@ -36,7 +36,7 @@ const consumeFromWallet = async (trx, wallet, amount) => {
       total_credits: lockedWallet.total_credits - amount,
       updated_at: new Date()
     });
-  
+
   return true;
 };
 
@@ -171,7 +171,9 @@ export const getJobsList = async ({
   companyId,
   search,
   page = 1,
-  limit = 10
+  limit = 10,
+  approvalStatus,
+  isExpired
 }) => {
   const query = db('jobs')
     .select(
@@ -198,25 +200,38 @@ export const getJobsList = async ({
   if (companyId) {
     query.where('jobs.company_id', companyId);
   }
+  if (isExpired === false) {
+    // Lọc ra các job có deadline is null hoặc deadline > NOW()
+    query.where(function () {
+      this.whereNull('jobs.deadline').orWhere('jobs.deadline', '>', new Date());
+    });
+  }
+
   if (search) {
-    query.where(function() {
+    query.where(function () {
       this.where('jobs.title', 'ilike', `%${search}%`)
-          .orWhere('companies.name', 'ilike', `%${search}%`);
+        .orWhere('companies.name', 'ilike', `%${search}%`);
     });
   }
 
   const offset = (page - 1) * limit;
-  
+
   // Tạo query đếm tổng số bản ghi (luôn join companies để có thể lọc theo tên công ty)
   const countQuery = db('jobs').leftJoin('companies', 'jobs.company_id', 'companies.id');
   if (status) countQuery.where('jobs.status', status);
   if (experienceLevel) countQuery.where('jobs.experience_level', experienceLevel);
   if (hrId) countQuery.where('jobs.hr_id', hrId);
   if (companyId) countQuery.where('jobs.company_id', companyId);
+  if (isExpired === false) {
+    countQuery.where(function () {
+      this.whereNull('jobs.deadline').orWhere('jobs.deadline', '>', new Date());
+    });
+  }
+
   if (search) {
-    countQuery.where(function() {
+    countQuery.where(function () {
       this.where('jobs.title', 'ilike', `%${search}%`)
-          .orWhere('companies.name', 'ilike', `%${search}%`);
+        .orWhere('companies.name', 'ilike', `%${search}%`);
     });
   }
 
@@ -285,19 +300,70 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
 
     // Nghiệp vụ: Cấm đổi Title nếu tin đã từng xuất bản (khác DRAFT)
     if (oldJob.status !== 'DRAFT' && updateData.title && updateData.title !== oldJob.title) {
-       throw new Error('Không thể thay đổi chức danh khi tin đã từng xuất bản. Vui lòng đóng tin và tạo tin mới (tốn credit).');
+      throw new Error('Không thể thay đổi chức danh khi tin đã từng xuất bản. Vui lòng đóng tin và tạo tin mới (tốn credit).');
     }
 
-    // Nghiệp vụ: Trừ Credit nếu renew (từ CLOSED hoặc DRAFT sang OPEN)
-    // Lưu ý: Từ PAUSED -> OPEN thì không mất credit.
-    const isRenewing = updateData.status === 'OPEN' && ['CLOSED', 'DRAFT'].includes(oldJob.status);
+    // Nghệp vụ Credit:
+    // - PAUSED: Ẩn tạm thời, KHAIÙNG tốn credit (chỉ cho phép nếu deadline chưa hết)
+    // - OPEN từ PAUSED: Mở lại, KHAIÙNG tốn credit (nếu deadline vẫn còn hợp lệ)
+    // - OPEN từ CLOSED/DRAFT: Renew, TốN credit bình thường
+    const newStatus = updateData.status || oldJob.status;
+    const oldStatus = oldJob.status;
+
+    // Kiểm tra khi chấp nhận Ẩn bài (PAUSED)
+    if (newStatus === 'PAUSED' && oldStatus === 'OPEN') {
+      // Kiểm tra deadline còn hợp lệ không
+      if (oldJob.deadline && new Date(oldJob.deadline) < new Date()) {
+        const err = new Error('Ẩn bài đã hết thời hạn. Vui lòng đóng và tạo tin mới.');
+        err.statusCode = 400;
+        throw err;
+      }
+      // Không tốn credit - chỉ cầp nhật status
+    }
+
+    // Logic: Khi HR mở lại tin (OPEN) từ trạng thái đã ĐÓNG (CLOSED) hoặc ẨN (PAUSED)
+    let isRenewing = false;
+    if (newStatus === 'OPEN' && ['CLOSED', 'PAUSED'].includes(oldStatus)) {
+      if (oldJob.deadline && new Date(oldJob.deadline) > new Date()) {
+        // Thời hạn vẫn còn => Cho phép mở lại miễn phí (KHÔNG tốn credit)
+      } else {
+        // Đã quá thời hạn => Bắt buộc phải Renew (Tốn credit)
+        isRenewing = true;
+      }
+    } else if (newStatus === 'OPEN' && oldStatus === 'DRAFT') {
+      // Từ DRAFT sang OPEN (Đăng tin lần đầu) => Chắc chắn tốn credit
+      isRenewing = true;
+    }
     if (isRenewing) {
-       const creditCost = updateData.enableAiScreening
-         ? CREDIT_COSTS.JOB_POST + CREDIT_COSTS.AI_SCREENING
-         : CREDIT_COSTS.JOB_POST;
-       await consumeCredit(trx, oldJob.hr_id, oldJob.company_id, creditCost, updateData.walletType || 'PERSONAL');
+      const creditCost = updateData.enableAiScreening
+        ? CREDIT_COSTS.JOB_POST + CREDIT_COSTS.AI_SCREENING
+        : CREDIT_COSTS.JOB_POST;
+
+      // Kiểm tra ví (nếu lỗi sẽ văng ra throw ngay trong hàm consumeCredit)
+      await consumeCredit(trx, oldJob.hr_id, oldJob.company_id, creditCost, updateData.walletType || 'PERSONAL');
     }
 
+    // Tính lại deadline khi renew hoặc chỉnh sửa
+    let finalDeadline = updateData.deadline || oldJob.deadline;
+    if (isRenewing || updateData.deadline) {
+      const reqDeadline = updateData.deadline ? new Date(updateData.deadline) : new Date();
+      const maxDeadline = new Date();
+      maxDeadline.setDate(maxDeadline.getDate() + 15); // Tối đa 15 ngày
+
+      // Nếu user không truyền deadline mà chỉ Renew => tự động cộng 15 ngày
+      if (isRenewing && !updateData.deadline) {
+        finalDeadline = maxDeadline;
+      } else {
+        // Nếu user truyền deadline => Giới hạn max là 15 ngày kể từ hôm nay
+        finalDeadline = reqDeadline > maxDeadline ? maxDeadline : reqDeadline;
+      }
+    }
+
+    // Logic: Nếu tin bị Admin từ chối (REJECTED), khi HR sửa lại tin -> Tự động chuyển về PENDING chờ duyệt lại
+    let finalApprovalStatus = oldJob.approval_status;
+    if (oldJob.approval_status === 'REJECTED') {
+      finalApprovalStatus = 'PENDING';
+    }
     // 1. Cập nhật bảng 'jobs'
     const [updatedJob] = await trx('jobs')
       .where({ id })
@@ -350,7 +416,7 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
  */
 export const deleteJobById = async (id) => {
   const deletedCount = await db('jobs').where({ id }).delete();
-  
+
   if (deletedCount > 0) {
     // Clear cache list and detail of this job
     await deleteCachePattern('jobs:list:*');
@@ -386,7 +452,7 @@ export const getJobApplicationsService = async ({ hrId, jobId, status }) => {
   if (jobId) {
     query.where('applications.job_id', jobId);
   }
-  
+
   if (status) {
     query.where('applications.status', status);
   }
@@ -453,7 +519,7 @@ export const updateJobApplicationService = async (applicationId, updateData) => 
 export const getApplicationDetailById = async (applicationId) => {
   return await db('applications')
     .select(
-      'applications.*', 
+      'applications.*',
       'jobs.hr_id as job_hr_id',
       'jobs.title as job_title',
       'users.full_name as candidate_name',
@@ -600,11 +666,11 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
 
   if (job.campaign_report_cache && cacheDate >= lastChangedAt) {
     console.log(`[Cache Hit] Returning cached Campaign Report for Job ${jobId}`);
-    
+
     // Nếu data bị lưu nhầm thành string do lỗi trước đó, parse lại
     let parsedCache = job.campaign_report_cache;
     if (typeof parsedCache === 'string') {
-      try { parsedCache = JSON.parse(parsedCache); } catch(e) {}
+      try { parsedCache = JSON.parse(parsedCache); } catch (e) { }
     }
 
     return {

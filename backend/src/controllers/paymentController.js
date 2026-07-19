@@ -8,7 +8,7 @@ export const getPackages = async (req, res) => {
   try {
     const role = req.user?.role?.toUpperCase() === 'HR' ? 'HR' : 'CANDIDATE';
     const db = (await import('../db/knex.js')).default;
-    
+
     const packages = await db('packages')
       .where({ is_active: true, target_role: role })
       .orderBy('sort_order', 'asc');
@@ -34,9 +34,9 @@ export const createPaymentUrl = async (req, res) => {
     const { packageId, couponCode } = req.body;
     const userId = req.user.id; // Lấy từ authMiddleware (authenticateToken)
     const role = req.user?.role?.toUpperCase() === 'HR' ? 'HR' : 'CANDIDATE';
-    
+
     // Thu thập địa chỉ IP của client
-    const ipAddr = 
+    const ipAddr =
       req.headers['x-forwarded-for'] ||
       req.connection.remoteAddress ||
       req.socket.remoteAddress ||
@@ -122,7 +122,7 @@ export const validateCoupon = async (req, res) => {
     // Calculate discount
     const packagePrice = parseFloat(targetPackage.price);
     let discountAmount = (packagePrice * coupon.discount_percent) / 100;
-    
+
     if (coupon.max_discount_amount && discountAmount > coupon.max_discount_amount) {
       discountAmount = coupon.max_discount_amount;
     }
@@ -388,14 +388,14 @@ export const getCouponsForAdmin = async (req, res) => {
 export const createCoupon = async (req, res) => {
   try {
     const { code, discount_percent, max_discount_amount, usage_limit, applicable_to, expires_at } = req.body;
-    
+
     if (!code || !discount_percent) {
       return res.status(400).json({ success: false, message: 'Vui lòng nhập mã và phần trăm giảm giá' });
     }
 
     const formattedCode = code.trim().toUpperCase();
     const discount = parseInt(discount_percent);
-    
+
     // Validate percent
     if (isNaN(discount) || discount < 1 || discount > 100) {
       return res.status(400).json({ success: false, message: 'Phần trăm giảm giá phải từ 1 đến 100' });
@@ -405,7 +405,7 @@ export const createCoupon = async (req, res) => {
     const existing = await db('coupons')
       .where({ code: formattedCode, is_deleted: false })
       .first();
-      
+
     if (existing) {
       return res.status(400).json({ success: false, message: 'Mã giảm giá này đã tồn tại trên hệ thống' });
     }
@@ -440,7 +440,7 @@ export const createCoupon = async (req, res) => {
  */
 export const toggleCouponStatus = async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const updatedData = await db.transaction(async (trx) => {
       const coupon = await trx('coupons').where({ id, is_deleted: false }).forUpdate().first();
@@ -475,15 +475,15 @@ export const toggleCouponStatus = async (req, res) => {
  */
 export const deleteCoupon = async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const coupon = await db('coupons').where({ id, is_deleted: false }).first();
     if (!coupon) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mã giảm giá' });
     }
 
-    await db('coupons').where({ id }).update({ 
-      is_deleted: true, 
+    await db('coupons').where({ id }).update({
+      is_deleted: true,
       is_active: false,
       updated_at: new Date()
     });
@@ -501,10 +501,10 @@ export const deleteCoupon = async (req, res) => {
 export const handleVnpayIpn = async (req, res) => {
   try {
     const vnpParams = { ...req.query };
-    
+
     // Xử lý IPN và nhận về kết quả chuẩn VNPAY (RspCode, Message)
     const result = await paymentService.processVnpayIpn(vnpParams);
-    
+
     return res.status(200).json(result);
   } catch (error) {
     console.error('Lỗi khi xử lý VNPAY IPN Controller:', error);
