@@ -15,6 +15,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useUiStore } from "../../store/useUiStore";
 import { jobApi } from "../../api/jobApi";
 import { JobCard } from "./components/JobCard";
+import { JobCardSkeleton } from "./components/JobCardSkeleton";
 import { getRelativeTimeString } from "../../utils/dateUtils";
 
 const CITY_OPTIONS = [
@@ -164,6 +165,8 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
     remote: job.vacancy_count ? `${job.vacancy_count} chỉ tiêu` : "1 chỉ tiêu",
     experience: job.experience_level || "Không yêu cầu",
     is_vip: job.company_is_vip,
+    company_vip_theme_color: job.company_vip_theme_color,
+    company_vip_border_style: job.company_vip_border_style,
     tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
     aiMatch: job.aiMatch || (82 + (job.id % 14)), // Simulated Match
     posted: getRelativeTimeString(job.created_at),
@@ -304,9 +307,9 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
               </div>
 
               {jobsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {[1, 2, 3, 4].map(n => (
-                    <div key={n} className="h-32 bg-gray-100 dark:bg-slate-800/40 rounded-2xl animate-pulse" />
+                    <JobCardSkeleton key={n} />
                   ))}
                 </div>
               ) : displayJobs.length === 0 ? (
