@@ -173,21 +173,21 @@ export async function seed(knex) {
     { user_id: 7, ...hrProfileData }
   ]);
 
-  // Insert HR Wallets cho các công ty (Unified Credits)
+  // Insert HR Wallets: ví công ty (user_id = null) và ví cá nhân của HR (company_id = null)
   await knex('hr_wallets').insert([
-    { id: 1, company_id: 1, user_id: 3, total_credits: 500, created_at: new Date(), updated_at: new Date() },
-    { id: 2, company_id: 2, user_id: 4, total_credits: 500, created_at: new Date(), updated_at: new Date() },
-    { id: 3, company_id: 3, user_id: 5, total_credits: 500, created_at: new Date(), updated_at: new Date() },
-    { id: 4, company_id: 4, user_id: 6, total_credits: 500, created_at: new Date(), updated_at: new Date() },
-    { id: 5, company_id: 5, user_id: 7, total_credits: 500, created_at: new Date(), updated_at: new Date() }
+    { id: 1, company_id: 1, user_id: null, total_credits: 500, created_at: new Date(), updated_at: new Date() },
+    { id: 2, company_id: 2, user_id: null, total_credits: 500, created_at: new Date(), updated_at: new Date() },
+    { id: 3, company_id: 3, user_id: null, total_credits: 500, created_at: new Date(), updated_at: new Date() },
+    { id: 4, company_id: 4, user_id: null, total_credits: 500, created_at: new Date(), updated_at: new Date() },
+    { id: 5, company_id: 5, user_id: null, total_credits: 500, created_at: new Date(), updated_at: new Date() },
+    { id: 6, company_id: null, user_id: 3, total_credits: 50, created_at: new Date(), updated_at: new Date() },
+    { id: 7, company_id: null, user_id: 4, total_credits: 50, created_at: new Date(), updated_at: new Date() },
+    { id: 8, company_id: null, user_id: 5, total_credits: 50, created_at: new Date(), updated_at: new Date() },
+    { id: 9, company_id: null, user_id: 6, total_credits: 50, created_at: new Date(), updated_at: new Date() },
+    { id: 10, company_id: null, user_id: 7, total_credits: 50, created_at: new Date(), updated_at: new Date() }
   ]);
 
-  // Insert Credit Batches (Unified - không phân biệt type)
-  const creditBatchesData = [];
-  for (let i = 1; i <= 5; i++) {
-    creditBatchesData.push({ wallet_id: i, package_id: null, amount_granted: 500, amount_remaining: 500, expires_at: '2099-12-31 23:59:59', created_at: new Date(), updated_at: new Date() });
-  }
-  await knex('credit_batches').insert(creditBatchesData);
+
 
   // Cấp gói VIP thử nghiệm vĩnh viễn cho Ứng viên (user_id = 2)
   await knex('user_subscriptions').insert([

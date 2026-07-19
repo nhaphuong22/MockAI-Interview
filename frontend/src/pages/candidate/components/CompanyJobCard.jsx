@@ -21,6 +21,16 @@ export function CompanyJobCard({
 
   // Determine if any job in this card is selected
   const isCardActive = jobs.some((j) => j.id === selectedJobId);
+  const isVip = jobs.some((j) => j.company_is_vip === true || j.companyIsVip === true || j.is_vip === true);
+
+  const vipJob = jobs.find((j) => j.company_vip_theme_color || j.companyVipThemeColor);
+  const vipThemeColor = isVip && vipJob 
+    ? (vipJob.company_vip_theme_color || vipJob.companyVipThemeColor) 
+    : (isVip ? "#0ea5e9" : null);
+
+  const vipBorderStyle = isVip && vipJob
+    ? (vipJob.company_vip_border_style || vipJob.companyVipBorderStyle)
+    : (isVip ? "gradient-glow" : null);
 
   const visibleJobs = expanded ? jobs : jobs.slice(0, PREVIEW_COUNT);
   const hiddenCount = jobs.length - PREVIEW_COUNT;
@@ -35,8 +45,15 @@ export function CompanyJobCard({
       className={`relative rounded-xl border transition-all duration-150 overflow-hidden ${
         isCardActive
           ? "border-sky-200 shadow-sm shadow-sky-100/80 ring-1 ring-sky-100 dark:border-[#0ea5e9]/30 dark:ring-[#0ea5e9]/10 dark:shadow-none"
-          : "border-transparent shadow-sm shadow-slate-200/60 hover:border-slate-200 dark:hover:border-white/10"
+          : isVip
+            ? ""
+            : "border-transparent shadow-sm shadow-slate-200/60 hover:border-slate-200 dark:hover:border-white/10"
       } bg-white dark:bg-slate-900/80`}
+      style={{
+        borderColor: isVip && !isCardActive ? vipThemeColor : undefined,
+        boxShadow: isVip && !isCardActive ? `0 0 15px ${vipThemeColor}20` : undefined,
+        background: isVip && !isCardActive && vipBorderStyle === 'gradient-glow' ? `linear-gradient(to bottom, ${vipThemeColor}10, transparent)` : undefined
+      }}
     >
       {isCardActive && (
         <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-[#0ea5e9]" />
@@ -44,14 +61,39 @@ export function CompanyJobCard({
       {/* ── Company Header ── */}
       <div className="flex items-center gap-3.5 px-5 pt-5 pb-3.5 border-b border-slate-100 dark:border-white/5">
         {/* Logo */}
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center text-white font-extrabold text-lg shrink-0 shadow-sm shadow-sky-100 dark:shadow-none">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-extrabold text-lg shrink-0 shadow-sm overflow-hidden ${
+          !isVip ? 'bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] shadow-sky-100 dark:shadow-none' : ''
+        }`}
+        style={{
+          background: isVip ? (vipBorderStyle === 'gradient-glow' ? `linear-gradient(to bottom right, ${vipThemeColor}, ${vipThemeColor}cc)` : vipThemeColor) : undefined,
+          boxShadow: isVip && vipBorderStyle === 'gradient-glow' ? `0 0 15px ${vipThemeColor}50` : undefined,
+          border: isVip && vipBorderStyle !== 'gradient-glow' ? `2px solid ${vipThemeColor}` : undefined
+        }}>
           {companyInitial}
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-[14px] text-gray-900 dark:text-white leading-snug truncate">
-            {companyName}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 
+              className={`font-bold text-[14px] leading-snug truncate ${!isVip ? 'text-gray-900 dark:text-white' : ''}`}
+              style={{
+                color: isVip ? vipThemeColor : undefined
+              }}
+            >
+              {companyName}
+            </h3>
+            {isVip && (
+              <span 
+                className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm"
+                style={{
+                  background: vipThemeColor,
+                  boxShadow: `0 2px 10px ${vipThemeColor}40`
+                }}
+              >
+                VIP
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <MapPin className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500 shrink-0" />
             <span className="text-xs text-gray-400 dark:text-slate-500 truncate">{companyLocation}</span>

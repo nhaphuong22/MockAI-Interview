@@ -243,13 +243,16 @@ export const changePasswordController = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl } = req.body;
+    const { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl, vipThemeColor, vipBorderStyle, bannerUrl, images } = req.body;
 
-    const result = await updateUserProfile(userId, { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl });
+    const result = await updateUserProfile(userId, { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, companyName, companyLogo, companyWebsite, companyDescription, companySize, companyIndustry, companyCity, companyAddress, contactEmail, contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl, vipThemeColor, vipBorderStyle, bannerUrl, images });
     return sendResponse(res, 200, result);
   } catch (error) {
     if (error.message === 'User not found') {
       return sendError(res, 404, 'User not found');
+    }
+    if (error.message.includes('không hợp lệ')) {
+      return sendError(res, 400, error.message);
     }
     console.error('Update profile controller error:', error);
     return sendError(res, 500, 'Internal server error');
@@ -334,7 +337,11 @@ export const uploadAvatarController = async (req, res) => {
     });
 
     const avatarUrl = uploadResult.secure_url;
-    await updateUserProfile(req.user.id, { avatarUrl });
+    
+    if (req.query.skipUpdate !== 'true') {
+      await updateUserProfile(req.user.id, { avatarUrl });
+    }
+
     return sendResponse(res, 200, { avatarUrl });
   } catch (error) {
     console.error('Upload avatar controller error:', error);
@@ -364,7 +371,11 @@ export const uploadCoverController = async (req, res) => {
     });
 
     const coverUrl = uploadResult.secure_url;
-    await updateUserProfile(req.user.id, { coverUrl });
+
+    if (req.query.skipUpdate !== 'true') {
+      await updateUserProfile(req.user.id, { coverUrl });
+    }
+
     return sendResponse(res, 200, { coverUrl });
   } catch (error) {
     console.error('Upload cover controller error:', error);
@@ -377,6 +388,50 @@ export const uploadCoverController = async (req, res) => {
         console.error('Failed to delete temporary local cover file:', unlinkError);
       }
     }
+  }
+};
+
+// ─── Upload Company Images (Gallery) ───────────────────────────────────────────
+
+export const uploadCompanyImagesController = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return sendError(res, 400, 'Vui lòng chọn ít nhất một ảnh để tải lên');
+    }
+
+    const uploadPromises = req.files.map((file) => {
+      if (!file.mimetype.startsWith('image/')) {
+        return Promise.reject(new Error(`Tệp ${file.originalname} không phải là hình ảnh hợp lệ.`));
+      }
+
+      return cloudinary.uploader.upload(file.path, {
+        folder: 'company_images',
+      }).then(async (result) => {
+        try { await fs.promises.unlink(file.path); } catch (e) {}
+        return result.secure_url;
+      }).catch(async (error) => {
+        try { await fs.promises.unlink(file.path); } catch (e) {}
+        throw error;
+      });
+    });
+
+    const imageUrls = await Promise.all(uploadPromises);
+
+    // Lưu ý: Tính năng update DB đã được tách biệt ở API auth/profile.
+    // Ở đây chỉ trả về mảng URLs cho Frontend xử lý.
+    return sendResponse(res, 200, { images: imageUrls });
+  } catch (error) {
+    console.error('Upload company images error:', error);
+    if (req.files) {
+      req.files.forEach(file => {
+        fs.promises.unlink(file.path).catch(() => {});
+      });
+    }
+    
+    if (error.message.includes('không phải là hình ảnh')) {
+      return sendError(res, 400, error.message);
+    }
+    return sendError(res, 500, 'Lỗi hệ thống khi tải ảnh công ty lên');
   }
 };
 

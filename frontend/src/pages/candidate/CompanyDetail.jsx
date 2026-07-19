@@ -14,7 +14,9 @@ import {
   DollarSign,
   Bell,
   BellOff,
-  Heart
+  Heart,
+  Crown,
+  Sparkles
 } from "lucide-react";
 import MDEditor from "@uiw/react-md-editor";
 import { companyApi } from "../../api/companyApi";
@@ -121,11 +123,25 @@ export function CompanyDetail() {
   const isFollowing = company.is_following || false;
   const followerCount = company.follower_count || 0;
 
+  const isVip = company.is_vip === true;
+  const vipThemeColor = isVip ? (company.vip_theme_color || "#0ea5e9") : "#0ea5e9";
+  const vipBorderStyle = isVip ? (company.vip_border_style || "gradient-glow") : null;
+  const bannerUrl = company.banner_url || (isVip ? company.vip_banner_url : null);
+
   return (
     <div className="min-h-screen dark:bg-[#0a0f1c] bg-gray-50 pb-16">
       {/* Banner Cover */}
-      <div className="w-full h-48 bg-gradient-to-r from-[#0ea5e9]/20 to-[#38bdf8]/10 dark:from-[#0ea5e9]/10 dark:to-[#38bdf8]/5 relative border-b dark:border-white/5 border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-end relative pb-6">
+      <div 
+        className="w-full h-48 relative border-b dark:border-white/5 border-gray-200 bg-cover bg-center"
+        style={{
+          backgroundImage: bannerUrl ? `url(${bannerUrl})` : undefined,
+          backgroundColor: bannerUrl ? undefined : `${vipThemeColor}15`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {bannerUrl && <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[0.5px]"></div>}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-end relative pb-6 z-10">
           <Link to="/jobs" className="absolute top-6 left-4 sm:left-6 lg:left-8 flex items-center gap-2 text-gray-600 dark:text-slate-400 hover:text-[#0ea5e9] dark:hover:text-[#0ea5e9] transition-colors bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm">
             <ArrowLeft className="w-4 h-4" />
             <span>Quay lại Việc làm</span>
@@ -140,24 +156,55 @@ export function CompanyDetail() {
           <div className="lg:col-span-1 space-y-6">
             {/* Thẻ thông tin nhanh */}
             <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 flex flex-col items-center text-center">
-              {isImageUrl(company.logo_url) ? (
-                <img 
-                  src={company.logo_url} 
-                  alt={company.name} 
-                  className="w-24 h-24 rounded-2xl border-4 border-white dark:border-slate-800 object-cover shadow-md mb-4 bg-white"
-                />
-              ) : (
-                <div className="w-24 h-24 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-5xl font-bold text-white shadow-md mb-4">
-                  {companyLogo}
-                </div>
-              )}
+              <div className="relative mb-4">
+                {isImageUrl(company.logo_url) ? (
+                  <img 
+                    src={company.logo_url} 
+                    alt={company.name} 
+                    className="w-24 h-24 rounded-2xl border-4 object-cover shadow-md bg-white relative z-10 animate-fade-in"
+                    style={{
+                      borderColor: isVip ? vipThemeColor : '#ffffff',
+                      boxShadow: (isVip && vipBorderStyle === 'gradient-glow') ? `0 0 15px ${vipThemeColor}80` : undefined
+                    }}
+                  />
+                ) : (
+                  <div 
+                    className="w-24 h-24 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-2xl flex items-center justify-center text-5xl font-bold text-white shadow-md relative z-10"
+                    style={{
+                      boxShadow: (isVip && vipBorderStyle === 'gradient-glow') ? `0 0 15px ${vipThemeColor}80` : undefined
+                    }}
+                  >
+                    {companyLogo}
+                  </div>
+                )}
+                
+                {/* VIP badge crown rendering */}
+                {isVip && vipBorderStyle === 'crown-badge' && (
+                  <div className="absolute -top-2.5 -right-2.5 bg-amber-500 text-white p-1 rounded-full border border-white dark:border-slate-900 shadow-md z-20 flex items-center justify-center">
+                    <Crown size={14} className="fill-white text-white" />
+                  </div>
+                )}
+
+                {/* VIP badge sparkles rendering */}
+                {isVip && vipBorderStyle === 'sparkle-stars' && (
+                  <div className="absolute -top-2 -right-2 bg-cyan-500 text-white p-1 rounded-full border border-white dark:border-slate-900 shadow-md z-20 flex items-center justify-center">
+                    <Sparkles size={14} className="text-white" />
+                  </div>
+                )}
+              </div>
 
               <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
                 {company.name}
               </h1>
 
               {company.industry && (
-                <span className="inline-block px-3 py-1 bg-sky-50 dark:bg-sky-950/40 text-[#0ea5e9] dark:text-[#38bdf8] text-xs font-semibold rounded-full mb-3">
+                <span 
+                  className="inline-block px-3 py-1 text-xs font-semibold rounded-full mb-3"
+                  style={{
+                    backgroundColor: `${vipThemeColor}1a`,
+                    color: vipThemeColor
+                  }}
+                >
                   {company.industry}
                 </span>
               )}
@@ -173,11 +220,16 @@ export function CompanyDetail() {
                 <button
                   onClick={() => followMutation.mutate()}
                   disabled={followMutation.isPending}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-sm transition-all duration-200 mb-4 ${
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-sm transition-all duration-200 mb-4 border ${
                     isFollowing
-                      ? "bg-sky-50 dark:bg-sky-950/30 text-[#0ea5e9] border-2 border-[#0ea5e9]/30 hover:bg-red-50 hover:text-red-500 hover:border-red-200 dark:hover:bg-red-950/20 dark:hover:border-red-800"
-                      : "bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white shadow-md shadow-sky-100 dark:shadow-sky-950 hover:shadow-lg hover:opacity-90"
+                      ? "bg-sky-50 dark:bg-[#0a0f1c] hover:bg-rose-50 hover:text-rose-500 hover:border-red-200 dark:hover:bg-red-950/20"
+                      : "text-white hover:opacity-90 shadow-md"
                   }`}
+                  style={{
+                    backgroundColor: !isFollowing ? vipThemeColor : undefined,
+                    borderColor: isFollowing ? `${vipThemeColor}30` : undefined,
+                    color: isFollowing ? vipThemeColor : undefined
+                  }}
                   id={`follow-btn-company-${id}`}
                 >
                   {followMutation.isPending ? (
@@ -282,7 +334,7 @@ export function CompanyDetail() {
             {/* Giới thiệu công ty */}
             <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-white/5">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Building className="w-5 h-5 text-[#0ea5e9]" />
+                <Building className="w-5 h-5" style={{ color: vipThemeColor }} />
                 <span>Giới thiệu công ty</span>
               </h2>
 
@@ -297,6 +349,26 @@ export function CompanyDetail() {
                 <p className="text-gray-500 dark:text-slate-400 italic text-sm">Chưa có thông tin giới thiệu chi tiết.</p>
               )}
             </div>
+
+            {/* Gallery ảnh công ty */}
+            {company.images && (() => {
+              const imgs = typeof company.images === 'string' ? JSON.parse(company.images) : company.images;
+              return imgs && imgs.length > 0 ? (
+                <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-white/5">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" style={{ color: vipThemeColor }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span>Hình ảnh công ty</span>
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {imgs.map((imgUrl, idx) => (
+                      <div key={idx} className="aspect-video rounded-xl overflow-hidden border border-gray-100 dark:border-white/10 hover:scale-[1.02] transition-transform cursor-pointer">
+                        <img src={imgUrl} alt={`Ảnh công ty ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
 
             {/* Việc làm đang tuyển dụng */}
             <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-white/5">

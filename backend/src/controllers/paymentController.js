@@ -31,8 +31,9 @@ export const getPackages = async (req, res) => {
  */
 export const createPaymentUrl = async (req, res) => {
   try {
-    const { packageId } = req.body;
+    const { packageId, couponCode } = req.body;
     const userId = req.user.id; // Lấy từ authMiddleware (authenticateToken)
+    const role = req.user?.role?.toUpperCase() === 'HR' ? 'HR' : 'CANDIDATE';
     
     // Thu thập địa chỉ IP của client
     const ipAddr = 
@@ -48,15 +49,25 @@ export const createPaymentUrl = async (req, res) => {
       });
     }
 
-    const paymentUrl = await paymentService.createVnpayUrl({
+    const result = await paymentService.createVnpayUrl({
       userId,
       packageId: parseInt(packageId),
-      ipAddr
+      couponCode: couponCode ? couponCode.trim().toUpperCase() : null,
+      ipAddr,
+      role
     });
+
+    if (result.isFreeActivation) {
+      return res.status(200).json({
+        success: true,
+        isFreeActivation: true,
+        message: 'Gói cước đã được kích hoạt thành công.'
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      paymentUrl
+      paymentUrl: result.paymentUrl
     });
   } catch (error) {
     console.error('Lỗi khi khởi tạo URL thanh toán VNPAY:', error);
@@ -64,6 +75,72 @@ export const createPaymentUrl = async (req, res) => {
       success: false,
       message: error.message || 'Lỗi hệ thống khi khởi tạo thanh toán.'
     });
+  }
+};
+
+/**
+ * Endpoint kiểm tra mã giảm giá
+ */
+export const validateCoupon = async (req, res) => {
+  try {
+    const { code, packageId } = req.body;
+    const role = req.user?.role?.toUpperCase() === 'HR' ? 'HR' : 'CANDIDATE';
+
+    if (!code || !packageId) {
+      return res.status(400).json({ success: false, message: 'Thiếu mã giảm giá hoặc ID gói cước.' });
+    }
+
+    const db = (await import('../db/knex.js')).default;
+    const targetPackage = await db('packages').where({ id: parseInt(packageId), is_active: true, target_role: role }).first();
+    if (!targetPackage) {
+      return res.status(404).json({ success: false, message: 'Gói cước không tồn tại hoặc đã bị ẩn.' });
+    }
+
+    const coupon = await db('coupons')
+      .where({ code: code.trim().toUpperCase(), is_active: true, is_deleted: false })
+      .first();
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: 'Mã giảm giá không hợp lệ hoặc đã hết hạn.' });
+    }
+
+    // Role check
+    if (coupon.applicable_to !== 'ALL' && coupon.applicable_to !== role) {
+      return res.status(400).json({ success: false, message: 'Mã giảm giá không áp dụng cho loại tài khoản của bạn.' });
+    }
+
+    // Expiry check
+    if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+      return res.status(400).json({ success: false, message: 'Mã giảm giá đã hết hạn.' });
+    }
+
+    // Usage limit check
+    if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+      return res.status(400).json({ success: false, message: 'Mã giảm giá đã đạt giới hạn sử dụng.' });
+    }
+
+    // Calculate discount
+    const packagePrice = parseFloat(targetPackage.price);
+    let discountAmount = (packagePrice * coupon.discount_percent) / 100;
+    
+    if (coupon.max_discount_amount && discountAmount > coupon.max_discount_amount) {
+      discountAmount = coupon.max_discount_amount;
+    }
+
+    const finalPrice = Math.max(0, packagePrice - discountAmount);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        code: coupon.code,
+        discount_percent: coupon.discount_percent,
+        discount_amount: discountAmount,
+        final_price: finalPrice
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi khi validate coupon:', error);
+    return res.status(500).json({ success: false, message: 'Lỗi hệ thống khi kiểm tra mã giảm giá.' });
   }
 };
 
@@ -163,6 +240,8 @@ export const getTransactionsForAdmin = async (req, res) => {
     // Build base query
     let query = db('transactions as t')
       .join('users as u', 'u.id', 't.user_id')
+      .leftJoin('user_roles as ur', 'u.id', 'ur.user_id')
+      .leftJoin('roles as r', 'ur.role_id', 'r.id')
       .select([
         't.id',
         't.transaction_code',
@@ -176,13 +255,13 @@ export const getTransactionsForAdmin = async (req, res) => {
         'u.id as user_id',
         'u.full_name as user_name',
         'u.email as user_email',
-        'u.role as user_type'
+        'r.name as user_type'
       ])
       .orderBy('t.created_at', 'desc');
 
     // Apply filters
     if (user_type) {
-      query = query.whereRaw('UPPER(u.role) = ?', [user_type.toUpperCase()]);
+      query = query.whereRaw('UPPER(r.name) = ?', [user_type.toUpperCase()]);
     }
     if (status) {
       query = query.whereRaw('UPPER(t.status) = ?', [status.toUpperCase()]);

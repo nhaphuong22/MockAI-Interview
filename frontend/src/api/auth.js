@@ -25,11 +25,13 @@ export const registerApi = async (data) => {
  * Upload avatar image
  * @param {File} file
  */
-export const uploadAvatarApi = async (file) => {
+export const uploadAvatarApi = async (file, skipUpdate = false) => {
   const formData = new FormData();
   formData.append("avatar", file);
 
-  return axiosClient.post("/auth/upload-avatar", formData, {
+  const url = skipUpdate ? "/auth/upload-avatar?skipUpdate=true" : "/auth/upload-avatar";
+
+  return axiosClient.post(url, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -40,11 +42,33 @@ export const uploadAvatarApi = async (file) => {
  * Upload cover image
  * @param {File} file
  */
-export const uploadCoverApi = async (file) => {
+export const uploadCoverApi = async (file, skipUpdate = false) => {
   const formData = new FormData();
   formData.append("cover", file);
 
-  return axiosClient.post("/auth/upload-cover", formData, {
+  const url = skipUpdate ? "/auth/upload-cover?skipUpdate=true" : "/auth/upload-cover";
+
+  return axiosClient.post(url, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+/**
+ * Upload multiple company images (Gallery)
+ * @param {File[]} files
+ * @param {boolean} skipUpdate
+ */
+export const uploadCompanyImagesApi = async (files, skipUpdate = false) => {
+  const formData = new FormData();
+  files.forEach(file => {
+    formData.append("images", file);
+  });
+
+  const url = skipUpdate ? "/auth/company-images?skipUpdate=true" : "/auth/company-images";
+
+  return axiosClient.post(url, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },

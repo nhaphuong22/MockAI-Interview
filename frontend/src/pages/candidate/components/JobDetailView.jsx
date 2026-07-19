@@ -49,13 +49,29 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
           {job.company_id ? (
             <Link
               to={`/companies/${job.company_id}`}
-              className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-sky-100 dark:shadow-sky-900/20 shrink-0 hover:opacity-90 transition-opacity"
+              className={`w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center text-white text-lg font-bold shrink-0 hover:opacity-90 transition-opacity overflow-hidden ${
+                job.is_vip 
+                  ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-white dark:ring-offset-[#0a0f1c] shadow-[0_0_15px_rgba(34,211,238,0.5)] dark:shadow-[0_0_15px_rgba(34,211,238,0.3)]' 
+                  : 'shadow-md shadow-sky-100 dark:shadow-sky-900/20'
+              }`}
             >
-              {companyInitial}
+              {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
+                <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+              ) : (
+                companyInitial
+              )}
             </Link>
           ) : (
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-sky-100 dark:shadow-sky-900/20 shrink-0">
-              {companyInitial}
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] flex items-center justify-center text-white text-lg font-bold shrink-0 overflow-hidden ${
+                job.is_vip 
+                  ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-white dark:ring-offset-[#0a0f1c] shadow-[0_0_15px_rgba(34,211,238,0.5)] dark:shadow-[0_0_15px_rgba(34,211,238,0.3)]' 
+                  : 'shadow-md shadow-sky-100 dark:shadow-sky-900/20'
+              }`}>
+              {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
+                <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+              ) : (
+                companyInitial
+              )}
             </div>
           )}
 
@@ -65,14 +81,38 @@ export function JobDetailView({ job, onToggleBookmark, isBookmarked }) {
               {job.title}
             </h2>
             {job.company_id ? (
-              <Link
-                to={`/companies/${job.company_id}`}
-                className="text-[#0ea5e9] font-semibold text-sm mb-1.5 hover:underline block"
-              >
-                {job.company}
-              </Link>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Link
+                  to={`/companies/${job.company_id}`}
+                  className={`font-semibold text-sm hover:underline block ${
+                    job.is_vip 
+                      ? 'bg-gradient-to-r from-[#0ea5e9] to-cyan-500 bg-clip-text text-transparent drop-shadow-sm' 
+                      : 'text-[#0ea5e9]'
+                  }`}
+                >
+                  {job.company}
+                </Link>
+                {job.is_vip && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-sm shadow-cyan-500/20">
+                    VIP
+                  </span>
+                )}
+              </div>
             ) : (
-              <p className="text-[#0ea5e9] font-semibold text-sm mb-1.5">{job.company}</p>
+              <div className="flex items-center gap-2 mb-1.5">
+                <p className={`font-semibold text-sm ${
+                  job.is_vip 
+                    ? 'bg-gradient-to-r from-[#0ea5e9] to-cyan-500 bg-clip-text text-transparent drop-shadow-sm' 
+                    : 'text-[#0ea5e9]'
+                }`}>
+                  {job.company}
+                </p>
+                {job.is_vip && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-sm shadow-cyan-500/20">
+                    VIP
+                  </span>
+                )}
+              </div>
             )}
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
               {job.posted && (

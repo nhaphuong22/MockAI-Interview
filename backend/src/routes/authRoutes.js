@@ -12,6 +12,7 @@ import {
   changePasswordController,
   uploadAvatarController,
   uploadCoverController,
+  uploadCompanyImagesController,
   getProfile,
   requestCompanyOtpController,
   verifyCompanyOtpController,
@@ -323,6 +324,32 @@ router.post('/company/resend-otp', authenticateToken, resendCompanyOtpController
  */
 router.post('/upload-avatar', authenticateToken, uploadAvatar.single('avatar'), uploadAvatarController);
 router.post('/upload-cover', authenticateToken, uploadAvatar.single('cover'), uploadCoverController);
+
+/**
+ * @swagger
+ * /api/auth/company-images:
+ *   post:
+ *     summary: Tải lên danh sách hình ảnh giới thiệu công ty (Tối đa 5 ảnh)
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách URL ảnh đã tải lên
+ */
+router.post('/company-images', authenticateToken, uploadAvatar.array('images', 5), uploadCompanyImagesController);
 
 // ─── Company Invitation Public Flow (Cách A) ───────────────────────────────────
 import { verifyInvitationToken, acceptCompanyInvitation } from '../controllers/companyController.js';

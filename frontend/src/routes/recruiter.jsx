@@ -2,6 +2,8 @@ import { Navigate } from "react-router-dom";
 import { HRDashboard } from "../pages/recruiter/HRDashboard";
 import { PostJob } from "../pages/recruiter/PostJob";
 import { EditJob } from "../pages/recruiter/EditJob";
+import { Packages } from "../pages/shared/Packages";
+import { Checkout } from "../pages/shared/Checkout";
 import { ManageJobs } from "../pages/recruiter/ManageJobs";
 import { ManageApplications } from "../pages/recruiter/ManageApplications";
 import { ShortlistBoard } from "../pages/recruiter/ShortlistBoard";
@@ -28,6 +30,14 @@ export const recruiterRoutes = [
   { 
     path: "edit-job/:id", 
     element: <ProtectedRoute requiredRole="hr"><EditJob /></ProtectedRoute>
+  },
+  { 
+    path: "packages", 
+    element: <ProtectedRoute requiredRole="hr"><Packages /></ProtectedRoute>
+  },
+  { 
+    path: "checkout/:id", 
+    element: <ProtectedRoute requiredRole="hr"><Checkout /></ProtectedRoute>
   },
   { 
     path: "manage-jobs", 

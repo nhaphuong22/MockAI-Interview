@@ -163,6 +163,7 @@ function RenderLandingPage({ theme, provinces, popularTags, isAuthenticated }) {
     type: job.experience_level || "Không yêu cầu",
     remote: job.vacancy_count ? `${job.vacancy_count} chỉ tiêu` : "1 chỉ tiêu",
     experience: job.experience_level || "Không yêu cầu",
+    is_vip: job.company_is_vip,
     tags: job.requirements ? job.requirements.split(",").slice(0, 3).map(t => t.trim()) : ["Tuyển dụng"],
     aiMatch: job.aiMatch || (82 + (job.id % 14)), // Simulated Match
     posted: getRelativeTimeString(job.created_at),

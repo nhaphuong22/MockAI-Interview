@@ -14,12 +14,18 @@ export const runCleanupProcess = async () => {
       .del();
     console.log(`[Cleanup Scheduler] Đã xoá ${deletedSubs} gói thành viên hết hạn của Ứng viên.`);
 
-    // Thu hồi credit từ các batch hết hạn (Unified Credits) đã bị loại bỏ vì Credit không còn thời hạn
-    const deletedBatches = await trx('credit_batches')
-      .where('amount_remaining', '<=', 0)
-      .del();
-
-    console.log(`[Cleanup Scheduler] Đã dọn dẹp ${deletedBatches} lô tín dụng HR đã sử dụng hết.`);
+    // Quét và hạ cấp trạng thái VIP của công ty nếu hết hạn
+    const expiredVipCompanies = await trx('companies')
+      .where('vip_expired_at', '<', db.fn.now())
+      .andWhere('is_vip', true)
+      .update({
+        is_vip: false,
+        vip_expired_at: null,
+        updated_at: new Date()
+      });
+    if (expiredVipCompanies > 0) {
+      console.log(`[Cleanup Scheduler] Đã hạ cấp VIP cho ${expiredVipCompanies} doanh nghiệp hết hạn.`);
+    }
 
     await trx.commit();
     console.log('[Cleanup Scheduler] Hoàn tất quá trình dọn dẹp.');

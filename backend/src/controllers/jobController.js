@@ -37,7 +37,8 @@ export const createNewJob = async (req, res) => {
       is_salary_visible,
       vacancy_count,
       deadline,
-      detailed_requirements 
+      detailed_requirements,
+      payment_wallet_type
     } = req.body;
     const hrId = req.user.id;
 
@@ -121,7 +122,8 @@ export const createNewJob = async (req, res) => {
       isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
       vacancyCount: parsedVacancyCount,
       deadline: deadline || null,
-      detailedRequirements: detailed_requirements || []
+      detailedRequirements: detailed_requirements || [],
+      walletType: payment_wallet_type || 'PERSONAL'
     });
 
     // Trả kết quả ngay cho client
@@ -161,7 +163,9 @@ export const createNewJob = async (req, res) => {
     });
   } catch (error) {
     console.error('Lỗi trong jobController.createNewJob:', error);
-    return sendError(res, 500, 'Lỗi hệ thống khi đăng tin tuyển dụng.');
+    const statusCode = error.statusCode || 500;
+    const msg = error.message || 'Lỗi hệ thống khi đăng tin tuyển dụng.';
+    return sendError(res, statusCode, msg);
   }
 };
 
@@ -233,7 +237,8 @@ export const updateJob = async (req, res) => {
       is_salary_visible,
       vacancy_count,
       deadline,
-      detailed_requirements 
+      detailed_requirements,
+      payment_wallet_type
     } = req.body;
 
     // Kiểm tra xem job có tồn tại không
@@ -313,13 +318,16 @@ export const updateJob = async (req, res) => {
       salaryCurrency: salary_currency || 'VND',
       isSalaryVisible: is_salary_visible !== undefined ? !!is_salary_visible : true,
       vacancyCount: parsedVacancyCount,
-      deadline: deadline || null
+      deadline: deadline || null,
+      walletType: payment_wallet_type || 'PERSONAL'
     }, detailed_requirements || []);
 
     return sendResponse(res, 200, result);
   } catch (error) {
     console.error('Lỗi trong jobController.updateJob:', error);
-    return sendError(res, 500, 'Lỗi hệ thống khi cập nhật tin tuyển dụng.');
+    const statusCode = error.statusCode || 500;
+    const msg = error.message || 'Lỗi hệ thống khi cập nhật tin tuyển dụng.';
+    return sendError(res, statusCode, msg);
   }
 };
 

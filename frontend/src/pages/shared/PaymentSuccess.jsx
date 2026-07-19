@@ -2,40 +2,60 @@ import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle2, XCircle, Sparkles, ArrowRight, Share2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const [showConfetti, setShowConfetti] = useState(true);
+  const queryClient = useQueryClient();
 
-  // Đọc thông tin kết quả thanh toán từ VNPAY
   const vnpResponseCode = searchParams.get("vnp_ResponseCode");
   const vnpTxnRef = searchParams.get("vnp_TxnRef");
   const vnpAmount = searchParams.get("vnp_Amount");
+  const urlPlanName = searchParams.get("planName");
   
   // Kiểm tra xem đây có phải là redirect từ cổng VNPAY hay không
   const isFromVnpay = vnpResponseCode !== null;
   // Thành công nếu không phải từ VNPAY (truy cập mock trực tiếp) hoặc mã phản hồi VNPAY là '00'
   const isSuccess = !isFromVnpay || vnpResponseCode === "00";
 
+  useEffect(() => {
+    if (isSuccess) {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      queryClient.invalidateQueries({ queryKey: ["companyVerification"] });
+    }
+  }, [isSuccess, queryClient]);
+
   // Định dạng hiển thị các thông tin giao dịch động
   const transactionCode = vnpTxnRef || "#MAI-PRO-20260516";
   
-  const rawAmount = vnpAmount ? parseFloat(vnpAmount) / 100 : 199000;
+  const rawAmount = vnpAmount !== null ? parseFloat(vnpAmount) / 100 : 199000;
   const displayAmount = rawAmount.toLocaleString("vi-VN") + " VNĐ";
 
   // Xác định gói dịch vụ và các đặc quyền tương ứng từ số tiền
-  let planName = "Pro Member (Tháng)";
+  let planName = urlPlanName || "Pro Member (Tháng)";
   let vipDurationDays = 30;
   let isRecruiterPlan = false;
 
-  if (rawAmount >= 9000000) {
+  if (urlPlanName && (urlPlanName === "STARTER" || urlPlanName === "BUSINESS")) {
+    isRecruiterPlan = true;
+    vipDurationDays = 30;
+  } else if (rawAmount >= 9000000) {
     planName = "Enterprise Plan (Năm)";
     vipDurationDays = 365;
+    isRecruiterPlan = true;
+  } else if (rawAmount >= 2499000) {
+    planName = "BUSINESS";
+    vipDurationDays = 30;
     isRecruiterPlan = true;
   } else if (rawAmount >= 1990000) {
     planName = "Pro Member (Năm)";
     vipDurationDays = 365;
-  } else if (rawAmount < 199000) {
+  } else if (rawAmount >= 999000) {
+    planName = "STARTER";
+    vipDurationDays = 30;
+    isRecruiterPlan = true;
+  } else if (rawAmount < 199000 && rawAmount > 0) {
     // Fallback cho test số tiền nhỏ hoặc gói basic
     planName = "Basic Member";
     vipDurationDays = 30;
