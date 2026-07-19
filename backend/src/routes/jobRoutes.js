@@ -16,7 +16,7 @@ import {
   getJobCampaignReport
 
 } from '../controllers/jobController.js';
-import { authenticateToken, requireRole } from '../middlewares/authMiddleware.js';
+import { authenticateToken, requireRole, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
 import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
 
 
@@ -272,7 +272,7 @@ const router = express.Router();
 
 // Route khai báo
 router.post('/', authenticateToken, requireRole(['HR', 'ADMIN']), createNewJob);
-router.get('/', cacheMiddleware('jobs:list', 1800), getJobs);
+router.get('/', optionalAuthenticateToken, cacheMiddleware('jobs:list', 1800), getJobs);
 router.get('/applications', authenticateToken, requireRole(['HR', 'ADMIN']), cacheMiddleware('applications:hr', 1800), getJobApplications);
 router.put('/applications/:id', authenticateToken, requireRole(['HR', 'ADMIN']), updateJobApplication);
 

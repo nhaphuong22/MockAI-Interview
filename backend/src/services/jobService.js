@@ -126,6 +126,7 @@ export const createJob = async ({
       is_salary_visible: isSalaryVisible,
       vacancy_count: vacancyCount,
       deadline: finalDeadline,
+      enable_ai_screening: !!enableAiScreening,
       created_at: new Date(),
       updated_at: new Date()
     }, trx);
@@ -191,6 +192,9 @@ export const getJobsList = async ({
   if (status) {
     query.where('jobs.status', status);
   }
+  if (approvalStatus) {
+    query.where('jobs.approval_status', approvalStatus);
+  }
   if (experienceLevel) {
     query.where('jobs.experience_level', experienceLevel);
   }
@@ -219,6 +223,7 @@ export const getJobsList = async ({
   // Tạo query đếm tổng số bản ghi (luôn join companies để có thể lọc theo tên công ty)
   const countQuery = db('jobs').leftJoin('companies', 'jobs.company_id', 'companies.id');
   if (status) countQuery.where('jobs.status', status);
+  if (approvalStatus) countQuery.where('jobs.approval_status', approvalStatus);
   if (experienceLevel) countQuery.where('jobs.experience_level', experienceLevel);
   if (hrId) countQuery.where('jobs.hr_id', hrId);
   if (companyId) countQuery.where('jobs.company_id', companyId);
@@ -298,7 +303,7 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
     const oldJob = await trx('jobs').where({ id }).first();
     if (!oldJob) throw new Error('Không tìm thấy công việc này');
 
-    // Nghiệp vụ: Cấm đổi Title nếu tin đã từng xuất bản (khác DRAFT)
+    // Nghệp vụ: Cấm đổi Title nếu tin đã từng xuất bản (khác DRAFT)
     if (oldJob.status !== 'DRAFT' && updateData.title && updateData.title !== oldJob.title) {
       throw new Error('Không thể thay đổi chức danh khi tin đã từng xuất bản. Vui lòng đóng tin và tạo tin mới (tốn credit).');
     }
@@ -370,14 +375,16 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
       .update({
         title: updateData.title,
         description: updateData.description || null,
-        status: updateData.status || 'OPEN',
+        status: newStatus,
+        approval_status: finalApprovalStatus,
         experience_level: updateData.experienceLevel || null,
         salary_min: updateData.salaryMin || null,
         salary_max: updateData.salaryMax || null,
         salary_currency: updateData.salaryCurrency || 'VND',
         is_salary_visible: updateData.isSalaryVisible !== undefined ? updateData.isSalaryVisible : true,
         vacancy_count: updateData.vacancyCount !== undefined ? updateData.vacancyCount : 1,
-        deadline: updateData.deadline || null,
+        deadline: finalDeadline || null,
+        enable_ai_screening: updateData.enableAiScreening !== undefined ? !!updateData.enableAiScreening : oldJob.enable_ai_screening,
         updated_at: new Date()
       })
       .returning('*');
