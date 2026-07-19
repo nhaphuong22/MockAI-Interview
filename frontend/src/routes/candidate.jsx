@@ -21,6 +21,7 @@ import HRInterviewPrep from "../pages/candidate/HRInterviewPrep";
 import HRInterviewRoom from "../pages/candidate/HRInterviewRoom";
 import HRInterviewResult from "../pages/candidate/HRInterviewResult";
 import { Tools } from "../pages/candidate/Tools";
+import { ContentHiddenPage } from "../pages/shared/ContentHiddenPage";
 
 export const candidateRoutes = [
   { index: true, Component: Home }, // Public: Landing Page
@@ -107,5 +108,9 @@ export const candidateRoutes = [
   { 
     path: "hr-interview/result/:interviewId", 
     element: <ProtectedRoute><HRInterviewResult /></ProtectedRoute>
+  },
+  {
+    path: "content-hidden",
+    element: <ProtectedRoute><ContentHiddenPage /></ProtectedRoute>
   },
 ];

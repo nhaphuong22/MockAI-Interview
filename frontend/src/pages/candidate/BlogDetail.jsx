@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Heart, Share, Bookmark, Clock, User, MessageCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Heart, Share, Bookmark, Clock, User, MessageCircle, ShieldAlert } from "lucide-react";
 import MDEditor from "@uiw/react-md-editor";
 import { blogApi } from "../../api/blogApi";
 import { useThemeStore } from "../../store/useThemeStore";
@@ -16,7 +16,7 @@ export function BlogDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { theme } = useThemeStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { scrollYProgress } = useScroll();
   const [isSaved, setIsSaved] = useState(false);
   const [reportModal, setReportModal] = useState({ isOpen: false, targetId: null });
@@ -114,6 +114,16 @@ export function BlogDetail() {
         className="fixed top-0 left-0 right-0 h-1.5 bg-[#0ea5e9] origin-left z-50"
         style={{ scaleX: scrollYProgress }}
       />
+
+      {/* Warning Banner for Author */}
+      {blog?.is_warned && user?.id === blog?.author_id && (
+        <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-500/20 px-4 py-3 relative z-40 flex items-center justify-center gap-3 text-red-600 dark:text-red-400">
+          <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm font-medium">
+            ⚠️ Bài viết này đã nhận được nhiều báo cáo và đang bị cảnh báo vi phạm tiêu chuẩn cộng đồng. Hãy kiểm tra lại nội dung nhé! (Chỉ bạn mới thấy thông báo này).
+          </p>
+        </div>
+      )}
 
       {/* Cover Image Header */}
       <div className="w-full h-[50vh] relative">
