@@ -405,44 +405,109 @@ export const loginGoogleUser = async (idToken) => {
 };
 
 export const updateUserProfile = async (userId, data) => {
-  const { fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob, contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl } = data;
+  const {
+    fullName, phone, address, bio, avatarUrl, coverUrl, gender, isLookingForJob,
+    contactPhone, contactPublic, linkedinUrl, githubUrl, portfolioUrl,
+    companyName, companyLogo, companyWebsite, companyDescription, companySize,
+    companyIndustry, companyCity, companyAddress, companyTaxCode,
+    vipThemeColor, vipBorderStyle, bannerUrl, images, contactEmail
+  } = data;
 
   const roleName = await getUserRole(userId);
 
-  // Update Core Users fields
-  const userUpdate = {};
-  if (fullName !== undefined) userUpdate.full_name = fullName;
-  if (avatarUrl !== undefined) userUpdate.avatar_url = avatarUrl;
-  
-  if (Object.keys(userUpdate).length > 0) {
-    userUpdate.updated_at = db.fn.now();
-    await db('users').where({ id: userId }).update(userUpdate);
-  }
-
-  // Update Specific Profile fields
-  if (roleName === 'HR') {
-    const hrUpdate = {};
-    if (Object.keys(hrUpdate).length > 0) {
-      hrUpdate.updated_at = db.fn.now();
-      await db('hr_profiles').where({ user_id: userId }).update(hrUpdate);
-    }
-  } else { // CANDIDATE
-    const candidateUpdate = {};
-    if (phone !== undefined) candidateUpdate.phone = phone;
-    if (address !== undefined) candidateUpdate.address = address;
-    if (bio !== undefined) candidateUpdate.bio = bio;
-    if (gender !== undefined) candidateUpdate.gender = gender;
-    if (coverUrl !== undefined) candidateUpdate.cover_url = coverUrl;
-    if (isLookingForJob !== undefined) candidateUpdate.is_looking_for_job = isLookingForJob;
-    if (linkedinUrl !== undefined) candidateUpdate.linkedin_url = linkedinUrl;
-    if (githubUrl !== undefined) candidateUpdate.github_url = githubUrl;
-    if (portfolioUrl !== undefined) candidateUpdate.portfolio_url = portfolioUrl;
+  await db.transaction(async (trx) => {
+    // Update Core Users fields
+    const userUpdate = {};
+    if (fullName !== undefined) userUpdate.full_name = fullName;
+    if (avatarUrl !== undefined) userUpdate.avatar_url = avatarUrl;
     
-    if (Object.keys(candidateUpdate).length > 0) {
-      candidateUpdate.updated_at = db.fn.now();
-      await db('candidate_profiles').where({ user_id: userId }).update(candidateUpdate);
+    // Cho phép xóa email liên hệ (để null mail) trực tiếp không cần qua OTP
+    if (contactEmail === null || contactEmail === '') {
+      userUpdate.contact_email = null;
+      userUpdate.contact_email_verified = false;
     }
-  }
+    
+    if (Object.keys(userUpdate).length > 0) {
+      userUpdate.updated_at = trx.fn.now();
+      await trx('users').where({ id: userId }).update(userUpdate);
+    }
+
+    // Update Specific Profile fields
+    if (roleName === 'HR') {
+      const hrUpdate = {};
+      if (Object.keys(hrUpdate).length > 0) {
+        hrUpdate.updated_at = trx.fn.now();
+        await trx('hr_profiles').where({ user_id: userId }).update(hrUpdate);
+      }
+
+      // Vá lỗi cập nhật thông tin công ty và tích hợp đặc quyền VIP
+      const user = await trx('users').where({ id: userId }).first();
+      if (user && user.company_id) {
+        const companyUpdate = {};
+        if (companyName !== undefined) companyUpdate.name = companyName;
+        if (companyLogo !== undefined) companyUpdate.logo_url = companyLogo;
+        if (companyWebsite !== undefined) companyUpdate.website = companyWebsite;
+        if (companyDescription !== undefined) companyUpdate.description = companyDescription;
+        if (companySize !== undefined) companyUpdate.company_size = companySize;
+        if (companyIndustry !== undefined) companyUpdate.industry = companyIndustry;
+        if (companyCity !== undefined) companyUpdate.city = companyCity;
+        if (companyAddress !== undefined) companyUpdate.address = companyAddress;
+        if (companyTaxCode !== undefined) companyUpdate.tax_code = companyTaxCode;
+        if (bannerUrl !== undefined) companyUpdate.banner_url = bannerUrl;
+        if (images !== undefined) {
+          // Serialize mảng images thành JSON strings
+          companyUpdate.images = JSON.stringify(images);
+        }
+
+        // Xử lý đặc quyền tùy biến giao diện VIP (Privilege escalation protection)
+        const company = await trx('companies').where({ id: user.company_id }).first();
+        if (company && company.is_vip) {
+          // Validate màu HEX (XSS/SQL injection protection)
+          if (vipThemeColor !== undefined) {
+            if (vipThemeColor === null || /^#[0-9A-F]{6}$/i.test(vipThemeColor)) {
+              companyUpdate.vip_theme_color = vipThemeColor;
+            } else {
+              throw new Error('Mã màu chủ đạo không hợp lệ. Phải ở dạng màu HEX (VD: #0ea5e9).');
+            }
+          }
+
+          // Validate kiểu viền logo
+          if (vipBorderStyle !== undefined) {
+            const validStyles = ['gradient-glow', 'crown-badge', 'sparkle-stars', 'solid-classic'];
+            if (vipBorderStyle === null || validStyles.includes(vipBorderStyle)) {
+              companyUpdate.vip_border_style = vipBorderStyle;
+            } else {
+              throw new Error('Kiểu viền logo không hợp lệ.');
+            }
+          }
+        }
+
+        if (Object.keys(companyUpdate).length > 0) {
+          companyUpdate.updated_at = trx.fn.now();
+          await trx('companies').where({ id: user.company_id }).update(companyUpdate);
+          // Xoá cache list/detail job và cache company
+          await deleteCachePattern('jobs:*');
+          await deleteCachePattern('companies:*');
+        }
+      }
+    } else { // CANDIDATE
+      const candidateUpdate = {};
+      if (phone !== undefined) candidateUpdate.phone = phone;
+      if (address !== undefined) candidateUpdate.address = address;
+      if (bio !== undefined) candidateUpdate.bio = bio;
+      if (gender !== undefined) candidateUpdate.gender = gender;
+      if (coverUrl !== undefined) candidateUpdate.cover_url = coverUrl;
+      if (isLookingForJob !== undefined) candidateUpdate.is_looking_for_job = isLookingForJob;
+      if (linkedinUrl !== undefined) candidateUpdate.linkedin_url = linkedinUrl;
+      if (githubUrl !== undefined) candidateUpdate.github_url = githubUrl;
+      if (portfolioUrl !== undefined) candidateUpdate.portfolio_url = portfolioUrl;
+      
+      if (Object.keys(candidateUpdate).length > 0) {
+        candidateUpdate.updated_at = trx.fn.now();
+        await trx('candidate_profiles').where({ user_id: userId }).update(candidateUpdate);
+      }
+    }
+  });
 
   const fullProfile = await getUserProfile(userId);
   return fullProfile;
@@ -459,12 +524,20 @@ export const getUserProfile = async (userId) => {
   // Join extra profile data based on role
   if (roleName === 'HR' || roleName === 'ADMIN') {
     const hrProfile = await db('hr_profiles').where({ user_id: userId }).first() || {};
-    const wallet = await db('hr_wallets').where({ user_id: userId }).first() || {};
+    const personalWallet = await db('hr_wallets').where({ user_id: userId }).first() || {};
+    let companyWallet = null;
+    if (user.company_id) {
+      companyWallet = await db('hr_wallets').where({ company_id: user.company_id }).first();
+    }
+    
     if (hrProfile.user_id) delete hrProfile.user_id;
-    if (wallet.id) delete wallet.id;
-    if (wallet.user_id) delete wallet.user_id;
-    if (wallet.company_id) delete wallet.company_id;
-    user = { ...user, ...hrProfile, ...wallet };
+    
+    // Gán thông tin số dư của cả 2 ví
+    user.personal_credits = personalWallet.total_credits || 0;
+    user.company_credits = companyWallet ? companyWallet.total_credits : null;
+    user.total_credits = companyWallet ? companyWallet.total_credits : (personalWallet.total_credits || 0);
+
+    user = { ...user, ...hrProfile };
   } else {
     const candidateProfile = await db('candidate_profiles').where({ user_id: userId }).first() || {};
     const sub = await db('user_subscriptions')
@@ -509,15 +582,16 @@ export const getUserProfile = async (userId) => {
       userInfo.company_document_url = company.document_url;
       userInfo.company_tax_code = company.tax_code;
       userInfo.company_is_tax_code_public = company.is_tax_code_public;
+      userInfo.company_is_vip = company.is_vip;
+      userInfo.company_vip_expired_at = company.vip_expired_at;
+      userInfo.company_vip_theme_color = company.vip_theme_color;
+      userInfo.company_vip_border_style = company.vip_border_style;
+      userInfo.company_vip_banner_url = company.vip_banner_url; // legacy compat
+      userInfo.company_banner_url = company.banner_url;
+      userInfo.company_images = typeof company.images === 'string' ? company.images : JSON.stringify(company.images || []);
     }
 
-    // HR belong to a company use company wallet
-    if (roleName === 'HR') {
-      const companyWallet = await db('hr_wallets').where({ company_id: user.company_id }).first();
-      if (companyWallet) {
-         userInfo.total_credits = companyWallet.total_credits;
-      }
-    }
+
   }
 
   return userInfo;
