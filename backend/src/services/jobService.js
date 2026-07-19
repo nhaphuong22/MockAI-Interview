@@ -20,34 +20,22 @@ export const CREDIT_COSTS = {
 const consumeFromWallet = async (trx, wallet, amount) => {
   if (!wallet) return false;
 
-  if (wallet.total_credits < amount) return false;
+  // Sử dụng Pessimistic Locking (.forUpdate()) để lock row ví tránh Race Condition
+  const lockedWallet = await trx('hr_wallets')
+    .where({ id: wallet.id })
+    .forUpdate()
+    .first();
 
-  const batches = await trx('credit_batches')
-    .where({ wallet_id: wallet.id })
-    .where('amount_remaining', '>', 0)
-    .where('expires_at', '>', new Date())
-    .orderBy('expires_at', 'asc');
-
-  const totalInBatches = batches.reduce((sum, b) => sum + b.amount_remaining, 0);
-  if (totalInBatches < amount) return false;
-
-  let remainingToDeduct = amount;
-  for (const batch of batches) {
-    if (remainingToDeduct <= 0) break;
-    
-    const deduct = Math.min(batch.amount_remaining, remainingToDeduct);
-    remainingToDeduct -= deduct;
-    
-    await trx('credit_batches').where({ id: batch.id }).update({
-      amount_remaining: batch.amount_remaining - deduct,
-      updated_at: new Date()
-    });
+  if (!lockedWallet || lockedWallet.total_credits < amount) {
+    return false;
   }
 
-  await trx('hr_wallets').where({ id: wallet.id }).update({
-    total_credits: wallet.total_credits - amount,
-    updated_at: new Date()
-  });
+  await trx('hr_wallets')
+    .where({ id: wallet.id })
+    .update({
+      total_credits: lockedWallet.total_credits - amount,
+      updated_at: new Date()
+    });
   
   return true;
 };
@@ -55,23 +43,31 @@ const consumeFromWallet = async (trx, wallet, amount) => {
 /**
  * Trừ credit của HR (ưu tiên ví công ty, fallback sang ví cá nhân)
  */
-const consumeCredit = async (trx, hrId, companyId, amount) => {
+const consumeCredit = async (trx, hrId, companyId, amount, walletType = 'PERSONAL') => {
   let success = false;
 
-  // Ưu tiên dùng ví công ty trước
-  if (companyId) {
+  if (walletType === 'COMPANY') {
+    if (!companyId) {
+      const err = new Error('Bạn không thuộc doanh nghiệp nào hoặc không có quyền sử dụng ví của doanh nghiệp.');
+      err.statusCode = 403;
+      throw err;
+    }
     const companyWallet = await trx('hr_wallets').where({ company_id: companyId }).first();
+    if (!companyWallet) {
+      const err = new Error('Không tìm thấy ví của công ty bạn.');
+      err.statusCode = 403;
+      throw err;
+    }
     success = await consumeFromWallet(trx, companyWallet, amount);
-  }
-
-  // Nếu công ty hết credit (hoặc không có), dùng ví cá nhân
-  if (!success) {
+  } else {
     const personalWallet = await trx('hr_wallets').where({ user_id: hrId }).first();
     success = await consumeFromWallet(trx, personalWallet, amount);
   }
 
   if (!success) {
-    throw new Error(`Không đủ credit (cần ${amount}). Vui lòng nạp thêm credit để tiếp tục.`);
+    const err = new Error(`Không đủ credit (cần ${amount}). Vui lòng nạp thêm credit để tiếp tục.`);
+    err.statusCode = 400;
+    throw err;
   }
 };
 
@@ -91,7 +87,8 @@ export const createJob = async ({
   vacancyCount = 1,
   deadline = null,
   enableAiScreening = false,
-  detailedRequirements = []
+  detailedRequirements = [],
+  walletType = 'PERSONAL'
 }) => {
   const hrUser = await db('users').where({ id: hrId }).first();
   const companyId = hrUser ? hrUser.company_id : null;
@@ -103,7 +100,7 @@ export const createJob = async ({
       if (enableAiScreening) {
         creditCost += CREDIT_COSTS.AI_SCREENING;
       }
-      await consumeCredit(trx, hrId, companyId, creditCost);
+      await consumeCredit(trx, hrId, companyId, creditCost, walletType);
     }
 
     // Calculate deadline (max 14 days if OPEN)
@@ -181,7 +178,11 @@ export const getJobsList = async ({
       'jobs.*',
       'companies.name as company_name',
       'companies.logo_url as company_logo',
-      'companies.address as company_address'
+      'companies.address as company_address',
+      'companies.is_vip as company_is_vip',
+      'companies.vip_theme_color as company_vip_theme_color',
+      'companies.vip_border_style as company_vip_border_style',
+      'companies.banner_url as company_banner_url'
     )
     .leftJoin('companies', 'jobs.company_id', 'companies.id');
 
@@ -250,7 +251,11 @@ export const getJobDetailById = async (id) => {
       'companies.name as company_name',
       'companies.logo_url as company_logo',
       'companies.address as company_address',
-      'companies.website as company_website'
+      'companies.website as company_website',
+      'companies.is_vip as company_is_vip',
+      'companies.vip_theme_color as company_vip_theme_color',
+      'companies.vip_border_style as company_vip_border_style',
+      'companies.banner_url as company_banner_url'
     )
     .leftJoin('companies', 'jobs.company_id', 'companies.id')
     .where('jobs.id', id)
@@ -290,7 +295,7 @@ export const updateJobById = async (id, updateData, detailedRequirements = []) =
        const creditCost = updateData.enableAiScreening
          ? CREDIT_COSTS.JOB_POST + CREDIT_COSTS.AI_SCREENING
          : CREDIT_COSTS.JOB_POST;
-       await consumeCredit(trx, oldJob.hr_id, oldJob.company_id, creditCost);
+       await consumeCredit(trx, oldJob.hr_id, oldJob.company_id, creditCost, updateData.walletType || 'PERSONAL');
     }
 
     // 1. Cập nhật bảng 'jobs'

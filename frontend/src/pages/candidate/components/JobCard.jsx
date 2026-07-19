@@ -1,4 +1,4 @@
-import { MapPin, DollarSign, Briefcase, Clock, Bookmark } from "lucide-react";
+import { MapPin, DollarSign, Briefcase, Clock, Bookmark, Crown, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
 /**
@@ -12,14 +12,29 @@ export function JobCard({
   onSelect, 
   onToggleBookmark 
 }) {
+  const isVip = job.company_is_vip === true || job.companyIsVip === true || job.is_vip === true;
+  const vipThemeColor = isVip ? (job.company_vip_theme_color || job.companyVipThemeColor || "#0ea5e9") : null;
+  const vipBorderStyle = isVip ? (job.company_vip_border_style || job.companyVipBorderStyle || "gradient-glow") : null;
+
   return (
     <div
       onClick={onSelect}
-      className={`relative bg-white/70 dark:bg-[#0a0f1c]/60 backdrop-blur-md rounded-2xl p-6 border cursor-pointer transition-all duration-300 hover:-translate-y-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(14,165,233,0.08)] dark:hover:shadow-[0_20px_40px_rgba(14,165,233,0.18)] ${
+      className={`relative bg-white/70 dark:bg-[#0a0f1c]/60 backdrop-blur-md rounded-2xl p-6 border cursor-pointer transition-all duration-300 hover:-translate-y-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] ${
         isSelected
           ? "border-[#0ea5e9] ring-2 ring-sky-100 dark:ring-sky-950/50"
-          : "border-gray-100 dark:border-white/5 hover:border-[#0ea5e9]/50 dark:hover:border-[#0ea5e9]/30"
+          : isVip
+            ? ""
+            : "border-gray-100 dark:border-white/5 hover:border-[#0ea5e9]/50 dark:hover:border-[#0ea5e9]/30"
       }`}
+      style={{
+        borderColor: isSelected ? undefined : (isVip ? vipThemeColor : undefined),
+        boxShadow: (isVip && !isSelected)
+          ? (vipBorderStyle === 'gradient-glow' ? `0 0 20px ${vipThemeColor}33` : `0 4px 20px rgba(0,0,0,0.02)`)
+          : undefined,
+        background: (isVip && !isSelected && vipBorderStyle === 'gradient-glow')
+          ? `linear-gradient(to bottom, ${vipThemeColor}0a, transparent)`
+          : undefined
+      }}
     >
       <div className="flex gap-4">
         {/* Company Logo Icon */}
@@ -27,20 +42,62 @@ export function JobCard({
           <Link
             to={`/companies/${job.company_id}`}
             onClick={(e) => e.stopPropagation()}
-            className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md shadow-sky-100 dark:shadow-none hover:opacity-90 transition-opacity overflow-hidden"
+            className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md hover:opacity-90 transition-all overflow-visible relative animate-fade-in ${!isVip ? 'bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8]' : ''}`}
+            style={{
+              background: isVip ? (vipBorderStyle === 'gradient-glow' ? `linear-gradient(to bottom right, ${vipThemeColor}, ${vipThemeColor}cc)` : vipThemeColor) : undefined,
+              boxShadow: (isVip && vipBorderStyle === 'gradient-glow')
+                ? `0 0 15px ${vipThemeColor}80`
+                : undefined
+            }}
           >
             {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
-              <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+              <img src={job.logo} alt={job.company} className="w-full h-full object-cover rounded-xl" />
             ) : (
               job.logo
             )}
+
+            {/* VIP badge crown rendering */}
+            {isVip && vipBorderStyle === 'crown-badge' && (
+              <div className="absolute -top-2 -right-2 bg-amber-500 text-white p-1 rounded-full border border-white dark:border-slate-900 shadow-sm flex items-center justify-center">
+                <Crown size={10} className="fill-white text-white" />
+              </div>
+            )}
+
+            {/* VIP badge sparkles rendering */}
+            {isVip && vipBorderStyle === 'sparkle-stars' && (
+              <div className="absolute -top-1.5 -right-1.5 bg-cyan-500 text-white p-0.5 rounded-full border border-white dark:border-slate-900 shadow-sm flex items-center justify-center">
+                <Sparkles size={10} className="text-white" />
+              </div>
+            )}
           </Link>
         ) : (
-          <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8] rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md shadow-sky-100 dark:shadow-none overflow-hidden">
+          <div
+            className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-white shadow-md overflow-visible relative ${!isVip ? 'bg-gradient-to-br from-[#0ea5e9] to-[#38bdf8]' : ''}`}
+            style={{
+              background: isVip ? (vipBorderStyle === 'gradient-glow' ? `linear-gradient(to bottom right, ${vipThemeColor}, ${vipThemeColor}cc)` : vipThemeColor) : undefined,
+              boxShadow: (isVip && vipBorderStyle === 'gradient-glow')
+                ? `0 0 15px ${vipThemeColor}80`
+                : undefined
+            }}
+          >
             {job.logo && (job.logo.startsWith("http") || job.logo.startsWith("/") || job.logo.startsWith("data:")) ? (
-              <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+              <img src={job.logo} alt={job.company} className="w-full h-full object-cover rounded-xl" />
             ) : (
               job.logo
+            )}
+
+            {/* VIP badge crown rendering */}
+            {isVip && vipBorderStyle === 'crown-badge' && (
+              <div className="absolute -top-2 -right-2 bg-amber-500 text-white p-1 rounded-full border border-white dark:border-slate-900 shadow-sm flex items-center justify-center">
+                <Crown size={10} className="fill-white text-white" />
+              </div>
+            )}
+
+            {/* VIP badge sparkles rendering */}
+            {isVip && vipBorderStyle === 'sparkle-stars' && (
+              <div className="absolute -top-1.5 -right-1.5 bg-cyan-500 text-white p-0.5 rounded-full border border-white dark:border-slate-900 shadow-sm flex items-center justify-center">
+                <Sparkles size={10} className="text-white" />
+              </div>
             )}
           </div>
         )}
@@ -53,15 +110,51 @@ export function JobCard({
               </h3>
 
               {job.company_id ? (
-                <Link
-                  to={`/companies/${job.company_id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-sm dark:text-slate-400 text-gray-500 hover:text-[#0ea5e9] dark:hover:text-[#38bdf8] font-medium transition-colors inline-block"
-                >
-                  {job.company}
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to={`/companies/${job.company_id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-sm font-bold transition-colors inline-block"
+                    style={{
+                      color: isVip ? vipThemeColor : undefined
+                    }}
+                  >
+                    {job.company}
+                  </Link>
+                  {isVip && (
+                    <span 
+                      className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm"
+                      style={{
+                        background: vipThemeColor,
+                        boxShadow: `0 2px 10px ${vipThemeColor}40`
+                      }}
+                    >
+                      VIP
+                    </span>
+                  )}
+                </div>
               ) : (
-                <p className="text-sm dark:text-slate-400 text-gray-500 font-medium">{job.company}</p>
+                <div className="flex items-center gap-2">
+                  <p
+                    className="text-sm font-bold"
+                    style={{
+                      color: isVip ? vipThemeColor : undefined
+                    }}
+                  >
+                    {job.company}
+                  </p>
+                  {isVip && (
+                    <span 
+                      className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm"
+                      style={{
+                        background: vipThemeColor,
+                        boxShadow: `0 2px 10px ${vipThemeColor}40`
+                      }}
+                    >
+                      VIP
+                    </span>
+                  )}
+                </div>
               )}
 
             </div>
