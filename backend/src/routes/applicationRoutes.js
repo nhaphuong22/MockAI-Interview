@@ -3,10 +3,11 @@ import {
   applyJob, 
   getApplications, 
   updateApplicationStatus,
-  saveApplicationNote
+  saveApplicationNote,
+  declineAIInterview
 } from '../controllers/applicationController.js';
 import { requireAuth, requireRole } from '../middlewares/authMiddleware.js';
-import { inviteForAIInterview } from '../controllers/hrInterviewController.js';
+import { inviteForAIInterview, bulkInviteForAIInterview } from '../controllers/hrInterviewController.js';
 import { exportApplications } from '../controllers/exportController.js';
 
 const router = express.Router();
@@ -16,6 +17,8 @@ router.post('/apply/:jobId', requireAuth, applyJob);
 router.get('/', requireAuth, getApplications);
 router.patch('/:id/status', requireAuth, updateApplicationStatus);
 router.patch('/:id/invite-ai-interview', requireAuth, requireRole(['HR', 'ADMIN']), inviteForAIInterview);
+router.post('/bulk-invite-ai-interview', requireAuth, requireRole(['HR', 'ADMIN']), bulkInviteForAIInterview);
+router.patch('/:id/decline-ai-interview', requireAuth, requireRole(['USER', 'CANDIDATE']), declineAIInterview);
 
 // HR Shortlist Export & Note
 router.get('/export', requireAuth, requireRole(['HR', 'ADMIN']), exportApplications);

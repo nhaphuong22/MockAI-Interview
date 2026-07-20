@@ -1,13 +1,28 @@
-import { Calendar, Bot } from "lucide-react";
+import { Calendar, Bot, Clock, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export function ApplicationCard({ app, statusConfig }) {
+export function ApplicationCard({ app, statusConfig, onDecline }) {
   const config = statusConfig[app.status] || {
     label: "Không xác định",
     color: "bg-gray-100 text-gray-700",
     icon: Calendar
   };
   const StatusIcon = config.icon;
+
+  let remainingText = null;
+  let isExpired = false;
+  if (app.rawStatus === 'ai_interview_invited' && app.invitedAt) {
+    const inviteDate = new Date(app.invitedAt);
+    const expireDate = new Date(inviteDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const remainingDays = Math.ceil((expireDate - new Date()) / (1000 * 60 * 60 * 24));
+    
+    if (remainingDays > 0) {
+      remainingText = `Còn ${remainingDays} ngày`;
+    } else {
+      remainingText = `Đã hết hạn`;
+      isExpired = true;
+    }
+  }
 
   return (
     <div className="dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-50 dark:hover:border-[#0ea5e9]/50 hover:border-sky-100 transition-all group">
@@ -30,15 +45,30 @@ export function ApplicationCard({ app, statusConfig }) {
                 <StatusIcon className="w-3.5 h-3.5" />
                 <span>{config.label.toUpperCase()}</span>
               </div>
+              {remainingText && (
+                <div className={`px-3 py-1 rounded-full text-xs font-bold ${isExpired ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
+                  <Clock className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
+                  {remainingText}
+                </div>
+              )}
             </div>
 
-            {app.rawStatus === 'ai_interview_invited' && (
-              <Link to={`/hr-interview/prep/${app.id}`}>
-                <button className="mt-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border-none">
-                  <Bot className="w-3.5 h-3.5" />
-                  <span>Vào phỏng vấn AI →</span>
+            {app.rawStatus === 'ai_interview_invited' && !isExpired && (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Link to={`/hr-interview/prep/${app.id}`}>
+                  <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border-none">
+                    <Bot className="w-3.5 h-3.5" />
+                    <span>Vào phỏng vấn AI →</span>
+                  </button>
+                </Link>
+                <button 
+                  onClick={() => onDecline?.(app)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-xl text-xs font-bold transition-all duration-300 border border-transparent hover:border-red-200 dark:hover:border-red-900/30 cursor-pointer"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span>Từ chối phỏng vấn</span>
                 </button>
-              </Link>
+              </div>
             )}
           </div>
         </div>
