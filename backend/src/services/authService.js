@@ -421,6 +421,11 @@ export const updateUserProfile = async (userId, data) => {
     if (fullName !== undefined) userUpdate.full_name = fullName;
     if (avatarUrl !== undefined) userUpdate.avatar_url = avatarUrl;
     
+    // Cập nhật SĐT liên hệ của HR/Admin vào users.contact_phone
+    if ((roleName === 'HR' || roleName === 'ADMIN') && phone !== undefined) {
+      userUpdate.contact_phone = phone;
+    }
+    
     // Cho phép xóa email liên hệ (để null mail) trực tiếp không cần qua OTP
     if (contactEmail === null || contactEmail === '') {
       userUpdate.contact_email = null;
@@ -435,6 +440,9 @@ export const updateUserProfile = async (userId, data) => {
     // Update Specific Profile fields
     if (roleName === 'HR') {
       const hrUpdate = {};
+      if (gender !== undefined) hrUpdate.gender = gender;
+      if (address !== undefined) hrUpdate.address = address;
+      
       if (Object.keys(hrUpdate).length > 0) {
         hrUpdate.updated_at = trx.fn.now();
         await trx('hr_profiles').where({ user_id: userId }).update(hrUpdate);
@@ -538,6 +546,7 @@ export const getUserProfile = async (userId) => {
     user.total_credits = companyWallet ? companyWallet.total_credits : (personalWallet.total_credits || 0);
 
     user = { ...user, ...hrProfile };
+    user.phone = user.contact_phone; // map contact_phone sang phone để frontend hiển thị đúng
   } else {
     const candidateProfile = await db('candidate_profiles').where({ user_id: userId }).first() || {};
     const sub = await db('user_subscriptions')
