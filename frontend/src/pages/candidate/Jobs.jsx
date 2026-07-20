@@ -87,6 +87,7 @@ export function Jobs() {
       const res = await jobApi.getJobs({
         status: "OPEN",
         search: debouncedSearch || undefined,
+        limit: 100,
       });
       return res;
     }

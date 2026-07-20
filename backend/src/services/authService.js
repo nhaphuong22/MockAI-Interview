@@ -421,6 +421,11 @@ export const updateUserProfile = async (userId, data) => {
     if (fullName !== undefined) userUpdate.full_name = fullName;
     if (avatarUrl !== undefined) userUpdate.avatar_url = avatarUrl;
     
+    // Cập nhật SĐT liên hệ của HR/Admin vào users.contact_phone
+    if ((roleName === 'HR' || roleName === 'ADMIN') && phone !== undefined) {
+      userUpdate.contact_phone = phone;
+    }
+    
     // Cho phép xóa email liên hệ (để null mail) trực tiếp không cần qua OTP
     if (contactEmail === null || contactEmail === '') {
       userUpdate.contact_email = null;
@@ -435,6 +440,9 @@ export const updateUserProfile = async (userId, data) => {
     // Update Specific Profile fields
     if (roleName === 'HR') {
       const hrUpdate = {};
+      if (gender !== undefined) hrUpdate.gender = gender;
+      if (address !== undefined) hrUpdate.address = address;
+      
       if (Object.keys(hrUpdate).length > 0) {
         hrUpdate.updated_at = trx.fn.now();
         await trx('hr_profiles').where({ user_id: userId }).update(hrUpdate);
@@ -538,6 +546,7 @@ export const getUserProfile = async (userId) => {
     user.total_credits = companyWallet ? companyWallet.total_credits : (personalWallet.total_credits || 0);
 
     user = { ...user, ...hrProfile };
+    user.phone = user.contact_phone; // map contact_phone sang phone để frontend hiển thị đúng
   } else {
     const candidateProfile = await db('candidate_profiles').where({ user_id: userId }).first() || {};
     const sub = await db('user_subscriptions')
@@ -729,4 +738,38 @@ export const resendCompanyEmailOtp = async (userId, contactEmail) => {
 
   await sendCompanyEmailOtp(contactEmail, otp);
   return { message: 'OTP đã được gửi lại' };
+};
+
+export const switchUserRole = async (userId) => {
+  const currentRole = await getUserRole(userId);
+  let newRoleName = currentRole === 'HR' ? 'USER' : 'HR';
+
+  const role = await db('roles').where({ name: newRoleName }).first();
+  if (!role) throw new Error(`Role ${newRoleName} does not exist`);
+
+  await db.transaction(async (trx) => {
+    // Check if user_roles exists
+    const existingRole = await trx('user_roles').where({ user_id: userId }).first();
+    if (existingRole) {
+      await trx('user_roles').where({ user_id: userId }).update({ role_id: role.id, updated_at: trx.fn.now() });
+    } else {
+      await trx('user_roles').insert({ user_id: userId, role_id: role.id, created_at: trx.fn.now(), updated_at: trx.fn.now() });
+    }
+
+    if (newRoleName === 'HR') {
+      const hrProfile = await trx('hr_profiles').where({ user_id: userId }).first();
+      if (!hrProfile) {
+        await trx('hr_profiles').insert({ user_id: userId, created_at: trx.fn.now(), updated_at: trx.fn.now() });
+      }
+    }
+  });
+
+  const user = await db('users').where({ id: userId }).first();
+  const token = generateToken({ id: user.id, email: user.email, role: newRoleName });
+  const fullProfile = await getUserProfile(userId);
+
+  // Xóa cache của user
+  await deleteCachePattern(`user:${userId}:profile`);
+
+  return { user: fullProfile, token };
 };

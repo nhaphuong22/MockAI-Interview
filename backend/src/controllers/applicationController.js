@@ -532,3 +532,123 @@ export const saveApplicationNote = async (req, res) => {
     return sendError(res, 500, 'Lỗi khi lưu ghi chú.');
   }
 };
+
+/**
+ * PATCH /api/applications/:id/decline-ai-interview
+ * Candidate từ chối lời mời phỏng vấn AI
+ */
+export const declineAIInterview = async (req, res) => {
+  try {
+    const candidateId = req.user.id;
+    const appId = Number(req.params.id);
+    const { decline_reason, decline_note } = req.body;
+
+    const app = await db('applications')
+      .join('jobs', 'applications.job_id', 'jobs.id')
+      .join('users', 'applications.candidate_id', 'users.id')
+      .select(
+        'applications.id',
+        'applications.status',
+        'applications.is_refunded',
+        'applications.credit_deducted',
+        'jobs.hr_id',
+        'jobs.title as job_title',
+        'users.full_name as candidate_name'
+      )
+      .where('applications.id', appId)
+      .andWhere('applications.candidate_id', candidateId)
+      .first();
+
+    if (!app) return sendError(res, 404, 'Không tìm thấy đơn ứng tuyển');
+    if (app.status !== 'AI_INTERVIEW_INVITED') {
+      return sendError(res, 400, 'Không thể từ chối vì đơn ứng tuyển không ở trạng thái mời phỏng vấn AI');
+    }
+
+    if (app.is_refunded) {
+      return sendError(res, 400, 'Lời mời này đã được hoàn tiền trước đó');
+    }
+
+    const hrId = app.hr_id;
+    const walletCondition = { user_id: hrId }; // Assumes hr_wallets is currently bound to HR user ID or fetched via user_id
+
+    await db.transaction(async (trx) => {
+      // 1. Khóa và kiểm tra ví của HR
+      let wallet = await trx('hr_wallets').where(walletCondition).forUpdate().first();
+      
+      // Nếu ví HR thuộc về company, có thể tra cứu theo company_id (tạm fallback tìm ví hr_id)
+      if (!wallet) {
+        const hrUser = await trx('users').where({ id: hrId }).first();
+        if (hrUser && hrUser.company_id) {
+          wallet = await trx('hr_wallets').where({ company_id: hrUser.company_id }).forUpdate().first();
+        }
+      }
+
+      // 2. Cập nhật applications
+      await trx('applications')
+        .where({ id: appId })
+        .update({ 
+          status: 'INVITATION_DECLINED', 
+          is_refunded: true,
+          refund_reason: 'CANDIDATE_DECLINED',
+          decline_reason: decline_reason || 'OTHER',
+          decline_note: decline_note || null,
+          updated_at: new Date() 
+        });
+
+      if (wallet && app.credit_deducted > 0) {
+        // 3. Hoàn credit
+        await trx('hr_wallets')
+          .where({ id: wallet.id })
+          .increment('total_credits', app.credit_deducted);
+
+        // 4. Ghi log transaction
+        await trx('credit_transactions').insert({
+          wallet_id: wallet.id,
+          user_id: candidateId,
+          application_id: appId,
+          amount: app.credit_deducted,
+          transaction_type: 'REFUND_DECLINED',
+          description: `Hoàn credit do ứng viên ${app.candidate_name} từ chối phỏng vấn AI (Công việc: ${app.job_title})`,
+          created_at: new Date(),
+          updated_at: new Date()
+        });
+      }
+    });
+
+    // Xóa cache
+    deleteCachePattern('applications:candidate:*');
+    deleteCachePattern('applications:hr:*');
+
+    // Gửi thông báo cho HR
+    const [notification] = await db('notifications').insert({
+      user_id: hrId,
+      type: 'INTERVIEW_INVITE', // Có thể thêm type DECLINED
+      title: 'Ứng viên từ chối phỏng vấn AI',
+      content: `Ứng viên ${app.candidate_name} đã từ chối lời mời phỏng vấn AI cho vị trí "${app.job_title}". 1 credit đã được hoàn trả.`,
+      link: '/hr/dashboard/manage-applications',
+      reference_id: appId,
+      reference_type: 'application',
+      is_read: false,
+      created_at: new Date(),
+      updated_at: new Date()
+    }).returning('*');
+
+    sendRealtimeNotification(hrId, {
+      id: notification.id,
+      type: 'interview_invite',
+      title: notification.title,
+      content: notification.content,
+      time: 'Vừa xong',
+      isRead: false
+    });
+
+    return sendResponse(res, 200, { applicationId: appId, status: 'INVITATION_DECLINED' }, 'Đã từ chối lời mời phỏng vấn AI.');
+  } catch (error) {
+    if (error.code === '23505') { // Lỗi Unique Violation của Postgres
+      return sendError(res, 400, 'Hành động từ chối đã được xử lý trước đó.');
+    }
+    console.error('declineAIInterview error:', error);
+    return sendError(res, 500, 'Lỗi khi từ chối lời mời phỏng vấn');
+  }
+};
+

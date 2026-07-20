@@ -47,6 +47,10 @@ setTimeout(cleanupExpiredInvitations, 10000);
 // Khởi tạo Scheduler sinh câu hỏi hàng ngày
 initDailyScheduler();
 
+import { startCreditCronJob } from './src/services/creditCronJob.js';
+// Khởi tạo Cron Job cho Credit
+startCreditCronJob();
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

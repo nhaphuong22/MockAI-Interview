@@ -55,6 +55,9 @@ export function ManageApplications() {
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortByScore, setSortByScore] = useState(true); // default sort by cv_score desc
+  const [selectedAppIds, setSelectedAppIds] = useState([]);
+  const [isBulkInviteModalOpen, setIsBulkInviteModalOpen] = useState(false);
+  const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
 
   // Query 1: Lấy tất cả Jobs của HR
   const { data: jobsResponse, isLoading: isLoadingJobs } = useQuery({
@@ -105,6 +108,42 @@ export function ManageApplications() {
   const handleViewDetails = (app) => {
     setSelectedApplication(app);
     setIsModalOpen(true);
+  };
+
+  const toggleSelectApp = (e, appId) => {
+    e.stopPropagation();
+    setSelectedAppIds((prev) => 
+      prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    // Only select valid statuses for AI invite
+    const validApps = applicationsList.filter(app => 
+      ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'].includes(app.status)
+    );
+    if (selectedAppIds.length === validApps.length) {
+      setSelectedAppIds([]);
+    } else {
+      setSelectedAppIds(validApps.map(a => a.id));
+    }
+  };
+
+  const handleBulkInvite = async () => {
+    if (selectedAppIds.length === 0) return;
+    setIsSubmittingBulk(true);
+    try {
+      await jobApi.bulkInviteAIInterview(selectedAppIds);
+      // Success
+      setIsBulkInviteModalOpen(false);
+      setSelectedAppIds([]);
+      refetch();
+    } catch (error) {
+      console.error(error);
+      // Error handling can be done by toast inside api interceptor
+    } finally {
+      setIsSubmittingBulk(false);
+    }
   };
 
   const getAppCountForJob = (jId) => {
@@ -316,6 +355,14 @@ export function ManageApplications() {
                   <table className="w-full text-left border-collapse min-w-[780px]">
                     <thead>
                       <tr className="bg-gray-50/70 border-b border-gray-100">
+                        <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider w-10">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300 text-[#0ea5e9] focus:ring-[#0ea5e9]"
+                            onChange={toggleSelectAll}
+                            checked={selectedAppIds.length > 0 && selectedAppIds.length === applicationsList.filter(a => ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'].includes(a.status)).length}
+                          />
+                        </th>
                         <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Ứng Viên</th>
                         <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">
                           <button
@@ -368,6 +415,16 @@ export function ManageApplications() {
                             onClick={() => handleViewDetails(app)}
                             className="hover:bg-sky-50/30 transition-all group cursor-pointer"
                           >
+                            <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                              {['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'].includes(app.status) && (
+                                <input 
+                                  type="checkbox" 
+                                  className="rounded border-gray-300 text-[#0ea5e9] focus:ring-[#0ea5e9]"
+                                  checked={selectedAppIds.includes(app.id)}
+                                  onChange={(e) => toggleSelectApp(e, app.id)}
+                                />
+                              )}
+                            </td>
                             {/* Ứng viên */}
                             <td className="px-5 py-4">
                               <div className="flex items-center gap-3">
@@ -502,6 +559,73 @@ export function ManageApplications() {
           onOpenChange={setIsModalOpen}
           application={selectedApplication}
         />
+
+        {/* Sticky Action Bar */}
+        {selectedAppIds.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-40">
+            <span className="font-bold whitespace-nowrap">Đã chọn {selectedAppIds.length} ứng viên</span>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setSelectedAppIds([])}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm font-bold transition-colors"
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={() => setIsBulkInviteModalOpen(true)}
+                className="px-4 py-2 bg-[#0ea5e9] hover:bg-sky-400 rounded-xl text-sm font-bold shadow-lg shadow-sky-500/30 transition-colors whitespace-nowrap flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" /> Mời phỏng vấn AI (-{selectedAppIds.length * 10} Credits)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Invite Modal */}
+        {isBulkInviteModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl max-w-md w-full shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">Xác nhận gửi lời mời</h3>
+                <button 
+                  onClick={() => setIsBulkInviteModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 text-gray-600">
+                <p className="mb-4 text-sm font-medium">
+                  Bạn đang chuẩn bị gửi lời mời phỏng vấn AI cho <span className="font-black text-[#0ea5e9] text-base">{selectedAppIds.length}</span> ứng viên đã chọn.
+                </p>
+                <div className="bg-amber-50 text-amber-700 border border-amber-200 p-3 rounded-xl text-xs font-semibold mb-2">
+                  <span className="block mb-1">⚠️ Lưu ý quan trọng:</span>
+                  - Hành động này sẽ trừ <span className="font-bold">{selectedAppIds.length * 10} Credits</span> trong ví của bạn.<br/>
+                  - Ứng viên sẽ có 7 ngày để hoàn thành bài phỏng vấn.
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
+                <button
+                  onClick={() => setIsBulkInviteModalOpen(false)}
+                  className="px-4 py-2 font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={handleBulkInvite}
+                  disabled={isSubmittingBulk}
+                  className="flex items-center justify-center gap-2 px-5 py-2 font-bold text-white bg-[#0ea5e9] rounded-xl hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+                >
+                  {isSubmittingBulk ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    "Gửi hàng loạt"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
