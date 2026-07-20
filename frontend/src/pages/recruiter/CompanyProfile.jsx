@@ -1030,9 +1030,17 @@ export function CompanyProfile() {
             ) : (
               // ================= VIEW MODE =================
               <div className="space-y-10 relative z-10">
+                {/* Banner Info */}
+                {formData.bannerUrl && (
+                  <div className="w-full h-48 sm:h-64 rounded-3xl overflow-hidden shadow-sm relative -mb-16 sm:-mb-20">
+                    <img src={formData.bannerUrl} alt="Company Banner" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                  </div>
+                )}
+
                 {/* Header Info */}
-                <div className="flex flex-col sm:flex-row gap-8 items-start pb-8 border-b border-slate-100 dark:border-white/10">
-                  <div className="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white shrink-0">
+                <div className={`flex flex-col sm:flex-row gap-8 items-start pb-8 border-b border-slate-100 dark:border-white/10 relative z-10 ${formData.bannerUrl ? 'px-4 sm:px-8' : ''}`}>
+                  <div className="w-32 h-32 rounded-2xl border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white shrink-0 mt-2">
                     {formData.companyLogo ? (
                       <img src={formData.companyLogo} alt="Company Logo" className="w-full h-full object-cover" />
                     ) : (
@@ -1041,7 +1049,7 @@ export function CompanyProfile() {
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 space-y-4">
+                  <div className={`flex-1 space-y-4 ${formData.bannerUrl ? 'sm:mt-20 mt-4' : ''}`}>
                     <div>
                       <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">
                         {formData.companyName || "Chưa cập nhật tên công ty"}
@@ -1166,6 +1174,23 @@ export function CompanyProfile() {
                     )}
                   </div>
                 </div>
+
+                {/* Gallery */}
+                {formData.images && formData.images.length > 0 && (
+                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-white/10">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                      <Camera className="text-sky-500" size={20} />
+                      Hình ảnh công ty
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      {formData.images.map((imgUrl, index) => (
+                        <div key={index} className="relative aspect-square rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5">
+                          <img src={imgUrl} alt={`Company image ${index + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               </div>
             )

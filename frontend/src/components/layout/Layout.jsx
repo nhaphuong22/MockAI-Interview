@@ -10,7 +10,7 @@ import { GlobalBackground } from "./GlobalBackground";
 import { useUiStore } from "../../store/useUiStore";
 import { useAuthGate } from "../../hooks/useAuthGate";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getProfileApi } from "../../api/auth";
+import { getProfileApi, switchRoleApi } from "../../api/auth";
 import { notificationApi } from "../../api/notificationApi";
 
 // Protected Link Component
@@ -88,6 +88,33 @@ export function Layout() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     }
   });
+
+  const switchRoleMutation = useMutation({
+    mutationFn: switchRoleApi,
+    onSuccess: (response) => {
+      const { user, token } = response.data;
+      localStorage.setItem("token", token);
+      useAuthStore.getState().setAuth(user);
+      queryClient.clear(); // Clear all cached queries so new role data is fetched
+      if (user.role === 'HR') {
+        navigate('/hr/dashboard');
+      } else {
+        navigate('/');
+      }
+      useUiStore.getState().addToast('Chuyển đổi vai trò thành công', 'success');
+    },
+    onError: (error) => {
+      useUiStore.getState().addToast(error?.response?.data?.message || 'Có lỗi xảy ra', 'error');
+    }
+  });
+
+  const handleSwitchRole = () => {
+    if (!isAuthenticated) {
+      useUiStore.getState().openAuthModal('login', location.pathname);
+      return;
+    }
+    switchRoleMutation.mutate();
+  };
 
   const currentUser = userProfile || user;
 
@@ -191,18 +218,10 @@ export function Layout() {
                     <Briefcase className="w-6 h-6 text-white" />
                   </div>
                   <span className={`text-xl font-bold tracking-tight ${isCandidate && theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>MockAI</span>
-                  {isRecruiter && <span className="text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full ml-1 uppercase">Nhà Tuyển Dụng</span>}
                   {isAdministrator && <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full ml-1 uppercase">Quản trị viên</span>}
                 </Link>
 
-                {isUserRecruiter && isCandidate && (
-                  <Link
-                    to="/hr/dashboard"
-                    className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-950/60 text-sky-600 dark:text-sky-400 font-bold text-xs rounded-full border border-sky-100 dark:border-sky-900/50 transition-all hover:scale-105"
-                  >
-                    <span>Bạn là HR? Đăng tin ngay →</span>
-                  </Link>
-                )}
+
 
                 <nav className="hidden md:flex items-center gap-6">
                   {isCandidate && (
@@ -288,15 +307,13 @@ export function Layout() {
                       <Link to={`${administratorBase}/companies`} className={`text-sm font-medium transition-colors ${isActive(`${administratorBase}/companies`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
                         Công Ty
                       </Link>
-                      <Link to={`${administratorBase}/analytics`} className={`text-sm font-medium transition-colors ${isActive(`${administratorBase}/analytics`) ? 'text-[#0ea5e9]' : 'text-gray-600 hover:text-[#0ea5e9]'}`}>
-                        Analytics
-                      </Link>
                     </>
                   )}
                 </nav>
               </div>
 
               <div className="flex items-center gap-4">
+
                 {!isUserAdmin && (
                   <div className="flex items-center gap-2">
                     <ProtectedLink
@@ -519,6 +536,34 @@ export function Layout() {
                         </DropdownMenu.Content>
                       </DropdownMenu.Portal>
                     </DropdownMenu.Root>
+                    
+                    {/* Switch Role Button (Moved to right of Avatar) */}
+                    {/* Switch Role Button (Moved to right of Avatar) */}
+                    {(isAuthenticated && !isUserAdmin && !isRecruiter) && (
+                      <div className="flex items-center ml-2 border-l border-gray-200 dark:border-white/10 pl-4">
+                        <button 
+                          onClick={handleSwitchRole}
+                          disabled={switchRoleMutation.isPending}
+                          className="flex flex-col items-start text-left hover:opacity-80 transition-opacity whitespace-nowrap cursor-pointer"
+                        >
+                          <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Bạn là nhà tuyển dụng?</span>
+                          <span className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400">Đăng tuyển ngay &gt;&gt;</span>
+                        </button>
+                      </div>
+                    )}
+                    
+                    {isRecruiter && (
+                      <div className="flex items-center ml-2 border-l border-gray-200 dark:border-white/10 pl-4">
+                        <button 
+                          onClick={handleSwitchRole}
+                          disabled={switchRoleMutation.isPending}
+                          className="flex flex-col items-start text-left hover:opacity-80 transition-opacity whitespace-nowrap cursor-pointer"
+                        >
+                          <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Đóng vai trò HR</span>
+                          <span className="text-[13px] font-bold text-[#0ea5e9] dark:text-sky-400">Chuyển sang Ứng viên &gt;&gt;</span>
+                        </button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="flex items-center gap-3">

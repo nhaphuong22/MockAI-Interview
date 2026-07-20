@@ -8,7 +8,7 @@ import ReactionButton from "./ReactionButton";
 import ReactionSummary from "./ReactionSummary";
 import PostDetailModal from "./PostDetailModal";
 
-export function PostCard({ post }) {
+export function PostCard({ post, onReport }) {
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -194,6 +194,15 @@ export function PostCard({ post }) {
             <span className="font-semibold text-[15px]">{post.comments || 0}</span>
           </button>
 
+          {onReport && (
+            <button
+              onClick={() => onReport(post.id)}
+              title="Báo cáo bài viết này"
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-full hover:bg-red-50/50 dark:hover:bg-red-900/30 transition-all cursor-pointer text-gray-500 dark:text-slate-400 hover:text-red-500"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 stroke-[2px] transition-colors"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>
+            </button>
+          )}
 
         </div>
 

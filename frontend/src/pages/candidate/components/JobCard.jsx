@@ -10,7 +10,8 @@ export function JobCard({
   isSelected,
   isBookmarked,
   onSelect,
-  onToggleBookmark
+  onToggleBookmark,
+  onReport
 }) {
   const isVip = job.company_is_vip === true || job.companyIsVip === true || job.is_vip === true;
   const vipThemeColor = isVip ? (job.company_vip_theme_color || job.companyVipThemeColor || "#0ea5e9") : null;
@@ -19,24 +20,47 @@ export function JobCard({
   return (
     <div
       onClick={onSelect}
-      className={`relative bg-white/70 dark:bg-[#0a0f1c]/60 backdrop-blur-md rounded-2xl p-6 border cursor-pointer transition-all duration-300 hover:-translate-y-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] ${
-        isSelected
-          ? "border-[#0ea5e9] ring-2 ring-sky-100 dark:ring-sky-950/50"
-          : isVip
-            ? ""
-            : "border-gray-100 dark:border-white/5 hover:border-[#0ea5e9]/50 dark:hover:border-[#0ea5e9]/30"
-      }`}
-      style={{
-        borderColor: isSelected ? undefined : (isVip ? vipThemeColor : undefined),
-        boxShadow: (isVip && !isSelected)
-          ? (vipBorderStyle === 'gradient-glow' ? `0 0 20px ${vipThemeColor}33` : `0 4px 20px rgba(0,0,0,0.02)`)
-          : undefined,
-        background: (isVip && !isSelected && vipBorderStyle === 'gradient-glow')
-          ? `linear-gradient(to bottom, ${vipThemeColor}0a, transparent)`
-          : undefined
-      }}
+      className="relative group cursor-pointer transition-all duration-500 hover:-translate-y-1.5"
     >
-      <div className="flex gap-4">
+      {/* Outer Glow Effect cho VIP */}
+      {isVip && !isSelected && (
+        <div 
+          className="absolute -inset-[1.5px] rounded-2xl opacity-40 group-hover:opacity-100 blur-[2px] transition-all duration-700 pointer-events-none"
+          style={{ background: `linear-gradient(135deg, ${vipThemeColor}90, transparent 40%, transparent 60%, ${vipThemeColor}90)` }}
+        ></div>
+      )}
+
+      {/* Main Card Container */}
+      <div 
+        className={`relative h-full bg-white/90 dark:bg-[#0a0f1c]/90 backdrop-blur-2xl rounded-2xl p-6 border transition-all duration-300 overflow-hidden ${
+          isSelected
+            ? "border-[#0ea5e9] ring-2 ring-sky-100 dark:ring-sky-950/50"
+            : isVip
+              ? ""
+              : "border-gray-100 dark:border-white/5 hover:border-[#0ea5e9]/50 dark:hover:border-[#0ea5e9]/30"
+        }`}
+        style={{
+          borderColor: (isVip && !isSelected) ? `${vipThemeColor}80` : undefined,
+          boxShadow: (isVip && !isSelected) ? `0 0 20px ${vipThemeColor}40, inset 0 0 15px ${vipThemeColor}20` : '0 4px 20px rgba(0,0,0,0.02)'
+        }}
+      >
+        {/* Animated Inner Highlight (Top Right) */}
+        {isVip && !isSelected && (
+          <div 
+            className="absolute -top-20 -right-20 w-40 h-40 opacity-30 group-hover:opacity-50 transition-opacity duration-700 blur-[40px] rounded-full pointer-events-none"
+            style={{ backgroundColor: vipThemeColor }}
+          ></div>
+        )}
+        
+        {/* Animated Inner Highlight (Bottom Left) */}
+        {isVip && !isSelected && (
+          <div 
+            className="absolute -bottom-20 -left-20 w-40 h-40 opacity-10 group-hover:opacity-30 transition-opacity duration-700 blur-[40px] rounded-full pointer-events-none"
+            style={{ backgroundColor: vipThemeColor }}
+          ></div>
+        )}
+
+        <div className="flex gap-4 relative z-10">
         {/* Company Logo Icon */}
         {job.company_id ? (
           <Link
@@ -114,21 +138,23 @@ export function JobCard({
                   <Link
                     to={`/companies/${job.company_id}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="text-sm font-bold transition-colors inline-block"
+                    className="text-sm font-bold transition-colors inline-block relative"
                     style={{
-                      color: isVip ? vipThemeColor : undefined
+                      color: isVip ? vipThemeColor : undefined,
+                      textShadow: isVip ? `0 0 10px ${vipThemeColor}90` : undefined
                     }}
                   >
                     {job.company}
                   </Link>
                   {isVip && (
                     <span 
-                      className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm"
+                      className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm flex items-center gap-0.5"
                       style={{
                         background: vipThemeColor,
-                        boxShadow: `0 2px 10px ${vipThemeColor}40`
+                        boxShadow: `0 0 12px ${vipThemeColor}`
                       }}
                     >
+                      <Sparkles className="w-2.5 h-2.5 animate-pulse" />
                       VIP
                     </span>
                   )}
@@ -136,21 +162,23 @@ export function JobCard({
               ) : (
                 <div className="flex items-center gap-2">
                   <p
-                    className="text-sm font-bold"
+                    className="text-sm font-bold relative"
                     style={{
-                      color: isVip ? vipThemeColor : undefined
+                      color: isVip ? vipThemeColor : undefined,
+                      textShadow: isVip ? `0 0 10px ${vipThemeColor}90` : undefined
                     }}
                   >
                     {job.company}
                   </p>
                   {isVip && (
                     <span 
-                      className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm"
+                      className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm flex items-center gap-0.5"
                       style={{
                         background: vipThemeColor,
-                        boxShadow: `0 2px 10px ${vipThemeColor}40`
+                        boxShadow: `0 0 12px ${vipThemeColor}`
                       }}
                     >
+                      <Sparkles className="w-2.5 h-2.5 animate-pulse" />
                       VIP
                     </span>
                   )}
@@ -159,6 +187,18 @@ export function JobCard({
 
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {onReport && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReport(job.id);
+                  }}
+                  title="Báo cáo công việc này"
+                  className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors group shrink-0"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-gray-400 dark:text-slate-500 group-hover:text-red-500 transition-colors"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -216,6 +256,7 @@ export function JobCard({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

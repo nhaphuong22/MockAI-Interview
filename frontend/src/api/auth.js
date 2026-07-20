@@ -160,3 +160,7 @@ export const verifyCompanyEmailOtpApi = async (data) => {
 export const resendCompanyEmailOtpApi = async (data) => {
   return axiosClient.post("/auth/company/resend-otp", data);
 };
+
+export const switchRoleApi = async () => {
+  return axiosClient.post("/auth/switch-role");
+};

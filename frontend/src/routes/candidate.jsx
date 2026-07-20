@@ -1,26 +1,30 @@
-import { Home } from "../pages/candidate/Home";
-import { Jobs } from "../pages/candidate/Jobs";
-import { JobDetail } from "../pages/candidate/JobDetail";
-import { CompanyDetail } from "../pages/candidate/CompanyDetail";
-import { SavedJobs } from "../pages/candidate/SavedJobs";
-import { ApplicationTracking } from "../pages/candidate/ApplicationTracking";
-import { Profile } from "../pages/candidate/Profile";
-import { CVReview } from "../pages/candidate/CVReview";
-import { InterviewPractice } from "../pages/candidate/InterviewPractice";
-import { Community } from "../pages/candidate/Community";
-import { WriteBlog } from "../pages/candidate/WriteBlog";
-import { BlogDetail } from "../pages/candidate/BlogDetail";
-import { SavedCompanies } from "../pages/candidate/SavedCompanies";
-import { Notifications } from "../pages/candidate/Notifications";
-import { Settings } from "../pages/candidate/Settings";
-import { Packages } from "../pages/shared/Packages";
-import { Checkout } from "../pages/shared/Checkout";
-import { PaymentSuccess } from "../pages/shared/PaymentSuccess";
+import { lazy } from "react";
+const Home = lazy(() => import("../pages/candidate/Home").then(m => ({ default: m.Home })));
+const Jobs = lazy(() => import("../pages/candidate/Jobs").then(m => ({ default: m.Jobs })));
+const JobDetail = lazy(() => import("../pages/candidate/JobDetail").then(m => ({ default: m.JobDetail })));
+const CompanyDetail = lazy(() => import("../pages/candidate/CompanyDetail").then(m => ({ default: m.CompanyDetail })));
+const SavedJobs = lazy(() => import("../pages/candidate/SavedJobs").then(m => ({ default: m.SavedJobs })));
+const ApplicationTracking = lazy(() => import("../pages/candidate/ApplicationTracking").then(m => ({ default: m.ApplicationTracking })));
+const Profile = lazy(() => import("../pages/candidate/Profile").then(m => ({ default: m.Profile })));
+const CVReview = lazy(() => import("../pages/candidate/CVReview").then(m => ({ default: m.CVReview })));
+const InterviewPractice = lazy(() => import("../pages/candidate/InterviewPractice").then(m => ({ default: m.InterviewPractice })));
+const Community = lazy(() => import("../pages/candidate/Community").then(m => ({ default: m.Community })));
+const WriteBlog = lazy(() => import("../pages/candidate/WriteBlog").then(m => ({ default: m.WriteBlog })));
+const BlogDetail = lazy(() => import("../pages/candidate/BlogDetail").then(m => ({ default: m.BlogDetail })));
+const SavedCompanies = lazy(() => import("../pages/candidate/SavedCompanies").then(m => ({ default: m.SavedCompanies })));
+const Notifications = lazy(() => import("../pages/candidate/Notifications").then(m => ({ default: m.Notifications })));
+const Settings = lazy(() => import("../pages/candidate/Settings").then(m => ({ default: m.Settings })));
+const Packages = lazy(() => import("../pages/shared/Packages").then(m => ({ default: m.Packages })));
+const Checkout = lazy(() => import("../pages/shared/Checkout").then(m => ({ default: m.Checkout })));
+const PaymentSuccess = lazy(() => import("../pages/shared/PaymentSuccess").then(m => ({ default: m.PaymentSuccess })));
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
-import HRInterviewPrep from "../pages/candidate/HRInterviewPrep";
-import HRInterviewRoom from "../pages/candidate/HRInterviewRoom";
-import HRInterviewResult from "../pages/candidate/HRInterviewResult";
-import { Tools } from "../pages/candidate/Tools";
+
+const HRInterviewPrep = lazy(() => import("../pages/candidate/HRInterviewPrep"));
+const HRInterviewRoom = lazy(() => import("../pages/candidate/HRInterviewRoom"));
+const HRInterviewResult = lazy(() => import("../pages/candidate/HRInterviewResult"));
+const Tools = lazy(() => import("../pages/candidate/Tools").then(m => ({ default: m.Tools })));
+const ContentHiddenPage = lazy(() => import("../pages/shared/ContentHiddenPage").then(m => ({ default: m.ContentHiddenPage })));
+
 
 export const candidateRoutes = [
   { index: true, Component: Home }, // Public: Landing Page
@@ -107,5 +111,9 @@ export const candidateRoutes = [
   { 
     path: "hr-interview/result/:interviewId", 
     element: <ProtectedRoute><HRInterviewResult /></ProtectedRoute>
+  },
+  {
+    path: "content-hidden",
+    element: <ProtectedRoute><ContentHiddenPage /></ProtectedRoute>
   },
 ];

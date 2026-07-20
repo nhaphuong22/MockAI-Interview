@@ -11,12 +11,15 @@ import { useUiStore } from "../../store/useUiStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { getProfileApi } from "../../api/auth";
 import * as Dialog from "@radix-ui/react-dialog";
+import ReportModal from "../../components/common/ReportModal";
 
 export function JobDetail() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
+
+  const [reportModal, setReportModal] = useState({ isOpen: false, targetId: null });
 
   // Gọi API lấy danh sách ID công việc đã lưu
   const { data: savedJobIds = [] } = useQuery({
@@ -361,6 +364,19 @@ export function JobDetail() {
                 >
                   <Share2 className="w-5 h-5" />
                   <span>Chia sẻ</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      addToast("Yêu cầu đăng nhập để sử dụng tính năng này", "warning");
+                      return;
+                    }
+                    setReportModal({ isOpen: true, targetId: Number(id) });
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 border-2 border-gray-200 dark:border-white/10 rounded-xl hover:border-red-500 hover:text-red-500 transition-all text-sm cursor-pointer ml-auto text-gray-500 dark:text-gray-400"
+                >
+                  <Flag className="w-5 h-5" />
+                  <span>Báo cáo</span>
                 </button>
               </div>
             </div>
@@ -728,6 +744,13 @@ export function JobDetail() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      <ReportModal
+        isOpen={reportModal.isOpen}
+        onClose={() => setReportModal({ isOpen: false, targetId: null })}
+        targetType="JOB"
+        targetId={reportModal.targetId}
+      />
     </div>
   );
 }

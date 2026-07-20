@@ -18,6 +18,7 @@ import {
   verifyCompanyOtpController,
   resendCompanyOtpController,
   acceptPrivacyAgreementController,
+  switchRoleController,
 } from '../controllers/authController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
@@ -301,6 +302,24 @@ router.post('/change-password', authenticateToken, changePasswordController);
  */
 router.get('/profile', authenticateToken, getProfile);
 router.put('/profile', authenticateToken, updateProfile);
+
+// ─── Switch Role ───────────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/auth/switch-role:
+ *   post:
+ *     summary: Chuyển đổi vai trò người dùng (Candidate <-> Recruiter)
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Chuyển đổi thành công.
+ *       400:
+ *         description: Lỗi logic (ví dụ vai trò không tồn tại).
+ */
+router.post('/switch-role', authenticateToken, switchRoleController);
 
 // ─── Company OTP Routes ────────────────────────────────────────────────────────
 
