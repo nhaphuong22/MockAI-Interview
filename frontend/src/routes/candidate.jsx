@@ -19,10 +19,6 @@ const Checkout = lazy(() => import("../pages/shared/Checkout").then(m => ({ defa
 const PaymentSuccess = lazy(() => import("../pages/shared/PaymentSuccess").then(m => ({ default: m.PaymentSuccess })));
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 
-import HRInterviewPrep from "../pages/candidate/HRInterviewPrep";
-import HRInterviewRoom from "../pages/candidate/HRInterviewRoom";
-import HRInterviewResult from "../pages/candidate/HRInterviewResult";
-import { Tools } from "../pages/candidate/Tools";
 import { ContentHiddenPage } from "../pages/shared/ContentHiddenPage";
 
 const HRInterviewPrep = lazy(() => import("../pages/candidate/HRInterviewPrep"));
