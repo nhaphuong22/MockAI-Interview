@@ -229,10 +229,25 @@ export const deleteContent = async (req, res) => {
     reports.forEach(r => { reasonCounts[r.reason] = (reasonCounts[r.reason] || 0) + 1; });
     const topReason = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Khác';
 
-    // Build link for author to see why their content was hidden
-    const encodedTitle = encodeURIComponent(targetTitle);
-    const encodedReason = encodeURIComponent(topReason);
-    const hiddenPageLink = `/content-hidden?type=${targetType}&title=${encodedTitle}&reason=${encodedReason}`;
+    // Build safe-length link for author to see why their content was hidden (link column is varchar(255))
+    let shortTitle = targetTitle;
+    if (shortTitle.length > 25) {
+      shortTitle = shortTitle.slice(0, 25) + '...';
+    }
+    let shortReason = topReason;
+    if (shortReason.length > 25) {
+      shortReason = shortReason.slice(0, 25) + '...';
+    }
+
+    let encodedTitle = encodeURIComponent(shortTitle);
+    let encodedReason = encodeURIComponent(shortReason);
+    let hiddenPageLink = `/content-hidden?type=${targetType}&title=${encodedTitle}&reason=${encodedReason}`;
+
+    // Extra safety guard: If URL is still too long, aggressively truncate title to 10 chars
+    if (hiddenPageLink.length > 240) {
+      shortTitle = shortTitle.slice(0, 10) + '...';
+      hiddenPageLink = `/content-hidden?type=${targetType}&title=${encodeURIComponent(shortTitle)}&reason=${encodedReason}`;
+    }
 
     await db('reports')
       .where('target_type', targetType)
