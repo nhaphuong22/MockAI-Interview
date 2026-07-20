@@ -126,7 +126,7 @@ export const SocketProvider = ({ children }) => {
         setSocket(null);
       }
     };
-  }, [isAuthenticated, user?.id, showToast, queryClient]);
+  }, [isAuthenticated, user?.id, user?.role, showToast, queryClient]);
 
   return (
     <SocketContext.Provider value={socket}>

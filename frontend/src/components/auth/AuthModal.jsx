@@ -5,6 +5,7 @@ import * as Progress from "@radix-ui/react-progress";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginApi, registerApi, loginGoogleApi, forgotPasswordApi, resendVerificationApi, verifyEmailApi, switchRoleApi } from "../../api/auth";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useUiStore } from "../../store/useUiStore";
 
@@ -18,6 +19,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const queryClient = useQueryClient();
 
   // Login State
   const [loginEmail, setLoginEmail] = useState("");
@@ -67,6 +69,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         if (user.avatar_url && user.avatar_url.includes("googleusercontent.com")) {
           localStorage.setItem("googleAvatar", user.avatar_url);
         }
+        queryClient.clear(); // Clear cached queries so data matching new role is fetched
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();
@@ -148,6 +151,7 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         if (user.avatar_url && user.avatar_url.includes("googleusercontent.com")) {
           localStorage.setItem("googleAvatar", user.avatar_url);
         }
+        queryClient.clear(); // Clear cached queries so data matching new role is fetched
         useAuthStore.getState().setAuth(user);
         onOpenChange(false);
         if (onLoginSuccess) onLoginSuccess();
