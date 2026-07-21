@@ -25,6 +25,9 @@ export const blogApi = {
   getBlogById: (id) => {
     return axiosClient.get(`/blogs/${id}`);
   },
+  getRelatedBlogs: (id) => {
+    return axiosClient.get(`/blogs/${id}/related`);
+  },
   toggleLikeBlog: (id) => {
     return axiosClient.post(`/blogs/${id}/like`);
   },

@@ -19,7 +19,7 @@ import {
   removeCompanyMember
 } from '../controllers/companyController.js';
 import { authenticateToken, optionalAuthenticateToken, requireRole } from '../middlewares/authMiddleware.js';
-import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
+import { uploadAvatar, uploadDoc } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ const router = express.Router();
 router.post(
   '/upload-verification-docs',
   authenticateToken,
-  uploadAvatar.fields([
+  uploadDoc.fields([
     { name: 'licenseFile', maxCount: 1 },
     { name: 'authFile', maxCount: 1 },
     { name: 'idFrontFile', maxCount: 1 },
@@ -42,6 +42,7 @@ router.post(
   ]),
   uploadVerificationDocsController
 );
+
 
 /**
  * @swagger

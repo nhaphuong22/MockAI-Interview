@@ -78,7 +78,7 @@ export const incrementViewCount = async (id) => {
 };
 
 export const findRelatedBlogs = async (id, tags) => {
-  const query = db('blogs')
+  let query = db('blogs')
     .join('users', 'blogs.author_id', '=', 'users.id')
     .where('blogs.status', 'PUBLISHED')
     .whereNot('blogs.id', id)
@@ -88,9 +88,37 @@ export const findRelatedBlogs = async (id, tags) => {
       'users.avatar_url as author_avatar'
     );
 
-  if (tags && tags.length > 0) {
-    query.whereRaw('blogs.tags && CAST(? AS text[])', [tags]); // && operator for array overlap in Postgres
+  if (tags) {
+    const formattedTags = Array.isArray(tags) ? tags : String(tags).replace(/[{}]/g, '').split(',').map(t => t.trim()).filter(Boolean);
+    if (formattedTags.length > 0) {
+      try {
+        query.whereRaw('blogs.tags && ?::text[]', [formattedTags]);
+      } catch (e) {
+        console.error('Error matching tags in findRelatedBlogs:', e);
+      }
+    }
   }
 
-  return query.orderBy('blogs.created_at', 'desc').limit(3);
+  let results = [];
+  try {
+    results = await query.orderBy('blogs.created_at', 'desc').limit(3);
+  } catch (e) {
+    console.error('Error running findRelatedBlogs query:', e);
+  }
+
+  if (!results || results.length === 0) {
+    results = await db('blogs')
+      .join('users', 'blogs.author_id', '=', 'users.id')
+      .where('blogs.status', 'PUBLISHED')
+      .whereNot('blogs.id', id)
+      .select(
+        'blogs.*',
+        'users.full_name as author_name',
+        'users.avatar_url as author_avatar'
+      )
+      .orderBy('blogs.created_at', 'desc')
+      .limit(3);
+  }
+
+  return results;
 };

@@ -14,20 +14,27 @@ export async function seed(knex) {
   await knex('assessments').where('interview_id', 2).del();
   await knex('interviews').where('id', 2).del();
 
+  // Get valid CV for user 2
+  const cv = await knex('cvs').where({ user_id: 2 }).first();
+  const cvId = cv ? cv.id : null;
+
+  // Get main completed interview for user 2 (from seed 05)
+  const mainInterview = await knex('interviews').where({ user_id: 2, job_id: 1 }).first();
+
   // Insert suspended Interview for fraud mockup testing (interview_id: 2)
-  // Linked to job_id: 3 to avoid (candidate_id, job_id) unique constraint violation
-  await knex('interviews').insert([
+  const [suspendedInterviewRow] = await knex('interviews').insert([
     {
       id: 2,
       user_id: 2, // 'user@mockai.com'
-      cv_id: 1,
+      cv_id: cvId,
       job_id: 3, // Kỹ sư Năng lượng Mặt trời
       type: 'REAL',
       status: 'SUSPENDED',
       created_at: new Date(),
       updated_at: new Date()
     }
-  ]);
+  ]).returning('id');
+  const suspendedInterviewId = typeof suspendedInterviewRow === 'object' ? suspendedInterviewRow.id : suspendedInterviewRow;
 
   // Insert suspended Application (application_id: 2)
   await knex('applications').insert([
@@ -35,8 +42,8 @@ export async function seed(knex) {
       id: 2,
       candidate_id: 2,
       job_id: 3, // Kỹ sư Năng lượng Mặt trời
-      cv_id: 1,
-      interview_id: 2,
+      cv_id: cvId,
+      interview_id: suspendedInterviewId,
       status: 'FLAGGED_FRAUD',
       cv_score: 85,
       interview_score: 0,
@@ -49,11 +56,11 @@ export async function seed(knex) {
     }
   ]);
 
-  // Insert interview highlights
-  await knex('interview_highlights').insert([
-    {
-      id: 1,
-      interview_id: 1,
+  const highlightsToInsert = [];
+
+  if (mainInterview) {
+    highlightsToInsert.push({
+      interview_id: mainInterview.id,
       highlight_summary: 'Ứng viên có phong thái trả lời tự tin, kỹ năng chuyên môn React tốt. Có một số giây ngập ngừng nhẹ ở câu hỏi thứ 2 nhưng nhanh chóng lấy lại bình tĩnh. Tổng thể thể hiện xuất sắc, giao tiếp trôi chảy và mạch lạc.',
       is_flagged: false,
       timestamps_data: JSON.stringify([
@@ -78,10 +85,12 @@ export async function seed(knex) {
       ]),
       created_at: new Date(),
       updated_at: new Date()
-    },
-    {
-      id: 2,
-      interview_id: 2,
+    });
+  }
+
+  if (suspendedInterviewId) {
+    highlightsToInsert.push({
+      interview_id: suspendedInterviewId,
       highlight_summary: 'Hệ thống đã tự động đình chỉ buổi phỏng vấn này sau khi phát hiện vượt quá 5 lần vi phạm quy chế thi cử. Ứng viên liên tục chuyển tab trình duyệt và hướng nhìn rời khỏi màn hình camera chính.',
       is_flagged: true,
       timestamps_data: JSON.stringify([
@@ -106,11 +115,15 @@ export async function seed(knex) {
       ]),
       created_at: new Date(),
       updated_at: new Date()
-    }
-  ]);
+    });
+  }
 
-  // Reset sequences to prevent duplicate key errors in auto-increment
-  await knex.raw("SELECT setval('interviews_id_seq', (SELECT MAX(id) FROM interviews))");
-  await knex.raw("SELECT setval('applications_id_seq', (SELECT MAX(id) FROM applications))");
-  await knex.raw("SELECT setval('interview_highlights_id_seq', (SELECT MAX(id) FROM interview_highlights))");
+  if (highlightsToInsert.length > 0) {
+    await knex('interview_highlights').insert(highlightsToInsert);
+  }
+
+  // Reset sequence generators for PostgreSQL auto-increment safely
+  await knex.raw("SELECT setval(pg_get_serial_sequence('interviews', 'id'), COALESCE((SELECT MAX(id) FROM interviews), 1))");
+  await knex.raw("SELECT setval(pg_get_serial_sequence('applications', 'id'), COALESCE((SELECT MAX(id) FROM applications), 1))");
+  await knex.raw("SELECT setval(pg_get_serial_sequence('interview_highlights', 'id'), COALESCE((SELECT MAX(id) FROM interview_highlights), 1))");
 }

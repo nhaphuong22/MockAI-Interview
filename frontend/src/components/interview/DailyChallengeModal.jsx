@@ -5,8 +5,42 @@ import { getDailyQuestionApi, submitDailyAnswerApi } from "../../api/dailyChalle
 import { useAudioRecorder } from "../../hooks/useAudioRecorder";
 import { useUiStore } from "../../store/useUiStore";
 
+const INDUSTRY_GROUPS = [
+  {
+    id: "it",
+    name: "Công nghệ thông tin (IT)",
+    tracks: [
+      { id: "frontend", name: "Frontend Developer" },
+      { id: "backend", name: "Backend Developer" },
+      { id: "fullstack", name: "Fullstack Developer" },
+      { id: "qa", name: "QA / QC Engineer" },
+      { id: "data_science", name: "Data Scientist" }
+    ]
+  },
+  {
+    id: "business",
+    name: "Kinh tế & Kinh doanh",
+    tracks: [
+      { id: "marketing", name: "Digital Marketing Specialist" },
+      { id: "sales", name: "Business Development / Sales" },
+      { id: "hr", name: "Quản trị Nhân sự (HR)" },
+      { id: "finance", name: "Tài chính / Kế toán" },
+      { id: "pm", name: "Product Manager (PM)" }
+    ]
+  },
+  {
+    id: "design",
+    name: "Thiết kế & Sáng tạo",
+    tracks: [
+      { id: "design", name: "UI/UX Designer" },
+      { id: "graphic", name: "Graphic Designer" }
+    ]
+  }
+];
+
 export function DailyChallengeModal({ isOpen, onClose, onSuccess }) {
   const { showToast } = useUiStore();
+  const [selectedIndustry, setSelectedIndustry] = useState("it");
   const [selectedTrack, setSelectedTrack] = useState("frontend");
   const [phase, setPhase] = useState("prepare"); // prepare, recording, review, grading, result
   const [timeLeft, setTimeLeft] = useState(60);
@@ -41,50 +75,86 @@ export function DailyChallengeModal({ isOpen, onClose, onSuccess }) {
         const response = await getDailyQuestionApi(selectedTrack);
         return response.data || response;
       } catch (err) {
-        console.warn("Daily question API not yet implemented, using mock fallbacks.");
-        // Static fallbacks matching the backend scheduler
+        console.warn("Daily question API fallback.");
         const fallbacks = {
           frontend: {
             id: 1,
             question_text: "Restful API là gì? Hãy cho tôi biết về 1 số Http method và khi nào thì dùng nó?",
-            sample_answer: "RESTful API là chuẩn thiết kế API sử dụng HTTP methods: GET (lấy dữ liệu), POST (tạo mới), PUT (cập nhật toàn bộ), PATCH (cập nhật một phần), DELETE (xóa)."
+            sample_answer: "RESTful API là chuẩn thiết kế API sử dụng HTTP methods: GET, POST, PUT, PATCH, DELETE."
           },
           backend: {
             id: 2,
             question_text: "Hãy giải thích về cơ chế connection pooling trong PostgreSQL và tại sao nó quan trọng?",
-            sample_answer: "Connection pooling giữ các kết nối database mở sẵn và dùng lại chúng, tránh việc tạo/đóng kết nối liên tục giúp giảm thiểu độ trễ và tải cho DB."
+            sample_answer: "Connection pooling giữ các kết nối database mở sẵn và dùng lại chúng, giảm thiểu độ trễ."
           },
           fullstack: {
             id: 3,
             question_text: "So sánh Server-Side Rendering (SSR) và Client-Side Rendering (CSR) về SEO và trải nghiệm người dùng?",
-            sample_answer: "SSR render HTML ở server nên tốt cho SEO và load lần đầu nhanh. CSR render ở client nên mượt mà sau khi load xong nhưng kém SEO hơn."
+            sample_answer: "SSR render HTML ở server tốt cho SEO. CSR render ở client mượt mà sau khi load xong."
           },
           design: {
             id: 4,
             question_text: "Quy tắc 60-30-10 trong phối màu UI/UX thiết kế là gì?",
-            sample_answer: "Quy tắc phối màu gồm: 60% màu chủ đạo (nền), 30% màu phụ (cấu trúc/text), và 10% màu nhấn (CTA, highlight)."
+            sample_answer: "Quy tắc phối màu gồm: 60% màu chủ đạo, 30% màu phụ, và 10% màu nhấn."
           },
           qa: {
             id: 5,
             question_text: "Phân biệt Regression Testing và Sanity Testing?",
-            sample_answer: "Regression testing kiểm thử toàn bộ hệ thống sau thay đổi để đảm bảo không lỗi cũ. Sanity testing kiểm tra nhanh một phần tính năng cụ thể vừa cập nhật."
+            sample_answer: "Regression testing kiểm thử toàn bộ hệ thống sau thay đổi. Sanity testing kiểm tra nhanh tính năng vừa cập nhật."
           },
           pm: {
             id: 6,
             question_text: "Khái niệm MVP (Minimum Viable Product) là gì và làm thế nào để xác định phạm vi của MVP?",
-            sample_answer: "MVP là phiên bản sản phẩm tối giản nhất chứa đủ tính năng cốt lõi để thu thập phản hồi từ người dùng thực tế nhằm tối ưu hóa chi phí."
+            sample_answer: "MVP là phiên bản sản phẩm tối giản nhất chứa đủ tính năng cốt lõi để thu thập phản hồi người dùng."
           },
           data_science: {
             id: 7,
             question_text: "Phân biệt Overfitting và Underfitting trong mô hình học máy?",
-            sample_answer: "Overfitting là mô hình quá khớp dữ liệu train nhưng kém trên dữ liệu mới. Underfitting là mô hình quá đơn giản không học được cấu trúc dữ liệu."
+            sample_answer: "Overfitting là mô hình quá khớp dữ liệu train. Underfitting là mô hình quá đơn giản."
+          },
+          marketing: {
+            id: 8,
+            question_text: "Các chỉ số KPIs quan trọng nhất trong một chiến dịch Performance Marketing là gì?",
+            sample_answer: "Các chỉ số cốt lõi gồm CTR (Click-Through Rate), CPC (Cost Per Click), CPA (Cost Per Acquisition), và ROAS (Return On Ad Spend)."
+          },
+          sales: {
+            id: 9,
+            question_text: "Hãy nêu quy trình 7 bước xử lý từ chối (Objection Handling) trong B2B Sales?",
+            sample_answer: "Lắng nghe chân thành, đồng cảm, làm rõ nguyên nhân từ chối, đưa ra giải pháp chứng minh giá trị, và chốt cam kết thử nghiệm."
+          },
+          hr: {
+            id: 10,
+            question_text: "Sự khác biệt giữa mô hình OKRs và KPIs trong đánh giá hiệu suất nhân sự là gì?",
+            sample_answer: "KPIs tập trung vào duy trì mục tiêu và chỉ số hiệu suất đo lường định kỳ. OKRs tập trung vào mục tiêu đột phá truyền cảm hứng."
+          },
+          finance: {
+            id: 11,
+            question_text: "Khái niệm EBITDA là gì và tại sao chỉ số này quan trọng trong định giá doanh nghiệp?",
+            sample_answer: "EBITDA là lợi nhuận trước thuế, lãi vay và hao phí. Chỉ số này phản ánh năng lực tạo tiền thuần từ hoạt động kinh doanh cốt lõi."
+          },
+          graphic: {
+            id: 12,
+            question_text: "Khác biệt cơ bản giữa định dạng hình ảnh Vector và Raster là gì?",
+            sample_answer: "Vector dựa trên công thức toán học nên không bị vỡ nét khi phóng to. Raster dựa trên lưới điểm ảnh (pixels) nên dễ bị mờ khi thay đổi kích thước."
           }
         };
-        return fallbacks[selectedTrack] || { id: 99, question_text: `Thử thách cho track ${selectedTrack}` };
+        return fallbacks[selectedTrack] || { id: 99, question_text: `Thử thách phỏng vấn cho chuyên ngành ${selectedTrack}` };
       }
     },
     enabled: isOpen
   });
+
+  // Industry selection handler
+  const handleIndustryChange = (e) => {
+    const industryId = e.target.value;
+    setSelectedIndustry(industryId);
+    const group = INDUSTRY_GROUPS.find((g) => g.id === industryId);
+    if (group && group.tracks.length > 0) {
+      setSelectedTrack(group.tracks[0].id);
+    }
+    setPhase("prepare");
+    clearRecording();
+  };
 
   // Track selection handler
   const handleTrackChange = (e) => {
@@ -264,25 +334,44 @@ export function DailyChallengeModal({ isOpen, onClose, onSuccess }) {
           {(phase === "prepare" || phase === "recording" || phase === "review") && (
             <div className="space-y-6">
               
-              {/* Dropdown Track Selector */}
+              {/* Dropdown Industry & Track Selector */}
               {phase === "prepare" && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
-                    Chọn chuyên ngành phỏng vấn
-                  </label>
-                  <select
-                    value={selectedTrack}
-                    onChange={handleTrackChange}
-                    className="w-full px-4 py-3 rounded-2xl dark:bg-slate-900 bg-slate-50 border border-slate-200/50 dark:border-slate-800 text-slate-800 dark:text-white font-bold text-sm focus:outline-none focus:border-[#0ea5e9]"
-                  >
-                    <option value="frontend">Frontend Developer</option>
-                    <option value="backend">Backend Developer</option>
-                    <option value="fullstack">Fullstack Developer</option>
-                    <option value="design">UI/UX Designer</option>
-                    <option value="qa">QA / QC Engineer</option>
-                    <option value="pm">Product Manager (PM)</option>
-                    <option value="data_science">Data Scientist</option>
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Select Khối Ngành */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
+                      Chọn khối ngành
+                    </label>
+                    <select
+                      value={selectedIndustry}
+                      onChange={handleIndustryChange}
+                      className="w-full px-4 py-3 rounded-2xl dark:bg-slate-900 bg-slate-50 border border-slate-200/50 dark:border-slate-800 text-slate-800 dark:text-white font-bold text-sm focus:outline-none focus:border-[#0ea5e9] cursor-pointer"
+                    >
+                      {INDUSTRY_GROUPS.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Select Chuyên Ngành */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
+                      Chọn chuyên ngành phỏng vấn
+                    </label>
+                    <select
+                      value={selectedTrack}
+                      onChange={handleTrackChange}
+                      className="w-full px-4 py-3 rounded-2xl dark:bg-slate-900 bg-slate-50 border border-slate-200/50 dark:border-slate-800 text-slate-800 dark:text-white font-bold text-sm focus:outline-none focus:border-[#0ea5e9] cursor-pointer"
+                    >
+                      {INDUSTRY_GROUPS.find((g) => g.id === selectedIndustry)?.tracks.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
 

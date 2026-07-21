@@ -34,6 +34,18 @@ export function BlogDetail() {
 
   const blog = blogResponse;
 
+  // Fetch related blogs
+  const { data: relatedBlogsResponse } = useQuery({
+    queryKey: ["relatedBlogs", id],
+    queryFn: async () => {
+      const res = await blogApi.getRelatedBlogs(id);
+      return res.data || [];
+    },
+    enabled: !!id
+  });
+
+  const relatedBlogs = relatedBlogsResponse || [];
+
   // React Mutation (Optimistic UI)
   const reactMutation = useMutation({
     mutationFn: (reactionType) => blogApi.reactToBlog(id, reactionType),
@@ -289,23 +301,41 @@ export function BlogDetail() {
                 </button>
               </div>
 
-              {/* Related Posts (Mock) */}
+              {/* Related Posts */}
               <div className="dark:bg-[#0f172a] bg-white rounded-3xl p-6 shadow-xl shadow-gray-200/50 dark:shadow-none border dark:border-white/5 border-gray-100">
                 <h3 className="text-lg font-bold dark:text-white text-gray-900 mb-4">Bài viết liên quan</h3>
-                <div className="space-y-4">
-                  <div className="group cursor-pointer">
-                    <p className="text-sm font-medium dark:text-slate-300 text-gray-700 group-hover:text-[#0ea5e9] transition-colors line-clamp-2">5 mẹo viết CV đánh gục nhà tuyển dụng khó tính nhất năm 2026</p>
-                    <p className="text-xs dark:text-slate-500 text-gray-400 mt-1">3 ngày trước</p>
+                {relatedBlogs.length > 0 ? (
+                  <div className="space-y-4">
+                    {relatedBlogs.map((relPost) => {
+                      const relCreatedDate = relPost.created_at
+                        ? new Date(relPost.created_at).toLocaleDateString('vi-VN', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })
+                        : '';
+                      return (
+                        <div 
+                          key={relPost.id} 
+                          onClick={() => {
+                            navigate(`/community/post/${relPost.id}`);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="group cursor-pointer"
+                        >
+                          <p className="text-sm font-medium dark:text-slate-300 text-gray-700 group-hover:text-[#0ea5e9] transition-colors line-clamp-2">
+                            {relPost.title}
+                          </p>
+                          <p className="text-xs dark:text-slate-500 text-gray-400 mt-1">
+                            {relCreatedDate || 'Gần đây'}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="group cursor-pointer">
-                    <p className="text-sm font-medium dark:text-slate-300 text-gray-700 group-hover:text-[#0ea5e9] transition-colors line-clamp-2">Hành trình chuyển ngành từ Non-IT sang Frontend Developer</p>
-                    <p className="text-xs dark:text-slate-500 text-gray-400 mt-1">1 tuần trước</p>
-                  </div>
-                  <div className="group cursor-pointer">
-                    <p className="text-sm font-medium dark:text-slate-300 text-gray-700 group-hover:text-[#0ea5e9] transition-colors line-clamp-2">Cách trả lời câu hỏi "Điểm yếu lớn nhất của bạn là gì?"</p>
-                    <p className="text-xs dark:text-slate-500 text-gray-400 mt-1">2 tuần trước</p>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Không có bài viết liên quan.</p>
+                )}
               </div>
 
             </div>

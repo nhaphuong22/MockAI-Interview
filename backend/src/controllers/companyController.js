@@ -748,7 +748,7 @@ export const uploadVerificationDocsController = async (req, res) => {
       if (fileArray && fileArray.length > 0) {
         const file = fileArray[0];
         try {
-          const result = await cloudinary.uploader.upload(file.path, { folder });
+          const result = await cloudinary.uploader.upload(file.path, { folder, resource_type: 'auto' });
           return { url: result.secure_url, publicId: result.public_id };
         } finally {
           await fs.promises.unlink(file.path).catch(e => console.error(e));

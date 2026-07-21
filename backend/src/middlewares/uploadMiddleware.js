@@ -82,3 +82,45 @@ export const uploadAvatar = multer({
     fileSize: 5 * 1024 * 1024 // 5MB
   }
 });
+
+// Verification Documents directory (allows images + PDF)
+const docDir = path.join(process.cwd(), 'uploads', 'docs');
+if (!fs.existsSync(docDir)) {
+  fs.mkdirSync(docDir, { recursive: true });
+}
+
+const docStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, docDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname) || '.pdf';
+    cb(null, `doc-${uniqueSuffix}${ext}`);
+  }
+});
+
+const docFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'application/pdf'
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Chỉ chấp nhận file định dạng ảnh (JPG, PNG, WEBP) hoặc tài liệu PDF!'), false);
+  }
+};
+
+export const uploadDoc = multer({
+  storage: docStorage,
+  fileFilter: docFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  }
+});
+

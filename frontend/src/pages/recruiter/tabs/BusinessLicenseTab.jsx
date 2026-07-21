@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { UploadCloud, FileText, CheckCircle, AlertTriangle, Download, Info, X, Loader2 } from 'lucide-react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { UploadCloud, FileText, CheckCircle, AlertTriangle, Download, X, Loader2 } from 'lucide-react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import axiosClient from '../../../api/axiosClient';
 import { useUiStore } from '../../../store/useUiStore';
 import { useVerificationStore } from '../../../store/useVerificationStore';
