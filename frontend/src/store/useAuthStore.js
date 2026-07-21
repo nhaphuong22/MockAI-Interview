@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useVerificationStore } from "./useVerificationStore";
 
 const getStoredUser = () => {
   try {
@@ -22,7 +23,7 @@ export const useAuthStore = create((set) => ({
       localStorage.removeItem("user");
       localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("token");
-      localStorage.removeItem("hr-verification-storage");
+      useVerificationStore.getState().clearVerificationData();
     }
     set({ user, isAuthenticated: !!user });
   },
@@ -30,7 +31,7 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem("user");
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("token");
-    localStorage.removeItem("hr-verification-storage");
+    useVerificationStore.getState().clearVerificationData();
     set({ user: null, isAuthenticated: false });
   },
 }));

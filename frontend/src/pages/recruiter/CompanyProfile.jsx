@@ -14,6 +14,7 @@ import { updateProfileApi, uploadAvatarApi, uploadCoverApi, uploadCompanyImagesA
 
 import { companyApi } from "../../api/companyApi";
 import MDEditor from "@uiw/react-md-editor";
+import { useVerificationStore } from "../../store/useVerificationStore";
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 
@@ -276,8 +277,19 @@ export function CompanyProfile() {
     },
     onSuccess: (res) => {
       showToast(res.data?.message || "Đã rời khỏi công ty thành công!", "success");
-      const updatedUser = { ...user, company_id: null, company_join_status: null };
+      const updatedUser = { 
+        ...user, 
+        company_id: null, 
+        company_join_status: null,
+        id_front_url: null,
+        id_front_public_id: null,
+        id_back_url: null,
+        id_back_public_id: null,
+        auth_letter_url: null,
+        auth_letter_public_id: null
+      };
       setAuth(updatedUser, localStorage.getItem('token'));
+      useVerificationStore.getState().clearVerificationData();
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -293,8 +305,19 @@ export function CompanyProfile() {
     },
     onSuccess: (res) => {
       showToast(res.data?.message || "Đã xóa công ty thành công!", "success");
-      const updatedUser = { ...user, company_id: null, company_join_status: null };
+      const updatedUser = { 
+        ...user, 
+        company_id: null, 
+        company_join_status: null,
+        id_front_url: null,
+        id_front_public_id: null,
+        id_back_url: null,
+        id_back_public_id: null,
+        auth_letter_url: null,
+        auth_letter_public_id: null
+      };
       setAuth(updatedUser, localStorage.getItem('token'));
+      useVerificationStore.getState().clearVerificationData();
       setTimeout(() => {
         window.location.reload();
       }, 1500);
