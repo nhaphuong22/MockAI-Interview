@@ -7,6 +7,8 @@ import { deleteCachePattern } from '../config/redis.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { sendCompanyInvitationEmail } from '../services/emailService.js';
+import { getUserProfile } from '../services/authService.js';
+import { generateToken } from '../auth/jwt.js';
 import { encrypt, decrypt } from '../ultils/encryptionHelper.js';
 
 /**
@@ -327,6 +329,25 @@ export const acceptCompanyInvitation = async (req, res) => {
           updated_at: new Date()
         });
 
+        // Gán/cập nhật vai trò HR trong user_roles
+        const hrRole = await trx('roles').where({ name: 'HR' }).first();
+        if (hrRole) {
+          const userRole = await trx('user_roles').where({ user_id: targetUser.id }).first();
+          if (userRole) {
+            await trx('user_roles').where({ user_id: targetUser.id }).update({
+              role_id: hrRole.id,
+              updated_at: new Date()
+            });
+          } else {
+            await trx('user_roles').insert({
+              user_id: targetUser.id,
+              role_id: hrRole.id,
+              created_at: new Date(),
+              updated_at: new Date()
+            });
+          }
+        }
+
         // Đảm bảo có hr_profile và cập nhật
         const hrProfileExists = await trx('hr_profiles').where({ user_id: targetUser.id }).first();
         if (hrProfileExists) {
@@ -350,7 +371,14 @@ export const acceptCompanyInvitation = async (req, res) => {
         });
       });
 
-      return sendResponse(res, 200, { message: 'Liên kết doanh nghiệp thành công.' });
+      const updatedUser = await getUserProfile(targetUser.id);
+      const newToken = generateToken({ id: targetUser.id, email: targetUser.email, role: updatedUser.role || 'HR' });
+
+      return sendResponse(res, 200, {
+        message: 'Liên kết doanh nghiệp thành công.',
+        user: updatedUser,
+        token: newToken
+      });
     } else {
       // 2. Chưa có tài khoản -> Đăng ký mới dưới trướng công ty
       if (!password || !fullName) {
@@ -359,6 +387,8 @@ export const acceptCompanyInvitation = async (req, res) => {
 
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
+
+      let createdUserId = null;
 
       await db.transaction(async (trx) => {
         // Tạo tài khoản mới
@@ -375,9 +405,11 @@ export const acceptCompanyInvitation = async (req, res) => {
           })
           .returning('*');
 
+        createdUserId = newUser.id || newUser;
+
         // Tạo candidate profile để lưu gender/phone (mặc dù là HR nhưng có thể user đóng vai trò candidate)
         await trx('candidate_profiles').insert({
-            user_id: newUser.id,
+            user_id: createdUserId,
             gender: gender || 'OTHER',
             phone: phone || null,
             created_at: new Date(),
@@ -386,7 +418,7 @@ export const acceptCompanyInvitation = async (req, res) => {
 
         // Tạo hr_profile
         await trx('hr_profiles').insert({
-            user_id: newUser.id,
+            user_id: createdUserId,
             company_join_status: 'APPROVED',
             created_at: new Date(),
             updated_at: new Date()
@@ -399,7 +431,7 @@ export const acceptCompanyInvitation = async (req, res) => {
         }
 
         await trx('user_roles').insert({
-          user_id: newUser.id,
+          user_id: createdUserId,
           role_id: hrRole.id,
           created_at: new Date(),
           updated_at: new Date()
@@ -412,7 +444,14 @@ export const acceptCompanyInvitation = async (req, res) => {
         });
       });
 
-      return sendResponse(res, 201, { message: 'Kích hoạt tài khoản thành công.' });
+      const updatedUser = await getUserProfile(createdUserId);
+      const newToken = generateToken({ id: createdUserId, email: invitation.email, role: 'HR' });
+
+      return sendResponse(res, 201, {
+        message: 'Kích hoạt tài khoản thành công.',
+        user: updatedUser,
+        token: newToken
+      });
     }
   } catch (error) {
     console.error('Lỗi trong companyController.acceptCompanyInvitation:', error);

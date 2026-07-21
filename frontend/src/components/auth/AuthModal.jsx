@@ -12,7 +12,14 @@ import { useUiStore } from "../../store/useUiStore";
 /**
  * AuthModal — handles: login | register | forgot-password | register-success
  */
-export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLoginSuccess, redirectTo = null }) {
+export function AuthModal({ 
+  isOpen, 
+  onOpenChange, 
+  initialMode = "login", 
+  onLoginSuccess, 
+  redirectTo = null, 
+  noRedirect = false
+}) {
   const navigate = useNavigate();
   const showToast = useUiStore((state) => state.showToast);
   const [mode, setMode] = useState(initialMode); // "login" | "register" | "forgot-password" | "register-success"
@@ -75,11 +82,13 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         if (onLoginSuccess) onLoginSuccess();
 
         // Handle redirect
-        if (redirectTo) {
-          navigate(redirectTo);
-        } else {
-          const role = user.role ? user.role.toUpperCase() : "USER";
-          navigate(role === "ADMIN" ? "/admin/dashboard" : role === "HR" ? "/hr/dashboard" : "/");
+        if (!noRedirect) {
+          if (redirectTo) {
+            navigate(redirectTo);
+          } else {
+            const role = user.role ? user.role.toUpperCase() : "USER";
+            navigate(role === "ADMIN" ? "/admin/dashboard" : role === "HR" ? "/hr/dashboard" : "/");
+          }
         }
       } else {
         setErrorMsg(res.error || "Đăng nhập Google thất bại.");
@@ -157,11 +166,13 @@ export function AuthModal({ isOpen, onOpenChange, initialMode = "login", onLogin
         if (onLoginSuccess) onLoginSuccess();
 
         // Handle redirect
-        if (redirectTo) {
-          navigate(redirectTo);
-        } else {
-          const userRole = user.role ? user.role.toUpperCase() : "USER";
-          navigate(userRole === "ADMIN" ? "/admin/dashboard" : userRole === "HR" ? "/hr/dashboard" : "/");
+        if (!noRedirect) {
+          if (redirectTo) {
+            navigate(redirectTo);
+          } else {
+            const userRole = user.role ? user.role.toUpperCase() : "USER";
+            navigate(userRole === "ADMIN" ? "/admin/dashboard" : userRole === "HR" ? "/hr/dashboard" : "/");
+          }
         }
       } else {
         setErrorMsg(res.error || "Đăng nhập thất bại. Vui lòng thử lại.");
