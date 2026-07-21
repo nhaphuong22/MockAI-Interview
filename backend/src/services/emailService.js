@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 
 const APP_NAME = 'MockAI Interview';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000';
 
 /**
  * Create a nodemailer transporter.
