@@ -12,6 +12,13 @@ import {
 } from '../models/blogModel.js';
 import { NotFoundError } from '../core/customErrors.js';
 import { moderateBlogContentWithGroq } from './groqService.js';
+import { 
+  broadcastBlogPublished, 
+  broadcastBlogReacted, 
+  broadcastBlogCommentAdded, 
+  broadcastBlogCommentUpdated, 
+  broadcastBlogCommentDeleted 
+} from '../socket.js';
 
 /**
  * Lưu bài viết nháp (Draft Blog)
@@ -84,6 +91,10 @@ export const requestBlogReview = async (blogId, authorId) => {
   // Clear blogs cache
   await deleteCachePattern('blogs:published*');
   await deleteCachePattern(`blogs:detail:*blogs/${blogId}*`);
+
+  if (moderationStatus === 'PUBLISHED') {
+    broadcastBlogPublished(updatedArticle);
+  }
 
   return updatedArticle;
 };
@@ -189,12 +200,20 @@ export const reactToBlog = async (blogId, userId, reactionType = 'LIKE') => {
     totalReactions += c;
   });
 
-  return {
+  const result = {
     action,
     user_reaction_type: action === 'REMOVED' ? null : reactionType,
     total_reactions: totalReactions,
     reaction_counts: formattedCounts
   };
+
+  broadcastBlogReacted({
+    blogId: Number(blogId),
+    total_reactions: totalReactions,
+    reaction_counts: formattedCounts
+  });
+
+  return result;
 };
 
 /**
@@ -231,6 +250,17 @@ export const addBlogComment = async (blogId, userId, content) => {
   // Clear cache
   await deleteCachePattern('blogs:published*');
   await deleteCachePattern(`blogs:detail:*blogs/${blogId}*`);
+
+  const [{ count }] = await db('blog_comments')
+    .where({ blog_id: blogId })
+    .count('* as count');
+  const commentsCount = parseInt(count || 0);
+
+  broadcastBlogCommentAdded({
+    blogId: Number(blogId),
+    comment: newComment,
+    commentsCount
+  });
 
   return newComment;
 };
@@ -303,6 +333,11 @@ export const updateBlogComment = async (commentId, userId, content) => {
   await deleteCachePattern('blogs:published*');
   await deleteCache(`blogs:detail:${comment.blog_id}`);
 
+  broadcastBlogCommentUpdated({
+    blogId: Number(comment.blog_id),
+    comment: updatedComment
+  });
+
   return updatedComment;
 };
 
@@ -325,6 +360,17 @@ export const deleteBlogComment = async (commentId, userId, userRole) => {
   // Clear cache
   await deleteCachePattern('blogs:published*');
   await deleteCache(`blogs:detail:${comment.blog_id}`);
+
+  const [{ count }] = await db('blog_comments')
+    .where({ blog_id: comment.blog_id })
+    .count('* as count');
+  const commentsCount = parseInt(count || 0);
+
+  broadcastBlogCommentDeleted({
+    blogId: Number(comment.blog_id),
+    commentId: Number(commentId),
+    commentsCount
+  });
 
   return { message: 'Xóa bình luận thành công.' };
 };

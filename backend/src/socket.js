@@ -20,7 +20,9 @@ export const setupSocket = (server) => {
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
     if (!token) {
-      return next(new Error('Authentication error: Token is required'));
+      // Cho phép guest connection để nhận các sự kiện công khai (Cộng đồng)
+      socket.user = { id: null, role: 'GUEST' };
+      return next();
     }
 
     try {
@@ -28,37 +30,41 @@ export const setupSocket = (server) => {
       socket.user = decoded; // Gắn thông tin người dùng đã giải mã vào socket
       next();
     } catch (err) {
-      console.error('Socket authentication failed:', err.message);
-      return next(new Error('Authentication error: Invalid or expired token'));
+      console.error('Socket authentication fallback to guest:', err.message);
+      socket.user = { id: null, role: 'GUEST' };
+      return next();
     }
   });
 
   io.on('connection', (socket) => {
-    const userId = socket.user.id;
-    const userRole = socket.user.role || 'USER';
+    const userId = socket.user?.id || null;
+    const userRole = socket.user?.role || 'GUEST';
 
-    if (!userSockets.has(userId)) {
-      userSockets.set(userId, new Set());
+    if (userId) {
+      if (!userSockets.has(userId)) {
+        userSockets.set(userId, new Set());
+      }
+      userSockets.get(userId).add(socket.id);
+      socket.join(`user_${userId}`);
     }
-    userSockets.get(userId).add(socket.id);
 
-    console.log(`[Socket] Người dùng connected: ${userId} (Vai trò: ${userRole}) - Socket ID: ${socket.id}`);
+    console.log(`[Socket] Người dùng connected: ${userId || 'GUEST'} (Vai trò: ${userRole}) - Socket ID: ${socket.id}`);
 
-    // Cho phép người dùng join vào room của riêng họ hoặc room theo vai trò
-    socket.join(`user_${userId}`);
     if (userRole.toUpperCase() === 'HR') {
       socket.join('hr_room');
     }
 
     socket.on('disconnect', () => {
-      const sockets = userSockets.get(userId);
-      if (sockets) {
-        sockets.delete(socket.id);
-        if (sockets.size === 0) {
-          userSockets.delete(userId);
+      if (userId) {
+        const sockets = userSockets.get(userId);
+        if (sockets) {
+          sockets.delete(socket.id);
+          if (sockets.size === 0) {
+            userSockets.delete(userId);
+          }
         }
       }
-      console.log(`[Socket] Người dùng disconnected: ${userId} - Socket ID: ${socket.id}`);
+      console.log(`[Socket] Người dùng disconnected: ${userId || 'GUEST'} - Socket ID: ${socket.id}`);
     });
   });
 
@@ -100,4 +106,55 @@ export const broadcastNewJob = (job) => {
   console.log(`[Socket] Broadcast tin tuyển dụng mới:`, job.title);
   io.emit('new_job_posted', job);
 };
+
+/**
+ * Phát sóng bài viết mới được xuất bản tới tất cả người dùng
+ * @param {object} blog - Dữ liệu bài viết mới xuất bản
+ */
+export const broadcastBlogPublished = (blog) => {
+  if (!io) return;
+  console.log('[Socket] Broadcast bài viết xuất bản mới:', blog.title || blog.id);
+  io.emit('community_post_published', blog);
+};
+
+/**
+ * Phát sóng sự kiện thả/thay đổi biểu cảm bài viết tới tất cả người dùng
+ * @param {object} data - { blogId, total_reactions, reaction_counts }
+ */
+export const broadcastBlogReacted = (data) => {
+  if (!io) return;
+  console.log('[Socket] Broadcast phản hồi biểu cảm bài viết:', data.blogId);
+  io.emit('community_post_reacted', data);
+};
+
+/**
+ * Phát sóng khi có bình luận mới
+ * @param {object} data - { blogId, comment, commentsCount }
+ */
+export const broadcastBlogCommentAdded = (data) => {
+  if (!io) return;
+  console.log('[Socket] Broadcast bình luận mới bài viết:', data.blogId);
+  io.emit('community_comment_added', data);
+};
+
+/**
+ * Phát sóng khi cập nhật bình luận
+ * @param {object} data - { blogId, comment }
+ */
+export const broadcastBlogCommentUpdated = (data) => {
+  if (!io) return;
+  console.log('[Socket] Broadcast cập nhật bình luận bài viết:', data.blogId);
+  io.emit('community_comment_updated', data);
+};
+
+/**
+ * Phát sóng khi xóa bình luận
+ * @param {object} data - { blogId, commentId, commentsCount }
+ */
+export const broadcastBlogCommentDeleted = (data) => {
+  if (!io) return;
+  console.log('[Socket] Broadcast xóa bình luận bài viết:', data.blogId);
+  io.emit('community_comment_deleted', data);
+};
+
 

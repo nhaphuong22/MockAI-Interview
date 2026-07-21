@@ -1,6 +1,6 @@
 import db from '../db/knex.js';
 import { deleteCache, deleteCachePattern } from '../config/redis.js';
-import { broadcastNewJob } from '../socket.js';
+import { broadcastNewJob, broadcastBlogPublished } from '../socket.js';
 import { updateJob } from '../models/jobModel.js';
 import { updateBlog, deleteBlog } from '../models/blogModel.js';
 import { formatSalary } from '../helper/salaryHelper.js';
@@ -163,6 +163,10 @@ export const approveOrRejectBlog = async (blogId, status, rejectReason, adminUse
   // Clear Blogs Cache
   await deleteCachePattern('blogs:published*');
   await deleteCache(`blogs:detail:${blogId}`);
+
+  if (dbStatus === 'PUBLISHED' && updatedRows && updatedRows.length > 0) {
+    broadcastBlogPublished(updatedRows[0]);
+  }
 
   return true;
 };

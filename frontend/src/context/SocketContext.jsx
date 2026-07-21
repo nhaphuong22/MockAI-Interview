@@ -17,21 +17,16 @@ export const SocketProvider = ({ children }) => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      return;
-    }
-
     const token = localStorage.getItem("token");
-    if (!token) return;
 
     let active = true;
 
-    // Khởi tạo kết nối Socket.io
+    // Khởi tạo kết nối Socket.io (Hỗ trợ cả guest lẫn authenticated users)
     const wsUrl = import.meta.env.VITE_WS_URL || "http://localhost:5000";
     console.log("[Socket] Đang kết nối tới server:", wsUrl);
 
     const socketInstance = io(wsUrl, {
-      auth: { token },
+      auth: { token: token || "" },
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -80,6 +75,90 @@ export const SocketProvider = ({ children }) => {
 
       // Tự động làm mới danh sách việc làm của ứng viên
       queryClient.invalidateQueries({ queryKey: ["candidate-jobs-list"] });
+    });
+
+    // --- CÁC SỰ KIỆN CỘNG ĐỒNG REAL-TIME (BLOGS / LIKES / COMMENTS) ---
+
+    // 1. Lắng nghe bài viết mới xuất bản
+    socketInstance.on("community_post_published", (blog) => {
+      console.log("[Socket] Nhận sự kiện bài viết cộng đồng mới:", blog);
+      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+      queryClient.invalidateQueries({ queryKey: ["blogSidebar"] });
+      showToast({
+        message: `📢 Bài viết mới vừa xuất bản: "${blog.title}"`,
+        type: "info"
+      });
+    });
+
+    // 2. Lắng nghe cập nhật lượt thả cảm xúc (Likes/Reactions)
+    socketInstance.on("community_post_reacted", ({ blogId, total_reactions, reaction_counts }) => {
+      console.log("[Socket] Cập nhật lượt thả cảm xúc real-time:", blogId, total_reactions);
+      
+      queryClient.setQueryData(["publishedBlogs"], (old) => {
+        if (!old || !Array.isArray(old)) return old;
+        return old.map((post) => {
+          if (post.id === blogId) {
+            return {
+              ...post,
+              total_reactions,
+              reaction_counts: reaction_counts || post.reaction_counts
+            };
+          }
+          return post;
+        });
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+    });
+
+    // 3. Lắng nghe thêm bình luận mới
+    socketInstance.on("community_comment_added", ({ blogId, comment, commentsCount }) => {
+      console.log("[Socket] Nhận bình luận mới bài viết:", blogId);
+
+      queryClient.invalidateQueries({ queryKey: ["blogComments", blogId] });
+
+      queryClient.setQueryData(["publishedBlogs"], (old) => {
+        if (!old || !Array.isArray(old)) return old;
+        return old.map((post) => {
+          if (post.id === blogId) {
+            return {
+              ...post,
+              comments_count: commentsCount !== undefined ? commentsCount : (post.comments_count || 0) + 1
+            };
+          }
+          return post;
+        });
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+    });
+
+    // 4. Lắng nghe cập nhật bình luận
+    socketInstance.on("community_comment_updated", ({ blogId }) => {
+      console.log("[Socket] Cập nhật bình luận bài viết:", blogId);
+      queryClient.invalidateQueries({ queryKey: ["blogComments", blogId] });
+    });
+
+    // 5. Lắng nghe xóa bình luận
+    socketInstance.on("community_comment_deleted", ({ blogId, commentsCount }) => {
+      console.log("[Socket] Xóa bình luận bài viết:", blogId);
+
+      queryClient.invalidateQueries({ queryKey: ["blogComments", blogId] });
+
+      queryClient.setQueryData(["publishedBlogs"], (old) => {
+        if (!old || !Array.isArray(old)) return old;
+        return old.map((post) => {
+          if (post.id === blogId) {
+            return {
+              ...post,
+              comments_count: commentsCount !== undefined ? commentsCount : Math.max(0, (post.comments_count || 0) - 1)
+            };
+          }
+          return post;
+        });
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
     });
 
     let disconnectToastShown = false;
