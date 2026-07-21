@@ -721,7 +721,7 @@ export const generateQuestionsFromGroq = async ({
   cvText = ''
 }) => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'qwen-2.5-32b';
+  const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
   // 1. Fallback Validation: Throw real configuration error if key is missing to avoid hidden mock data
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
@@ -942,7 +942,7 @@ Câu trả lời thực tế của ứng viên:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'qwen/qwen3-32b',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
@@ -1090,7 +1090,7 @@ Dựa trên toàn bộ kết quả phỏng vấn thực tế ở trên, hãy th�
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'qwen/qwen3-32b',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
@@ -1215,7 +1215,7 @@ Hãy sinh ra JSON kết quả chấm điểm và báo cáo tổng hợp.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'qwen/qwen3-32b',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
@@ -1359,7 +1359,7 @@ ${content.substring(0, 1000)} ${content.length > 1000 ? '...' : ''}`;
  */
 export const generateDailyQuestionFromGroq = async (track = '') => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'qwen-2.5-32b';
+  const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
     throw new Error('GROQ_API_KEY chưa được cấu hình hoặc giá trị không hợp lệ trong file .env ở Backend!');
