@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Navigate } from 'react-router-dom';
 import { User, FileText, ShieldCheck, Building } from 'lucide-react';
 import { AccountInfoTab } from './tabs/AccountInfoTab';
@@ -32,6 +32,8 @@ export function HRVerificationSettings() {
   const saveTab2Data = useVerificationStore(state => state.saveTab2Data);
   const clearVerificationData = useVerificationStore(state => state.clearVerificationData);
   const isTab2Completed = useVerificationStore(state => state.isTab2Completed);
+
+  const lastCheckedUserId = useRef(null);
 
   // Đồng bộ trạng thái hoàn thành các tab theo từng user.id và dữ liệu thật từ Database
   useEffect(() => {
@@ -67,6 +69,15 @@ export function HRVerificationSettings() {
               licenseFileUrl: user.license_file_url
             }
           });
+        } 
+        
+        // Kiểm tra và xóa cache rác ở local nếu DB đã bị xóa trắng (chỉ chạy 1 lần lúc mới load trang)
+        if (lastCheckedUserId.current !== user.id) {
+          if (!hasUploadedDocsDb && isTab2Completed) {
+            clearVerificationData();
+            state.business_license = false;
+          }
+          lastCheckedUserId.current = user.id;
         }
 
         // Cập nhật lại localStorage để đồng nhất
