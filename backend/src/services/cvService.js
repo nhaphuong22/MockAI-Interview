@@ -39,7 +39,7 @@ export const parseCVBuffer = async (fileBuffer) => {
  */
 export const evaluateCV = async (cvText, jobTitle, jobDescription) => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'qwen/qwen3-32b';
+  const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
   // Dữ liệu giả lập dự phòng khi có lỗi API hoặc cấu hình thiếu
   const fallbackData = {

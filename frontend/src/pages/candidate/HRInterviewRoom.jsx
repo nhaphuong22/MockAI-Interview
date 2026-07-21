@@ -20,7 +20,7 @@ const HRInterviewRoom = () => {
   const { interviewId } = useParams();
   const { user } = useAuthStore();
 
-  const questions = state?.questions || [];
+  const [questions, setQuestions] = useState(state?.questions || []);
   const jobTitle = state?.jobTitle || 'Vị trí phỏng vấn';
   const companyName = state?.companyName || '';
 
@@ -125,8 +125,62 @@ const HRInterviewRoom = () => {
     };
   }, []);
 
-  // 5. Timer (Đã chuyển xuống dưới)
+  const isFinishingRef = useRef(false);
+  const isSubmittingRef = useRef(false);
 
+  useEffect(() => {
+    isFinishingRef.current = isFinishing;
+  }, [isFinishing]);
+
+  useEffect(() => {
+    isSubmittingRef.current = isSubmitting;
+  }, [isSubmitting]);
+
+  // 5. Handling early exit / page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!isFinishingRef.current && !isSubmittingRef.current) {
+        e.preventDefault();
+        e.returnValue = 'Bạn đang trong phiên phỏng vấn. Nếu thoát, kết quả sẽ được nộp ngay lập tức. Bạn có chắc chắn muốn thoát?';
+      }
+    };
+
+    const handleUnload = () => {
+      if (!isFinishingRef.current) {
+        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        try {
+          fetch(`${apiUrl}/interviews/hr/finish`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              interviewId,
+              totalTabViolations: tabViolationsRef.current
+            }),
+            keepalive: true
+          });
+        } catch (err) {
+          console.error("Lỗi khi auto submit phỏng vấn lúc thoát:", err);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleUnload);
+      
+      // Handle SPA unmount
+      if (!isFinishingRef.current && !isSubmittingRef.current) {
+        handleUnload();
+      }
+    };
+  }, []); // Run only on mount and unmount
   // 6. Voice Audio Setup
   useEffect(() => {
     initVoices();
@@ -344,7 +398,7 @@ const HRInterviewRoom = () => {
     const totalViolations = accumulatedGazeViolations + tabViolationsRef.current;
 
     try {
-      await submitAnswerApi(currentQuestion.id, answerToSave, currentAudioUrl, totalViolations);
+      const res = await submitAnswerApi(currentQuestion.id, answerToSave, currentAudioUrl, totalViolations);
       
       resetViolations();
       setAccumulatedGazeViolations(0);
@@ -353,14 +407,29 @@ const HRInterviewRoom = () => {
       setCurrentAudioUrl("");
       setHasRecorded(false);
 
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setIsSubmitting(false);
+      // Cập nhật lại danh sách câu hỏi nếu có rẽ nhánh động (Dynamic Branching)
+      if (res && res.data && res.data.updatedQuestions) {
+        setQuestions(res.data.updatedQuestions);
+        // Vì setQuestions là async nên ta cần tính toán dựa trên mảng mới
+        if (currentIndex < res.data.updatedQuestions.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+          setIsSubmitting(false);
+        } else {
+          setIsSubmitting(false);
+          setIsFinishing(true);
+          try { await finishHRInterviewApi(interviewId, totalViolations); } catch (e) { /* ignore cleanup error */ }
+          navigate(`/hr-interview/result/${interviewId}`);
+        }
       } else {
-        setIsSubmitting(false);
-        setIsFinishing(true);
-        try { await finishHRInterviewApi(interviewId, totalViolations); } catch (e) { /* ignore cleanup error */ }
-        navigate(`/hr-interview/result/${interviewId}`);
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+          setIsSubmitting(false);
+        } else {
+          setIsSubmitting(false);
+          setIsFinishing(true);
+          try { await finishHRInterviewApi(interviewId, totalViolations); } catch (e) { /* ignore cleanup error */ }
+          navigate(`/hr-interview/result/${interviewId}`);
+        }
       }
     } catch (error) {
       console.error("Lỗi khi nộp câu trả lời", error);
@@ -434,6 +503,18 @@ const HRInterviewRoom = () => {
         </div>
       )}
 
+      {/* Màn hình chờ khi AI đang suy nghĩ câu hỏi tiếp theo (Dynamic Branching) */}
+      {isSubmitting && !isFinishing && (
+        <div className="absolute inset-0 z-[250] bg-slate-950/60 backdrop-blur-sm flex flex-col items-center justify-center">
+          <div className="flex gap-2 mb-4">
+            <div className="w-4 h-4 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-4 h-4 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-4 h-4 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Hmm, hãy để tôi xem...</h2>
+        </div>
+      )}
+
       {/* Main Video Call Area (Center) */}
       <div className="relative flex-1 flex items-center justify-center w-full h-full">
         {/* 3D Avatar Background (Speaker View) */}
@@ -491,6 +572,7 @@ const HRInterviewRoom = () => {
                     <textarea
                       value={finalAnswer}
                       onChange={(e) => setFinalAnswer(e.target.value)}
+                      disabled={isSubmitting || isTranscribing || isRecording}
                       className="w-full bg-black/40 border border-sky-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-sky-400 resize-none"
                       rows={2}
                     />
@@ -589,7 +671,7 @@ const HRInterviewRoom = () => {
         <div className="flex items-center justify-end gap-3 w-1/3">
           <button
             onClick={handleSubmitAnswer}
-            disabled={isSubmitting || isFinishing || (!finalAnswer.trim() && !isRecording && !isTranscribing)}
+            disabled={isSubmitting || isFinishing || isRecording || isTranscribing || !finalAnswer.trim()}
             className="bg-sky-600 hover:bg-sky-500 disabled:bg-gray-800 disabled:text-gray-500 text-white px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-all shadow-lg shadow-sky-500/20"
           >
             {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}

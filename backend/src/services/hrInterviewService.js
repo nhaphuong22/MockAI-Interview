@@ -41,8 +41,8 @@ export const initHRInterviewSession = async ({ userId, applicationId }) => {
 
   const requirementsText = jobRequirements.length > 0
     ? jobRequirements.map((r, i) =>
-        `${i + 1}. ${r.requirement_text}${r.is_mandatory ? ' [Bắt buộc]' : ' [Ưu tiên]'}`
-      ).join('\n')
+      `${i + 1}. ${r.requirement_text}${r.is_mandatory ? ' [Bắt buộc]' : ' [Ưu tiên]'}`
+    ).join('\n')
     : '';
 
   // 3. Build enhanced CV prompt: CV text + Job Requirements
@@ -70,7 +70,8 @@ export const initHRInterviewSession = async ({ userId, applicationId }) => {
     position: application.job_title || 'General IT',
     skills: requirementsText.substring(0, 300),
     experienceLevel: application.experience_level || 'JUNIOR',
-    cvText: enhancedCvText
+    cvText: enhancedCvText,
+    isHRMode: true
   });
 
   // 6. Lưu câu hỏi vào DB
@@ -201,7 +202,7 @@ const processAIEvaluationBackground = async ({ interviewId, userId, totalTabViol
 
       let totalScore = 0;
       let evaluatedCount = 0;
-      
+
       if (batchResult.evaluations && Array.isArray(batchResult.evaluations)) {
         for (const qa of qaDetails) {
           if (qa.answer === 'Không trả lời') {
@@ -320,7 +321,7 @@ export const getHRInterviewTranscript = async ({ interviewId, hrId }) => {
   if (!interview) throw new Error('Interview not found');
   // Admin bypass could be handled in controller, but for now just check hrId
   // The controller checks the ownership anyway, we just fetch data here.
-  
+
   // 1. Lấy Assessment
   const assessment = await db('assessments')
     .where({ interview_id: interviewId })

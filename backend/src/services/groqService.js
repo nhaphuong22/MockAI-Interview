@@ -507,10 +507,10 @@ const buildStageFallback = (slotIndex, { position, skills, companyName, cvText, 
     },
     {
       question_text: projectHint
-        ? `Trong CV bạn có đề cập đến "${projectHint}". Bạn có thể chia sẻ vai trò, thách thức và cách bạn giải quyết trong dự án đó không?`
+        ? `Trong CV bạn có đề cập đến "${projectHint}". Bạn có thể chia sẻ vai trò, thách thức trong dự án đó và cách bạn áp dụng kinh nghiệm này vào vị trí ${pos} không?`
         : hasCvContent(cvText)
-          ? 'Trong CV của bạn, hãy chọn một dự án hoặc kinh nghiệm làm việc nổi bật nhất và mô tả vai trò, thách thức cũng như kết quả đạt được?'
-          : `Vì CV chưa ghi chi tiết dự án, bạn có thể kể về một dự án thực tế liên quan đến ${pos} mà bạn từng tham gia?`,
+          ? `Hãy chọn một dự án hoặc kinh nghiệm làm việc nổi bật nhất trong CV. Bạn đã đối mặt với thách thức gì và bài học đó giúp ích thế nào cho vị trí ${pos} này?`
+          : `Bạn có thể kể về một dự án thực tế liên quan đến ${pos} mà bạn từng tham gia, và cách nó giúp bạn sẵn sàng cho công việc tại ${company}?`,
       expected_answer: encodeExpectedAnswer(
         buildCompleteModelAnswer(4, { pos, company, sk, sk2, projectHint }),
         buildDetailedAnswerSteps(4, { pos, company, sk, sk2, projectHint }),
@@ -528,16 +528,16 @@ const buildStageFallback = (slotIndex, { position, skills, companyName, cvText, 
       score_weight: 2
     },
     {
-      question_text: `Kỳ vọng của bạn về mức lương, quyền lợi và môi trường làm việc lý tưởng tại ${company} là gì?`,
+      question_text: `Dựa trên yêu cầu của vị trí ${pos}, bạn đánh giá mức độ thành thạo của mình với các công nghệ/kỹ năng cốt lõi như thế nào và làm sao để áp dụng chúng vào thực tế?`,
       expected_answer: encodeExpectedAnswer(
         buildCompleteModelAnswer(6, { pos, company, sk, sk2, projectHint }),
         buildDetailedAnswerSteps(6, { pos, company, sk, sk2, projectHint }),
         120
       ),
-      score_weight: 1
+      score_weight: 2
     },
     {
-      question_text: `Cảm ơn bạn đã tham gia buổi phỏng vấn cho vị trí ${pos}. Buổi phỏng vấn đến đây là kết thúc — bạn có câu hỏi ngược nào dành cho chúng tôi không?`,
+      question_text: `Cuối cùng, nếu được giao một công nghệ hoặc domain hoàn toàn mới mà bạn chưa từng làm, bạn sẽ có chiến lược học hỏi và tiếp cận như thế nào để đáp ứng tiến độ dự án?`,
       expected_answer: encodeExpectedAnswer(
         buildCompleteModelAnswer(7, { pos, company, sk, sk2, projectHint }),
         buildDetailedAnswerSteps(7, { pos, company, sk, sk2, projectHint }),
@@ -718,10 +718,11 @@ export const generateQuestionsFromGroq = async ({
   companyName = '',
   jobDescription = '',
   experienceLevel = 'JUNIOR',
-  cvText = ''
+  cvText = '',
+  isHRMode = false
 }) => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'qwen-2.5-32b';
+  const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
   // 1. Fallback Validation: Throw real configuration error if key is missing to avoid hidden mock data
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
@@ -734,14 +735,52 @@ export const generateQuestionsFromGroq = async ({
       { question_text: "Bạn có thể tự nhận xét về những điểm mạnh vượt trội và điểm yếu lớn nhất của bản thân trong công việc là gì?", expected_answer: "Nêu rõ điểm mạnh phù hợp với công việc và điểm yếu thực tế kèm giải pháp khắc phục cụ thể.", score_weight: 1 },
       { question_text: "Định hướng phát triển nghề nghiệp chi tiết trong 3 năm tới của bạn là gì và tại sao bạn lại ứng tuyển vị trí này?", expected_answer: "Nêu rõ lộ trình nghề nghiệp rõ ràng, lý do ứng tuyển thuyết phục thể hiện sự quan tâm tới vị trí.", score_weight: 1 },
       { question_text: `Đối với vị trí ${position}, giả sử bạn gặp một tình huống thực tế khó khăn (ví dụ: tối ưu xử lý dữ liệu lớn hoặc giải quyết phàn nàn của khách hàng), bạn sẽ làm thế nào?`, expected_answer: "Ứng viên phân tích tình huống một cách logic, đưa ra phương án xử lý cụ thể, khả thi và tối ưu.", score_weight: 2 },
-      { question_text: `Trong CV của bạn, bạn đã triển khai dự án thực tế nào nổi bật? Hãy chia sẻ vai trò và nhiệm vụ cụ thể của bạn?`, expected_answer: "Giải trình chi tiết về công nghệ, kiến trúc sử dụng trong dự án của họ, mô tả rõ vai trò và nhiệm vụ.", score_weight: 2 },
-      { question_text: "Hãy chia sẻ một khó khăn lớn nhất bạn gặp phải trong dự án cũ và bạn đã khắc phục nó thế nào?", expected_answer: "Ứng viên mô tả khó khăn kỹ thuật hoặc quy trình, áp dụng cấu trúc STAR để giải thích hành động và kết quả.", score_weight: 2 },
-      { question_text: "Kỳ vọng của bạn về mức lương mong muốn, quyền lợi cũng như văn hóa làm việc của công ty như thế nào?", expected_answer: "Ứng viên đưa ra mức lương mong muốn hợp lý và bày tỏ kỳ vọng cụ thể về môi trường làm việc chuyên nghiệp.", score_weight: 1 },
-      { question_text: "Cảm ơn bạn, buổi phỏng vấn đến đây là kết thúc. Bạn có câu hỏi ngược nào dành cho tôi không?", expected_answer: "Ứng viên đặt 1-2 câu hỏi thông minh thể hiện sự quan tâm sâu sắc tới công việc và nói lời chào tạm biệt lịch sự.", score_weight: 1 }
+      { question_text: `Trong CV, bạn có nhắc đến một dự án cụ thể. Bạn có thể chia sẻ chi tiết về cấu trúc (architecture) hoặc luồng xử lý chính mà bạn đảm nhiệm trong dự án đó không?`, expected_answer: "Giải trình chi tiết về công nghệ, kiến trúc sử dụng trong dự án, mô tả rõ vai trò và nhiệm vụ.", score_weight: 2 },
+      { question_text: "Hãy chia sẻ một khó khăn lớn nhất bạn gặp phải trong dự án cũ và cách xử lý? Kỹ năng đó sẽ giúp ích gì cho vị trí hiện tại?", expected_answer: "Ứng viên mô tả khó khăn kỹ thuật hoặc quy trình, áp dụng cấu trúc STAR và liên hệ với vị trí mới.", score_weight: 2 },
+      { question_text: `Dựa trên yêu cầu của vị trí ${position}, bạn đánh giá mức độ thành thạo của mình với các công nghệ/kỹ năng cốt lõi như thế nào và làm sao để áp dụng chúng vào thực tế?`, expected_answer: "Ứng viên tự tin trình bày mức độ hiểu biết về kỹ năng cốt lõi và đưa ra ví dụ áp dụng thực tế.", score_weight: 2 },
+      { question_text: "Cuối cùng, nếu được giao một công nghệ hoặc domain hoàn toàn mới mà bạn chưa từng làm, bạn sẽ có chiến lược học hỏi và tiếp cận như thế nào để đáp ứng tiến độ dự án?", expected_answer: "Ứng viên mô tả phương pháp tự học nhanh, khả năng thích nghi và tư duy giải quyết vấn đề linh hoạt.", score_weight: 1 }
     ];
   }
 
-  const systemPrompt = `Bạn là một Chuyên gia Tuyển dụng AI cao cấp, am hiểu nhiều ngành nghề khác nhau (như Công nghệ thông tin, Kinh doanh, Marketing, Nhân sự, Tài chính, Thiết kế, v.v.).
+  let systemPrompt = '';
+  if (isHRMode) {
+    systemPrompt = `Bạn là một Technical Manager và HR Chuyên nghiệp (Senior Talent Acquisition).
+Bạn đang phỏng vấn ứng viên theo chiến thuật "Thăng Trầm" (Ebb and Flow) - kẹp một thử thách khó giữa các câu hỏi mềm mại để kiểm tra tính trung thực (Fake Check) mà không làm ứng viên quá áp lực.
+Tông giọng (Tone): Dựa theo cấp bậc ${experienceLevel}. Nếu là Intern/Junior: Khuyến khích, hỏi sâu vào đồ án/lý thuyết. Nếu là Senior/Lead: Chuyên nghiệp, phản biện sắc bén, xoáy vào hệ thống và tối ưu.
+
+Nhiệm vụ của bạn là sinh ra chính xác **8 câu hỏi phỏng vấn** theo lộ trình dưới đây:
+
+- **Câu 1 🌊 (Ice-breaker - Nhịp điệu chậm)**: Lời chào thân thiện, yêu cầu ứng viên giới thiệu bản thân và kinh nghiệm nổi bật nhất.
+- **Câu 2 🔥 (CV Deep Dive 1 - Kiến trúc & Công nghệ)**: Chọn 1 dự án nổi bật nhất trong CV. BẮT BUỘC gọi tên dự án/công ty đó. Bắt ứng viên mô tả chi tiết kiến trúc (architecture), luồng dữ liệu, hoặc quyết định kỹ thuật quan trọng của họ trong dự án.
+- **Câu 3 🌊 (Soft Skill - Nhịp điệu chậm)**: Chuyển hướng sang một câu hỏi tình huống mềm (teamwork, quản lý thời gian hoặc giải quyết mâu thuẫn).
+- **Câu 4 🔥 (JD Cross-Check - Thử thách gắt)**: Đưa ra một bài toán/tình huống thực tế DỰA TRÊN Job Description (JD) của công ty. Yêu cầu ứng viên dùng kỹ năng trong CV để đề xuất giải pháp.
+- **Câu 5 🔥 (CV Deep Dive 2 - Liên kết JD)**: Chọn 1 dự án KHÁC trong CV (hoặc khía cạnh khác của dự án Câu 2). BẮT BUỘC gọi tên dự án đó. Yêu cầu ứng viên liên hệ kinh nghiệm/khó khăn họ đã giải quyết trong dự án này với một yêu cầu cụ thể trong Job Description (JD).
+- **Câu 6 🔥 (Stress / Fake Check - Rất Gắt)**: Phản biện hoặc giăng bẫy kiến thức. (Ví dụ: "Bạn tự đánh giá giỏi công nghệ X, vậy nếu gặp trường hợp Y thì X lại là điểm yếu chí mạng, bạn xử lý sao?"). Phải rất sát với kỹ năng trong CV.
+- **Câu 7 🔥 (JD Deep Dive - Thử thách)**: Đặt một câu hỏi chuyên môn đi sâu vào một yêu cầu quan trọng hoặc công nghệ cốt lõi trong Job Description (JD) mà ứng viên chưa đề cập nhiều để kiểm tra năng lực thực sự.
+- **Câu 8 🔥 (Problem Solving / Adaptability)**: Đưa ra một bài toán mở, rủi ro hệ thống, hoặc một tình huống thay đổi requirement đột ngột liên quan đến JD để đánh giá tư duy giải quyết vấn đề và khả năng thích nghi.
+
+Các câu hỏi phải tuân thủ nghiêm ngặt các quy tắc tuyệt đối sau:
+1. Thiết kế linh hoạt dựa trên vị trí ứng tuyển.
+2. BẮT BUỘC Câu 2 và Câu 5 phải chứa thông tin bối cảnh cụ thể trích xuất trực tiếp từ các DỰ ÁN (Projects) hoặc KINH NGHIỆM LÀM VIỆC (Work Experience) ghi trong CV của ứng viên, và liên kết chúng với JD. Nếu CV trống rỗng, hãy hỏi lý thuyết chuyên sâu dựa trên JD.
+3. Ngôn ngữ câu hỏi phải là tiếng Việt tự nhiên, giao tiếp chuyên nghiệp. KHÔNG copy tiêu chuẩn đánh giá ("Khung STAR...") vào câu hỏi.
+
+⚠️ PHÂN BIỆT RÕ CÁC PHẦN DỮ LIỆU:
+- "question_text": Câu hỏi DO NGƯỜI PHỎNG VẤN (HR) đặt ra.
+- "expected_answer": Câu trả lời mẫu HOÀN CHỈNH của ứng viên (ngôi thứ nhất, 100-200 từ, có thông tin/con số thật).
+- "answer_steps": Lộ trình hướng dẫn trả lời. Mỗi "desc" tối thiểu 60 ký tự, chỉ hướng dẫn hành động (Không "Lý do:", Không chèn câu mẫu).
+- "suggested_time": Thời gian khuyến nghị (120-180 giây).
+
+${ANSWER_STEPS_GOLDEN_EXAMPLE}
+
+Bạn PHẢI trả về định dạng JSON duy nhất:
+{
+  "questions": [ /* 8 objects: stage_index, question_text, expected_answer, answer_steps, suggested_time, score_weight */ ]
+}
+
+LƯU Ý TUYỆT ĐỐI:
+1. Sinh đủ CHÍNH XÁC 8 CÂU HỎI. Không ít hơn, không nhiều hơn.`;
+  } else {
+    systemPrompt = `Bạn là một Chuyên gia Tuyển dụng AI cao cấp, am hiểu nhiều ngành nghề khác nhau (như Công nghệ thông tin, Kinh doanh, Marketing, Nhân sự, Tài chính, Thiết kế, v.v.).
 Nhiệm vụ của bạn là dựa vào CV của ứng viên, vị trí ứng tuyển và kỹ năng chuyên môn được cung cấp để sinh ra chính xác **8 câu hỏi phỏng vấn** theo lộ trình thực tế như phỏng vấn với HR dưới đây:
 
 - **Câu 1 (Giai đoạn 1 - Nhập cuộc & Giới thiệu bản thân)**: Lời chào và gợi ý ứng viên thực hiện giao tiếp xã giao nhẹ nhàng (small talk), giới thiệu ngắn gọn, lịch sự về bản thân cũng như định hướng phát triển tổng quan.
@@ -789,6 +828,7 @@ LƯU Ý TUYỆT ĐỐI:
 2. "expected_answer" PHẢI là đoạn văn hoàn chỉnh ứng viên có thể đọc ngay — KHÔNG chứa [mục tiêu], [Tên], \${co} hay bất kỳ chỗ trống nào.
 3. "answer_steps" PHẢI có START + ít nhất 2 bước số + END; mỗi desc ĐẾM KÝ TỰ ≥ 60 (viết dài, chi tiết), chỉ hướng dẫn hành động — không "Lý do:", không "Ví dụ:", không chèn câu trả lời mẫu.
 4. BẮT BUỘC phải sinh đủ CHÍNH XÁC 8 CÂU HỎI — không ít hơn, không nhiều hơn. Đây là yêu cầu bắt buộc và tuyệt đối không được bỏ qua.`;
+  }
 
   const companyContext = companyName ? `\n5. TÊN CÔNG TY (Company Context):\n   => ${companyName} (Hãy cá nhân hóa câu hỏi theo lĩnh vực, sản phẩm và văn hóa làm việc của công ty này)` : '';
   const jdContext = jobDescription ? `\n6. MÔ TẢ CÔNG VIỆC / YÊU CẦU KỸ NĂNG (Job Description):\n=========================================\n${jobDescription}\n=========================================\n(Ưu tiên generate câu hỏi xoay quanh các kỹ năng và yêu cầu cụ thể từ JD này)` : '';
@@ -844,7 +884,7 @@ Dựa trên toàn bộ dữ liệu bối cảnh thực tế ở trên, hãy th�
 - Các lỗi phát hiện: ${issueSummary}
 - TUYỆT ĐỐI KHÔNG lặp lại cùng một câu hỏi ở nhiều vị trí.
 - Câu 5 BẮT BUỘC gọi tên dự án/công ty CỤ THỂ từ CV — KHÔNG dùng placeholder như [Tên dự án].
-- Câu 6 phải là câu hỏi lý thuyết/chuyên môn, Câu 7 về lương/kỳ vọng, Câu 8 là câu hỏi ngược/chào tạm biệt.
+- Câu 6, 7, 8 phải là các câu hỏi chuyên môn sâu, xử lý tình huống hoặc đánh giá kỹ năng thực tế dựa trên JD và CV (tuyệt đối không hỏi về mức lương, quyền lợi hay câu hỏi ngược).
 - answer_steps MỖI CÂU: START + 2-3 bước số + END; mỗi desc ĐẾM KÝ TỰ ≥ 60 (viết dài, chi tiết), chỉ hướng dẫn hành động — không "Lý do:", không "Ví dụ:", không câu mẫu.
 - expected_answer MỖI CÂU phải là đoạn văn hoàn chỉnh, không có [brackets] hay \${tags}.`;
         console.warn(`[Groq QuestionGen] Retry ${attempt}/${MAX_RETRIES} due to validation issues:`, issueSummary);
@@ -885,7 +925,21 @@ Dựa trên toàn bộ dữ liệu bối cảnh thực tế ở trên, hãy th�
     return cleaned;
 
   } catch (error) {
-    console.warn('[Groq API] Gặp lỗi rate limit hoặc sự cố kết nối, kích hoạt bộ câu hỏi stage-fallback:', error.message);
+    console.warn('[Groq API] Gặp lỗi rate limit hoặc sự cố kết nối, kích hoạt bộ câu hỏi dự phòng:', error.message);
+
+    if (isHRMode) {
+      console.log('[Groq QuestionGen] Sử dụng bộ câu hỏi Frontend React cứng cho HR Interview.');
+      return [
+        { question_text: "Chào bạn Quân, bạn có thể giới thiệu ngắn gọn về bản thân và chuyên ngành học tại Đại học FPT không?", expected_answer: "Ứng viên giới thiệu sơ lược về bản thân, chuyên ngành CNTT và định hướng theo đuổi mảng phát triển phần mềm.", score_weight: 1 },
+        { question_text: "Trong dự án MockAI Interview, bạn đóng vai trò là Full-stack Developer. Bạn có thể chia sẻ chi tiết cách bạn kết hợp React.js ở Frontend với Node.js ở Backend để xây dựng tính năng AI CV Scanner không?", expected_answer: "Mô tả chi tiết luồng xử lý: Frontend gọi API upload, Backend dùng thư viện parse PDF và gửi qua LLM để trích xuất dữ liệu, sau đó trả về Frontend hiển thị.", score_weight: 2 },
+        { question_text: "Làm việc trong một nhóm 5 người, bạn đã áp dụng quy trình phân bổ công việc (Task Allocation Workflow) như thế nào để đảm bảo dự án chạy đúng tiến độ?", expected_answer: "Ứng viên chia sẻ cách giao tiếp, sử dụng công cụ quản lý task, chia nhỏ công việc và resolve conflict khi merge code trên GitHub.", score_weight: 1 },
+        { question_text: "Với vị trí Frontend React Developer, việc quản lý State rất quan trọng. Bạn đã xử lý việc lưu trữ và đồng bộ trạng thái giữa các component phức tạp như thế nào trong dự án của mình?", expected_answer: "Ứng viên có thể đề cập đến việc dùng Context API, Redux, Zustand hoặc React Query tùy vào bài toán lưu trữ trạng thái local hay server state.", score_weight: 2 },
+        { question_text: "Đối với dự án BabyGuard (IoT), bạn đã triển khai Client-Server Architecture để stream audio. Kỹ năng thiết kế luồng dữ liệu thời gian thực (latency dưới 2s) này giúp ích gì cho bạn khi làm các ứng dụng Web tương tác cao?", expected_answer: "Ứng viên liên hệ kiến thức về tối ưu độ trễ, WebSockets hoặc xử lý stream để tối ưu trải nghiệm người dùng trên Web.", score_weight: 2 },
+        { question_text: "Bạn ghi trong CV là thành thạo React. Nếu ứng dụng của bạn gặp tình trạng giật lag do bị re-render quá nhiều lần, bạn sẽ dùng công cụ gì để debug và giải pháp cốt lõi để khắc phục là gì?", expected_answer: "Đề cập đến React DevTools Profiler, kiểm tra dependencies của các hooks (useEffect), và áp dụng memoization (useMemo, useCallback, React.memo).", score_weight: 2 },
+        { question_text: "Dựa trên yêu cầu của vị trí React Developer, bạn đánh giá mức độ am hiểu của mình về các khái niệm cốt lõi như Virtual DOM, Hooks lifecycle và Component Composition ra sao?", expected_answer: "Ứng viên tự tin giải thích được nguyên lý hoạt động của Virtual DOM và cách các Hooks vòng đời thay thế cho class component.", score_weight: 2 },
+        { question_text: "Cuối cùng, nếu dự án sắp tới công ty yêu cầu bạn phải sử dụng một framework mới hoàn toàn như Next.js để làm Server-side Rendering (SSR), chiến lược học hỏi của bạn là gì để theo kịp tiến độ?", expected_answer: "Ứng viên mô tả phương pháp tự học qua docs chính thức, tìm hiểu concept cốt lõi (SSR vs CSR) và tạo các mini-project để thực hành nhanh.", score_weight: 1 }
+      ];
+    }
 
     const genLog = { paddedSlots: [], replacedSlots: [], fallbackMode: 'api-error' };
     const finalQuestions = Array.from({ length: 8 }, (_, i) => buildStageFallback(i, context));
@@ -894,7 +948,7 @@ Dựa trên toàn bộ dữ liệu bối cảnh thực tế ở trên, hãy th�
       stage: STAGE_LABELS[i],
       source: 'stage-fallback-api-error'
     }));
-    console.log('[Groq QuestionGen] Session log (API error fallback):', JSON.stringify(genLog, null, 2));
+    console.log('[Groq QuestionGen] Session log (Practice error fallback):', JSON.stringify(genLog, null, 2));
 
     return finalQuestions.map(({ _source, _stage, ...q }) => q);
   }
@@ -942,7 +996,7 @@ Câu trả lời thực tế của ứng viên:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'qwen/qwen3-32b',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
@@ -1090,7 +1144,7 @@ Dựa trên toàn bộ kết quả phỏng vấn thực tế ở trên, hãy th�
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'qwen/qwen3-32b',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
@@ -1148,6 +1202,50 @@ Dựa trên toàn bộ kết quả phỏng vấn thực tế ở trên, hãy th�
  * @param {object} params
  * @returns {Promise<{evaluations: Array, overall_assessment: object}>}
  */
+export const evaluateShallowAnswer = async (questionText, answerText) => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey || apiKey === 'mock-groq-key') {
+    return { isShallow: false, followUpQuestion: null };
+  }
+
+  const systemPrompt = `Bạn là một HR lão luyện (Senior Talent Acquisition).
+Nhiệm vụ của bạn là đánh giá nhanh xem câu trả lời của ứng viên cho câu hỏi phỏng vấn có quá hời hợt, chung chung, né tránh trọng tâm, hoặc có dấu hiệu copy/học vẹt hay không.
+Nếu CÓ, hãy sinh ra MỘT câu hỏi "vặn" lại (Drill-down) ngắn gọn, đi thẳng vào vấn đề để ép ứng viên khai thật chi tiết.
+Nếu KHÔNG (trả lời tốt, có con số/chi tiết cụ thể), trả về isShallow: false.
+
+JSON Format:
+{
+  "isShallow": true,
+  "followUpQuestion": "Bạn nói tối ưu hệ thống, cụ thể là bạn dùng công cụ gì và giảm được bao nhiêu % thời gian xử lý?"
+}`;
+  const userPrompt = `Câu hỏi: ${questionText}\nTrả lời của ứng viên: ${answerText}`;
+
+  try {
+    const url = 'https://api.groq.com/openai/v1/chat/completions';
+    const response = await fetchWithRetry(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3
+      })
+    });
+    const resData = await response.json();
+    return safeParseJSON(resData.choices[0].message.content);
+  } catch (error) {
+    console.error('evaluateShallowAnswer error:', error);
+    return { isShallow: false, followUpQuestion: null };
+  }
+};
+
 export const evaluateAllAndGenerateHRReport = async ({
   candidateName = '',
   position = '',
@@ -1170,6 +1268,11 @@ export const evaluateAllAndGenerateHRReport = async ({
 2. Phân tích Tổng quan (Overall Assessment) dựa trên toàn bộ các câu hỏi thuộc 4 giai đoạn (Từ mở đầu tới kết thúc).
    - Dựa vào đó viết "feedback_summary" bao gồm: điểm mạnh, điểm yếu, lời khuyên. BẮT BUỘC nhận xét về mức độ trung thực nếu "Tổng số vi phạm quy chế (Tab/Gaze)" lớn hơn 0.
    - Đánh giá 5 trục kỹ năng (radar_skills): technical_depth, communication, problem_solving, confidence, star_structure (thang điểm 0-100). KHÔNG TẠO learning_path.
+   - BỔ SUNG 3 chỉ số HR chuyên nghiệp (Scoring Rubric):
+     + hard_skill_consistency (0-10): Độ nhất quán kỹ năng (Kỹ năng khai trong CV có khớp với thực tế trả lời không).
+     + communication_clarity (0-10): Độ rõ ràng mạch lạc trong giao tiếp.
+     + red_flag_score (0-100%): Chỉ số rủi ro (Càng cao càng nghi ngờ ứng viên nói dối, học vẹt, gian lận).
+     + detailed_red_flags (Mảng string): Liệt kê chi tiết các điểm đáng ngờ nếu có (ví dụ: "Vi phạm ánh mắt 5 lần", "Trả lời câu 2 hoàn toàn giống Wikipedia").
 
 Bạn PHẢI trả về JSON DUY NHẤT theo định dạng MẪU CHUẨN sau:
 {
@@ -1188,7 +1291,13 @@ Bạn PHẢI trả về JSON DUY NHẤT theo định dạng MẪU CHUẨN sau:
       "problem_solving": 75,
       "confidence": 80,
       "star_structure": 70
-    }
+    },
+    "hard_skill_consistency": 8,
+    "communication_clarity": 7,
+    "red_flag_score": 20,
+    "detailed_red_flags": [
+      "Có dấu hiệu ngập ngừng ở câu hỏi về kiến trúc dự án A."
+    ]
   }
 }`;
 
@@ -1215,7 +1324,7 @@ Hãy sinh ra JSON kết quả chấm điểm và báo cáo tổng hợp.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'qwen/qwen3-32b',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
@@ -1240,16 +1349,6 @@ Hãy sinh ra JSON kết quả chấm điểm và báo cáo tổng hợp.`;
   }
 };
 
-/**
- * Moderate blog content using Groq Cloud API to verify if it is relevant to job tips, CV, or interviews
- * 
- * @param {object} params
- * @param {string} params.title - Blog title
- * @param {string} params.content - Blog content
- * @param {string} params.category - Blog category
- * @param {Array} params.tags - Blog tags
- * @returns {Promise<{relevant: boolean, reason: string}>}
- */
 export const moderateBlogContentWithGroq = async ({
   title = '',
   content = '',
@@ -1359,7 +1458,7 @@ ${content.substring(0, 1000)} ${content.length > 1000 ? '...' : ''}`;
  */
 export const generateDailyQuestionFromGroq = async (track = '') => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'qwen-2.5-32b';
+  const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
     throw new Error('GROQ_API_KEY chưa được cấu hình hoặc giá trị không hợp lệ trong file .env ở Backend!');
