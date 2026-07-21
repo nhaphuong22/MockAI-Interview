@@ -41,9 +41,24 @@ export default function PostDetailModal({ post, isOpen, onClose, onReact, onRepo
   // Mutations
   const commentMutation = useMutation({
     mutationFn: (content) => blogApi.createComment(post.id, content),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["blogComments", post.id] });
-      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+    onSuccess: (res) => {
+      const newComment = res.data || res;
+      if (newComment && newComment.id) {
+        const updateList = (oldQueryData) => {
+          const list = Array.isArray(oldQueryData) ? oldQueryData : [];
+          const exists = list.some((c) => Number(c.id) === Number(newComment.id));
+          if (exists) {
+            return list.map((c) => (Number(c.id) === Number(newComment.id) ? { ...c, ...newComment } : c));
+          }
+          return [...list, newComment];
+        };
+
+        queryClient.setQueriesData({ queryKey: ["blogComments", post.id] }, updateList);
+        queryClient.setQueriesData({ queryKey: ["blogComments", Number(post.id)] }, updateList);
+        queryClient.setQueriesData({ queryKey: ["blogComments", String(post.id)] }, updateList);
+      }
+      queryClient.refetchQueries({ queryKey: ["blogComments"] });
+      queryClient.refetchQueries({ queryKey: ["publishedBlogs"] });
     },
     onError: (err) => {
       showToast({ message: err?.response?.data?.message || "Lỗi khi gửi bình luận.", type: "error" });
@@ -53,7 +68,7 @@ export default function PostDetailModal({ post, isOpen, onClose, onReact, onRepo
   const updateCommentMutation = useMutation({
     mutationFn: ({ id, content }) => blogApi.updateComment(id, content),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["blogComments", post.id] });
+      queryClient.invalidateQueries({ queryKey: ["blogComments"], refetchType: "all" });
       showToast({ message: "Đã cập nhật bình luận.", type: "success" });
     },
     onError: (err) => {
@@ -64,8 +79,8 @@ export default function PostDetailModal({ post, isOpen, onClose, onReact, onRepo
   const deleteCommentMutation = useMutation({
     mutationFn: (id) => blogApi.deleteComment(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["blogComments", post.id] });
-      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+      queryClient.invalidateQueries({ queryKey: ["blogComments"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"], refetchType: "all" });
       showToast({ message: "Đã xóa bình luận.", type: "success" });
     },
     onError: (err) => {
@@ -74,6 +89,8 @@ export default function PostDetailModal({ post, isOpen, onClose, onReact, onRepo
   });
 
   if (!isOpen || !post) return null;
+
+  const displayCommentCount = comments.length > 0 ? comments.length : (post.comments || post.comments_count || 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={onClose}>
@@ -167,7 +184,7 @@ export default function PostDetailModal({ post, isOpen, onClose, onReact, onRepo
             />
             <button className="flex items-center gap-1.5 hover:text-gray-700 dark:hover:text-slate-300 transition-colors">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-              <span className="font-semibold text-[15px] pl-0.5">{post.comments || 0}</span>
+              <span className="font-semibold text-[15px] pl-0.5">{displayCommentCount}</span>
             </button>
             {onReport && (
               <button 

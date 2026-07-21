@@ -237,9 +237,13 @@ export const addBlogComment = async (blogId, userId, content) => {
     })
     .returning('id');
 
+  const targetCommentId = typeof newCommentId === 'object' && newCommentId !== null 
+    ? (newCommentId.id || Object.values(newCommentId)[0]) 
+    : newCommentId;
+
   const newComment = await db('blog_comments')
     .join('users', 'blog_comments.user_id', '=', 'users.id')
-    .where('blog_comments.id', newCommentId.id || newCommentId)
+    .where('blog_comments.id', targetCommentId)
     .select(
       'blog_comments.*',
       'users.full_name as author_name',

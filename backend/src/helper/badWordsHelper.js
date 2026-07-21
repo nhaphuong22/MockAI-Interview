@@ -7,7 +7,7 @@ const singleBadWords = [
   // Vietnamese with accents (exact word matching)
   "địt", "đéo", "đm", "vcl", "vl", "đụ", "cặc", "lồn", "buồi", "phò", "đĩ", "đmm", "dâm", "vú",
   // Vietnamese without accents (exact word matching)
-  "dit", "deo", "c4c", "lon", "buoi", "du", "cac", "pho", "di", "dam", "vu",
+  "dit", "deo", "c4c", "lon", "buoi", "du", "cac", "pho", "dam",
   // English profanities
   "fuck", "fucking", "shit", "bitch", "asshole", "cunt", "motherfucker", "dick", "pussy", "fag", "bastard"
 ];

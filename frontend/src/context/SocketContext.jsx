@@ -77,13 +77,21 @@ export const SocketProvider = ({ children }) => {
       queryClient.invalidateQueries({ queryKey: ["candidate-jobs-list"] });
     });
 
+    // Helper kiểm tra khớp blogId linh hoạt (hỗ trợ cả string "1", number 1, hoặc "BLOG-001")
+    const helperMatchBlogId = (targetId, eventBlogId) => {
+      if (targetId == null || eventBlogId == null) return false;
+      const targetNum = targetId.toString().startsWith('BLOG-') ? parseInt(targetId.toString().replace('BLOG-', '')) : parseInt(targetId);
+      const eventNum = eventBlogId.toString().startsWith('BLOG-') ? parseInt(eventBlogId.toString().replace('BLOG-', '')) : parseInt(eventBlogId);
+      return targetNum === eventNum || targetId.toString() === eventBlogId.toString();
+    };
+
     // --- CÁC SỰ KIỆN CỘNG ĐỒNG REAL-TIME (BLOGS / LIKES / COMMENTS) ---
 
     // 1. Lắng nghe bài viết mới xuất bản
     socketInstance.on("community_post_published", (blog) => {
       console.log("[Socket] Nhận sự kiện bài viết cộng đồng mới:", blog);
-      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
-      queryClient.invalidateQueries({ queryKey: ["blogSidebar"] });
+      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["blogSidebar"], refetchType: "all" });
       showToast({
         message: `📢 Bài viết mới vừa xuất bản: "${blog.title}"`,
         type: "info"
@@ -94,10 +102,10 @@ export const SocketProvider = ({ children }) => {
     socketInstance.on("community_post_reacted", ({ blogId, total_reactions, reaction_counts }) => {
       console.log("[Socket] Cập nhật lượt thả cảm xúc real-time:", blogId, total_reactions);
       
-      queryClient.setQueryData(["publishedBlogs"], (old) => {
+      queryClient.setQueriesData({ queryKey: ["publishedBlogs"] }, (old) => {
         if (!old || !Array.isArray(old)) return old;
         return old.map((post) => {
-          if (post.id === blogId) {
+          if (helperMatchBlogId(post.id, blogId)) {
             return {
               ...post,
               total_reactions,
@@ -108,57 +116,107 @@ export const SocketProvider = ({ children }) => {
         });
       });
 
-      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+      queryClient.setQueriesData({ queryKey: ["blog"] }, (old) => {
+        if (!old || !old.id || !helperMatchBlogId(old.id, blogId)) return old;
+        return {
+          ...old,
+          total_reactions,
+          reaction_counts: reaction_counts || old.reaction_counts
+        };
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["blog"], refetchType: "all" });
     });
 
     // 3. Lắng nghe thêm bình luận mới
     socketInstance.on("community_comment_added", ({ blogId, comment, commentsCount }) => {
-      console.log("[Socket] Nhận bình luận mới bài viết:", blogId);
+      console.log("[Socket] Nhận bình luận mới bài viết:", blogId, comment);
 
-      queryClient.invalidateQueries({ queryKey: ["blogComments", blogId] });
+      // Cập nhật tất cả các query `blogComments` trong cache có blogId trùng khớp
+      if (comment && comment.id) {
+        const updateList = (oldQueryData) => {
+          const list = Array.isArray(oldQueryData) ? oldQueryData : [];
+          const exists = list.some((c) => Number(c.id) === Number(comment.id));
+          if (exists) {
+            return list.map((c) => (Number(c.id) === Number(comment.id) ? { ...c, ...comment } : c));
+          }
+          return [...list, comment];
+        };
 
-      queryClient.setQueryData(["publishedBlogs"], (old) => {
+        queryClient.setQueriesData({ queryKey: ["blogComments", blogId] }, updateList);
+        queryClient.setQueriesData({ queryKey: ["blogComments", Number(blogId)] }, updateList);
+        queryClient.setQueriesData({ queryKey: ["blogComments", String(blogId)] }, updateList);
+      }
+
+      // Cập nhật số đếm comments trong danh sách bài viết `publishedBlogs`
+      queryClient.setQueriesData({ queryKey: ["publishedBlogs"] }, (old) => {
         if (!old || !Array.isArray(old)) return old;
         return old.map((post) => {
-          if (post.id === blogId) {
+          if (helperMatchBlogId(post.id, blogId)) {
+            const newCount = commentsCount !== undefined ? commentsCount : (post.comments_count || post.comments || 0) + 1;
             return {
               ...post,
-              comments_count: commentsCount !== undefined ? commentsCount : (post.comments_count || 0) + 1
+              comments_count: newCount,
+              comments: newCount
             };
           }
           return post;
         });
       });
 
-      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+      queryClient.refetchQueries({ queryKey: ["blogComments"] });
+      queryClient.refetchQueries({ queryKey: ["publishedBlogs"] });
     });
 
     // 4. Lắng nghe cập nhật bình luận
-    socketInstance.on("community_comment_updated", ({ blogId }) => {
-      console.log("[Socket] Cập nhật bình luận bài viết:", blogId);
-      queryClient.invalidateQueries({ queryKey: ["blogComments", blogId] });
+    socketInstance.on("community_comment_updated", ({ blogId, comment }) => {
+      console.log("[Socket] Cập nhật bình luận bài viết:", blogId, comment);
+
+      if (comment && comment.id) {
+        const updateList = (oldQueryData) => {
+          if (!oldQueryData || !Array.isArray(oldQueryData)) return oldQueryData;
+          return oldQueryData.map((c) => (Number(c.id) === Number(comment.id) ? { ...c, ...comment } : c));
+        };
+
+        queryClient.setQueriesData({ queryKey: ["blogComments", blogId] }, updateList);
+        queryClient.setQueriesData({ queryKey: ["blogComments", Number(blogId)] }, updateList);
+        queryClient.setQueriesData({ queryKey: ["blogComments", String(blogId)] }, updateList);
+      }
+
+      queryClient.refetchQueries({ queryKey: ["blogComments"] });
     });
 
     // 5. Lắng nghe xóa bình luận
-    socketInstance.on("community_comment_deleted", ({ blogId, commentsCount }) => {
-      console.log("[Socket] Xóa bình luận bài viết:", blogId);
+    socketInstance.on("community_comment_deleted", ({ blogId, commentId, commentsCount }) => {
+      console.log("[Socket] Xóa bình luận bài viết:", blogId, commentId);
 
-      queryClient.invalidateQueries({ queryKey: ["blogComments", blogId] });
+      const filterList = (oldQueryData) => {
+        if (!oldQueryData || !Array.isArray(oldQueryData)) return oldQueryData;
+        return oldQueryData.filter((c) => Number(c.id) !== Number(commentId));
+      };
 
-      queryClient.setQueryData(["publishedBlogs"], (old) => {
+      queryClient.setQueriesData({ queryKey: ["blogComments", blogId] }, filterList);
+      queryClient.setQueriesData({ queryKey: ["blogComments", Number(blogId)] }, filterList);
+      queryClient.setQueriesData({ queryKey: ["blogComments", String(blogId)] }, filterList);
+
+      queryClient.setQueriesData({ queryKey: ["publishedBlogs"] }, (old) => {
         if (!old || !Array.isArray(old)) return old;
         return old.map((post) => {
-          if (post.id === blogId) {
+          if (helperMatchBlogId(post.id, blogId)) {
+            const newCount = commentsCount !== undefined ? commentsCount : Math.max(0, (post.comments_count || post.comments || 0) - 1);
             return {
               ...post,
-              comments_count: commentsCount !== undefined ? commentsCount : Math.max(0, (post.comments_count || 0) - 1)
+              comments_count: newCount,
+              comments: newCount
             };
           }
           return post;
         });
       });
 
-      queryClient.invalidateQueries({ queryKey: ["publishedBlogs"] });
+      queryClient.refetchQueries({ queryKey: ["blogComments"] });
+      queryClient.refetchQueries({ queryKey: ["publishedBlogs"] });
     });
 
     let disconnectToastShown = false;

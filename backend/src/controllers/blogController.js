@@ -1,8 +1,8 @@
-import { 
-  saveDraftBlog, 
-  requestBlogReview, 
-  getPublishedBlogs as fetchPublishedBlogs, 
-  getBlogById as fetchBlogById, 
+import {
+  saveDraftBlog,
+  requestBlogReview,
+  getPublishedBlogs as fetchPublishedBlogs,
+  getBlogById as fetchBlogById,
   getRelatedBlogs as fetchRelatedBlogs,
   reactToBlog,
   addBlogComment,
@@ -88,7 +88,7 @@ export const uploadCoverImage = async (req, res) => {
     });
 
     const imageUrl = uploadResult.secure_url;
-    
+
     return res.status(200).json({
       message: 'Tải ảnh bìa lên thành công.',
       url: imageUrl
