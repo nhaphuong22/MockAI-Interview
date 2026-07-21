@@ -5,6 +5,7 @@ import { applicationApi } from "../../api/applicationApi";
 import * as Tabs from "@radix-ui/react-tabs";
 import { TrackingStats } from "./components/TrackingStats";
 import { ApplicationCard } from "./components/ApplicationCard";
+import { CandidateDeclineModal } from "./components/CandidateDeclineModal";
 import * as Dialog from "@radix-ui/react-dialog";
 import AtsReportDashboard from "./components/AtsReportDashboard";
 
@@ -20,9 +21,10 @@ export function ApplicationTracking() {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [showAtsModal, setShowAtsModal] = useState(false);
+  const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
 
   // Fetch đơn ứng tuyển của Candidate từ DB
-  const { data: response, isLoading, isError } = useQuery({
+  const { data: response, isLoading, isError, refetch } = useQuery({
     queryKey: ["candidate-applications"],
     queryFn: async () => {
       const res = await applicationApi.getApplications();
@@ -56,12 +58,18 @@ export function ApplicationTracking() {
       company: app.companyName,
       logo: app.companyName?.substring(0, 1).toUpperCase() || "🚀",
       appliedDate: app.appliedDate,
+      invitedAt: app.invited_at,
       status,
       rawStatus,
       timeline,
       aiScore: app.aiScore
     };
   });
+
+  const handleDeclineClick = (appId) => {
+    setSelectedAppId(appId);
+    setIsDeclineModalOpen(true);
+  };
 
   const stats = {
     total: applications.length,
@@ -138,26 +146,46 @@ export function ApplicationTracking() {
               value="accepted"
               className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300 cursor-pointer"
             >
-              Trúng Tuyển
+              Đã Tuyển
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="rejected"
+              className="px-6 py-2.5 rounded-xl text-sm font-bold dark:text-slate-400 text-gray-500 data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white transition-all duration-300 cursor-pointer"
+            >
+              Từ Chối
             </Tabs.Trigger>
           </Tabs.List>
 
-          <Tabs.Content value={activeTab} className="space-y-6 outline-none">
+          <Tabs.Content value={activeTab} className="focus:outline-none">
             {filteredApplications.length > 0 ? (
-              filteredApplications.map((app) => (
-                <ApplicationCard 
-                  key={app.id} 
-                  app={app} 
-                  statusConfig={statusConfig} 
-                />
-              ))
+              <div className="grid grid-cols-1 gap-6">
+                {filteredApplications.map(app => (
+                  <ApplicationCard 
+                    key={app.id} 
+                    app={app} 
+                    statusConfig={statusConfig} 
+                    onDecline={() => handleDeclineClick(app.id)}
+                  />
+                ))}
+              </div>
             ) : (
-              <div className="dark:bg-[#0a0f1c]/50 bg-white rounded-3xl p-12 text-center shadow-xl shadow-gray-200/30 dark:shadow-[#0ea5e9]/10 border dark:border-white/10 border-gray-50">
-                <p className="dark:text-slate-400 text-gray-500 font-medium">Chưa có hồ sơ ứng tuyển nào ở trạng thái này.</p>
+              <div className="text-center py-20 dark:bg-[#0a0f1c]/50 bg-white rounded-3xl border dark:border-white/10 border-gray-100 shadow-sm">
+                <Bot className="w-16 h-16 dark:text-slate-700 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold dark:text-white text-gray-900 mb-2">Chưa Có Hồ Sơ Nào</h3>
+                <p className="dark:text-slate-400 text-gray-500">
+                  {activeTab === "all" ? "Bạn chưa ứng tuyển vị trí nào. Hãy khám phá các cơ hội nghề nghiệp ngay nhé!" : "Không có hồ sơ nào ở trạng thái này."}
+                </p>
               </div>
             )}
           </Tabs.Content>
         </Tabs.Root>
+
+        <CandidateDeclineModal
+          isOpen={isDeclineModalOpen}
+          onClose={() => setIsDeclineModalOpen(false)}
+          applicationId={selectedAppId}
+          onSuccess={() => refetch()}
+        />
 
         {/* ATS Report Modal */}
         <Dialog.Root open={showAtsModal} onOpenChange={setShowAtsModal}>

@@ -19,98 +19,102 @@ const Checkout = lazy(() => import("../pages/shared/Checkout").then(m => ({ defa
 const PaymentSuccess = lazy(() => import("../pages/shared/PaymentSuccess").then(m => ({ default: m.PaymentSuccess })));
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 
+
 import { ContentHiddenPage } from "../pages/shared/ContentHiddenPage";
+
+
 
 const HRInterviewPrep = lazy(() => import("../pages/candidate/HRInterviewPrep"));
 const HRInterviewRoom = lazy(() => import("../pages/candidate/HRInterviewRoom"));
 const HRInterviewResult = lazy(() => import("../pages/candidate/HRInterviewResult"));
 const Tools = lazy(() => import("../pages/candidate/Tools").then(m => ({ default: m.Tools })));
+const ContentHiddenPage = lazy(() => import("../pages/shared/ContentHiddenPage").then(m => ({ default: m.ContentHiddenPage })));
 
 
 export const candidateRoutes = [
   { index: true, Component: Home }, // Public: Landing Page
-  { 
-    path: "jobs", 
+  {
+    path: "jobs",
     element: <Jobs />
   },
-  { 
-    path: "jobs/:id", 
+  {
+    path: "jobs/:id",
     element: <JobDetail />
   },
   {
     path: "tools",
     element: <Tools />
   },
-  { 
-    path: "companies/:id", 
+  {
+    path: "companies/:id",
     element: <ProtectedRoute><CompanyDetail /></ProtectedRoute>
   },
-  { 
-    path: "saved-jobs", 
+  {
+    path: "saved-jobs",
     element: <ProtectedRoute><SavedJobs /></ProtectedRoute>
   },
-  { 
-    path: "applications", 
+  {
+    path: "applications",
     element: <ProtectedRoute><ApplicationTracking /></ProtectedRoute>
   },
-  { 
-    path: "profile", 
+  {
+    path: "profile",
     element: <ProtectedRoute><Profile /></ProtectedRoute>
   },
-  { 
-    path: "cv-review", 
+  {
+    path: "cv-review",
     element: <ProtectedRoute><CVReview /></ProtectedRoute>
   },
-  { 
-    path: "interview-practice", 
+  {
+    path: "interview-practice",
     element: <ProtectedRoute><InterviewPractice /></ProtectedRoute>
   },
-  { 
-    path: "community", 
+  {
+    path: "community",
     element: <ProtectedRoute><Community /></ProtectedRoute>
   },
-  { 
-    path: "community/write", 
+  {
+    path: "community/write",
     element: <ProtectedRoute><WriteBlog /></ProtectedRoute>
   },
-  { 
-    path: "community/post/:id", 
+  {
+    path: "community/post/:id",
     element: <ProtectedRoute><BlogDetail /></ProtectedRoute>
   },
-  { 
-    path: "saved-companies", 
+  {
+    path: "saved-companies",
     element: <ProtectedRoute><SavedCompanies /></ProtectedRoute>
   },
-  { 
-    path: "notifications", 
+  {
+    path: "notifications",
     element: <ProtectedRoute><Notifications /></ProtectedRoute>
   },
-  { 
-    path: "settings", 
+  {
+    path: "settings",
     element: <ProtectedRoute><Settings /></ProtectedRoute>
   },
-  { 
-    path: "packages", 
+  {
+    path: "packages",
     element: <ProtectedRoute><Packages /></ProtectedRoute>
   },
   {
     path: "checkout/:id",
     element: <ProtectedRoute><Checkout /></ProtectedRoute>
   },
-  { 
-    path: "payment-success", 
+  {
+    path: "payment-success",
     element: <ProtectedRoute><PaymentSuccess /></ProtectedRoute>
   },
-  { 
-    path: "hr-interview/prep/:applicationId", 
+  {
+    path: "hr-interview/prep/:applicationId",
     element: <ProtectedRoute><HRInterviewPrep /></ProtectedRoute>
   },
-  { 
-    path: "hr-interview/room/:interviewId", 
+  {
+    path: "hr-interview/room/:interviewId",
     element: <ProtectedRoute><HRInterviewRoom /></ProtectedRoute>
   },
-  { 
-    path: "hr-interview/result/:interviewId", 
+  {
+    path: "hr-interview/result/:interviewId",
     element: <ProtectedRoute><HRInterviewResult /></ProtectedRoute>
   },
   {

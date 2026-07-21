@@ -77,7 +77,7 @@ export function DecisionPanel({
                   : <MessageSquare className="w-4 h-4" />}
                 {application.status === "AI_INTERVIEW_INVITED"
                   ? "Đã Gửi Mời PV AI"
-                  : "🎙 Mời Phỏng Vấn AI"}
+                  : "🎙 Mời Phỏng Vấn AI (-10 Credits)"}
               </button>
             </>
           )}
