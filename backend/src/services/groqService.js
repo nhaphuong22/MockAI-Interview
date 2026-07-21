@@ -721,7 +721,7 @@ export const generateQuestionsFromGroq = async ({
   cvText = ''
 }) => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'qwen/qwen3-32b';
+  const modelName = process.env.GROQ_MODEL || 'qwen-2.5-32b';
 
   // 1. Fallback Validation: Throw real configuration error if key is missing to avoid hidden mock data
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
@@ -1359,7 +1359,7 @@ ${content.substring(0, 1000)} ${content.length > 1000 ? '...' : ''}`;
  */
 export const generateDailyQuestionFromGroq = async (track = '') => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'qwen/qwen3-32b';
+  const modelName = process.env.GROQ_MODEL || 'qwen-2.5-32b';
 
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
     throw new Error('GROQ_API_KEY chưa được cấu hình hoặc giá trị không hợp lệ trong file .env ở Backend!');
