@@ -173,7 +173,7 @@ export function JobSearchBanner({
   return (
     <div className="w-full space-y-4 mb-8">
       {/* Search Banner Container */}
-      <div className="relative z-20 bg-gradient-to-r from-sky-600 to-sky-800 dark:from-slate-900 dark:via-[#0b1329] dark:to-slate-950 p-6 md:p-8 rounded-3xl border border-sky-500/20 dark:border-white/5 shadow-2xl text-white">
+      <div className="relative z-40 bg-gradient-to-r from-sky-600 to-sky-800 dark:from-slate-900 dark:via-[#0b1329] dark:to-slate-950 p-6 md:p-8 rounded-3xl border border-sky-500/20 dark:border-white/5 shadow-2xl text-white">
         {/* Background Blur Ornaments */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 dark:bg-[#0ea5e9]/10 rounded-full blur-[80px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 dark:bg-[#38bdf8]/5 rounded-full blur-[60px] pointer-events-none" />
@@ -198,13 +198,13 @@ export function JobSearchBanner({
           >
             {/* Search Input */}
             <div className="md:col-span-6 flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-white/5 focus-within:border-[#0ea5e9]/60 transition-colors">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Vị trí tuyển dụng, kỹ năng, ngôn ngữ lập trình..."
-                className="flex-1 bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm text-slate-800 dark:text-white"
+                placeholder="Tên công việc, vị trí hoặc kỹ năng..."
+                className="w-full bg-transparent text-xs md:text-sm dark:text-white text-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none font-medium"
               />
               {search && (
                 <button
@@ -217,37 +217,35 @@ export function JobSearchBanner({
               )}
             </div>
 
-            {/* Location Selector */}
-            <div ref={cityDropdownRef} className="md:col-span-4 relative">
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-white/5 focus-within:border-[#0ea5e9]/60 transition-colors h-full">
-                <MapPin className="w-4 h-4 text-[#0ea5e9] shrink-0" />
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => {
-                    onLocationChange(e.target.value);
-                    setShowCitiesDropdown(true);
+            {/* Location Select with Auto-suggest */}
+            <div ref={cityDropdownRef} className="md:col-span-4 relative flex items-center gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-white/5 focus-within:border-[#0ea5e9]/60 transition-colors">
+              <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+              <input
+                type="text"
+                value={location}
+                onFocus={() => setShowCitiesDropdown(true)}
+                onChange={(e) => {
+                  onLocationChange(e.target.value);
+                  setShowCitiesDropdown(true);
+                }}
+                placeholder="Tất cả địa điểm..."
+                className="w-full bg-transparent text-xs md:text-sm dark:text-white text-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none font-medium cursor-pointer"
+              />
+              {location && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onLocationChange("");
+                    setShowCitiesDropdown(false);
                   }}
-                  onFocus={() => setShowCitiesDropdown(true)}
-                  placeholder="Chọn tỉnh, thành phố..."
-                  className="flex-1 bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm text-slate-800 dark:text-white"
-                />
-                {location && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onLocationChange("");
-                      setShowCitiesDropdown(false);
-                    }}
-                    className="text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+                  className="text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
 
               {showCitiesDropdown && (
-                <div className="absolute z-50 left-0 right-0 mt-2 max-h-52 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl py-1 text-slate-700 dark:text-slate-300">
+                <div className="absolute z-50 left-0 right-0 top-full mt-2 max-h-52 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl py-1 text-slate-700 dark:text-slate-300">
                   {filteredCities.length === 0 ? (
                     <div className="p-3 text-xs text-slate-500 text-center font-medium">
                       Không tìm thấy địa điểm
@@ -286,7 +284,7 @@ export function JobSearchBanner({
       </div>
 
       {/* Horizontal Dropdown Filters Bar */}
-      <div ref={dropdownRef} className="relative z-10 flex flex-wrap items-center gap-2 p-4 bg-white/70 dark:bg-[#0f172a]/60 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.02)]">
+      <div ref={dropdownRef} className="relative z-30 flex flex-wrap items-center gap-2 p-4 bg-white/70 dark:bg-[#0f172a]/60 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mr-2 shrink-0">
           <SlidersHorizontal className="w-4 h-4 text-[#0ea5e9]" />
           <span>Bộ lọc nâng cao:</span>
