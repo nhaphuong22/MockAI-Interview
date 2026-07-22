@@ -306,58 +306,85 @@ Dựa trên toàn bộ kết quả phỏng vấn thực tế ở trên, hãy CH�
  * Generate a master campaign report for a specific job based on all candidates' data
  * This is the "Boss" in the Worker-Boss architecture.
  */
-export const generateCampaignReportFromGemini = async ({ jobTitle, requirements, candidatesData }) => {
-  const systemPrompt = `Bạn là Giám đốc Tuyển dụng (Head of Talent Acquisition) cao cấp.
-Nhiệm vụ của bạn là tổng hợp và phân tích toàn bộ kết quả phỏng vấn của chiến dịch tuyển dụng dựa trên dữ liệu do hệ thống AI chấm điểm (Groq).
+export const generateCampaignReportFromGemini = async ({ jobTitle, requirements, funnelStats, cvRejectedReasons, candidatesData }) => {
+  const systemPrompt = `Bạn là Giám đốc Tuyển dụng (Head of Talent Acquisition) cao cấp, được tích hợp AI phân tích dữ liệu.
+Nhiệm vụ của bạn là tổng hợp và phân tích toàn bộ kết quả phỏng vấn của chiến dịch tuyển dụng để xuất ra một Báo cáo Hiệu suất Chiến dịch chuẩn xác.
 
 Bạn sẽ nhận được:
-1. Vị trí tuyển dụng và yêu cầu kỹ năng.
-2. Danh sách các ứng viên đã hoàn thành phỏng vấn (bao gồm Tên, Điểm tổng, Nhận xét tóm tắt, và Lỗi vi phạm trung thực).
+1. Thông tin Vị trí tuyển dụng và yêu cầu kỹ năng.
+2. Dữ liệu tổng quan phễu tuyển dụng (Tổng CV, Qua CV, Hoàn thành PV AI, Đậu, Rớt, Thời gian trung bình).
+3. Các lý do rớt vòng lọc CV phổ biến.
+4. Danh sách các ứng viên đã hoàn thành phỏng vấn AI (bao gồm Tên, Điểm PV AI, và Nhận xét chi tiết).
 
 Yêu cầu Báo Cáo Chiến Dịch:
 - Viết bằng tiếng Việt chuyên nghiệp, sắc bén và trực quan.
-- Nhận xét chất lượng chung của đợt ứng tuyển này.
-- Liệt kê "Bảng Xếp Hạng" (Top ứng viên xuất sắc nhất, có thể đề cập đến 2-3 người nổi bật).
-- Phân tích ngắn gọn điểm mạnh, điểm yếu chung của các ứng viên tham gia.
-- Đề xuất chiến lược bước tiếp theo cho HR (ví dụ: Ai nên gọi phỏng vấn vòng 2, ai cần cân nhắc do lỗi vi phạm).
+- Bạn KHÔNG CẦN TÍNH TOÁN số lượng phễu vì hệ thống đã cung cấp, chỉ cần đưa số liệu đó vào đúng định dạng JSON. Tỷ lệ % cần tính (Ví dụ: tỷ lệ đạt CV = cv_passed / total_applicants).
+- Tổng hợp Điểm nghẽn (Bottlenecks): Rút ra nguyên nhân rớt CV và nguyên nhân rớt phỏng vấn AI phổ biến nhất.
+- Đề xuất Top ứng viên xuất sắc nhất để HR liên hệ (dựa vào điểm số).
+- Đề xuất Hành động (Action Items) thông minh để cải thiện JD hoặc quy trình.
 
-Hãy trả về kết quả định dạng JSON duy nhất, KHÔNG chứa markdown hay text thừa:
+Hãy trả về kết quả định dạng JSON duy nhất, KHÔNG chứa markdown hay text thừa (phải là JSON hợp lệ):
 {
-  "statistics": {
-    "total_candidates": 3,
-    "qualified": 1,
-    "rejected": 2,
-    "average_score": 60
+  "funnel": {
+    "total_cvs": 100,
+    "cv_passed": 40,
+    "cv_pass_rate": 40,
+    "ai_interview_completed": 35,
+    "ai_interview_passed": 10,
+    "ai_interview_pass_rate": 28,
+    "overall_conversion_rate": 10,
+    "ai_interview_failed": 25,
+    "avg_time_days": 1.5
   },
-  "campaign_summary": "Tóm tắt cực kỳ ngắn gọn, đi thẳng vào vấn đề (tối đa 3 câu)...",
-  "action_categories": {
-    "interview_now": [
-      { "id": "ID_ứng_viên_ở_đây", "name": "Tên ứng viên", "score": 90, "reason": "Điểm mạnh nhất..." }
-    ],
-    "keep_in_pool": [
-      { "id": "ID_ứng_viên_ở_đây", "name": "Tên ứng viên", "score": 70, "reason": "Tiềm năng nhưng thiếu..." }
-    ],
-    "reject_immediately": [
-      { "id": "ID_ứng_viên_ở_đây", "name": "Tên ứng viên", "score": 65, "reason": "Lý do loại (VD: Gian lận liếc mắt 5 lần)..." }
-    ]
+  "bottlenecks": {
+    "cv_stage": "60% hồ sơ rớt do Thiếu số năm kinh nghiệm thực tế.",
+    "ai_stage": "70% ứng viên rớt do Điểm kỹ năng chuyên môn dưới chuẩn."
   },
-  "skill_gap_analysis": "Phân tích nhanh mảng kỹ năng mà đa số ứng viên đang yếu để HR báo cáo lại với Hiring Manager...",
-  "hr_recommendation": "Đề xuất chiến lược ngắn gọn..."
+  "top_candidates": [
+    {
+      "id": 1,
+      "name": "Nguyễn Văn A",
+      "score": 92,
+      "key_strengths": "Java, Microservices",
+      "status": "Đã Đậu (Pass)"
+    }
+  ],
+  "action_items": [
+    {
+      "type": "Cần chỉnh sửa",
+      "title": "JD đang ghi yêu cầu quá rộng",
+      "description": "Đề xuất siết chặt tiêu chí kinh nghiệm ngay từ mô tả công việc."
+    },
+    {
+      "type": "Đẩy nhanh tiến độ",
+      "title": "Gửi Offer/Phỏng vấn vòng trong",
+      "description": "Đã có 10 ứng viên đạt chuẩn. HR nên tiến hành đặt lịch phỏng vấn trực tiếp."
+    }
+  ]
 }`;
 
   const userPrompt = `Dữ liệu Chiến Dịch Tuyển Dụng:
 - Vị trí: ${jobTitle}
-- Yêu cầu: ${requirements}
+- Yêu cầu JD: ${requirements}
 
-- Danh sách Ứng viên:
-${candidatesData.map((c, i) => `
+- Thống kê Phễu (Funnel Stats):
+  Tổng CV: ${funnelStats?.total_applicants || 0}
+  Qua vòng CV: ${funnelStats?.cv_passed || 0}
+  Hoàn thành PV AI: ${funnelStats?.ai_interview_completed || 0}
+  Đạt PV AI (Điểm >=60): ${funnelStats?.ai_interview_passed || 0}
+  Rớt PV AI: ${funnelStats?.ai_interview_failed || 0}
+  Tốc độ TB (từ nộp đến xong PV): ${funnelStats?.avg_time_days || 0} ngày
+
+- Lý do rớt vòng lọc CV (Gợi ý): ${cvRejectedReasons || "Không có dữ liệu"}
+
+- Danh sách Ứng viên hoàn thành PV AI:
+${candidatesData?.map((c, i) => `
 [Ứng viên ${i + 1}] ID: ${c.id} | Tên: ${c.name}
 - Điểm: ${c.score}/100
-- Vi phạm quy chế: ${c.violations} lần
-- Nhận xét chi tiết từ AI: ${c.summary}
+- Nhận xét: ${c.summary}
 `).join('\n')}
 
-Dựa vào dữ liệu trên, hãy sinh Báo Cáo Tổng Hợp dưới dạng JSON!`;
+Dựa vào dữ liệu trên, hãy phân tích điểm nghẽn, chọn lọc top 3-5 ứng viên xuất sắc nhất và đưa ra các đề xuất hành động. Trả về chuẩn JSON như yêu cầu!`;
 
   try {
     const model = getGeminiModel(systemPrompt);
@@ -366,11 +393,23 @@ Dựa vào dữ liệu trên, hãy sinh Báo Cáo Tổng Hợp dưới dạng JS
     const parsedData = safeParseJSON(text);
 
     return {
-      statistics: parsedData?.statistics || { total_candidates: candidatesData.length, qualified: 0, rejected: 0, average_score: 0 },
-      campaign_summary: parsedData?.campaign_summary || 'Đã tổng hợp thành công báo cáo chiến dịch.',
-      action_categories: parsedData?.action_categories || { interview_now: [], keep_in_pool: [], reject_immediately: [] },
-      skill_gap_analysis: parsedData?.skill_gap_analysis || 'Chưa có phân tích điểm yếu.',
-      hr_recommendation: parsedData?.hr_recommendation || 'Xem xét gọi phỏng vấn các ứng viên điểm cao.'
+      funnel: parsedData?.funnel || {
+        total_cvs: funnelStats?.total_applicants || 0,
+        cv_passed: funnelStats?.cv_passed || 0,
+        cv_pass_rate: 0,
+        ai_interview_completed: funnelStats?.ai_interview_completed || 0,
+        ai_interview_passed: funnelStats?.ai_interview_passed || 0,
+        ai_interview_pass_rate: 0,
+        overall_conversion_rate: 0,
+        ai_interview_failed: funnelStats?.ai_interview_failed || 0,
+        avg_time_days: funnelStats?.avg_time_days || 0
+      },
+      bottlenecks: parsedData?.bottlenecks || {
+        cv_stage: "Chưa có phân tích cho vòng CV.",
+        ai_stage: "Chưa có phân tích cho vòng PV AI."
+      },
+      top_candidates: parsedData?.top_candidates || [],
+      action_items: parsedData?.action_items || []
     };
   } catch (err) {
     console.error('Failed to generate campaign report via Gemini:', err);

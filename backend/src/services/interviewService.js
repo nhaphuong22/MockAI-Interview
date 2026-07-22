@@ -1,5 +1,5 @@
 import db from '../db/knex.js';
-import { generateQuestionsFromGroq, evaluateCandidateAnswer } from './groqService.js';
+import { generateQuestionsFromGroq, evaluateCandidateAnswer, evaluateShallowAnswer } from './groqService.js';
 import { evaluateCandidateAnswerGemini } from './geminiService.js';
 import { 
   findInterviewWithOwner, 
@@ -199,16 +199,15 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
     savedAnswer = inserted;
   }
 
-  // 4. Dynamic follow-up question logic (only for PRACTICE mode, not for specific skill node practice)
+  // 4. Dynamic follow-up question logic
+  const allQuestions = await db('interview_questions')
+    .where({ interview_id: interviewId })
+    .orderBy('order_index', 'asc');
+  
+  // (a) Logic for PRACTICE mode
   const isSkillPractice = interview && interview.custom_position && interview.custom_position.startsWith('Luyện tập kỹ năng');
-  if (interview && interview.type === 'PRACTICE' && !isSkillPractice && evaluation.is_generic && evaluation.follow_up_question) {
-    // Check total questions count
-    const allQuestions = await db('interview_questions')
-      .where({ interview_id: interviewId })
-      .orderBy('order_index', 'asc');
-
+  if (!isHRInterview && interview && interview.type === 'PRACTICE' && !isSkillPractice && evaluation.is_generic && evaluation.follow_up_question) {
     if (allQuestions.length < 10) {
-      // Find index of current question in the sorted array
       const currentIndex = allQuestions.findIndex(q => q.id === question.id);
       let newOrderIndex;
       if (currentIndex !== -1 && currentIndex < allQuestions.length - 1) {
@@ -217,7 +216,7 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
         newOrderIndex = (question.order_index || 0) + 10;
       }
 
-      const [followUpQuestion] = await db('interview_questions').insert({
+      await db('interview_questions').insert({
         interview_id: interviewId,
         question_text: `[Xoáy sâu] ${evaluation.follow_up_question.question_text}`,
         expected_answer: evaluation.follow_up_question.expected_answer || 'Ứng viên giải thích chi tiết hơn câu trả lời.',
@@ -225,9 +224,39 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
         order_index: newOrderIndex,
         created_at: new Date(),
         updated_at: new Date()
-      }).returning('*');
+      });
+      console.log(`[Follow-up AI] Interview #${interviewId} — inserted follow-up after Q#${questionId} (generic answer). Total questions: ${allQuestions.length + 1}.`);
+    }
+  }
 
-      console.log(`[Follow-up AI] Interview #${interviewId} — inserted follow-up after Q#${questionId} (generic answer). Total questions: ${allQuestions.length + 1}. Preview: "${(evaluation.follow_up_question.question_text || '').slice(0, 60)}..."`);
+  // (b) Logic for HR mode (Drill-down on shallow answers)
+  if (isHRInterview && allQuestions.length < 10) {
+    // Chỉ kiểm tra rẽ nhánh ở các câu quan trọng (CV Deep Dive hoặc JD Cross-check)
+    const currentIndex = allQuestions.findIndex(q => q.id === question.id);
+    const isTargetedQuestion = (currentIndex === 1 || currentIndex === 3); // Câu 2 và Câu 4 (0-indexed)
+
+    if (isTargetedQuestion) {
+      console.log(`Evaluating shallow answer for HR interview...`);
+      const shallowCheck = await evaluateShallowAnswer(question.question_text, answerText.trim());
+      if (shallowCheck && shallowCheck.isShallow && shallowCheck.followUpQuestion) {
+        let newOrderIndex;
+        if (currentIndex !== -1 && currentIndex < allQuestions.length - 1) {
+          newOrderIndex = (allQuestions[currentIndex].order_index + allQuestions[currentIndex + 1].order_index) / 2;
+        } else {
+          newOrderIndex = (question.order_index || 0) + 10;
+        }
+
+        await db('interview_questions').insert({
+          interview_id: interviewId,
+          question_text: `[Đào sâu] ${shallowCheck.followUpQuestion}`,
+          expected_answer: 'Ứng viên phải đưa ra được các chi tiết cụ thể, số liệu thực tế hoặc ví dụ rõ ràng để chứng minh.',
+          score_weight: 1,
+          order_index: newOrderIndex,
+          created_at: new Date(),
+          updated_at: new Date()
+        });
+        console.log(`[Drill-down AI] HR Interview #${interviewId} — inserted follow-up after Q#${questionId} because answer was shallow.`);
+      }
     }
   }
 

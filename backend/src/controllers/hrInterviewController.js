@@ -78,9 +78,9 @@ export const inviteForAIInterview = async (req, res) => {
     if (app.job_hr_id !== hrId && req.user.role?.toUpperCase() !== 'ADMIN') {
       return sendError(res, 403, 'Không có quyền thực hiện thao tác này');
     }
-    
+
     // Chỉ những hồ sơ này mới được mời
-    const validStatuses = ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'];
+    const validStatuses = ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED', 'REJECTED'];
     if (!validStatuses.includes(app.status)) {
       return sendError(res, 400, 'Trạng thái hồ sơ không hợp lệ để gửi lời mời phỏng vấn AI');
     }
@@ -107,14 +107,14 @@ export const inviteForAIInterview = async (req, res) => {
       // 3. Cập nhật applications
       await trx('applications')
         .where({ id: appId })
-        .update({ 
-          status: 'AI_INTERVIEW_INVITED', 
+        .update({
+          status: 'AI_INTERVIEW_INVITED',
           reviewed_by: hrId,
           reviewed_at: new Date(),
           invited_at: new Date(),
           credit_deducted: 10,
           is_refunded: false,
-          updated_at: new Date() 
+          updated_at: new Date()
         });
 
       // 4. Ghi log transaction
@@ -198,7 +198,7 @@ export const bulkInviteForAIInterview = async (req, res) => {
 
     // Lọc những hồ sơ thuộc về HR và trạng thái hợp lệ
     const validStatuses = ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'];
-    const validApps = apps.filter(app => 
+    const validApps = apps.filter(app =>
       (app.job_hr_id === hrId || req.user.role?.toUpperCase() === 'ADMIN') &&
       validStatuses.includes(app.status)
     );
@@ -229,17 +229,17 @@ export const bulkInviteForAIInterview = async (req, res) => {
 
       // 3. Cập nhật applications & ghi log transactions
       const validAppIds = validApps.map(a => a.id);
-      
+
       await trx('applications')
         .whereIn('id', validAppIds)
-        .update({ 
-          status: 'AI_INTERVIEW_INVITED', 
+        .update({
+          status: 'AI_INTERVIEW_INVITED',
           reviewed_by: hrId,
           reviewed_at: new Date(),
           invited_at: new Date(),
           credit_deducted: 10,
           is_refunded: false,
-          updated_at: new Date() 
+          updated_at: new Date()
         });
 
       const transactions = validApps.map(app => ({
@@ -419,11 +419,11 @@ export const getAudioSliceHandler = async (req, res) => {
     try {
       const parsedUrl = new URL(audioUrl);
       const hostname = parsedUrl.hostname.toLowerCase();
-      const isInternal = hostname === 'localhost' || 
-                        hostname === '127.0.0.1' || 
-                        hostname.startsWith('10.') || 
-                        hostname.startsWith('192.168.') || 
-                        hostname.startsWith('172.16.'); 
+      const isInternal = hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname.startsWith('10.') ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('172.16.');
       if (isInternal) {
         return sendError(res, 400, 'Yêu cầu URL an toàn bên ngoài');
       }

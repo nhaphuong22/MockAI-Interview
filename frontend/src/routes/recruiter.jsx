@@ -12,6 +12,7 @@ const CandidateProfile = lazy(() => import("../pages/recruiter/CandidateProfile"
 const CompanyProfile = lazy(() => import("../pages/recruiter/CompanyProfile").then(m => ({ default: m.CompanyProfile })));
 const HRVerificationSettings = lazy(() => import("../pages/recruiter/HRVerificationSettings").then(m => ({ default: m.HRVerificationSettings })));
 const RecruiterNotifications = lazy(() => import("../pages/recruiter/HRNotifications").then(m => ({ default: m.RecruiterNotifications })));
+const CampaignAnalytics = lazy(() => import("../pages/recruiter/CampaignAnalytics").then(m => ({ default: m.CampaignAnalytics })));
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 
 export const recruiterRoutes = [
@@ -59,6 +60,10 @@ export const recruiterRoutes = [
   { 
     path: "settings", 
     element: <ProtectedRoute requiredRole="hr"><HRVerificationSettings /></ProtectedRoute>
+  },
+  {
+    path: "campaign/:jobId",
+    element: <ProtectedRoute requiredRole="hr"><CampaignAnalytics /></ProtectedRoute>
   },
   { 
     path: "notifications", 

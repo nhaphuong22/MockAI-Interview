@@ -174,6 +174,14 @@ export function BusinessLicenseTab({ onComplete }) {
         >
           Tiếp tục
         </button>
+        <button 
+          onClick={() => {
+            useVerificationStore.getState().clearVerificationData();
+          }}
+          className="px-8 py-3 ml-4 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all"
+        >
+          Nộp lại giấy tờ
+        </button>
       </div>
     );
   }
@@ -240,9 +248,9 @@ export function BusinessLicenseTab({ onComplete }) {
                   <p className="text-sm font-bold text-slate-800 dark:text-white mb-3">Minh họa</p>
                   <div className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-center overflow-hidden rounded-lg p-2">
                     <img 
-                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Gi%E1%BA%A5y_ch%E1%BB%A9ng_nh%E1%BA%ADn_%C4%91%C4%83ng_k%C3%BD_doanh_nghi%E1%BB%87p.jpg/800px-Gi%E1%BA%A5y_ch%E1%BB%A9ng_nh%E1%BA%ADn_%C4%91%C4%83ng_k%C3%BD_doanh_nghi%E1%BB%87p.jpg" 
+                      src="https://tuyendung.topcv.vn/app/_nuxt/img/sample-licence.7436372.jpg" 
                       alt="Minh hoạ Giấy đăng ký doanh nghiệp" 
-                      className="w-full h-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
+                      className="w-full h-auto object-contain rounded border border-slate-200 dark:border-white/10"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = "https://placehold.co/400x300/e2e8f0/64748b?text=Mau+GPKD";
@@ -274,14 +282,19 @@ export function BusinessLicenseTab({ onComplete }) {
               <div className="flex-1 flex flex-col justify-between w-full pb-0.5">
                 <div className="flex justify-center mb-4">
                   <img 
-                    src="https://placehold.co/180x240/ffffff/64748b?text=Mau+GPKD" 
+                    src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTskxXQxHdwvGIl1itTkDrK0ZTnlm1VhhH62dmYT7AQjg&s=10" 
                     alt="Minh hoạ Giấy ủy quyền" 
                     className="w-[140px] h-auto object-contain border border-slate-200 dark:border-white/10 rounded-lg shadow-sm"
                   />
                 </div>
-                <button className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-white dark:bg-[#0f172a] border border-[#0ea5e9] text-[#0ea5e9] rounded-lg text-sm font-bold hover:bg-[#0ea5e9]/5 transition-all">
+                <a 
+                  href="https://docs.google.com/document/d/1AzryeCvPk3dHSkc8vcL1VrMWjHlQDUytCv-i3oyhIAU/edit?usp=sharing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-white dark:bg-[#0f172a] border border-[#0ea5e9] text-[#0ea5e9] rounded-lg text-sm font-bold hover:bg-[#0ea5e9]/5 transition-all"
+                >
                   <Download size={16} /> Tải mẫu giấy ủy quyền
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -316,14 +329,9 @@ export function BusinessLicenseTab({ onComplete }) {
           <p className="text-sm font-bold text-slate-800 dark:text-white mb-3">Minh họa</p>
           <div className="flex-1 flex flex-col justify-center items-center gap-3 w-full">
             <img 
-              src="https://placehold.co/200x125/ffffff/64748b?text=CCCD+Mat+Truoc" 
-              alt="Minh hoạ CCCD Mặt trước" 
-              className="w-[160px] h-auto object-contain border border-slate-200 dark:border-white/10 rounded shadow-sm"
-            />
-            <img 
-              src="https://placehold.co/200x125/ffffff/64748b?text=CCCD+Mat+Sau" 
-              alt="Minh hoạ CCCD Mặt sau" 
-              className="w-[160px] h-auto object-contain border border-slate-200 dark:border-white/10 rounded shadow-sm"
+              src="https://tuyendung.topcv.vn/app/_nuxt/img/identity-sample.7c14dbb.jpg" 
+              alt="Minh hoạ CCCD" 
+              className="w-[180px] h-auto object-contain border border-slate-200 dark:border-white/10 rounded shadow-sm"
             />
           </div>
         </div>

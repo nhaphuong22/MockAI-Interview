@@ -41,7 +41,7 @@ export function ApplicationTracking() {
     const rawStatus = app.status?.toLowerCase();
     if (rawStatus === "submitted" || rawStatus === "reviewing") status = "reviewing";
     else if (rawStatus === "ai_interview_invited") status = "ai_interview_invited";
-    else if (rawStatus === "interviewed") status = "interview";
+    else if (rawStatus === "interviewed" || rawStatus === "interviewing") status = "interview";
     else if (rawStatus === "accepted" || rawStatus === "hired") status = "accepted";
     else if (rawStatus === "rejected") status = "rejected";
     // Sinh timeline động dựa trên trạng thái

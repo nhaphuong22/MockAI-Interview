@@ -43,7 +43,7 @@ HƯỚNG DẪN ĐÁNH GIÁ (TUÂN THỦ NGHIÊM NGẶT):
 Tuyệt đối BỎ QUA các yếu tố về tên tuổi, giới tính, dân tộc, hình ảnh hoặc tên trường Đại học. Chỉ tập trung vào Năng lực (Competency) và Kinh nghiệm (Experience).
 
 2. KNOCK-OUT RULES (VÒNG GỬI XE):
-Bạn phải kiểm tra chặt chẽ các "Tiêu chí bắt buộc". Nếu CV thiếu RÕ RÀNG một tiêu chí bắt buộc (ví dụ: Yêu cầu Tiếng Anh 6.5 nhưng CV ghi 5.0, hoặc yêu cầu 3 năm kinh nghiệm nhưng CV chỉ có 1 năm), đánh giá knockout_status là "REJECTED" và giải thích ở knockout_reason. Nếu đạt hoặc không có thông tin phủ định rõ ràng, cho "PASSED".
+Bạn phải kiểm tra chặt chẽ các "Tiêu chí bắt buộc". Nếu CV thiếu RÕ RÀNG một tiêu chí bắt buộc (ví dụ: Yêu cầu trình độ ngoại ngữ cao nhưng CV ghi trình độ cơ bản, hoặc yêu cầu số năm kinh nghiệm tối thiểu nhưng CV chưa đủ), đánh giá knockout_status là "REJECTED" và giải thích ở knockout_reason. Nếu đạt hoặc không có thông tin phủ định rõ ràng, cho "PASSED".
 
 3. SEMANTIC MATCHING (CHẤM ĐIỂM NGỮ NGHĨA - KHÔNG CHẤM TỪ KHÓA THÔ):
 - Hiểu sự tương đương công nghệ: Nếu JD yêu cầu React, ứng viên có kinh nghiệm chuyên sâu Next.js hoặc Vue.js, hãy ghi nhận và cho điểm cao về tư duy Frontend. Đừng máy móc trừ điểm.

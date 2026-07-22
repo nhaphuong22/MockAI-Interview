@@ -492,12 +492,30 @@ export const removeCompanyMember = async (req, res) => {
       updated_at: new Date()
     });
 
-    await db('hr_profiles').where({ user_id: userId }).update({
-      company_join_status: null,
-      updated_at: new Date()
-    });
+    const hrProfile = await db('hr_profiles').where({ user_id: userId }).first();
+    if (hrProfile) {
+      // Xoá file trên Cloudinary để giải phóng dung lượng
+      if (hrProfile.id_front_public_id) await cloudinary.uploader.destroy(hrProfile.id_front_public_id).catch(e => console.error(e));
+      if (hrProfile.id_back_public_id) await cloudinary.uploader.destroy(hrProfile.id_back_public_id).catch(e => console.error(e));
+      if (hrProfile.auth_letter_public_id) await cloudinary.uploader.destroy(hrProfile.auth_letter_public_id).catch(e => console.error(e));
 
-    return sendResponse(res, 200, { message: 'Đã gỡ thành viên khỏi công ty thành công.' });
+      await db('hr_profiles').where({ user_id: userId }).update({
+        company_join_status: null,
+        id_front_url: null,
+        id_front_public_id: null,
+        id_back_url: null,
+        id_back_public_id: null,
+        auth_letter_url: null,
+        auth_letter_public_id: null,
+        updated_at: new Date()
+      });
+    }
+
+    // Giải phóng Redis cache liên quan
+    await deleteCachePattern(`user:${userId}*`);
+    await deleteCachePattern(`company:${myCompany.id}*`);
+
+    return sendResponse(res, 200, { message: 'Đã gỡ thành viên khỏi công ty thành công. Các giấy tờ xác minh của thành viên này đã được reset.' });
   } catch (error) {
     console.error('Lỗi trong companyController.removeCompanyMember:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi gỡ thành viên.');
@@ -914,6 +932,23 @@ export const deleteCompany = async (req, res) => {
       return sendError(res, 403, 'Bạn không phải là chủ sở hữu (HR gốc) của bất kỳ doanh nghiệp nào.');
     }
 
+    // Lấy danh sách hr_profiles thuộc công ty này để tiến hành xóa file trên Cloudinary
+    const hrProfilesToClean = await db('hr_profiles')
+      .join('users', 'hr_profiles.user_id', 'users.id')
+      .where('users.company_id', company.id)
+      .select('hr_profiles.*');
+
+    // Xóa file xác minh nhân sự khỏi Cloudinary
+    for (const hr of hrProfilesToClean) {
+      if (hr.id_front_public_id) await cloudinary.uploader.destroy(hr.id_front_public_id).catch(e => console.error(e));
+      if (hr.id_back_public_id) await cloudinary.uploader.destroy(hr.id_back_public_id).catch(e => console.error(e));
+      if (hr.auth_letter_public_id) await cloudinary.uploader.destroy(hr.auth_letter_public_id).catch(e => console.error(e));
+    }
+
+    // Xóa logo hoặc giấy phép công ty (nếu có lưu public_id)
+    if (company.license_public_id) await cloudinary.uploader.destroy(company.license_public_id).catch(e => console.error(e));
+    if (company.logo_public_id) await cloudinary.uploader.destroy(company.logo_public_id).catch(e => console.error(e));
+
     await db.transaction(async (trx) => {
       // 1. Cập nhật reset company liên kết của toàn bộ HR thành viên thuộc công ty này về null
       const usersToReset = await trx('users').where({ company_id: company.id }).select('id');
@@ -927,6 +962,12 @@ export const deleteCompany = async (req, res) => {
       if (userIdsToReset.length > 0) {
         await trx('hr_profiles').whereIn('user_id', userIdsToReset).update({
           company_join_status: null,
+          id_front_url: null,
+          id_front_public_id: null,
+          id_back_url: null,
+          id_back_public_id: null,
+          auth_letter_url: null,
+          auth_letter_public_id: null,
           updated_at: new Date()
         });
       }

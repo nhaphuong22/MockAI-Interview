@@ -149,6 +149,9 @@ export const seed = async function(knex) {
     await knex('user_roles').insert({ user_id: hrId, role_id: roleHr.id });
   }
 
+  // Gán creator_id cho công ty để hr@quansoftware.com trở thành HR gốc
+  await knex('companies').where({ id: companyId }).update({ creator_id: hrId });
+
   // 3. Tạo Bài Đăng Tuyển Dụng (Job)
   const [jobId] = await knex('jobs').insert({
     hr_id: hrId,

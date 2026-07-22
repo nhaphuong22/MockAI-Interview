@@ -117,6 +117,9 @@ export function CompanyInfoTab({ onComplete, setActiveParentTab }) {
     },
     onSuccess: (res) => {
       showToast({ message: res.data?.message || 'Đã gửi yêu cầu gia nhập thành công!', type: 'success' });
+      // Xoá cache rác sau khi nộp thành công để không bị dính ở lần sau (nếu bị kick)
+      useVerificationStore.getState().clearVerificationData();
+      localStorage.removeItem(`hr_verification_completed_tabs_${user?.id}`);
       queryClient.invalidateQueries({ queryKey: ['companyVerificationStatus'] });
       if (onComplete) onComplete();
     },
@@ -145,6 +148,10 @@ export function CompanyInfoTab({ onComplete, setActiveParentTab }) {
           company_join_status: 'APPROVED'
         });
       }
+      // Xoá cache rác sau khi nộp thành công
+      useVerificationStore.getState().clearVerificationData();
+      localStorage.removeItem(`hr_verification_completed_tabs_${user?.id}`);
+      
       queryClient.invalidateQueries({ queryKey: ['companyVerificationStatus'] });
       if (onComplete) onComplete();
       navigate('/hr/dashboard');
