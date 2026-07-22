@@ -10,15 +10,17 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { ApplicationDetailModal } from "./components/ApplicationDetailModal/index.jsx";
 
 const STATUS_BADGES = {
-  SUBMITTED:            { label: "Đã nộp",         color: "text-blue-600 bg-blue-50 border-blue-100" },
-  AI_REVIEWED:          { label: "AI đã duyệt",     color: "text-[#0ea5e9] bg-sky-50 border-sky-100" },
-  HR_REVIEWING:         { label: "HR Đang duyệt",   color: "text-amber-600 bg-amber-50 border-amber-100" },
-  SHORTLISTED:          { label: "Vào vòng trong",  color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
-  AI_INTERVIEW_INVITED: { label: "Đã mời PV AI",    color: "text-sky-600 bg-sky-50 border-sky-100" },
-  INTERVIEWED:          { label: "Có kết quả PV",   color: "text-violet-600 bg-violet-50 border-violet-100" },
-  INTERVIEW_SCHEDULED:  { label: "Lịch phỏng vấn",  color: "text-purple-600 bg-purple-50 border-purple-100" },
-  HIRED:                { label: "Đã tuyển",        color: "text-green-700 bg-green-100 border-green-200" },
-  REJECTED:             { label: "Từ chối",         color: "text-red-600 bg-red-50 border-red-100" },
+  SUBMITTED: { label: "Đã nộp", color: "text-blue-600 bg-blue-50 border-blue-100" },
+  AI_REVIEWED: { label: "AI Đã duyệt", color: "text-[#0ea5e9] bg-sky-50 border-sky-100" },
+  SCREENING_PASSED: { label: "Đạt sơ loại", color: "text-teal-600 bg-teal-50 border-teal-100" },
+  HR_REVIEWING: { label: "HR Đang duyệt", color: "text-amber-600 bg-amber-50 border-amber-100" },
+  SHORTLISTED: { label: "Vòng trong", color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
+  AI_INTERVIEW_INVITED: { label: "Đã mời PV AI", color: "text-sky-600 bg-sky-50 border-sky-100" },
+  INTERVIEWED: { label: "Có KQ PV", color: "text-violet-600 bg-violet-50 border-violet-100" },
+  INTERVIEW_SCHEDULED: { label: "Lịch PV", color: "text-purple-600 bg-purple-50 border-purple-100" },
+  HIRED: { label: "Đã tuyển", color: "text-green-700 bg-green-100 border-green-200" },
+  REJECTED: { label: "Từ chối", color: "text-red-600 bg-red-50 border-red-100" },
+  FLAGGED_FRAUD: { label: "Cảnh báo (Gian lận)", color: "text-rose-600 bg-rose-50 border-rose-100" },
 };
 
 // Derive PASS/FAIL badge from aiFeedback
@@ -58,6 +60,7 @@ export function ManageApplications() {
   const [selectedAppIds, setSelectedAppIds] = useState([]);
   const [isBulkInviteModalOpen, setIsBulkInviteModalOpen] = useState(false);
   const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
+  const [exactStatusFilter, setExactStatusFilter] = useState("");
 
   // Query 1: Lấy tất cả Jobs của HR
   const { data: jobsResponse, isLoading: isLoadingJobs } = useQuery({
@@ -83,27 +86,41 @@ export function ManageApplications() {
 
   // Query 3: Applications theo Job + filter
   const { data: appsResponse, isLoading: isLoadingApps, isError, refetch } = useQuery({
-    queryKey: ["manage-applications", currentHrId, selectedJobId, filterStatus],
+    queryKey: ["manage-applications", currentHrId, selectedJobId],
     queryFn: async () => {
       const response = await jobApi.getJobApplications({
         job_id: selectedJobId === "all" ? undefined : selectedJobId,
-        status: filterStatus || undefined,
       });
       return response.data;
     },
     enabled: !!currentHrId,
   });
 
-  const rawList = useMemo(
-    () => (Array.isArray(appsResponse) ? appsResponse : []),
-    [appsResponse]
-  );
+  const rawList = useMemo(() => {
+    let list = Array.isArray(appsResponse) ? appsResponse : [];
+    if (filterStatus) {
+      if (filterStatus === "SCREENING_PASSED") {
+        list = list.filter(a => ["AI_REVIEWED", "SCREENING_PASSED", "SHORTLISTED", "HR_REVIEWING"].includes(a.status));
+      } else if (filterStatus === "AI_INTERVIEW_INVITED") {
+        list = list.filter(a => ["AI_INTERVIEW_INVITED", "INTERVIEW_SCHEDULED"].includes(a.status));
+      } else if (filterStatus === "REJECTED") {
+        list = list.filter(a => ["REJECTED", "FLAGGED_FRAUD"].includes(a.status));
+      } else {
+        list = list.filter(a => a.status === filterStatus);
+      }
+    }
+    return list;
+  }, [appsResponse, filterStatus]);
 
-  // Sort: by cv_score desc (default) or original order
+  // Sort and exact filter
   const applicationsList = useMemo(() => {
-    if (!sortByScore) return rawList;
-    return [...rawList].sort((a, b) => (b.cv_score ?? 0) - (a.cv_score ?? 0));
-  }, [rawList, sortByScore]);
+    let list = rawList;
+    if (exactStatusFilter) {
+      list = list.filter(a => a.status === exactStatusFilter);
+    }
+    if (!sortByScore) return list;
+    return [...list].sort((a, b) => (b.cv_score ?? 0) - (a.cv_score ?? 0));
+  }, [rawList, sortByScore, exactStatusFilter]);
 
   const handleViewDetails = (app) => {
     setSelectedApplication(app);
@@ -112,15 +129,15 @@ export function ManageApplications() {
 
   const toggleSelectApp = (e, appId) => {
     e.stopPropagation();
-    setSelectedAppIds((prev) => 
+    setSelectedAppIds((prev) =>
       prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId]
     );
   };
 
   const toggleSelectAll = () => {
     // Only select valid statuses for AI invite
-    const validApps = applicationsList.filter(app => 
-      ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'].includes(app.status)
+    const validApps = applicationsList.filter(app =>
+      ['SUBMITTED', 'AI_REVIEWED', 'SCREENING_PASSED', 'HR_REVIEWING', 'SHORTLISTED'].includes(app.status)
     );
     if (selectedAppIds.length === validApps.length) {
       setSelectedAppIds([]);
@@ -156,18 +173,18 @@ export function ManageApplications() {
 
   // Filter shortcuts map with counts
   const QUICK_FILTERS = useMemo(() => {
-    const currentApps = selectedJobId === "all" 
-      ? allApplications 
+    const currentApps = selectedJobId === "all"
+      ? allApplications
       : allApplications.filter(a => a.job_id === selectedJobId);
 
     return [
       { label: "Tất cả", value: "", count: currentApps.length },
-      { label: "Chưa xử lý", value: "SUBMITTED", count: currentApps.filter(a => a.status === "SUBMITTED" || a.status === "AI_REVIEWED").length },
-      { label: "Vòng trong", value: "SHORTLISTED", count: currentApps.filter(a => a.status === "SHORTLISTED").length },
-      { label: "Đã mời PV", value: "AI_INTERVIEW_INVITED", count: currentApps.filter(a => a.status === "AI_INTERVIEW_INVITED").length },
-      { label: "Có KQ PV", value: "INTERVIEWED", count: currentApps.filter(a => a.status === "INTERVIEWED").length },
+      { label: "Mới nộp", value: "SUBMITTED", count: currentApps.filter(a => a.status === "SUBMITTED").length },
+      { label: "Đạt sơ loại", value: "SCREENING_PASSED", count: currentApps.filter(a => ["AI_REVIEWED", "SCREENING_PASSED", "SHORTLISTED", "HR_REVIEWING"].includes(a.status)).length },
+      { label: "Chờ PV AI", value: "AI_INTERVIEW_INVITED", count: currentApps.filter(a => ["AI_INTERVIEW_INVITED", "INTERVIEW_SCHEDULED"].includes(a.status)).length },
+      { label: "Đã có Điểm", value: "INTERVIEWED", count: currentApps.filter(a => a.status === "INTERVIEWED").length },
       { label: "Đã tuyển", value: "HIRED", count: currentApps.filter(a => a.status === "HIRED").length },
-      { label: "Từ chối", value: "REJECTED", count: currentApps.filter(a => a.status === "REJECTED").length },
+      { label: "Từ chối", value: "REJECTED", count: currentApps.filter(a => ["REJECTED", "FLAGGED_FRAUD"].includes(a.status)).length },
     ];
   }, [allApplications, selectedJobId]);
 
@@ -230,11 +247,10 @@ export function ManageApplications() {
                 {/* All jobs */}
                 <button
                   onClick={() => setSelectedJobId("all")}
-                  className={`w-full text-left px-4 py-3 rounded-xl flex items-center justify-between transition-all border ${
-                    selectedJobId === "all"
+                  className={`w-full text-left px-4 py-3 rounded-xl flex items-center justify-between transition-all border ${selectedJobId === "all"
                       ? "bg-sky-50 text-[#0ea5e9] border-sky-200 font-bold"
                       : "text-gray-600 hover:bg-gray-50 border-transparent font-semibold"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <Users className={`w-4 h-4 ${selectedJobId === "all" ? "text-[#0ea5e9]" : "text-gray-400"}`} />
@@ -251,11 +267,10 @@ export function ManageApplications() {
                     <button
                       key={job.id}
                       onClick={() => setSelectedJobId(job.id)}
-                      className={`w-full text-left px-4 py-3 rounded-xl flex flex-col gap-1.5 transition-all border ${
-                        isSelected
+                      className={`w-full text-left px-4 py-3 rounded-xl flex flex-col gap-1.5 transition-all border ${isSelected
                           ? "bg-sky-50/70 border-sky-200 text-[#0ea5e9]"
                           : "hover:bg-gray-50 border-transparent text-gray-700"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className={`text-sm line-clamp-2 ${isSelected ? "font-bold" : "font-semibold"}`}>
@@ -308,16 +323,14 @@ export function ManageApplications() {
                     <button
                       key={f.value}
                       onClick={() => setFilterStatus(f.value)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        filterStatus === f.value
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterStatus === f.value
                           ? "bg-[#0ea5e9] text-white shadow-md shadow-[#0ea5e9]/20 border border-[#0ea5e9]"
                           : "text-gray-600 hover:bg-sky-50 hover:text-[#0ea5e9] bg-gray-100/50 border border-transparent"
-                      }`}
+                        }`}
                     >
                       <span>{f.label}</span>
-                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] leading-none ${
-                        filterStatus === f.value ? "bg-white/20" : "bg-gray-200/60"
-                      }`}>
+                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] leading-none ${filterStatus === f.value ? "bg-white/20" : "bg-gray-200/60"
+                        }`}>
                         {f.count}
                       </span>
                     </button>
@@ -356,11 +369,11 @@ export function ManageApplications() {
                     <thead>
                       <tr className="bg-gray-50/70 border-b border-gray-100">
                         <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider w-10">
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             className="rounded border-gray-300 text-[#0ea5e9] focus:ring-[#0ea5e9]"
                             onChange={toggleSelectAll}
-                            checked={selectedAppIds.length > 0 && selectedAppIds.length === applicationsList.filter(a => ['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'].includes(a.status)).length}
+                            checked={selectedAppIds.length > 0 && selectedAppIds.length === applicationsList.filter(a => ['SUBMITTED', 'AI_REVIEWED', 'SCREENING_PASSED', 'HR_REVIEWING', 'SHORTLISTED'].includes(a.status)).length}
                           />
                         </th>
                         <th className="px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Ứng Viên</th>
@@ -391,12 +404,12 @@ export function ManageApplications() {
                           const lines = app.cv_text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
                           if (lines.length > 0) {
                             displayData.name = lines[0]; // Usually the first line is the name
-                            
+
                             const emailMatch = app.cv_text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/);
                             if (emailMatch && !emailMatch[0].endsWith('.')) {
                               displayData.email = emailMatch[0];
                             }
-                            
+
                             // SĐT VN hợp lệ: bắt đầu bằng +84 hoặc 0, theo sau là đầu số 3,5,7,8,9 và 8 chữ số (cho phép khoảng trắng/dấu chấm/gạch ngang)
                             const phoneMatch = app.cv_text.match(/(?:\+84|0)[\s.-]*[35789](?:[\s.-]*\d){8}\b/);
                             if (phoneMatch) displayData.phone = phoneMatch[0].replace(/[\s.-]/g, '');
@@ -416,9 +429,9 @@ export function ManageApplications() {
                             className="hover:bg-sky-50/30 transition-all group cursor-pointer"
                           >
                             <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
-                              {['SUBMITTED', 'AI_REVIEWED', 'HR_REVIEWING', 'SHORTLISTED'].includes(app.status) && (
-                                <input 
-                                  type="checkbox" 
+                              {['SUBMITTED', 'AI_REVIEWED', 'SCREENING_PASSED', 'HR_REVIEWING', 'SHORTLISTED'].includes(app.status) && (
+                                <input
+                                  type="checkbox"
                                   className="rounded border-gray-300 text-[#0ea5e9] focus:ring-[#0ea5e9]"
                                   checked={selectedAppIds.includes(app.id)}
                                   onChange={(e) => toggleSelectApp(e, app.id)}
@@ -459,32 +472,29 @@ export function ManageApplications() {
                                 <div className="flex flex-col gap-1.5">
                                   {/* Score bar */}
                                   <div className="flex items-center gap-2">
-                                    <span className={`text-sm font-black ${
-                                      aiVerdict.score >= 70 ? "text-emerald-600"
-                                      : aiVerdict.score >= 50 ? "text-amber-600"
-                                      : "text-red-500"
-                                    }`}>
+                                    <span className={`text-sm font-black ${aiVerdict.score >= 70 ? "text-emerald-600"
+                                        : aiVerdict.score >= 50 ? "text-amber-600"
+                                          : "text-red-500"
+                                      }`}>
                                       {aiVerdict.score}
                                     </span>
                                     <div className="flex-1 min-w-[48px]">
                                       <div className="w-full bg-gray-100 rounded-full h-1.5">
                                         <div
-                                          className={`h-1.5 rounded-full ${
-                                            aiVerdict.score >= 70 ? "bg-emerald-500"
-                                            : aiVerdict.score >= 50 ? "bg-amber-500"
-                                            : "bg-red-500"
-                                          }`}
+                                          className={`h-1.5 rounded-full ${aiVerdict.score >= 70 ? "bg-emerald-500"
+                                              : aiVerdict.score >= 50 ? "bg-amber-500"
+                                                : "bg-red-500"
+                                            }`}
                                           style={{ width: `${aiVerdict.score}%` }}
                                         />
                                       </div>
                                     </div>
                                   </div>
                                   {/* PASS/FAIL badge */}
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black w-fit ${
-                                    aiVerdict.passed
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black w-fit ${aiVerdict.passed
                                       ? "bg-emerald-100 text-emerald-700"
                                       : "bg-red-100 text-red-700"
-                                  }`}>
+                                    }`}>
                                     {aiVerdict.passed
                                       ? <><CheckCircle2 className="w-3 h-3" /> PASS</>
                                       : <><X className="w-3 h-3" /> FAIL</>
@@ -500,20 +510,18 @@ export function ManageApplications() {
                             <td className="px-5 py-4">
                               {hasInterviewScore ? (
                                 <div className="flex flex-col gap-1">
-                                  <span className={`text-sm font-black ${
-                                    app.interview_score >= 70 ? "text-emerald-600"
-                                    : app.interview_score >= 50 ? "text-amber-600"
-                                    : "text-red-500"
-                                  }`}>
+                                  <span className={`text-sm font-black ${app.interview_score >= 70 ? "text-emerald-600"
+                                      : app.interview_score >= 50 ? "text-amber-600"
+                                        : "text-red-500"
+                                    }`}>
                                     {app.interview_score}
                                   </span>
                                   <div className="w-full bg-gray-100 rounded-full h-1.5 min-w-[48px]">
                                     <div
-                                      className={`h-1.5 rounded-full ${
-                                        app.interview_score >= 70 ? "bg-emerald-500"
-                                        : app.interview_score >= 50 ? "bg-amber-500"
-                                        : "bg-red-500"
-                                      }`}
+                                      className={`h-1.5 rounded-full ${app.interview_score >= 70 ? "bg-emerald-500"
+                                          : app.interview_score >= 50 ? "bg-amber-500"
+                                            : "bg-red-500"
+                                        }`}
                                       style={{ width: `${app.interview_score}%` }}
                                     />
                                   </div>
@@ -525,9 +533,8 @@ export function ManageApplications() {
 
                             {/* Trạng thái */}
                             <td className="px-5 py-4">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-block border ${
-                                STATUS_BADGES[app.status]?.color || "text-gray-600 bg-gray-100 border-gray-200"
-                              }`}>
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-block border ${STATUS_BADGES[app.status]?.color || "text-gray-600 bg-gray-100 border-gray-200"
+                                }`}>
                                 {STATUS_BADGES[app.status]?.label || app.status}
                               </span>
                             </td>
@@ -565,13 +572,13 @@ export function ManageApplications() {
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-40">
             <span className="font-bold whitespace-nowrap">Đã chọn {selectedAppIds.length} ứng viên</span>
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => setSelectedAppIds([])}
                 className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm font-bold transition-colors"
               >
                 Hủy
               </button>
-              <button 
+              <button
                 onClick={() => setIsBulkInviteModalOpen(true)}
                 className="px-4 py-2 bg-[#0ea5e9] hover:bg-sky-400 rounded-xl text-sm font-bold shadow-lg shadow-sky-500/30 transition-colors whitespace-nowrap flex items-center gap-2"
               >
@@ -587,7 +594,7 @@ export function ManageApplications() {
             <div className="bg-white rounded-2xl max-w-md w-full shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="text-xl font-bold text-gray-900">Xác nhận gửi lời mời</h3>
-                <button 
+                <button
                   onClick={() => setIsBulkInviteModalOpen(false)}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
                 >
@@ -600,7 +607,7 @@ export function ManageApplications() {
                 </p>
                 <div className="bg-amber-50 text-amber-700 border border-amber-200 p-3 rounded-xl text-xs font-semibold mb-2">
                   <span className="block mb-1">⚠️ Lưu ý quan trọng:</span>
-                  - Hành động này sẽ trừ <span className="font-bold">{selectedAppIds.length * 10} Credits</span> trong ví của bạn.<br/>
+                  - Hành động này sẽ trừ <span className="font-bold">{selectedAppIds.length * 10} Credits</span> trong ví của bạn.<br />
                   - Ứng viên sẽ có 7 ngày để hoàn thành bài phỏng vấn.
                 </div>
               </div>

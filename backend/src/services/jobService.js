@@ -641,22 +641,25 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
   const requirements = await db('job_requirements').where({ job_id: jobId });
   const reqText = requirements.map(r => r.requirement_text).join(', ');
 
-  // 2. Lấy danh sách ứng viên đã hoàn thành phỏng vấn (có điểm)
+  // 2. Lấy toàn bộ danh sách ứng viên (để vẽ phễu)
   const applications = await db('applications')
     .join('users', 'applications.candidate_id', 'users.id')
     .select(
       'applications.id as app_id',
+      'applications.status',
+      'applications.cv_score',
       'applications.interview_score',
+      'applications.total_score',
       'applications.ai_summary',
+      'applications.created_at',
       'applications.updated_at',
       'users.full_name as candidate_name'
     )
     .where('applications.job_id', jobId)
-    .whereNotNull('applications.interview_score') // Đã có điểm phỏng vấn
     .orderBy('applications.interview_score', 'desc');
 
   if (!applications || applications.length === 0) {
-    throw new Error('Chưa có ứng viên nào hoàn thành phỏng vấn để tổng hợp báo cáo.');
+    throw new Error('Chưa có ứng viên nào nộp hồ sơ để tổng hợp báo cáo.');
   }
 
   // 3. Cache Check
@@ -680,27 +683,72 @@ export const generateJobCampaignReportService = async (jobId, hrId) => {
       try { parsedCache = JSON.parse(parsedCache); } catch (e) { }
     }
 
-    return {
-      ...parsedCache,
-      is_cached: true,
-      generated_at: job.campaign_report_updated_at
-    };
+    // Kiểm tra xem cache có đúng schema mới hay không (cần có 'funnel' và 'bottlenecks')
+    if (parsedCache && parsedCache.funnel) {
+      return {
+        ...parsedCache,
+        is_cached: true,
+        generated_at: job.campaign_report_updated_at
+      };
+    } else {
+      console.log(`[Cache Miss] Schema changed. Regenerating Campaign Report for Job ${jobId}`);
+    }
   }
 
-  // 4. Chuẩn bị dữ liệu để đưa cho Gemini Boss
-  const candidatesData = applications.map(app => ({
+  // 4. Tính toán số liệu Funnel cơ bản
+  const totalApplicants = applications.length;
+  const cvPassedApps = applications.filter(app => app.status !== 'REJECTED' || app.interview_score !== null);
+  const cvPassed = cvPassedApps.length;
+  
+  const aiCompletedApps = applications.filter(app => app.interview_score !== null);
+  const aiInterviewCompleted = aiCompletedApps.length;
+  const aiInterviewPassed = aiCompletedApps.filter(app => app.interview_score >= 60).length;
+  const aiInterviewFailed = aiInterviewCompleted - aiInterviewPassed;
+
+  // Tính thời gian trung bình hoàn thành phỏng vấn (từ nộp CV -> có điểm AI)
+  let totalTimeMs = 0;
+  let validTimeCount = 0;
+  aiCompletedApps.forEach(app => {
+    if (app.created_at && app.updated_at) {
+      const created = new Date(app.created_at).getTime();
+      const updated = new Date(app.updated_at).getTime();
+      if (updated > created) {
+        totalTimeMs += (updated - created);
+        validTimeCount++;
+      }
+    }
+  });
+  const avgTimeMs = validTimeCount > 0 ? totalTimeMs / validTimeCount : 0;
+  const avgTimeDays = (avgTimeMs / (1000 * 60 * 60 * 24)).toFixed(1);
+
+  const funnelStats = {
+    total_applicants: totalApplicants,
+    cv_passed: cvPassed,
+    ai_interview_completed: aiInterviewCompleted,
+    ai_interview_passed: aiInterviewPassed,
+    ai_interview_failed: aiInterviewFailed,
+    avg_time_days: avgTimeDays
+  };
+
+  // Chuẩn bị dữ liệu ứng viên để đưa cho Gemini Boss (chỉ gửi những người đã phỏng vấn)
+  const candidatesData = aiCompletedApps.map(app => ({
     id: app.app_id,
     name: app.candidate_name,
     score: app.interview_score,
-    violations: 0, // Violations được tổng hợp ngầm hoặc có thể lấy từ db, tạm để 0 vì đã bị trừ điểm trực tiếp
     summary: app.ai_summary || 'Không có nhận xét'
   }));
 
+  // Lấy thêm vài lý do rớt CV (những người có status REJECTED và chưa PV)
+  const cvRejectedApps = applications.filter(app => app.status === 'REJECTED' && app.interview_score === null);
+  const cvRejectedReasons = cvRejectedApps.slice(0, 5).map(app => app.ai_summary || 'Không đạt yêu cầu CV').join('; ');
+
   // 5. Gọi Gemini
-  console.log(`Generating Boss Campaign Report for Job ${jobId} with ${candidatesData.length} candidates...`);
+  console.log(`Generating Boss Campaign Report for Job ${jobId} with ${totalApplicants} applicants...`);
   const report = await generateCampaignReportFromGemini({
     jobTitle: job.title,
     requirements: reqText,
+    funnelStats,
+    cvRejectedReasons,
     candidatesData
   });
 
