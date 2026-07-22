@@ -329,16 +329,11 @@ export const acceptCompanyInvitation = async (req, res) => {
           updated_at: new Date()
         });
 
-        // Gán/cập nhật vai trò HR trong user_roles
+        // Gán vai trò HR trong user_roles (không đè lên vai trò hiện tại của user)
         const hrRole = await trx('roles').where({ name: 'HR' }).first();
         if (hrRole) {
-          const userRole = await trx('user_roles').where({ user_id: targetUser.id }).first();
-          if (userRole) {
-            await trx('user_roles').where({ user_id: targetUser.id }).update({
-              role_id: hrRole.id,
-              updated_at: new Date()
-            });
-          } else {
+          const existingHrRole = await trx('user_roles').where({ user_id: targetUser.id, role_id: hrRole.id }).first();
+          if (!existingHrRole) {
             await trx('user_roles').insert({
               user_id: targetUser.id,
               role_id: hrRole.id,

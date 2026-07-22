@@ -38,11 +38,16 @@ export default function AcceptInvitation() {
       return axiosClient.post('/auth/invitations/accept', payload);
     },
     onSuccess: (res) => {
-      showToast(res.data?.message || 'Kích hoạt/Liên kết tài khoản thành công!', 'success');
-      const updatedUser = res.data?.user;
-      const newToken = res.data?.token;
-      if (updatedUser && newToken) {
+      const responseData = res?.data || res;
+      const message = res?.message || responseData?.message || 'Kích hoạt/Liên kết tài khoản thành công!';
+      showToast(message, 'success');
+
+      const updatedUser = responseData?.user;
+      const newToken = responseData?.token;
+      if (newToken) {
         localStorage.setItem("token", newToken);
+      }
+      if (updatedUser) {
         useAuthStore.getState().setAuth(updatedUser);
       }
       queryClient.clear();

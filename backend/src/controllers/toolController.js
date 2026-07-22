@@ -1,4 +1,5 @@
 import { generateQuestionsFromGroq } from '../services/groqService.js';
+import { sendResponse, sendError } from '../ultils/responseHelper.js';
 
 // ─── LƯƠNG CƠ SỞ & LƯƠNG TỐI THIỂU VÙNG (CẬP NHẬT 2024-2026) ──────────────────
 const LƯƠNG_CƠ_SỞ = 2340000; // Áp dụng từ 01/07/2024
@@ -182,7 +183,10 @@ export const calculateSalary = async (req, res) => {
         customInsuranceSalary,
         region
       });
-      calcResult.netSalary = targetNet; // Chuẩn hóa netSalary đúng với input người dùng nhập
+      // Chuẩn hóa netSalary theo targetNet nếu khoảng chênh lệch nhỏ hơn 100đ
+      if (Math.abs(calcResult.netSalary - targetNet) <= 100) {
+        calcResult.netSalary = targetNet;
+      }
     } else {
       calcResult = computeGrossToNet({
         grossSalary,
@@ -193,19 +197,13 @@ export const calculateSalary = async (req, res) => {
       });
     }
 
-    return res.json({
-      success: true,
-      data: {
-        ...calcResult,
-        calcType: type
-      }
+    return sendResponse(res, 200, {
+      ...calcResult,
+      calcType: type
     });
   } catch (error) {
     console.error('[calculateSalary Error]:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi tính toán lương.'
-    });
+    return sendError(res, 500, 'Lỗi tính toán lương.');
   }
 };
 
