@@ -9,7 +9,6 @@ const ManageReports = lazy(() => import("../pages/admin/ManageReports").then(m =
 const ManagePayments = lazy(() => import("../pages/admin/ManagePayments").then(m => ({ default: m.ManagePayments })));
 const AISettings = lazy(() => import("../pages/admin/AISettings").then(m => ({ default: m.AISettings })));
 const SystemSettings = lazy(() => import("../pages/admin/SystemSettings").then(m => ({ default: m.SystemSettings })));
-const RolePermissions = lazy(() => import("../pages/admin/RolePermissions").then(m => ({ default: m.RolePermissions })));
 
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
 
@@ -49,9 +48,5 @@ export const adminRoutes = [
   { 
     path: "system-settings", 
     element: <ProtectedRoute requiredRole="admin"><SystemSettings /></ProtectedRoute>
-  },
-  { 
-    path: "permissions", 
-    element: <ProtectedRoute requiredRole="admin"><RolePermissions /></ProtectedRoute>
   },
 ];

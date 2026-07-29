@@ -66,6 +66,10 @@ export const applyJob = async (req, res) => {
       .where({ candidate_id: candidateId, job_id: jobId })
       .first();
 
+    if (existingApp) {
+      return sendError(res, 400, 'Bạn đã nộp CV cho công việc này rồi. CV chỉ được nộp 1 lần duy nhất.');
+    }
+
     // 2. Lấy thông tin công việc và thông tin HR tạo tin
     const job = await db('jobs')
       .leftJoin('companies', 'jobs.company_id', 'companies.id')
@@ -77,187 +81,141 @@ export const applyJob = async (req, res) => {
       return sendError(res, 404, 'Không tìm thấy thông tin công việc này.');
     }
 
-    // Lấy thêm các tiêu chí đánh giá tự động (job_requirements)
-    const jobRequirements = await db('job_requirements').where('job_id', jobId);
-
     const formattedName = candidate_name || req.user.full_name || req.user.email;
-    console.log(`[Application] Đang chấm điểm CV cho ứng viên ${formattedName} với HR Screening Pipeline...`);
 
-    // Gọi Pipeline mới thay vì evaluateCV cũ
-    const evaluation = await runHrScreeningPipeline(sanitizedCvText, job, jobRequirements);
+    // 3. Tạo nhanh bản ghi CV và Application ban đầu trong CSDL
+    const [cv] = await db('cvs')
+      .insert({
+        user_id: candidateId,
+        file_url: cv_url || 'uploads/cv/cv_uploaded.pdf',
+        parsed_text: sanitizedCvText,
+        ats_score: 0,
+        ai_feedback: null,
+        pdf_report_url: null,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('*');
 
-    // Xác định trạng thái ban đầu của Application dựa trên kết quả Knock-out của AI
-    const initialStatus = evaluation.knockout_status === 'REJECTED' ? 'REJECTED' : 'SUBMITTED';
+    const [application] = await db('applications')
+      .insert({
+        candidate_id: candidateId,
+        job_id: jobId,
+        cv_id: cv.id,
+        status: 'SUBMITTED',
+        cv_score: 0,
+        total_score: 0,
+        cover_letter: cover_letter || null,
+        candidate_name: candidate_name || null,
+        candidate_email: candidate_email || null,
+        candidate_phone: candidate_phone || null,
+        portfolio_url: portfolio_url || null,
+        ai_summary: 'Hồ sơ mới nộp - Đang chờ xử lý AI',
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('*');
 
-    // 3.1. Tạo PDF báo cáo và tải lên Cloudinary
-    const candidateName = candidate_name || req.user.full_name || req.user.email;
-    console.log(`[Application] Đang tạo báo cáo đánh giá PDF cho ứng viên ${candidateName}...`);
-
-    // Map data mới sang chuẩn cũ để PDF vẫn tạo được không bị lỗi
-    const mappedEvaluationForPDF = {
-      overallScore: evaluation.semantic_score || 0,
-      strengths: evaluation.talent_signals || [],
-      improvements: evaluation.red_flags && evaluation.red_flags.length > 0 ? evaluation.red_flags : ["Hồ sơ khá tốt, cần phỏng vấn thêm để làm rõ."],
-      sections: [
-        { name: "Vòng Gửi Xe (Knock-out)", score: evaluation.knockout_status === 'PASSED' ? 100 : 0, feedback: evaluation.knockout_reason || "Đạt các yêu cầu tối thiểu của công việc" },
-        { name: "Đánh giá Ngữ nghĩa (Semantic)", score: evaluation.semantic_score || 0, feedback: evaluation.evaluation_summary || "Không có nhận xét" },
-        { name: "Kỹ năng Khớp", score: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? 100 : 50, feedback: evaluation.matched_skills ? evaluation.matched_skills.join(', ') : "Không có" },
-        { name: "Kỹ năng Cần Bổ Sung", score: evaluation.missing_skills && evaluation.missing_skills.length > 0 ? 50 : 100, feedback: evaluation.missing_skills ? evaluation.missing_skills.join(', ') : "Không phát hiện thiếu sót" }
-      ]
-    };
-
-    const pdfReportBuffer = await generatePDFReportBuffer(mappedEvaluationForPDF, candidateName, job.title);
-
-    console.log(`[Application] Đang upload PDF báo cáo lên Cloudinary...`);
-    const reportCloudinaryResult = await uploadReportToCloudinary(pdfReportBuffer, candidateName);
-    const pdfReportUrl = reportCloudinaryResult.secure_url;
-    console.log(`[Application] Upload báo cáo thành công! URL: ${pdfReportUrl}`);
-
-    let cv;
-    let application;
-
-    if (existingApp) {
-      console.log(`[Application] Ứng viên ${formattedName} cập nhật CV/đơn ứng tuyển cho Job ${job.title}...`);
-
-      // Lưu thông tin CV mới vào bảng `cvs`
-      const [newCv] = await db('cvs')
-        .insert({
-          user_id: candidateId,
-          file_url: cv_url || 'uploads/cv/cv_uploaded.pdf',
-          parsed_text: sanitizedCvText,
-          ats_score: evaluation.semantic_score || 0,
-          ai_feedback: JSON.stringify(evaluation).replace(/\x00/g, ''),
-          pdf_report_url: pdfReportUrl,
-          created_at: new Date(),
-          updated_at: new Date()
-        })
-        .returning('*');
-      cv = newCv;
-
-      // Cập nhật đơn ứng tuyển hiện tại
-      const [updatedApp] = await db('applications')
-        .where({ id: existingApp.id })
-        .update({
-          cv_id: cv.id,
-          status: initialStatus, // Sử dụng trạng thái dựa trên Knock-out
-          cv_score: evaluation.semantic_score || 0,
-          total_score: evaluation.semantic_score || 0,
-          cover_letter: cover_letter || null,
-          candidate_name: candidate_name || null,
-          candidate_email: candidate_email || null,
-          candidate_phone: candidate_phone || null,
-          portfolio_url: portfolio_url || null,
-          ai_summary: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3).join(', ') : 'Chưa cập nhật kỹ năng',
-          reviewed_by: null,
-          reviewed_at: null,
-          updated_at: new Date(),
-          created_at: new Date() // Đẩy lên đầu danh sách HR
-        })
-        .returning('*');
-      application = updatedApp;
-    } else {
-      // 4. Lưu thông tin CV vào bảng `cvs`
-      const [newCv] = await db('cvs')
-        .insert({
-          user_id: candidateId,
-          file_url: cv_url || 'uploads/cv/cv_uploaded.pdf',
-          parsed_text: sanitizedCvText,
-          ats_score: evaluation.semantic_score || 0,
-          ai_feedback: JSON.stringify(evaluation).replace(/\x00/g, ''),
-          pdf_report_url: pdfReportUrl,
-          created_at: new Date(),
-          updated_at: new Date()
-        })
-        .returning('*');
-      cv = newCv;
-
-      // 5. Lưu đơn ứng tuyển vào bảng `applications`
-      const [newApp] = await db('applications')
-        .insert({
-          candidate_id: candidateId,
-          job_id: jobId,
-          cv_id: cv.id,
-          status: initialStatus, // Sử dụng trạng thái dựa trên Knock-out
-          cv_score: evaluation.semantic_score || 0,
-          total_score: evaluation.semantic_score || 0,
-          cover_letter: cover_letter || null,
-          candidate_name: candidate_name || null,
-          candidate_email: candidate_email || null,
-          candidate_phone: candidate_phone || null,
-          portfolio_url: portfolio_url || null,
-          ai_summary: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3).join(', ') : 'Chưa cập nhật kỹ năng',
-          created_at: new Date(),
-          updated_at: new Date()
-        })
-        .returning('*');
-      application = newApp;
-    }
-
-    // 6. Gửi thông báo & email cho HR (nếu có thông tin HR)
-    if (job.hr_id) {
-      // Clear applications cache so both HR and Admin see the new application
-      await deleteCachePattern('applications:hr:*');
-
-      const hrUser = await db('users').where({ id: job.hr_id }).first();
-
-      // Lưu thông báo vào CSDL
-      const [notification] = await db('notifications')
-        .insert({
-          user_id: job.hr_id,
-          type: 'APPLICATION_UPDATE',
-          title: existingApp ? 'Cập nhật đơn ứng tuyển' : 'Đơn ứng tuyển mới',
-          content: existingApp
-            ? `${req.user.full_name || req.user.email} đã cập nhật lại CV cho vị trí "${job.title}"`
-            : `${req.user.full_name || req.user.email} đã nộp đơn ứng tuyển cho vị trí "${job.title}"`,
-          link: `/hr/dashboard`,
-          reference_id: application.id,
-          reference_type: 'application',
-          is_read: false,
-          created_at: new Date(),
-          updated_at: new Date()
-        })
-        .returning('*');
-
-      // Đã vô hiệu hóa gửi mail cho HR khi có đơn mới theo yêu cầu của user
-
-      // Đẩy thông báo tức thời (In-app notification) cho HR qua Socket.io
-      sendRealtimeNotification(job.hr_id, {
-        id: notification.id,
-        type: 'application',
-        title: notification.title,
-        content: notification.content,
-        time: 'Vừa xong',
-        isRead: false
-      });
-
-      // Phát thông tin đơn ứng tuyển mới tới toàn bộ trang Dashboard HR đang mở
-      broadcastNewApplication({
-        id: application.id,
-        name: req.user.full_name || 'Ứng viên',
-        avatar: req.user.avatar_url ? '👦' : '👨‍💻',
-        email: req.user.email,
-        position: job.title,
-        aiScore: evaluation.semantic_score || 0,
-        skills: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3) : ['Chưa cập nhật kỹ năng'],
-        status: 'new',
-        appliedDate: new Date().toISOString()
-      });
-    }
-
-    // Đã vô hiệu hóa gửi mail xác nhận cho ứng viên khi nộp đơn theo yêu cầu của user
-
-    // Disabled auto-emailing and notifying candidates when AI automatically rejects (knock-out) the application.
-    // The candidate will only receive notifications/emails when HR explicitly acts on the application.
-    if (initialStatus === 'REJECTED') {
-      console.log(`[Application] AI Knock-out REJECTED for Candidate ${candidateId} - Skipped auto-notification as requested by business logic.`);
-    }
-
-    return sendResponse(res, 201, {
+    // 4. Trả phản hồi HTTP 201 cho Frontend NGAY LẬP TỨC (không để user chờ đợi)
+    sendResponse(res, 201, {
       application_id: application.id,
       cv_id: cv.id,
-      status: application.status,
-      ai_score: evaluation.semantic_score
-    }, 'Nộp đơn ứng tuyển thành công.');
+      status: application.status
+    }, 'Nộp đơn ứng tuyển thành công!');
+
+    // 5. Tiến trình xử lý AI screening, tạo PDF báo cáo & thông báo HR chạy ngầm (Non-blocking Background)
+    (async () => {
+      try {
+        console.log(`[Application Background] Đang chấm điểm CV ngầm cho ứng viên ${formattedName} (App ID: ${application.id})...`);
+
+        const jobRequirements = await db('job_requirements').where('job_id', jobId);
+        const evaluation = await runHrScreeningPipeline(sanitizedCvText, job, jobRequirements);
+
+        const initialStatus = evaluation.knockout_status === 'REJECTED' ? 'REJECTED' : 'SUBMITTED';
+
+        const mappedEvaluationForPDF = {
+          overallScore: evaluation.semantic_score || 0,
+          strengths: evaluation.talent_signals || [],
+          improvements: evaluation.red_flags && evaluation.red_flags.length > 0 ? evaluation.red_flags : ["Hồ sơ khá tốt, cần phỏng vấn thêm để làm rõ."],
+          sections: [
+            { name: "Vòng Gửi Xe (Knock-out)", score: evaluation.knockout_status === 'PASSED' ? 100 : 0, feedback: evaluation.knockout_reason || "Đạt các yêu cầu tối thiểu của công việc" },
+            { name: "Đánh giá Ngữ nghĩa (Semantic)", score: evaluation.semantic_score || 0, feedback: evaluation.evaluation_summary || "Không có nhận xét" },
+            { name: "Kỹ năng Khớp", score: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? 100 : 50, feedback: evaluation.matched_skills ? evaluation.matched_skills.join(', ') : "Không có" },
+            { name: "Kỹ năng Cần Bổ Sung", score: evaluation.missing_skills && evaluation.missing_skills.length > 0 ? 50 : 100, feedback: evaluation.missing_skills ? evaluation.missing_skills.join(', ') : "Không phát hiện thiếu sót" }
+          ]
+        };
+
+        const pdfReportBuffer = await generatePDFReportBuffer(mappedEvaluationForPDF, formattedName, job.title);
+        const reportCloudinaryResult = await uploadReportToCloudinary(pdfReportBuffer, formattedName);
+        const pdfReportUrl = reportCloudinaryResult.secure_url;
+
+        // Cập nhật kết quả vào bảng `cvs`
+        await db('cvs')
+          .where({ id: cv.id })
+          .update({
+            ats_score: evaluation.semantic_score || 0,
+            ai_feedback: JSON.stringify(evaluation).replace(/\x00/g, ''),
+            pdf_report_url: pdfReportUrl,
+            updated_at: new Date()
+          });
+
+        // Cập nhật kết quả vào bảng `applications`
+        await db('applications')
+          .where({ id: application.id })
+          .update({
+            status: initialStatus,
+            cv_score: evaluation.semantic_score || 0,
+            total_score: evaluation.semantic_score || 0,
+            ai_summary: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3).join(', ') : 'Chưa cập nhật kỹ năng',
+            updated_at: new Date()
+          });
+
+        // Gửi thông báo & Socket.io cho HR nếu job có hr_id
+        if (job.hr_id) {
+          await deleteCachePattern('applications:hr:*');
+
+          const [notification] = await db('notifications')
+            .insert({
+              user_id: job.hr_id,
+              type: 'APPLICATION_UPDATE',
+              title: 'Đơn ứng tuyển mới',
+              content: `${formattedName} đã nộp đơn ứng tuyển cho vị trí "${job.title}"`,
+              link: `/hr/dashboard`,
+              reference_id: application.id,
+              reference_type: 'application',
+              is_read: false,
+              created_at: new Date(),
+              updated_at: new Date()
+            })
+            .returning('*');
+
+          sendRealtimeNotification(job.hr_id, {
+            id: notification.id,
+            type: 'application',
+            title: notification.title,
+            content: notification.content,
+            time: 'Vừa xong',
+            isRead: false
+          });
+
+          broadcastNewApplication({
+            id: application.id,
+            name: formattedName,
+            avatar: req.user?.avatar_url ? '👦' : '👨‍💻',
+            email: req.user?.email,
+            position: job.title,
+            aiScore: evaluation.semantic_score || 0,
+            skills: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3) : ['Chưa cập nhật kỹ năng'],
+            status: 'new',
+            appliedDate: new Date().toISOString()
+          });
+        }
+
+        console.log(`[Application Background] Hoàn tất chấm điểm AI & tạo PDF báo cáo cho App #${application.id}`);
+      } catch (bgErr) {
+        console.error(`[Application Background] Lỗi khi xử lý ngầm cho App #${application.id}:`, bgErr);
+      }
+    })();
   } catch (error) {
     console.error('Lỗi trong applyJob controller:', error);
     return sendError(res, 500, 'Lỗi hệ thống khi nộp đơn ứng tuyển.');

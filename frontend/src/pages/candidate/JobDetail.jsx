@@ -1,8 +1,8 @@
 import { useParams, Link } from "react-router-dom";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MapPin, DollarSign, Briefcase, Clock, Building, Users, Award, ChevronRight, Bookmark, Share2, Flag, Loader2, UploadCloud, FileCheck, XCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { MapPin, DollarSign, Briefcase, Clock, Building, Users, Award, ChevronRight, Bookmark, Share2, Flag, Loader2, UploadCloud, FileCheck, XCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 import { jobApi } from "../../api/jobApi";
 import { cvApi } from "../../api/cvApi";
@@ -31,13 +31,26 @@ export function JobDetail() {
     enabled: !!isAuthenticated
   });
 
+  // Gọi API lấy danh sách hồ sơ ứng tuyển của ứng viên
+  const { data: candidateAppsRes } = useQuery({
+    queryKey: ["candidate-applications"],
+    queryFn: async () => {
+      const res = await applicationApi.getApplications();
+      return res;
+    },
+    enabled: !!isAuthenticated
+  });
+
+  const candidateApps = candidateAppsRes?.data || [];
+  const hasApplied = candidateApps.some(app => Number(app.jobId) === Number(id));
+
   const toggleMutation = useMutation({
     mutationFn: (jobId) => jobApi.toggleSavedJob(jobId),
     onSuccess: (res) => {
       // Refresh cache để cập nhật UI
       queryClient.invalidateQueries({ queryKey: ["savedJobIds"] });
       queryClient.invalidateQueries({ queryKey: ["savedJobs"] });
-      
+
       const payload = res?.data || res;
       addToast(payload?.message || "Đã cập nhật trạng thái lưu việc làm.", "success");
     },
@@ -58,12 +71,11 @@ export function JobDetail() {
 
   // States cho việc nộp đơn ứng tuyển
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-  const [isUploadingCv, setIsUploadingCv] = useState(false);
   const [uploadedCvText, setUploadedCvText] = useState("");
   const [uploadedCvUrl, setUploadedCvUrl] = useState("");
   const [uploadedCvName, setUploadedCvName] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const cvUploadPromiseRef = useRef(null);
 
   // Stepper states cho thông tin cá nhân
   const [step, setStep] = useState(1);
@@ -112,8 +124,8 @@ export function JobDetail() {
 
   const job = response?.data;
 
-  // Xử lý upload file CV PDF
-  const handleCvChange = async (e) => {
+  // Xử lý đính kèm file CV PDF (Instant UI update & Background parsing)
+  const handleCvChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -127,30 +139,26 @@ export function JobDetail() {
       return;
     }
 
-    try {
-      setIsUploadingCv(true);
-      const res = await cvApi.uploadCV(file);
-      // Axios client trả về data trực tiếp
-      console.log("[CV Upload] Phản hồi từ API upload CV:", res);
-      
-      // Viết phòng thủ hỗ trợ cả hai cấu trúc response (res.data hoặc res trực tiếp)
-      const dataPayload = res?.data || res;
-      console.log("[CV Upload] dataPayload xác định được:", dataPayload);
+    // 1. Cập nhật giao diện hiển thị tên file NGAY LẬP TỨC (không hiện spinner loading)
+    setUploadedCvName(file.name);
+    addToast("Đã đính kèm file CV! Bạn có thể bấm Nộp Đơn ngay.", "info");
 
-      if (dataPayload?.text) {
-        setUploadedCvText(dataPayload.text);
-        setUploadedCvUrl(dataPayload.fileUrl);
-        setUploadedCvName(file.name);
-        addToast("Đã tải và bóc tách nội dung CV thành công!", "success");
-      } else {
-        addToast("Không thể bóc tách CV này, vui lòng chọn file PDF khác.", "error");
-      }
-    } catch (err) {
-      console.error(err);
-      addToast(err.response?.data?.message || "Đã xảy ra lỗi khi tải CV lên.", "error");
-    } finally {
-      setIsUploadingCv(false);
-    }
+    // 2. Kích hoạt tiến trình bóc tách CV ngầm bên dưới background
+    cvUploadPromiseRef.current = cvApi.uploadCV(file)
+      .then((res) => {
+        const dataPayload = res?.data || res;
+        if (dataPayload?.text) {
+          setUploadedCvText(dataPayload.text);
+          setUploadedCvUrl(dataPayload.fileUrl);
+          return dataPayload;
+        } else {
+          throw new Error("Không thể bóc tách nội dung từ file CV này.");
+        }
+      })
+      .catch((err) => {
+        console.error("[CV Parsing Background Error]:", err);
+        return null;
+      });
   };
 
   const formatPortfolioUrl = (url) => {
@@ -201,43 +209,77 @@ export function JobDetail() {
     setStep(2);
   };
 
-  // Xác nhận nộp đơn ứng tuyển
-  const handleApplySubmit = async () => {
-    if (!uploadedCvText) {
+  // Xác nhận nộp đơn ứng tuyển (Instant UI feedback, background API submit)
+  const handleApplySubmit = () => {
+    if (!uploadedCvName) {
       addToast("Vui lòng tải lên CV của bạn trước khi nộp đơn.", "warning");
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      console.log("[Apply Submit] Gửi đơn ứng tuyển với cv_url:", uploadedCvUrl);
-      await applicationApi.applyJob(id, {
-        cv_text: uploadedCvText,
-        cv_url: uploadedCvUrl,
-        cover_letter: coverLetter,
-        candidate_name: candidateName.trim(),
-        candidate_email: candidateEmail.trim(),
-        candidate_phone: candidatePhone.trim(),
-        portfolio_url: portfolioUrl.trim() ? formatPortfolioUrl(portfolioUrl) : null
-      });
-      addToast("Nộp đơn ứng tuyển thành công! Nhà tuyển dụng đã nhận được hồ sơ của bạn.", "success");
-      setIsApplyModalOpen(false);
-      // Reset form
-      setUploadedCvText("");
-      setUploadedCvUrl("");
-      setUploadedCvName("");
-      setCoverLetter("");
-      setCandidateName("");
-      setCandidateEmail("");
-      setCandidatePhone("");
-      setPortfolioUrl("");
-      setStep(1);
-    } catch (err) {
-      console.error(err);
-      addToast(err.response?.data?.message || "Nộp đơn ứng tuyển thất bại.", "error");
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Lưu lại thông tin từ form
+    const currentCvText = uploadedCvText;
+    const currentCvUrl = uploadedCvUrl;
+    const currentCoverLetter = coverLetter;
+    const currentCandidateName = candidateName.trim();
+    const currentCandidateEmail = candidateEmail.trim();
+    const currentCandidatePhone = candidatePhone.trim();
+    const currentPortfolioUrl = portfolioUrl.trim() ? formatPortfolioUrl(portfolioUrl) : null;
+    const uploadPromise = cvUploadPromiseRef.current;
+
+    // 1. Tắt Modal và hiển thị Toast thành công NGAY LẬP TỨC
+    setIsApplyModalOpen(false);
+    addToast("Nộp đơn ứng tuyển thành công! Nhà tuyển dụng đã nhận được hồ sơ của bạn.", "success");
+
+    // 2. Reset form ngay lập tức
+    setUploadedCvText("");
+    setUploadedCvUrl("");
+    setUploadedCvName("");
+    setCoverLetter("");
+    setCandidateName("");
+    setCandidateEmail("");
+    setCandidatePhone("");
+    setPortfolioUrl("");
+    setStep(1);
+    cvUploadPromiseRef.current = null;
+
+    // 3. Tiến trình gửi đơn chạy ngầm dưới background (cho dù bóc tách CV đã hoàn tất hay chưa)
+    (async () => {
+      try {
+        let finalCvText = currentCvText;
+        let finalCvUrl = currentCvUrl;
+
+        // Nếu bóc tách CV ngầm chưa hoàn tất vào thời điểm bấm submit, chờ promise hoàn tất
+        if (!finalCvText && uploadPromise) {
+          console.log("[Apply Background] Đang chờ tiến trình bóc tách CV ngầm hoàn tất...");
+          const parsedRes = await uploadPromise;
+          if (parsedRes?.text) {
+            finalCvText = parsedRes.text;
+            finalCvUrl = parsedRes.fileUrl;
+          }
+        }
+
+        if (!finalCvText) {
+          throw new Error("Không thể bóc tách chữ từ file CV đã chọn. Vui lòng thử lại file PDF khác.");
+        }
+
+        await applicationApi.applyJob(id, {
+          cv_text: finalCvText,
+          cv_url: finalCvUrl,
+          cover_letter: currentCoverLetter,
+          candidate_name: currentCandidateName,
+          candidate_email: currentCandidateEmail,
+          candidate_phone: currentCandidatePhone,
+          portfolio_url: currentPortfolioUrl
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["savedJobIds"] });
+        queryClient.invalidateQueries({ queryKey: ["job-detail", id] });
+        queryClient.invalidateQueries({ queryKey: ["candidate-applications"] });
+      } catch (err) {
+        console.error("[Apply Job Background Error]:", err);
+        addToast(err.response?.data?.message || err.message || "Có lỗi xảy ra khi nộp đơn ứng tuyển.", "error");
+      }
+    })();
   };
 
 
@@ -265,7 +307,7 @@ export function JobDetail() {
   const formatSalary = (min, max, currency, visible) => {
     if (!visible) return "Thương lượng (Ẩn)";
     if (!min && !max) return "Thương lượng";
-    
+
     const formatNumber = (num) => {
       if (!num) return "";
       if (num >= 1000000) return `${(num / 1000000).toFixed(0)} Triệu`;
@@ -333,17 +375,32 @@ export function JobDetail() {
               </div>
 
               <div className="flex gap-3 mb-6">
-                <button 
+                <button
                   onClick={() => {
                     if (!isAuthenticated) {
                       addToast("Yêu cầu đăng nhập để dùng được tính năng này", "warning");
                       return;
                     }
+                    if (hasApplied) {
+                      addToast("Bạn đã nộp đơn ứng tuyển cho công việc này rồi. CV chỉ được nộp 1 lần duy nhất.", "warning");
+                      return;
+                    }
                     setIsApplyModalOpen(true);
                   }}
-                  className="flex-1 py-3 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg transition-all cursor-pointer"
+                  className={`flex-1 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    hasApplied
+                      ? "bg-slate-400 dark:bg-slate-700 cursor-not-allowed opacity-90"
+                      : "bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] hover:shadow-lg cursor-pointer"
+                  }`}
                 >
-                  Nộp Đơn Ngay
+                  {hasApplied ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Đã Ứng Tuyển</span>
+                    </>
+                  ) : (
+                    <span>Nộp Đơn Ngay</span>
+                  )}
                 </button>
               </div>
 
@@ -355,7 +412,7 @@ export function JobDetail() {
                   <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-[#0ea5e9] text-[#0ea5e9]" : ""}`} />
                   <span>{isBookmarked ? "Đã lưu" : "Lưu việc"}</span>
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href);
                     addToast("Đã sao chép liên kết việc làm vào khay nhớ tạm!", "success");
@@ -492,18 +549,17 @@ export function JobDetail() {
             {/* Stepper progress indicator */}
             <div className="flex items-center justify-between mb-8 relative">
               <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-gray-100 -translate-y-1/2 z-0" />
-              <div 
+              <div
                 className="absolute left-0 top-1/2 h-0.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] -translate-y-1/2 z-0 transition-all duration-300"
                 style={{ width: step === 1 ? "0%" : "100%" }}
               />
 
               {/* Step 1 Node */}
               <div className="relative z-10 flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                  step === 1 
-                    ? "bg-[#0ea5e9] text-white ring-4 ring-sky-100" 
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${step === 1
+                    ? "bg-[#0ea5e9] text-white ring-4 ring-sky-100"
                     : "bg-green-500 text-white"
-                }`}>
+                  }`}>
                   {step === 1 ? "1" : "✓"}
                 </div>
                 <span className={`text-xs font-semibold mt-1.5 transition-colors duration-300 ${step === 1 ? "text-[#0ea5e9]" : "text-gray-500 dark:text-slate-400"}`}>
@@ -513,11 +569,10 @@ export function JobDetail() {
 
               {/* Step 2 Node */}
               <div className="relative z-10 flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                  step === 2 
-                    ? "bg-[#0ea5e9] text-white ring-4 ring-sky-100" 
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${step === 2
+                    ? "bg-[#0ea5e9] text-white ring-4 ring-sky-100"
                     : "bg-gray-100 text-gray-400"
-                }`}>
+                  }`}>
                   2
                 </div>
                 <span className={`text-xs font-semibold mt-1.5 transition-colors duration-300 ${step === 2 ? "text-[#0ea5e9]" : "text-gray-400"}`}>
@@ -553,7 +608,7 @@ export function JobDetail() {
                     onChange={(e) => {
                       const val = e.target.value;
                       setCandidateEmail(val);
-                      
+
                       if (val.length > 0) {
                         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                         if (!emailRegex.test(val)) {
@@ -566,11 +621,10 @@ export function JobDetail() {
                       }
                     }}
                     placeholder="candidate@example.com"
-                    className={`w-full border rounded-xl p-3.5 text-sm focus:ring-4 focus:outline-none transition-all placeholder:text-gray-400 ${
-                      emailError 
-                        ? "border-red-400 focus:border-red-500 focus:ring-red-50" 
+                    className={`w-full border rounded-xl p-3.5 text-sm focus:ring-4 focus:outline-none transition-all placeholder:text-gray-400 ${emailError
+                        ? "border-red-400 focus:border-red-500 focus:ring-red-50"
                         : "border-gray-200 dark:border-white/10 focus:border-[#0ea5e9] focus:ring-sky-50"
-                    }`}
+                      }`}
                     required
                   />
                   {emailError && (
@@ -591,7 +645,7 @@ export function JobDetail() {
                       // Chỉ cho phép nhập số và dấu +
                       const val = e.target.value.replace(/[^\d+]/g, '');
                       setCandidatePhone(val);
-                      
+
                       // Validate realtime
                       if (val.length > 0) {
                         const phoneRegex = /^(\+84|0)(3[2-9]|5[6-9]|7[06-9]|8[0-9]|9[0-9])[0-9]{7}$/;
@@ -605,11 +659,10 @@ export function JobDetail() {
                       }
                     }}
                     placeholder="0912345678"
-                    className={`w-full border rounded-xl p-3.5 text-sm focus:ring-4 focus:outline-none transition-all placeholder:text-gray-400 ${
-                      phoneError 
-                        ? "border-red-400 focus:border-red-500 focus:ring-red-50" 
+                    className={`w-full border rounded-xl p-3.5 text-sm focus:ring-4 focus:outline-none transition-all placeholder:text-gray-400 ${phoneError
+                        ? "border-red-400 focus:border-red-500 focus:ring-red-50"
                         : "border-gray-200 dark:border-white/10 focus:border-[#0ea5e9] focus:ring-sky-50"
-                    }`}
+                      }`}
                     required
                   />
                   {phoneError && (
@@ -648,32 +701,43 @@ export function JobDetail() {
               </div>
             ) : (
               /* BƯỚC 2: TẢI CV & THƯ GIỚI THIỆU */
-              <div className="space-y-6">
+              <div className="space-y-5">
+                {/* Banner cảnh báo quy tắc nộp CV 1 lần */}
+                <div className="p-3.5 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
+                    <span className="font-bold text-amber-950 dark:text-amber-100 block mb-0.5"> Lưu ý quan trọng:</span>
+                    CV cho mỗi vị trí chỉ được nộp <strong>1 lần duy nhất</strong>. Vui lòng kiểm tra lại thông tin trước khi nộp đơn!
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                     Tải Lên CV Của Bạn (PDF) <span className="text-red-500">*</span>
                   </label>
-                  
+
                   {uploadedCvName ? (
-                    <div className="flex items-center justify-between bg-sky-50 border border-sky-100 p-4 rounded-xl">
+                    <div className="flex items-center justify-between bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-800/50 p-4 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-sky-500 text-white rounded-lg flex items-center justify-center font-bold text-xs">
+                        <div className="w-10 h-10 bg-sky-500 text-white rounded-lg flex items-center justify-center font-bold text-xs shrink-0">
                           PDF
                         </div>
                         <div>
                           <div className="text-sm font-bold text-gray-800 dark:text-gray-200 line-clamp-1">{uploadedCvName}</div>
-                          <div className="text-xs text-sky-600 font-semibold flex items-center gap-1 mt-0.5">
+                          <div className="text-xs text-sky-600 dark:text-sky-400 font-semibold flex items-center gap-1 mt-0.5">
                             <FileCheck className="w-3.5 h-3.5" />
-                            <span>Đã bóc tách thành công</span>
+                            <span>Đã đính kèm file CV</span>
                           </div>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={() => {
                           setUploadedCvName("");
                           setUploadedCvText("");
+                          setUploadedCvUrl("");
+                          cvUploadPromiseRef.current = null;
                         }}
-                        className="p-1 hover:bg-sky-100 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                        className="p-1.5 hover:bg-sky-100 dark:hover:bg-sky-900/40 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
                         title="Xóa CV"
                       >
                         <XCircle className="w-5 h-5" />
@@ -681,24 +745,14 @@ export function JobDetail() {
                     </div>
                   ) : (
                     <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-[#0ea5e9] rounded-2xl p-8 cursor-pointer transition-all bg-slate-50/50 hover:bg-sky-50/20 group">
-                      {isUploadingCv ? (
-                        <div className="flex flex-col items-center">
-                          <Loader2 className="w-8 h-8 text-[#0ea5e9] animate-spin mb-2" />
-                          <span className="text-sm text-gray-500 dark:text-slate-400 font-semibold">Đang bóc tách CV...</span>
-                        </div>
-                      ) : (
-                        <>
-                          <UploadCloud className="w-10 h-10 text-gray-400 group-hover:text-[#0ea5e9] mb-2 transition-colors" />
-                          <span className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Click để tải lên file CV</span>
-                          <span className="text-xs text-gray-400 font-medium">Hỗ trợ định dạng PDF (Tối đa 5MB)</span>
-                        </>
-                      )}
-                      <input 
-                        type="file" 
-                        accept=".pdf" 
-                        onChange={handleCvChange} 
-                        className="hidden" 
-                        disabled={isUploadingCv}
+                      <UploadCloud className="w-10 h-10 text-gray-400 group-hover:text-[#0ea5e9] mb-2 transition-colors" />
+                      <span className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Click để tải lên file CV</span>
+                      <span className="text-xs text-gray-400 font-medium">Hỗ trợ định dạng PDF (Tối đa 5MB)</span>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleCvChange}
+                        className="hidden"
                       />
                     </label>
                   )}
@@ -708,7 +762,7 @@ export function JobDetail() {
                   <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                     Thư giới thiệu / Cover Letter (Không bắt buộc)
                   </label>
-                  <textarea 
+                  <textarea
                     rows={4}
                     value={coverLetter}
                     onChange={(e) => setCoverLetter(e.target.value)}
@@ -726,17 +780,10 @@ export function JobDetail() {
                   </button>
                   <button
                     onClick={handleApplySubmit}
-                    disabled={isSubmitting || isUploadingCv || !uploadedCvText}
+                    disabled={!uploadedCvName}
                     className="flex-1 py-3.5 bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] text-white rounded-xl font-bold hover:shadow-lg hover:shadow-sky-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-sm"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Đang nộp hồ sơ...</span>
-                      </>
-                    ) : (
-                      <span>Nộp Đơn Ứng Tuyển</span>
-                    )}
+                    <span>Nộp Đơn Ứng Tuyển</span>
                   </button>
                 </div>
               </div>

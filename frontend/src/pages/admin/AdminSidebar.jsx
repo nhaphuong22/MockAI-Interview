@@ -9,7 +9,6 @@ import {
   Cpu, 
   Settings,
   ShieldCheck,
-  ShieldAlert,
   BarChart3,
   Flag
 } from "lucide-react";
@@ -64,11 +63,6 @@ export function AdminSidebar() {
       path: "/admin/dashboard/system-settings",
       label: "Cài Đặt Hệ Thống",
       icon: Settings
-    },
-    {
-      path: "/admin/dashboard/permissions",
-      label: "Phân Quyền Hệ Thống",
-      icon: ShieldAlert
     }
   ];
 
