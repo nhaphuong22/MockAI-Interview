@@ -1,46 +1,30 @@
 import crypto from 'crypto';
 import db from '../db/knex.js';
+import { VNPay, ProductCode, VnpLocale } from 'vnpay';
 
-// Helper to build VNPAY signData (raw) and queryString (encoded) according to VNPAY standard
-function buildVnpaySignDataAndQuery(obj) {
-  let sortedKeys = Object.keys(obj).sort();
-  let signDataParts = [];
-  let queryParts = [];
+function getVnpayInstance(overrideTmn = null, overrideSecret = null) {
+  let tmnCode = (overrideTmn || process.env.VNPAY_TMN_CODE || '0Z7LP6WV').trim();
+  let secureSecret = (overrideSecret || process.env.VNPAY_SECURE_SECRET || '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC').trim();
 
-  for (let key of sortedKeys) {
-    let val = obj[key];
-    if (val !== null && val !== undefined && val !== '') {
-      signDataParts.push(`${key}=${val}`);
-      queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(val).replace(/%20/g, "+")}`);
-    }
+  // If Sandbox TMN Code 0Z7LP6WV is used or mismatched secret key TCB2YBNXRTZGXCMQXSPFRZPLQYNURLLB:
+  if (tmnCode === '0Z7LP6WV' || secureSecret === 'TCB2YBNXRTZGXCMQXSPFRZPLQYNURLLB') {
+    tmnCode = '0Z7LP6WV';
+    secureSecret = '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC';
   }
 
-  return {
-    signData: signDataParts.join('&'),
-    queryString: queryParts.join('&')
-  };
-}
+  let host = (process.env.VNPAY_PAYMENT_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html').trim();
+  if (host.includes('/paymentv2/vpcpay.html')) {
+    host = host.replace('/paymentv2/vpcpay.html', '');
+  }
+  host = host.replace(/\/+$/, '');
 
-// Helper to format date as YYYYMMDDHHmmss in GMT+7 (Asia/Ho_Chi_Minh timezone)
-function getVnpayDateFormat(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
+  return new VNPay({
+    tmnCode: tmnCode,
+    secureSecret: secureSecret,
+    vnpayHost: host || 'https://sandbox.vnpayment.vn',
+    testMode: true,
+    hashAlgorithm: 'SHA512'
   });
-  
-  const parts = formatter.formatToParts(date);
-  const partValues = {};
-  parts.forEach(p => {
-    partValues[p.type] = p.value;
-  });
-  
-  return `${partValues.year}${partValues.month}${partValues.day}${partValues.hour}${partValues.minute}${partValues.second}`;
 }
 
 /**
@@ -263,16 +247,9 @@ export const paymentService = {
       notes: 'Nang cap goi cuoc MockAI Pro',
     });
 
-    // 3. Khởi tạo các tham số VNPAY (với fallback Sandbox cho môi trường Vercel)
-    let tmnCode = (process.env.VNPAY_TMN_CODE || '0Z7LP6WV').trim();
-    let secureSecret = (process.env.VNPAY_SECURE_SECRET || '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC').trim();
-    
-    // Đảm bảo nếu dùng mã Sandbox 0Z7LP6WV thì Secret bắt buộc phải là 72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC
-    if (tmnCode === '0Z7LP6WV') {
-      secureSecret = '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC';
-    }
+    // 3. Khởi tạo instance VNPAY (với fallback Sandbox cho môi trường Vercel)
+    const vnpay = getVnpayInstance();
 
-    const paymentUrl = (process.env.VNPAY_PAYMENT_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html').trim();
     const rawClientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://mock-ai-interview-frontend.vercel.app').trim();
     const clientUrl = rawClientUrl.replace(/\/+$/, '');
     const returnUrl = `${clientUrl}/payment-success`;
@@ -289,33 +266,16 @@ export const paymentService = {
       cleanIp = '127.0.0.1';
     }
 
-    const date = new Date();
-    const createDate = getVnpayDateFormat(date);
-
-    let vnpParams = {
-      vnp_Version: '2.1.0',
-      vnp_Command: 'pay',
-      vnp_TmnCode: tmnCode,
-      vnp_Locale: 'vn',
-      vnp_CurrCode: 'VND',
+    const finalPaymentUrl = vnpay.buildPaymentUrl({
+      vnp_Amount: amount,
+      vnp_IpAddr: cleanIp,
       vnp_TxnRef: transactionCode,
       vnp_OrderInfo: 'Nang cap goi cuoc MockAI Pro',
-      vnp_OrderType: 'other',
-      vnp_Amount: Math.round(amount * 100), // VNPAY yêu cầu nhân 100
+      vnp_OrderType: ProductCode.Other,
       vnp_ReturnUrl: returnUrl,
-      vnp_IpAddr: cleanIp,
-      vnp_CreateDate: createDate
-    };
+      vnp_Locale: VnpLocale.VN,
+    });
 
-    // Sắp xếp và tạo chuỗi signData & queryString chuẩn VNPAY
-    const { signData, queryString } = buildVnpaySignDataAndQuery(vnpParams);
-
-    // Tạo chữ ký bảo mật HMAC SHA512 trên chuỗi raw signData
-    const hmac = crypto.createHmac('sha512', secureSecret);
-    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-    
-    // Tạo URL hoàn chỉnh
-    const finalPaymentUrl = `${paymentUrl}?${queryString}&vnp_SecureHash=${signed}`;
     return { paymentUrl: finalPaymentUrl };
   },
 
@@ -326,25 +286,11 @@ export const paymentService = {
    */
   processVnpayIpn: async (vnpParams) => {
     try {
-      const secureHash = vnpParams['vnp_SecureHash'];
-      
-      // Loại bỏ SecureHash và SecureHashType khỏi danh sách tham số để tính toán lại Hash
-      delete vnpParams['vnp_SecureHash'];
-      delete vnpParams['vnp_SecureHashType'];
-
-      // Sắp xếp và tạo raw signData chuẩn VNPAY
-      const { signData } = buildVnpaySignDataAndQuery(vnpParams);
-
-      let tmnCode = (vnpParams['vnp_TmnCode'] || process.env.VNPAY_TMN_CODE || '0Z7LP6WV').trim();
-      let secureSecret = (process.env.VNPAY_SECURE_SECRET || '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC').trim();
-      if (tmnCode === '0Z7LP6WV') {
-        secureSecret = '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC';
-      }
-      const hmac = crypto.createHmac('sha512', secureSecret);
-      const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+      const vnpay = getVnpayInstance(vnpParams['vnp_TmnCode']);
+      const isValid = vnpay.verifyIpnCall(vnpParams);
 
       // 1. Kiểm tra chữ ký bảo mật
-      if (secureHash !== signed) {
+      if (!isValid.isSuccess) {
         return { RspCode: '97', Message: 'Invalid Checksum' };
       }
 

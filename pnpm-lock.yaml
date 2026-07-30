@@ -80,6 +80,9 @@ importers:
       swagger-ui-express:
         specifier: ^5.0.1
         version: 5.0.1(express@5.2.1)
+      vnpay:
+        specifier: ^2.5.0
+        version: 2.5.0
     devDependencies:
       nodemon:
         specifier: ^3.1.14
@@ -4228,6 +4231,9 @@ packages:
         optional: true
       yaml:
         optional: true
+
+  vnpay@2.5.0:
+    resolution: {integrity: sha512-kyUYxG0pyEnRu/ha0gSVqkPCajmql523W2PQzgCkH4ct4XdEuzdiQnssi/k9XMcv+TvoPzuweEJG+4hWNU2DAQ==}
 
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
@@ -8751,6 +8757,10 @@ snapshots:
       '@types/node': 25.9.1
       fsevents: 2.3.3
       jiti: 2.7.0
+
+  vnpay@2.5.0:
+    dependencies:
+      dayjs: 1.11.21
 
   web-namespaces@2.0.1: {}
 
