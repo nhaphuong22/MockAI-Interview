@@ -35,12 +35,20 @@ export const createPaymentUrl = async (req, res) => {
     const userId = req.user.id; // Lấy từ authMiddleware (authenticateToken)
     const role = req.user?.role?.toUpperCase() === 'HR' ? 'HR' : 'CANDIDATE';
 
-    // Thu thập địa chỉ IP của client
-    const ipAddr =
+    // Thu thập địa chỉ IP của client (chuẩn hóa IPv4 cho Vercel Serverless)
+    let rawIp =
       req.headers['x-forwarded-for'] ||
-      req.connection.remoteAddress ||
-      req.socket.remoteAddress ||
-      req.connection.socket.remoteAddress;
+      req.connection?.remoteAddress ||
+      req.socket?.remoteAddress ||
+      '127.0.0.1';
+    
+    if (typeof rawIp === 'string' && rawIp.includes(',')) {
+      rawIp = rawIp.split(',')[0].trim();
+    }
+    if (typeof rawIp === 'string' && rawIp.includes('::ffff:')) {
+      rawIp = rawIp.replace('::ffff:', '');
+    }
+    const ipAddr = typeof rawIp === 'string' && /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(rawIp) ? rawIp : '127.0.0.1';
 
     if (!packageId) {
       return res.status(400).json({

@@ -267,8 +267,21 @@ export const paymentService = {
     const tmnCode = (process.env.VNPAY_TMN_CODE || '0Z7LP6WV').trim();
     const secureSecret = (process.env.VNPAY_SECURE_SECRET || '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC').trim();
     const paymentUrl = (process.env.VNPAY_PAYMENT_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html').trim();
-    const clientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://mock-ai-interview-frontend.vercel.app').trim();
+    const rawClientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://mock-ai-interview-frontend.vercel.app').trim();
+    const clientUrl = rawClientUrl.replace(/\/+$/, '');
     const returnUrl = `${clientUrl}/payment-success`;
+
+    // Sanitize client IP address for Vercel multi-proxy environments
+    let cleanIp = (ipAddr || '127.0.0.1').trim();
+    if (cleanIp.includes(',')) {
+      cleanIp = cleanIp.split(',')[0].trim();
+    }
+    if (cleanIp.includes('::ffff:')) {
+      cleanIp = cleanIp.replace('::ffff:', '');
+    }
+    if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(cleanIp)) {
+      cleanIp = '127.0.0.1';
+    }
 
     const date = new Date();
     const createDate = getVnpayDateFormat(date);
@@ -284,7 +297,7 @@ export const paymentService = {
       vnp_OrderType: 'other',
       vnp_Amount: Math.round(amount * 100), // VNPAY yêu cầu nhân 100
       vnp_ReturnUrl: returnUrl,
-      vnp_IpAddr: ipAddr || '127.0.0.1',
+      vnp_IpAddr: cleanIp,
       vnp_CreateDate: createDate
     };
 
