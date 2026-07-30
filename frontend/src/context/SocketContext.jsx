@@ -219,37 +219,16 @@ export const SocketProvider = ({ children }) => {
       queryClient.refetchQueries({ queryKey: ["publishedBlogs"] });
     });
 
-    let disconnectToastShown = false;
-
     socketInstance.on("connect_error", (error) => {
       console.error("[Socket] Lỗi kết nối socket:", error.message);
-      if (!disconnectToastShown) {
-        showToast({
-          message: "Không thể kết nối máy chủ thời gian thực. Đang tự động kết nối lại...",
-          type: "warning"
-        });
-        disconnectToastShown = true;
-      }
     });
 
     socketInstance.on("disconnect", (reason) => {
       console.log("[Socket] Đã ngắt kết nối socket. Lý do:", reason);
-      if (!disconnectToastShown && reason !== "io client disconnect") {
-        showToast({
-          message: "Mất kết nối thời gian thực. Đang tự động kết nối lại...",
-          type: "warning"
-        });
-        disconnectToastShown = true;
-      }
     });
 
     socketInstance.on("reconnect", (attemptNumber) => {
       console.log("[Socket] Đã kết nối lại thành công sau", attemptNumber, "lần thử.");
-      showToast({
-        message: "Đã khôi phục kết nối thời gian thực thành công!",
-        type: "success"
-      });
-      disconnectToastShown = false;
     });
 
     socketInstance.on("reconnect_error", (error) => {
