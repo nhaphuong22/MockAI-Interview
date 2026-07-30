@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, Sparkles, ArrowRight, Share2, RefreshCw } from "
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 import { useQueryClient } from "@tanstack/react-query";
+import paymentApi from "../../api/paymentApi";
 
 export function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -20,11 +21,22 @@ export function PaymentSuccess() {
   const isSuccess = !isFromVnpay || vnpResponseCode === "00";
 
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && vnpTxnRef && vnpResponseCode) {
+      paymentApi.confirmPayment({
+        transactionCode: vnpTxnRef,
+        responseCode: vnpResponseCode
+      }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        queryClient.invalidateQueries({ queryKey: ["companyVerification"] });
+      }).catch(err => {
+        console.error("Confirm payment return error:", err);
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      });
+    } else if (isSuccess) {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["companyVerification"] });
     }
-  }, [isSuccess, queryClient]);
+  }, [isSuccess, vnpTxnRef, vnpResponseCode, queryClient]);
 
   // Định dạng hiển thị các thông tin giao dịch động
   const transactionCode = vnpTxnRef || "#MAI-PRO-20260516";

@@ -522,3 +522,28 @@ export const handleVnpayIpn = async (req, res) => {
     });
   }
 };
+
+/**
+ * Controller xác nhận kích hoạt gói tức thì từ Frontend Return URL khi vnp_ResponseCode === '00'
+ */
+export const confirmPayment = async (req, res) => {
+  try {
+    const { transactionCode, responseCode } = req.body;
+    const userId = req.user.id;
+
+    if (!transactionCode || !responseCode) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin giao dịch.' });
+    }
+
+    const result = await paymentService.confirmPaymentReturn({
+      transactionCode,
+      responseCode,
+      userId
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Lỗi khi xác nhận kích hoạt giao dịch:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Lỗi hệ thống khi xác nhận kích hoạt.' });
+  }
+};

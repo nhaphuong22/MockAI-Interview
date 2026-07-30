@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-  createPaymentUrl, handleVnpayIpn, getPackages,
+  createPaymentUrl, handleVnpayIpn, getPackages, confirmPayment,
   getAllPackagesForAdmin, togglePackageStatus, getTransactionsForAdmin, updatePackagePrice,
   getCouponsForAdmin, createCoupon, toggleCouponStatus, deleteCoupon, validateCoupon
 } from '../controllers/paymentController.js';
@@ -100,5 +100,16 @@ router.post('/validate-coupon', authenticateToken, validateCoupon);
  *     tags: [Payments]
  */
 router.get('/vnpay-ipn', handleVnpayIpn);
+
+/**
+ * @swagger
+ * /api/payments/confirm-payment:
+ *   post:
+ *     summary: Xác nhận kích hoạt gói cước trực tiếp từ Return URL
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/confirm-payment', authenticateToken, confirmPayment);
 
 export default router;

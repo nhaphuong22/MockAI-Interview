@@ -14,6 +14,10 @@ const paymentApi = {
     const url = '/payments/validate-coupon';
     return axiosClient.post(url, data);
   },
+  confirmPayment: (data) => {
+    const url = '/payments/confirm-payment';
+    return axiosClient.post(url, data);
+  },
 
   // ─── Admin-only APIs ───
   // Get all packages (Candidate + HR) with total_sold metric

@@ -485,5 +485,73 @@ export const paymentService = {
       console.error('Lỗi khi xử lý VNPAY IPN:', error);
       return { RspCode: '99', Message: 'Input Required' };
     }
+  },
+
+  /**
+   * Kích hoạt gói tức thì từ Frontend Return URL khi vnp_ResponseCode === '00'
+   */
+  confirmPaymentReturn: async ({ transactionCode, responseCode, userId }) => {
+    if (responseCode !== '00') {
+      return { success: false, message: 'Thanh toán không thành công' };
+    }
+
+    const transaction = await db('transactions').where({ transaction_code: transactionCode }).first();
+    if (!transaction) {
+      return { success: false, message: 'Không tìm thấy thông tin giao dịch' };
+    }
+
+    if (transaction.status === 'COMPLETED') {
+      return { success: true, message: 'Giao dịch đã được kích hoạt thành công trước đó' };
+    }
+
+    const activePackage = await db('packages').where({ id: transaction.package_id }).first();
+    if (!activePackage) {
+      return { success: false, message: 'Gói cước không tồn tại hoặc đã bị gỡ' };
+    }
+
+    const now = new Date();
+    const expiryDate = new Date(now.getTime() + activePackage.duration_days * 24 * 60 * 60 * 1000);
+
+    await db.transaction(async (trx) => {
+      await trx('transactions').where({ id: transaction.id }).update({
+        status: 'COMPLETED',
+        paid_at: now,
+        updated_at: now
+      });
+
+      if (activePackage.target_role === 'HR') {
+        const user = await trx('users').where({ id: transaction.user_id }).first();
+        let wallet = await trx('hr_wallets').where({ user_id: user.id }).first();
+        if (!wallet) {
+          await trx('hr_wallets').insert({ user_id: user.id, total_credits: activePackage.total_credits || 0, created_at: now, updated_at: now });
+        } else if (activePackage.total_credits > 0) {
+          await trx('hr_wallets').where({ id: wallet.id }).increment('total_credits', activePackage.total_credits);
+        }
+      } else {
+        const existingSub = await trx('user_subscriptions').where({ user_id: transaction.user_id }).first();
+        if (existingSub) {
+          const currentExpiry = existingSub.end_date && new Date(existingSub.end_date) > now
+            ? new Date(existingSub.end_date)
+            : now;
+          const newExpiry = new Date(currentExpiry.getTime() + activePackage.duration_days * 24 * 60 * 60 * 1000);
+          await trx('user_subscriptions').where({ user_id: existingSub.user_id }).update({
+            package_id: activePackage.id,
+            end_date: newExpiry,
+            updated_at: now
+          });
+        } else {
+          await trx('user_subscriptions').insert({
+            user_id: transaction.user_id,
+            package_id: activePackage.id,
+            start_date: now,
+            end_date: expiryDate,
+            created_at: now,
+            updated_at: now
+          });
+        }
+      }
+    });
+
+    return { success: true, message: 'Kích hoạt gói cước thành công!' };
   }
 };
