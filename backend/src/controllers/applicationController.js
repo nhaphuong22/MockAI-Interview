@@ -208,6 +208,7 @@ export const applyJob = async (req, res) => {
             skills: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3) : ['Chưa cập nhật kỹ năng'],
             status: 'new',
             appliedDate: new Date().toISOString()
+          });
         }
 
         // Gửi email xác nhận ứng tuyển thành công cho Ứng viên
