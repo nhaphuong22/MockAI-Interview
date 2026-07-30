@@ -18,7 +18,11 @@ export const cacheMiddleware = (keyPrefix, ttl = 1800) => {
     const cacheKey = `${keyPrefix}:${userId}:${req.originalUrl || req.url}:${queryStr}`;
 
     try {
-      const cachedData = await getCache(cacheKey);
+      const cachedData = await Promise.race([
+        getCache(cacheKey),
+        new Promise(resolve => setTimeout(() => resolve(null), 1500))
+      ]);
+
       if (cachedData) {
         // console.log(`🎯 [Redis Cache Hit]: ${cacheKey}`);
         return res.status(200).json(cachedData);

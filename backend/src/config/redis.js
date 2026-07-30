@@ -65,12 +65,20 @@ if (process.env.NODE_ENV !== 'test') {
   }
 
   // Enable TLS and bypass self-signed certificate validation for secure connections
+  const socketOpts = {
+    connectTimeout: 2000,
+    reconnectStrategy: (retries) => {
+      if (retries > 2) return false; // Stop retrying after 2 attempts
+      return 500;
+    }
+  };
+
   if (clientOptions.url.startsWith('rediss://') || clientOptions.url.includes('upstash.io')) {
-    clientOptions.socket = {
-      tls: true,
-      rejectUnauthorized: false
-    };
+    socketOpts.tls = true;
+    socketOpts.rejectUnauthorized = false;
   }
+
+  clientOptions.socket = socketOpts;
 
   try {
     redisClient = createClient(clientOptions);
