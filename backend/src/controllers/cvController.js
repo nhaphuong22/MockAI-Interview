@@ -4,6 +4,10 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import cloudinary from '../core/cloudinary.js';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Helper: Upload file buffer lên Cloudinary dạng raw
@@ -131,9 +135,9 @@ export const exportPdf = async (req, res) => {
     
     doc.pipe(res);
 
-    // Hỗ trợ tiếng Việt bằng font Arial trên Windows (fallback về mặc định nếu không có)
-    const fontPath = 'C:/Windows/Fonts/arial.ttf';
-    const fontBoldPath = 'C:/Windows/Fonts/arialbd.ttf';
+    // Hỗ trợ tiếng Việt bằng font được nhúng sẵn (Roboto)
+    const fontPath = path.join(__dirname, '../assets/fonts/Roboto-Regular.ttf');
+    const fontBoldPath = path.join(__dirname, '../assets/fonts/Roboto-Bold.ttf');
     
     if (fs.existsSync(fontPath)) {
       doc.registerFont('Regular', fontPath);
@@ -144,6 +148,7 @@ export const exportPdf = async (req, res) => {
       }
       doc.font('Regular');
     } else {
+      console.warn("Không tìm thấy font Roboto, fallback về Helvetica (có thể lỗi font tiếng Việt)");
       doc.registerFont('Regular', 'Helvetica');
       doc.registerFont('Bold', 'Helvetica-Bold');
       doc.font('Regular');
