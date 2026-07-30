@@ -1,5 +1,6 @@
 import db from '../db/knex.js';
 import { sendRealtimeNotification } from '../socket.js';
+import { deleteCachePattern } from '../config/redis.js';
 
 export const submitReport = async (req, res) => {
   try {
@@ -304,6 +305,12 @@ export const deleteContent = async (req, res) => {
       }
     });
 
+    // Xóa Redis cache để trang cộng đồng không còn hiển thị bài đã bị ẩn
+    if (targetType === 'COMMUNITY_POST') {
+      await deleteCachePattern('blogs:published*');
+      await deleteCachePattern(`blogs:detail:*blogs/${targetId}*`);
+    }
+
     res.status(200).json({ message: 'Ẩn nội dung thành công và đã thông báo tới tất cả người liên quan.' });
   } catch (error) {
     if (error.message === 'NOT_FOUND') return res.status(404).json({ error: 'Không tìm thấy nội dung.' });
@@ -356,6 +363,12 @@ export const unhideContent = async (req, res) => {
         sendRealtimeNotification(targetOwnerId, { ...authorNotif });
       }
     });
+
+    // Xóa Redis cache để trang cộng đồng hiển thị lại bài vừa được gỡ ẩn
+    if (targetType === 'COMMUNITY_POST') {
+      await deleteCachePattern('blogs:published*');
+      await deleteCachePattern(`blogs:detail:*blogs/${targetId}*`);
+    }
 
     res.status(200).json({ message: 'Gỡ ẩn nội dung thành công.' });
   } catch (error) {
