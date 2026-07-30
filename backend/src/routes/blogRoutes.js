@@ -137,7 +137,7 @@ router.put('/:id/submit', authenticateToken, submitForReview);
  *       200:
  *         description: Trả về danh sách bài viết.
  */
-router.get('/published', optionalAuthenticateToken, cacheMiddleware('blogs:published', 1800), getPublishedBlogs);
+router.get('/published', optionalAuthenticateToken, cacheMiddleware('blogs:published', 60), getPublishedBlogs);
 router.get('/sidebar', cacheMiddleware('blogs:sidebar', 600), getBlogSidebar);
 
 /**
