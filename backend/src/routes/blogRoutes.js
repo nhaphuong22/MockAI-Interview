@@ -20,17 +20,12 @@ import { cacheMiddleware } from '../middlewares/cacheMiddleware.js';
 
 const router = express.Router();
 
-// Cấu hình Multer để lưu ảnh vào thư mục 'uploads/'
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'cover-' + uniqueSuffix + path.extname(file.originalname));
-  }
+// Cấu hình Multer để lưu ảnh trên RAM (Buffer) tương thích Serverless Vercel & Cloudinary
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
-const upload = multer({ storage: storage });
 
 /**
  * @swagger
