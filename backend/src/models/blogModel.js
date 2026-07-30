@@ -14,7 +14,7 @@ export const findPublishedBlogs = async (currentUserId = null) => {
       'users.avatar_url as author_avatar',
       db('blog_reactions').whereRaw('blog_reactions.blog_id = blogs.id').count().as('total_reactions'),
       db('blog_comments').whereRaw('blog_comments.blog_id = blogs.id').count().as('comments_count'),
-      db.raw(`(SELECT json_object_agg(reaction_type, count) FROM (SELECT reaction_type, count(*) FROM blog_reactions WHERE blog_id = blogs.id GROUP BY reaction_type) t) as reaction_counts`)
+      db.raw(`COALESCE((SELECT json_object_agg(reaction_type, count) FROM (SELECT reaction_type, count(*) FROM blog_reactions WHERE blog_id = blogs.id GROUP BY reaction_type) t), '{}'::json) as reaction_counts`)
     );
 
   if (currentUserId) {
@@ -55,7 +55,7 @@ export const findBlogWithAuthor = async (id, currentUserId = null) => {
       'users.avatar_url as author_avatar',
       db('blog_reactions').whereRaw('blog_reactions.blog_id = blogs.id').count().as('total_reactions'),
       db('blog_comments').whereRaw('blog_comments.blog_id = blogs.id').count().as('comments_count'),
-      db.raw(`(SELECT json_object_agg(reaction_type, count) FROM (SELECT reaction_type, count(*) FROM blog_reactions WHERE blog_id = blogs.id GROUP BY reaction_type) t) as reaction_counts`)
+      db.raw(`COALESCE((SELECT json_object_agg(reaction_type, count) FROM (SELECT reaction_type, count(*) FROM blog_reactions WHERE blog_id = blogs.id GROUP BY reaction_type) t), '{}'::json) as reaction_counts`)
     );
 
   if (currentUserId) {

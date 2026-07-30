@@ -197,7 +197,9 @@ export function Community() {
       try {
         const res = await blogApi.getPublishedBlogs();
         if (Array.isArray(res)) return res;
-        return res.data || [];
+        if (Array.isArray(res?.data)) return res.data;
+        if (Array.isArray(res?.data?.data)) return res.data.data;
+        return [];
       } catch (err) {
         console.error("API Error:", err);
         return [];
@@ -207,12 +209,12 @@ export function Community() {
 
   // Dọn dẹp localPosts khi dữ liệu server được đồng bộ về thành công
   useEffect(() => {
-    if (blogResponse) {
+    if (blogResponse && Array.isArray(blogResponse)) {
       setLocalPosts([]);
     }
   }, [blogResponse]);
 
-  const apiPosts = blogResponse || [];
+  const apiPosts = Array.isArray(blogResponse) ? blogResponse : [];
 
   const formattedPosts = apiPosts.map(post => {
     const stripHtml = (html) => {
