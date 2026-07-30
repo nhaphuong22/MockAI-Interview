@@ -427,7 +427,7 @@ export const updateApplicationStatus = async (req, res) => {
     // Gửi email thông báo trạng thái cập nhật cho ứng viên
     if (app.candidate_email) {
       console.log(`[Application] Gửi mail thông báo trạng thái ${dbStatus} tới Candidate: ${app.candidate_email}`);
-      sendApplicationStatusUpdateEmail(
+      await sendApplicationStatusUpdateEmail(
         app.candidate_email,
         app.candidate_name || 'Ứng viên',
         app.job_title,
