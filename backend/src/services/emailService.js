@@ -48,21 +48,74 @@ const createTransporter = () => {
   return null;
 };
 
-/**
- * Send email or log to console if SMTP is not configured.
- * @param {object} mailOptions - nodemailer mail options
- */
 const sendMail = async (mailOptions) => {
+  // 1. Ưu tiên Resend API (HTTPS Port 443 - Không bao giờ bị chặn trên Render/Cloud)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM || 'MockAI Interview <onboarding@resend.dev>',
+          to: [mailOptions.to],
+          subject: mailOptions.subject,
+          html: mailOptions.html || mailOptions.text
+        })
+      });
+
+      if (response.ok) {
+        console.log(`[EmailService] Gửi email qua Resend API thành công tới ${mailOptions.to}!`);
+        return;
+      }
+      const errText = await response.text();
+      console.warn(`[EmailService] Resend API failed (${response.status}):`, errText);
+    } catch (resendErr) {
+      console.warn('[EmailService] Resend API error:', resendErr.message);
+    }
+  }
+
+  // 2. Ưu tiên Brevo API (HTTPS Port 443)
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'MockAI Interview', email: process.env.SMTP_USER || 'noreply@mockai.com' },
+          to: [{ email: mailOptions.to }],
+          subject: mailOptions.subject,
+          htmlContent: mailOptions.html || mailOptions.text
+        })
+      });
+
+      if (response.ok) {
+        console.log(`[EmailService] Gửi email qua Brevo API thành công tới ${mailOptions.to}!`);
+        return;
+      }
+      const errText = await response.text();
+      console.warn(`[EmailService] Brevo API failed (${response.status}):`, errText);
+    } catch (brevoErr) {
+      console.warn('[EmailService] Brevo API error:', brevoErr.message);
+    }
+  }
+
+  // 3. Fallback dùng Nodemailer SMTP truyền thống
   const transporter = createTransporter();
 
   if (transporter) {
     try {
       await transporter.sendMail(mailOptions);
+      console.log(`[EmailService] Gửi email qua SMTP thành công tới ${mailOptions.to}!`);
     } catch (err) {
       console.error('\n========== [EmailService] ERROR — Gửi email thất bại ==========');
       console.error('Chi tiết lỗi:', err.message);
-      console.error('Lưu ý: Vui lòng kiểm tra lại cấu hình Gmail và Mật khẩu ứng dụng (App Password) trong .env');
-      console.error('hoặc kết nối mạng/cổng SMTP (Port 465/587) đang bị chặn.');
+      console.error('Lưu ý: Render chặn các cổng SMTP truyền thống (465/587). Vui lòng thêm RESEND_API_KEY hoặc BREVO_API_KEY để gửi qua HTTPS.');
       console.error('Hệ thống tự động in thông tin email ra terminal để phát triển (DEV):');
       console.error(`  Gửi đến: ${mailOptions.to}`);
       console.error(`  Tiêu đề: ${mailOptions.subject}`);
@@ -72,7 +125,7 @@ const sendMail = async (mailOptions) => {
   } else {
     // No SMTP configured — log details to terminal for development testing
     console.log('\n========== [EmailService] DEV MODE — Chưa cấu hình SMTP ==========');
-    console.log('SMTP chưa được cấu hình hoặc thiếu biến môi trường trong .env.');
+    console.log('SMTP/API chưa được cấu hình hoặc thiếu biến môi trường trong .env.');
     console.log('Hệ thống tự động in thông tin email ra terminal để phát triển (DEV):');
     console.log(`  Gửi đến: ${mailOptions.to}`);
     console.log(`  Tiêu đề: ${mailOptions.subject}`);
