@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { requireAuth } from '../middlewares/authMiddleware.js';
 import {
   getStreakStatus,
@@ -12,16 +13,25 @@ import {
 
 const router = express.Router();
 
-// Ensure uploads/ directory exists
-const uploadDir = 'uploads/';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Helper to safely get upload directory
+const getUploadDir = () => {
+  const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const baseDir = isServerless ? os.tmpdir() : process.cwd();
+  const targetDir = path.join(baseDir, 'uploads');
+  try {
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn(`[DailyChallengeRoutes] Cannot create dir ${targetDir}:`, err.message);
+  }
+  return targetDir;
+};
 
 // Multer configuration for temporary audio file storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadDir);
+    cb(null, getUploadDir());
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

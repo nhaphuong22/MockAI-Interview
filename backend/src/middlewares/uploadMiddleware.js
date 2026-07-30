@@ -1,28 +1,37 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
-// Ensure upload directory exists
-const uploadDir = path.join(process.cwd(), 'uploads', 'audio');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Helper to safely get upload directory across local and Serverless environments
+const getUploadDir = (subFolder = '') => {
+  const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const baseDir = isServerless ? os.tmpdir() : process.cwd();
+  const targetDir = path.join(baseDir, 'uploads', subFolder);
+  try {
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn(`[UploadMiddleware] Directory creation warning for ${targetDir}:`, err.message);
+  }
+  return targetDir;
+};
 
-// Storage configuration
-const storage = multer.diskStorage({
+// 1. Audio Upload Directory
+const audioDir = getUploadDir('audio');
+const audioStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    cb(null, getUploadDir('audio'));
   },
   filename: (req, file, cb) => {
-    // Generate unique name: timestamp-random-originalName
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname) || '.webm';
     cb(null, `audio-${uniqueSuffix}${ext}`);
   }
 });
 
-// File filter to allow only audio files
-const fileFilter = (req, file, cb) => {
+const audioFileFilter = (req, file, cb) => {
   const allowedMimeTypes = [
     'audio/webm',
     'audio/wav',
@@ -31,7 +40,7 @@ const fileFilter = (req, file, cb) => {
     'audio/ogg',
     'audio/x-wav',
     'audio/webm;codecs=opus',
-    'application/octet-stream' // fallback for some browser blob uploads
+    'application/octet-stream'
   ];
 
   if (allowedMimeTypes.includes(file.mimetype) || file.fieldname === 'audio') {
@@ -41,24 +50,18 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Configure Multer limits (10MB max size)
 export const uploadAudio = multer({
-  storage: storage,
-  fileFilter: fileFilter,
+  storage: audioStorage,
+  fileFilter: audioFileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB
   }
 });
 
-// Avatar upload directory
-const avatarDir = path.join(process.cwd(), 'uploads', 'avatars');
-if (!fs.existsSync(avatarDir)) {
-  fs.mkdirSync(avatarDir, { recursive: true });
-}
-
+// 2. Avatar Upload Directory
 const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, avatarDir);
+    cb(null, getUploadDir('avatars'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -83,15 +86,10 @@ export const uploadAvatar = multer({
   }
 });
 
-// Verification Documents directory (allows images + PDF)
-const docDir = path.join(process.cwd(), 'uploads', 'docs');
-if (!fs.existsSync(docDir)) {
-  fs.mkdirSync(docDir, { recursive: true });
-}
-
+// 3. Verification Documents Directory (JPG, PNG, WEBP, PDF)
 const docStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, docDir);
+    cb(null, getUploadDir('docs'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -123,4 +121,3 @@ export const uploadDoc = multer({
     fileSize: 10 * 1024 * 1024 // 10MB
   }
 });
-
