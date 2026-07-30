@@ -6,6 +6,8 @@ import * as Accordion from "@radix-ui/react-accordion";
 import { useQuery } from "@tanstack/react-query";
 import paymentApi from "../../api/paymentApi";
 import { useUiStore } from "../../store/useUiStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import { getProfileApi } from "../../api/auth";
 
 // Credit cost constants (phải đồng bộ với backend CREDIT_COSTS)
 const CREDIT_COSTS = {
@@ -119,6 +121,20 @@ export function Packages() {
   const navigate = useNavigate();
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPayment, setLoadingPayment] = useState(false);
+  const { user, isAuthenticated } = useAuthStore();
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const response = await getProfileApi();
+      return response?.data;
+    },
+    enabled: !!isAuthenticated,
+  });
+
+  const currentUser = userProfile || user;
+  const currentPkgName = currentUser?.package_name;
+  const isFreePlanActive = !currentPkgName || currentPkgName === "MIỄN PHÍ" || currentPkgName === "Free";
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["packages"],
@@ -183,23 +199,29 @@ export function Packages() {
   } else {
     // Candidate: Subscription
     if (freePlan) {
+      const isCurrent = isFreePlanActive;
       displayPlans.push({
         ...freePlan,
         mappedFeatures: mapCandidateFeatures(freePlan),
-        cta: "Gói Hiện Tại",
-        ctaStyle: "border-2 border-gray-100 dark:border-white/10 text-gray-400 cursor-not-allowed font-bold"
+        cta: isCurrent ? "Gói Hiện Tại" : "Miễn Phí Mặc Định",
+        ctaStyle: isCurrent
+          ? "border-2 border-gray-100 dark:border-white/10 text-gray-400 cursor-not-allowed font-bold"
+          : "border border-gray-200 text-gray-400 cursor-not-allowed font-medium"
       });
     }
     const activePaidPlans = isYearly ? yearlyPlans : monthlyPlans;
     activePaidPlans.forEach((plan, index) => {
+      const isCurrent = currentPkgName && (currentPkgName === plan.name || currentUser?.package_id === plan.id);
       displayPlans.push({
         ...plan,
         mappedFeatures: mapCandidateFeatures(plan),
-        cta: index === 0 ? "Nâng Cấp Ngay" : "Nâng Cấp",
-        ctaStyle: index === 0
-          ? "bg-[#0ea5e9] text-white font-bold hover:bg-[#0284c7] shadow-md shadow-cyan-200 dark:shadow-none transform hover:-translate-y-0.5"
-          : "text-[#0ea5e9] border border-[#0ea5e9] hover:bg-cyan-50 dark:hover:bg-slate-700 font-semibold",
-        popular: index === 0
+        cta: isCurrent ? "Gói Hiện Tại" : (index === 0 ? "Nâng Cấp Ngay" : "Nâng Cấp"),
+        ctaStyle: isCurrent
+          ? "border-2 border-emerald-500 text-emerald-600 bg-emerald-50 font-bold cursor-default"
+          : (index === 0
+            ? "bg-[#0ea5e9] text-white font-bold hover:bg-[#0284c7] shadow-md shadow-cyan-200 dark:shadow-none transform hover:-translate-y-0.5"
+            : "text-[#0ea5e9] border border-[#0ea5e9] hover:bg-cyan-50 dark:hover:bg-slate-700 font-semibold"),
+        popular: index === 0 && !isCurrent
       });
     });
   }
