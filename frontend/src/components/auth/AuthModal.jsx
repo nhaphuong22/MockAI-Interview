@@ -159,6 +159,8 @@ export function AuthModal({
         localStorage.setItem("token", token);
         if (user.avatar_url && user.avatar_url.includes("googleusercontent.com")) {
           localStorage.setItem("googleAvatar", user.avatar_url);
+        } else {
+          localStorage.removeItem("googleAvatar");
         }
         queryClient.clear(); // Clear cached queries so data matching new role is fetched
         useAuthStore.getState().setAuth(user);

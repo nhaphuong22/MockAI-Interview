@@ -19,10 +19,16 @@ export const useAuthStore = create((set) => ({
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("isAuthenticated", "true");
+      if (user.avatar_url && user.avatar_url.includes("googleusercontent.com")) {
+        localStorage.setItem("googleAvatar", user.avatar_url);
+      } else if (!user.avatar_url && !user.avatarUrl) {
+        localStorage.removeItem("googleAvatar");
+      }
     } else {
       localStorage.removeItem("user");
       localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("token");
+      localStorage.removeItem("googleAvatar");
       useVerificationStore.getState().clearVerificationData();
     }
     set({ user, isAuthenticated: !!user });
@@ -31,6 +37,7 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem("user");
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("token");
+    localStorage.removeItem("googleAvatar");
     useVerificationStore.getState().clearVerificationData();
     set({ user: null, isAuthenticated: false });
   },
