@@ -1,25 +1,28 @@
 import crypto from 'crypto';
 import db from '../db/knex.js';
 
-// Hàm sắp xếp tham số chuẩn của VNPAY (chuyển %20 thành +)
-function sortObject(obj) {
-  let sorted = {};
-  let str = [];
-  let key;
-  for (key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      str.push(encodeURIComponent(key));
+// Helper to build VNPAY signData (raw) and queryString (encoded) according to VNPAY standard
+function buildVnpaySignDataAndQuery(obj) {
+  let sortedKeys = Object.keys(obj).sort();
+  let signDataParts = [];
+  let queryParts = [];
+
+  for (let key of sortedKeys) {
+    let val = obj[key];
+    if (val !== null && val !== undefined && val !== '') {
+      signDataParts.push(`${key}=${val}`);
+      queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(val).replace(/%20/g, "+")}`);
     }
   }
-  str.sort();
-  for (key = 0; key < str.length; key++) {
-    sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
-  }
-  return sorted;
+
+  return {
+    signData: signDataParts.join('&'),
+    queryString: queryParts.join('&')
+  };
 }
 
 // Helper to format date as YYYYMMDDHHmmss in GMT+7 (Asia/Ho_Chi_Minh timezone)
-function getVnpayDateFormat(date) {
+function getVnpayDateFormat(date = new Date()) {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Ho_Chi_Minh',
     year: 'numeric',
@@ -285,20 +288,15 @@ export const paymentService = {
       vnp_CreateDate: createDate
     };
 
-    // Sắp xếp và encode tham số chuẩn VNPAY
-    const sortedParams = sortObject(vnpParams);
-    
-    // Tạo chuỗi query (không encode thêm vì sortedParams đã được encode và format +)
-    const signData = Object.keys(sortedParams)
-      .map((key) => `${key}=${sortedParams[key]}`)
-      .join('&');
+    // Sắp xếp và tạo chuỗi signData & queryString chuẩn VNPAY
+    const { signData, queryString } = buildVnpaySignDataAndQuery(vnpParams);
 
-    // Tạo chữ ký bảo mật HMAC SHA512
+    // Tạo chữ ký bảo mật HMAC SHA512 trên chuỗi raw signData
     const hmac = crypto.createHmac('sha512', secureSecret);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
     
     // Tạo URL hoàn chỉnh
-    const finalPaymentUrl = `${paymentUrl}?${signData}&vnp_SecureHash=${signed}`;
+    const finalPaymentUrl = `${paymentUrl}?${queryString}&vnp_SecureHash=${signed}`;
     return { paymentUrl: finalPaymentUrl };
   },
 
@@ -315,12 +313,8 @@ export const paymentService = {
       delete vnpParams['vnp_SecureHash'];
       delete vnpParams['vnp_SecureHashType'];
 
-      // Sắp xếp và encode chuẩn VNPAY
-      const sortedParams = sortObject(vnpParams);
-      
-      const signData = Object.keys(sortedParams)
-        .map((key) => `${key}=${sortedParams[key]}`)
-        .join('&');
+      // Sắp xếp và tạo raw signData chuẩn VNPAY
+      const { signData } = buildVnpaySignDataAndQuery(vnpParams);
 
       const secureSecret = (process.env.VNPAY_SECURE_SECRET || '').trim();
       const hmac = crypto.createHmac('sha512', secureSecret);
