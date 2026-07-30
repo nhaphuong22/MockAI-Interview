@@ -136,19 +136,33 @@ export const exportPdf = async (req, res) => {
     doc.pipe(res);
 
     // Hỗ trợ tiếng Việt bằng font được nhúng sẵn (Roboto)
-    const fontPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Roboto-Regular.ttf');
-    const fontBoldPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Roboto-Bold.ttf');
-    
-    if (fs.existsSync(fontPath)) {
-      doc.registerFont('Regular', fontPath);
-      if (fs.existsSync(fontBoldPath)) {
-        doc.registerFont('Bold', fontBoldPath);
-      } else {
-        doc.registerFont('Bold', fontPath);
-      }
+    const primaryFontPath = path.resolve(__dirname, '../assets/fonts/Roboto-Regular.ttf');
+    const primaryFontBoldPath = path.resolve(__dirname, '../assets/fonts/Roboto-Bold.ttf');
+    const fallbackCwdFontPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Roboto-Regular.ttf');
+    const fallbackCwdFontBoldPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Roboto-Bold.ttf');
+    const winArialPath = 'C:/Windows/Fonts/arial.ttf';
+    const winArialBoldPath = 'C:/Windows/Fonts/arialbd.ttf';
+
+    let resolvedFontPath = null;
+    let resolvedFontBoldPath = null;
+
+    if (fs.existsSync(primaryFontPath)) {
+      resolvedFontPath = primaryFontPath;
+      resolvedFontBoldPath = fs.existsSync(primaryFontBoldPath) ? primaryFontBoldPath : primaryFontPath;
+    } else if (fs.existsSync(fallbackCwdFontPath)) {
+      resolvedFontPath = fallbackCwdFontPath;
+      resolvedFontBoldPath = fs.existsSync(fallbackCwdFontBoldPath) ? fallbackCwdFontBoldPath : fallbackCwdFontPath;
+    } else if (fs.existsSync(winArialPath)) {
+      resolvedFontPath = winArialPath;
+      resolvedFontBoldPath = fs.existsSync(winArialBoldPath) ? winArialBoldPath : winArialPath;
+    }
+
+    if (resolvedFontPath) {
+      doc.registerFont('Regular', resolvedFontPath);
+      doc.registerFont('Bold', resolvedFontBoldPath);
       doc.font('Regular');
     } else {
-      console.warn("Không tìm thấy font Roboto, fallback về Helvetica (có thể lỗi font tiếng Việt)");
+      console.warn("Không tìm thấy font Tiếng Việt, fallback về Helvetica (có thể lỗi font tiếng Việt)");
       doc.registerFont('Regular', 'Helvetica');
       doc.registerFont('Bold', 'Helvetica-Bold');
       doc.font('Regular');
