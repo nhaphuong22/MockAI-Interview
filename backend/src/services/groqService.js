@@ -7,6 +7,19 @@
 import { safeParseJSON } from '../helper/jsonHelper.js';
 
 /**
+ * Helper function to validate and fallback Groq model names
+ * Prevents 404 errors if an invalid model like 'qwen/qwen3-32b' is set in environment
+ */
+export const resolveGroqModel = (requestedModel) => {
+  const model = requestedModel || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  if (model.includes('qwen3') || model.includes('qwen/') || model.includes('qwen-3')) {
+    console.warn(`[Groq Model] Unsupported model "${model}" detected in env. Auto-falling back to "llama-3.3-70b-versatile".`);
+    return 'llama-3.3-70b-versatile';
+  }
+  return model;
+};
+
+/**
  * Helper function to perform fetch with retries and exponential backoff
  * especially targeting HTTP 429 Rate Limit errors.
  */
@@ -722,7 +735,7 @@ export const generateQuestionsFromGroq = async ({
   isHRMode = false
 }) => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const modelName = resolveGroqModel();
 
   // 1. Fallback Validation: Throw real configuration error if key is missing to avoid hidden mock data
   if (!apiKey || apiKey === 'gsk_your_groq_api_key_here' || apiKey.trim().length === 0) {
@@ -996,7 +1009,7 @@ Câu trả lời thực tế của ứng viên:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        model: resolveGroqModel(),
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },

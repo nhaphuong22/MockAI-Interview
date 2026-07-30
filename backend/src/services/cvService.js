@@ -2,6 +2,7 @@ import { createRequire } from 'module';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import { safeParseJSON } from '../helper/jsonHelper.js';
+import { resolveGroqModel } from './groqService.js';
 const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
 
@@ -39,7 +40,7 @@ export const parseCVBuffer = async (fileBuffer) => {
  */
 export const evaluateCV = async (cvText, jobTitle, jobDescription) => {
   const apiKey = process.env.GROQ_API_KEY;
-  const modelName = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const modelName = resolveGroqModel();
 
   // Dữ liệu giả lập dự phòng khi có lỗi API hoặc cấu hình thiếu
   const fallbackData = {
