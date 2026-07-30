@@ -1,7 +1,7 @@
 import db from '../db/knex.js';
 import { evaluateCV, generatePDFReportBuffer } from '../services/cvService.js';
 import { runHrScreeningPipeline } from '../services/hrScreeningService.js';
-import { sendJobApplicationEmail, sendApplicationReportEmail, sendApplicationStatusUpdateEmail } from '../services/emailService.js';
+import { sendJobApplicationEmail, sendApplicationReportEmail, sendApplicationStatusUpdateEmail, sendCandidateApplicationConfirmationEmail } from '../services/emailService.js';
 import { sendRealtimeNotification, broadcastNewApplication } from '../socket.js';
 import { sendResponse, sendError } from '../ultils/responseHelper.js';
 import cloudinary from '../core/cloudinary.js';
@@ -208,7 +208,32 @@ export const applyJob = async (req, res) => {
             skills: evaluation.matched_skills && evaluation.matched_skills.length > 0 ? evaluation.matched_skills.slice(0, 3) : ['Chưa cập nhật kỹ năng'],
             status: 'new',
             appliedDate: new Date().toISOString()
-          });
+        }
+
+        // Gửi email xác nhận ứng tuyển thành công cho Ứng viên
+        const targetCandidateEmail = candidate_email || req.user?.email;
+        if (targetCandidateEmail) {
+          sendCandidateApplicationConfirmationEmail(
+            targetCandidateEmail,
+            formattedName,
+            job.title,
+            job.company_name
+          ).catch(err => console.error('[Application Background] Lỗi gửi email xác nhận cho Ứng viên:', err));
+        }
+
+        // Gửi email thông báo cho HR nếu tìm thấy email HR
+        if (job.hr_id) {
+          const hrUser = await db('users').where({ id: job.hr_id }).first();
+          if (hrUser && hrUser.email) {
+            sendJobApplicationEmail(
+              hrUser.email,
+              hrUser.full_name || 'Nhà tuyển dụng',
+              formattedName,
+              job.title,
+              evaluation.semantic_score || 0,
+              cover_letter
+            ).catch(err => console.error('[Application Background] Lỗi gửi email thông báo cho HR:', err));
+          }
         }
 
         console.log(`[Application Background] Hoàn tất chấm điểm AI & tạo PDF báo cáo cho App #${application.id}`);

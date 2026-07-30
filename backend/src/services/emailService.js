@@ -601,3 +601,61 @@ export const sendCompanyInvitationEmail = async (toEmail, companyName, token, is
     `
   });
 };
+
+/**
+ * Gửi email xác nhận ứng tuyển thành công cho Ứng viên (Candidate)
+ * @param {string} toEmail - Email của Ứng viên
+ * @param {string} candidateName - Tên Ứng viên
+ * @param {string} jobTitle - Tiêu đề công việc
+ * @param {string} companyName - Tên công ty
+ */
+export const sendCandidateApplicationConfirmationEmail = async (toEmail, candidateName, jobTitle, companyName) => {
+  const trackingUrl = `${FRONTEND_URL}/applications`;
+
+  await sendMail({
+    from: `"${APP_NAME}" <${process.env.SMTP_USER || 'noreply@mockai.io'}>`,
+    to: toEmail,
+    subject: `[${APP_NAME}] Ứng tuyển thành công: ${jobTitle} tại ${companyName || 'Công ty'}`,
+    text: `Chào ${candidateName},\n\nBạn đã nộp CV ứng tuyển thành công cho vị trí "${jobTitle}" tại ${companyName || 'Công ty'}.\nHồ sơ của bạn đã được chuyển tới bộ phận tuyển dụng và hệ thống AI đang tiến hành phân tích.\n\nBạn có thể theo dõi tiến độ đơn ứng tuyển tại: ${trackingUrl}\n\nChúc bạn sớm nhận được kết quả tốt!\nTrân trọng,\nĐội ngũ ${APP_NAME}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="background: #0ea5e9; display: inline-block; padding: 12px 20px; border-radius: 12px; margin-bottom: 16px;">
+            <span style="color: white; font-size: 20px; font-weight: 800;">${APP_NAME}</span>
+          </div>
+          <h1 style="color: #0f172a; font-size: 22px; margin: 0;">Ứng tuyển thành công! 🎉</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(14,165,233,0.07);">
+          <p style="color: #334155; margin-top: 0; font-size: 16px;">Xin chào <strong>${candidateName}</strong>,</p>
+          <p style="color: #64748b;">Chúc mừng bạn đã hoàn tất nộp hồ sơ ứng tuyển thành công. Thông tin đơn ứng tuyển của bạn:</p>
+          
+          <div style="margin: 20px 0; padding: 20px; background: #f0f9ff; border-radius: 12px; border-left: 4px solid #0ea5e9;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="color: #64748b; padding-bottom: 8px; width: 130px; font-weight: 600;">Vị trí:</td>
+                <td style="color: #0f172a; padding-bottom: 8px; font-weight: 700;">${jobTitle}</td>
+              </tr>
+              <tr>
+                <td style="color: #64748b; padding-bottom: 8px; font-weight: 600;">Công ty:</td>
+                <td style="color: #0f172a; padding-bottom: 8px; font-weight: 700;">${companyName || 'Công ty tuyển dụng'}</td>
+              </tr>
+              <tr>
+                <td style="color: #64748b; padding-bottom: 8px; font-weight: 600;">Thời gian nộp:</td>
+                <td style="color: #0f172a; padding-bottom: 8px; font-weight: 600;">${new Date().toLocaleString('vi-VN')}</td>
+              </tr>
+            </table>
+          </div>
+
+          <p style="color: #64748b;">Hệ thống AI đang chấm điểm ATS CV và gửi báo cáo tới Nhà tuyển dụng. Bạn có thể theo dõi tiến độ và trạng thái phản hồi tại trang Quản lý ứng tuyển:</p>
+
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${trackingUrl}" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block;">
+              📂 Xem Trạng Thái Ứng Tuyển
+            </a>
+          </div>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">Email này được gửi tự động từ hệ thống ${APP_NAME}. Chúc bạn một ngày tốt lành!</p>
+      </div>
+    `,
+  });
+};
