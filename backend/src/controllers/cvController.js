@@ -136,8 +136,8 @@ export const exportPdf = async (req, res) => {
     doc.pipe(res);
 
     // Hỗ trợ tiếng Việt bằng font được nhúng sẵn (Roboto)
-    const fontPath = path.join(__dirname, '../assets/fonts/Roboto-Regular.ttf');
-    const fontBoldPath = path.join(__dirname, '../assets/fonts/Roboto-Bold.ttf');
+    const fontPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Roboto-Regular.ttf');
+    const fontBoldPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Roboto-Bold.ttf');
     
     if (fs.existsSync(fontPath)) {
       doc.registerFont('Regular', fontPath);
