@@ -11,14 +11,34 @@ const createTransporter = () => {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
 
   if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+    const cleanPass = SMTP_PASS.replace(/\s+/g, '');
+    const port = parseInt(SMTP_PORT || '465', 10);
+    const isGmail = SMTP_HOST.includes('gmail.com');
+
+    if (isGmail) {
+      return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: SMTP_USER,
+          pass: cleanPass,
+        },
+        tls: {
+          rejectUnauthorized: false
+        }
+      });
+    }
+
     return nodemailer.createTransport({
       host: SMTP_HOST,
-      port: parseInt(SMTP_PORT || '587', 10),
-      secure: parseInt(SMTP_PORT || '587', 10) === 465,
+      port: port,
+      secure: port === 465,
       auth: {
         user: SMTP_USER,
-        pass: SMTP_PASS,
+        pass: cleanPass,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
   }
 

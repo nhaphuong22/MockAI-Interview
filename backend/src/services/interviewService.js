@@ -218,7 +218,7 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
 
       await db('interview_questions').insert({
         interview_id: interviewId,
-        question_text: `[Xoáy sâu] ${evaluation.follow_up_question.question_text}`,
+        question_text: evaluation.follow_up_question.question_text,
         expected_answer: evaluation.follow_up_question.expected_answer || 'Ứng viên giải thích chi tiết hơn câu trả lời.',
         score_weight: 1,
         order_index: newOrderIndex,
@@ -248,7 +248,7 @@ export const submitCandidateAnswer = async (questionId, answerText, audioUrl = n
 
         await db('interview_questions').insert({
           interview_id: interviewId,
-          question_text: `[Đào sâu] ${shallowCheck.followUpQuestion}`,
+          question_text: shallowCheck.followUpQuestion,
           expected_answer: 'Ứng viên phải đưa ra được các chi tiết cụ thể, số liệu thực tế hoặc ví dụ rõ ràng để chứng minh.',
           score_weight: 1,
           order_index: newOrderIndex,
