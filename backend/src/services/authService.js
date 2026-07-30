@@ -552,8 +552,25 @@ export const getUserProfile = async (userId) => {
     const sub = await db('user_subscriptions')
         .leftJoin('packages', 'user_subscriptions.package_id', 'packages.id')
         .where({ 'user_subscriptions.user_id': userId })
+        .where('user_subscriptions.end_date', '>', new Date())
+        .orderBy('user_subscriptions.end_date', 'desc')
         .select('user_subscriptions.*', 'packages.name as package_name')
         .first() || {};
+
+    // Fallback: nếu không tìm thấy gói nào đang active trong tương lai, thử tìm gói mới nhất
+    if (!sub.package_name) {
+      const fallbackSub = await db('user_subscriptions')
+        .leftJoin('packages', 'user_subscriptions.package_id', 'packages.id')
+        .where({ 'user_subscriptions.user_id': userId })
+        .orderBy('user_subscriptions.created_at', 'desc')
+        .select('user_subscriptions.*', 'packages.name as package_name')
+        .first();
+
+      if (fallbackSub && fallbackSub.end_date && new Date(fallbackSub.end_date) > new Date()) {
+        Object.assign(sub, fallbackSub);
+      }
+    }
+
     if (candidateProfile.user_id) delete candidateProfile.user_id;
     if (sub.id) delete sub.id;
     if (sub.user_id) delete sub.user_id;
