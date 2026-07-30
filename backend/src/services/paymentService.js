@@ -263,11 +263,11 @@ export const paymentService = {
       notes: 'Nang cap goi cuoc MockAI Pro',
     });
 
-    // 3. Khởi tạo các tham số VNPAY
-    const tmnCode = (process.env.VNPAY_TMN_CODE || '').trim();
-    const secureSecret = (process.env.VNPAY_SECURE_SECRET || '').trim();
-    const paymentUrl = (process.env.VNPAY_PAYMENT_URL || '').trim();
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    // 3. Khởi tạo các tham số VNPAY (với fallback Sandbox cho môi trường Vercel)
+    const tmnCode = (process.env.VNPAY_TMN_CODE || '0Z7LP6WV').trim();
+    const secureSecret = (process.env.VNPAY_SECURE_SECRET || '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC').trim();
+    const paymentUrl = (process.env.VNPAY_PAYMENT_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html').trim();
+    const clientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://mock-ai-interview-frontend.vercel.app').trim();
     const returnUrl = `${clientUrl}/payment-success`;
 
     const date = new Date();
@@ -316,7 +316,7 @@ export const paymentService = {
       // Sắp xếp và tạo raw signData chuẩn VNPAY
       const { signData } = buildVnpaySignDataAndQuery(vnpParams);
 
-      const secureSecret = (process.env.VNPAY_SECURE_SECRET || '').trim();
+      const secureSecret = (process.env.VNPAY_SECURE_SECRET || '72DNXXCTPZJSRRV8XQ5GN1LTPVYTW5QC').trim();
       const hmac = crypto.createHmac('sha512', secureSecret);
       const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
