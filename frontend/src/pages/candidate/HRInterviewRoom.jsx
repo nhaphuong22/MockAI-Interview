@@ -10,7 +10,7 @@ import { Avatar3D } from "../../components/ai/Avatar3D";
 import { AudioVisualizer } from "../../components/ai/AudioVisualizer";
 import { AiWaveform } from "../../components/ai/AiWaveform";
 import { useAuthStore } from "../../store/useAuthStore";
-import { Clock, Send, EyeOff, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX, Maximize } from 'lucide-react';
+import { Clock, Send, EyeOff, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX, Maximize, LogOut, CheckCircle } from 'lucide-react';
 
 const TIME_PER_QUESTION = 300; // 5 phút
 
@@ -28,7 +28,21 @@ const HRInterviewRoom = () => {
   const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
-  
+  const [showFinishConfirmModal, setShowFinishConfirmModal] = useState(false);
+
+  const handleEarlyFinish = async () => {
+    setShowFinishConfirmModal(false);
+    setIsFinishing(true);
+    stopAudioEngine();
+    const totalViolations = tabViolationsRef.current + accumulatedGazeViolations;
+    try {
+      await finishHRInterviewApi(interviewId, totalViolations);
+    } catch (e) {
+      console.error("Lỗi khi kết thúc phỏng vấn sớm:", e);
+    }
+    navigate(`/hr-interview/result/${interviewId}`);
+  };
+
   // Anti-cheat state
   const [isTabViolation, setIsTabViolation] = useState(false);
   const tabViolationsRef = useRef(0);
@@ -174,7 +188,7 @@ const HRInterviewRoom = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('unload', handleUnload);
-      
+
       // Handle SPA unmount
       if (!isFinishingRef.current && !isSubmittingRef.current) {
         handleUnload();
@@ -232,7 +246,7 @@ const HRInterviewRoom = () => {
       configureVoiceStyle(utterance, aiVoice.includes("-male"));
       const matchingVoice = selectVoice(aiVoice);
       if (matchingVoice) utterance.voice = matchingVoice;
-      
+
       let fallbackInterval;
       utterance.onstart = () => {
         setIsAiSpeaking(true);
@@ -255,7 +269,7 @@ const HRInterviewRoom = () => {
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     setAiVolume(0);
- 
+
     if (!isAiVoiceEnabled && !force) {
       setIsAiSpeaking(false);
       return;
@@ -269,7 +283,7 @@ const HRInterviewRoom = () => {
       const response = await axiosClient.post("/voice-sessions/tts", { text, lang: aiVoice }, { responseType: 'blob' });
       const blob = new Blob([response], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(blob);
-      
+
       const audio = new Audio(audioUrl);
       window.activeTtsAudio = audio;
 
@@ -287,7 +301,7 @@ const HRInterviewRoom = () => {
 
       const checkVolume = (time = 0) => {
         if (audio.paused || audio.ended) { setAiVolume(0); return; }
-        
+
         if (time - lastAiVolumeTime > 100 || time === 0) {
           analyser.getByteFrequencyData(dataArray);
           let sum = 0;
@@ -320,10 +334,10 @@ const HRInterviewRoom = () => {
 
       chunksRef.current = [];
       setFinalAnswer("");
- 
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
- 
+
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const audioContext = new AudioContext();
       const analyser = audioContext.createAnalyser();
@@ -332,14 +346,14 @@ const HRInterviewRoom = () => {
       analyser.fftSize = 256;
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
- 
+
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
       let lastAudioTime = 0;
- 
+
       const drawVolume = (time = 0) => {
         if (!analyserRef.current) return;
-        
+
         if (time - lastAudioTime > 50 || time === 0) {
           analyserRef.current.getByteFrequencyData(dataArray);
           let sum = 0;
@@ -351,13 +365,13 @@ const HRInterviewRoom = () => {
         animationFrameRef.current = requestAnimationFrame(drawVolume);
       };
       drawVolume();
- 
+
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
- 
+
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
         setIsTranscribing(true);
@@ -376,7 +390,7 @@ const HRInterviewRoom = () => {
           setHasRecorded(true);
         }
       };
- 
+
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
@@ -399,7 +413,7 @@ const HRInterviewRoom = () => {
 
     try {
       const res = await submitAnswerApi(currentQuestion.id, answerToSave, currentAudioUrl, totalViolations);
-      
+
       resetViolations();
       setAccumulatedGazeViolations(0);
       setTimeLeft(TIME_PER_QUESTION);
@@ -471,7 +485,7 @@ const HRInterviewRoom = () => {
 
   return (
     <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col overflow-hidden font-sans">
-      
+
       {/* Cảnh báo Gaze Tracker Toàn màn hình */}
       {(gazeWarning || isWarningActive) && !isTabViolation && (
         <div className="absolute inset-0 z-[200] pointer-events-none bg-red-500/20 flex flex-col items-center justify-center border-8 border-red-500 animate-pulse backdrop-blur-sm">
@@ -521,7 +535,7 @@ const HRInterviewRoom = () => {
         <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center">
           <div className="w-full h-full max-w-[1200px] max-h-[800px] relative">
             <Avatar3D volume={aiVolume} isListening={isRecording} emotion={isAiSpeaking ? "happy" : "idle"} />
-            
+
             {/* Tên người phỏng vấn */}
             <div className="absolute bottom-8 left-8 bg-black/60 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10 flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -606,7 +620,7 @@ const HRInterviewRoom = () => {
 
       {/* Bottom Control Bar */}
       <div className="h-20 bg-[#111827] border-t border-gray-800 flex items-center justify-between px-6 z-50 shrink-0">
-        
+
         {/* Left: Info */}
         <div className="flex items-center gap-4 w-1/3">
           <div className="hidden md:block">
@@ -625,9 +639,8 @@ const HRInterviewRoom = () => {
         <div className="flex items-center justify-center gap-4 w-1/3">
           <button
             onClick={() => setIsAiVoiceEnabled(!isAiVoiceEnabled)}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-              isAiVoiceEnabled ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-rose-500/20 text-rose-500 hover:bg-rose-500/30'
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isAiVoiceEnabled ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-rose-500/20 text-rose-500 hover:bg-rose-500/30'
+              }`}
             title={isAiVoiceEnabled ? "Tắt tiếng AI" : "Bật tiếng AI"}
           >
             {isAiVoiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
@@ -655,9 +668,9 @@ const HRInterviewRoom = () => {
           <button
             onClick={() => {
               if (document.fullscreenElement) {
-                document.exitFullscreen().catch(()=>{});
+                document.exitFullscreen().catch(() => { });
               } else {
-                document.documentElement.requestFullscreen().catch(()=>{});
+                document.documentElement.requestFullscreen().catch(() => { });
               }
             }}
             className="w-12 h-12 bg-gray-800 hover:bg-gray-700 text-white rounded-full flex items-center justify-center transition-all"
@@ -670,6 +683,16 @@ const HRInterviewRoom = () => {
         {/* Right: Actions */}
         <div className="flex items-center justify-end gap-3 w-1/3">
           <button
+            onClick={() => setShowFinishConfirmModal(true)}
+            disabled={isSubmitting || isFinishing}
+            className="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 px-4 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all disabled:opacity-50 shadow-md hover:shadow-rose-600/20"
+            title="Kết thúc phỏng vấn ngay lập tức"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Kết Thúc</span>
+          </button>
+
+          <button
             onClick={handleSubmitAnswer}
             disabled={isSubmitting || isFinishing || isRecording || isTranscribing || !finalAnswer.trim()}
             className="bg-sky-600 hover:bg-sky-500 disabled:bg-gray-800 disabled:text-gray-500 text-white px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-all shadow-lg shadow-sky-500/20"
@@ -680,6 +703,37 @@ const HRInterviewRoom = () => {
         </div>
 
       </div>
+
+      {/* Modal Xác nhận Kết thúc phỏng vấn */}
+      {showFinishConfirmModal && (
+        <div className="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl text-center space-y-4">
+            <div className="w-14 h-14 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-500/20">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Kết thúc phỏng vấn sớm?</h3>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Bạn có chắc chắn muốn kết thúc buổi phỏng vấn ngay bây giờ? Hệ thống AI sẽ tổng hợp và chấm điểm kết quả của bạn ngay lập tức.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowFinishConfirmModal(false)}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold transition-all text-sm"
+              >
+                Tiếp tục phỏng vấn
+              </button>
+              <button
+                onClick={handleEarlyFinish}
+                disabled={isFinishing}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-semibold transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30"
+              >
+                {isFinishing && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Xác Nhận Kết Thúc</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
